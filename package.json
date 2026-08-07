@@ -1,0 +1,35 @@
+{
+  "name": "vibe-blueprint",
+  "version": "0.1.0",
+  "description": "Reads a codebase, derives its actual architecture, and measures it against the architecture that was claimed.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "vibe-blueprint": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . && tsc --noEmit"
+  },
+  "dependencies": {
+    "ignore": "^7.0.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "@types/node": "^22.9.0",
+    "eslint": "^9.14.0",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.14.0",
+    "vitest": "^2.1.4"
+  },
+  "license": "MIT",
+  "private": true
+}
