@@ -85,21 +85,58 @@ erased type dependency from a runtime one.
 
 **Deliverable:** a complete file-level dependency graph with evidence on every edge.
 
-- [ ] Add the Python grammar; extract `import x`, `from x import y`, relative imports
-- [ ] **Resolver** (this is the hard part of Phase 1):
-  - [ ] TS/JS: relative paths, `tsconfig.json` path aliases, extension inference
+- [x] Add the Python grammar; extract `import x`, `from x import y`, relative imports
+- [x] **Resolver** (this is the hard part of Phase 1):
+  - [x] TS/JS: relative paths, `tsconfig.json` path aliases, extension inference
         (`./foo` → `foo.ts`, `foo/index.ts`), bare specifiers → mark external
-  - [ ] Python: package root detection via `__init__.py`, relative import levels,
+  - [x] Python: package root detection via `__init__.py`, relative import levels,
         stdlib and site-packages → mark external
-  - [ ] Record unresolved imports with a reason; do not silently drop them
-- [ ] Build the graph in `graphology`: file nodes, import edges
-- [ ] **Every edge carries `evidence[]`** with file, line and snippet
-- [ ] Report resolution rate in the summary (e.g. "3,902 edges, 97.2% resolved")
-- [ ] Tests: resolver fixtures for each case above, including path aliases and relative
+  - [x] Record unresolved imports with a reason; do not silently drop them
+- [x] Build the graph in `graphology`: file nodes, import edges
+- [x] **Every edge carries `evidence[]`** with file, line and snippet
+- [x] Report resolution rate in the summary (e.g. "3,902 edges, 97.2% resolved")
+- [x] Tests: resolver fixtures for each case above, including path aliases and relative
       Python imports
 
 **Acceptance:** resolution rate above 95% on three real repos. Investigate anything lower —
 it usually indicates a resolver bug, not a messy repo.
+
+**Acceptance met.**
+
+| Repo | Kind | Files | Nodes / edges | Imports | Unresolved | Rate |
+|---|---|---|---|---|---|---|
+| `colinhacks/zod` | TypeScript | 406 | 406 / 721 | 1,088 | 4 | **99.63%** |
+| `psf/requests` | Python | 37 | 37 / 105 | 311 | 1 | **99.68%** |
+| `microsoft/pyright` | mixed | 1,917 | 1,917 / 2,429 | 4,284 | 28 | **99.35%** |
+
+Every remaining unresolved import was inspected. None is a resolver defect:
+
+- **zod (4):** a stylesheet, a build-generated module, two PNGs — non-source assets.
+- **requests (1):** `requests.packages.urllib3.poolmanager`, a runtime module-aliasing
+  shim that has no static target by construction.
+- **pyright (28):** 18 non-source or build-output paths (`package.json`,
+  `.nls.*.json` locale files, `build/lib/webpack`), 8 references to build artefacts absent
+  from a fresh clone, and 2 Python test *samples* that deliberately import nothing real.
+
+**The spec's advice was right — a low rate was a resolver bug.** zod first measured
+**82.08%**, and the unresolved-by-reason grouping pointed straight at the cause: 194 of 195
+failures were `alias-target-missing` on `zod/v4`, `zod/v3`, `zod/mini`. Those are workspace
+subpaths declared through package.json `exports`, which the resolver did not follow.
+Fixing it took internal imports from 559 to **750** — 191 cross-package edges had been
+missing from the graph. The rate alone looked like a messy repo; the reason grouping made it
+a ten-minute diagnosis, which is exactly what that grouping is for.
+
+Three states are enforced, not blurred. EXTERNAL requires positively identifying an npm
+package, Node builtin, Python stdlib or site-packages module. Anything that merely failed to
+resolve stays UNRESOLVED, including a Python module whose top-level name exists in the repo
+and a tsconfig alias whose target is missing — both would otherwise inflate the rate while
+hiding the bug that caused them. `target-not-in-repo` marks a real file the walker does not
+index (JSON, CSS, assets); it is kept out of the rate rather than counted as a success.
+
+Beyond the spec: PEP 420 namespace packages resolve without `__init__.py` (the spec's
+`__init__.py`-only rule would have failed every modern namespace package), pnpm and npm
+workspaces resolve to real files, and `exports` maps are followed to source rather than to
+`dist/`.
 
 ---
 
