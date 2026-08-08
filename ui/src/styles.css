@@ -153,6 +153,39 @@ body {
   background: #141821;
 }
 
+.node[data-kind='module'] {
+  background: #191d27;
+  border-color: #35405a;
+}
+
+/* A module drawn from several folders is the interesting case; mark it. */
+.node[data-kind='module'][data-disagrees='true'] {
+  border-color: var(--warn);
+}
+
+.tag-disagree {
+  display: inline-block;
+  color: var(--warn);
+  border: 1px solid var(--warn);
+  border-radius: 3px;
+  padding: 0 4px;
+  font-size: 9px;
+  margin-right: 5px;
+  white-space: nowrap;
+}
+
+.tag-reason {
+  display: inline-block;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0 4px;
+  font-size: 9px;
+  margin-right: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .node[data-selected='true'] {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);

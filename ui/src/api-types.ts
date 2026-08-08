@@ -87,6 +87,72 @@ export interface EdgeResponse {
   groups: EdgeEvidenceGroup[];
 }
 
+export interface ModuleNodeSummary {
+  id: string;
+  kind: 'module';
+  /** Mechanical only this week — a shared path prefix or the index. */
+  label: string;
+  fileCount: number;
+  directories: string[];
+  /** Files coupling placed here despite them living elsewhere on disk. */
+  disagreeingFiles: number;
+  provenance: 'DERIVED' | 'STATED';
+  llmLabelled: boolean;
+}
+
+export interface ModuleEdgeSummary {
+  id: string;
+  from: string;
+  to: string;
+  weight: number;
+  importCount: number;
+  provenance: 'DERIVED' | 'STATED';
+}
+
+export interface ModuleViewResponse {
+  nodes: ModuleNodeSummary[];
+  edges: ModuleEdgeSummary[];
+  positions: Record<string, ApiPosition>;
+  summary: ClusteringSummary;
+  counts: { nodes: number; edges: number; files: number };
+}
+
+export type ClusterReason = 'import-coupling' | 'directory-prior' | 'small-cluster-merge';
+
+export interface ModuleDetailResponse {
+  id: string;
+  label: string;
+  directories: string[];
+  files: {
+    path: string;
+    directory: string;
+    reason: ClusterReason;
+    explanation: string;
+    disagrees: boolean;
+  }[];
+  inbound: NodeNeighbour[];
+  outbound: NodeNeighbour[];
+}
+
+export interface ClusteringSummary {
+  moduleCount: number;
+  modularity: number;
+  resolution: number;
+  seed: number;
+  minClusterSize: number;
+  mergedClusters: number;
+  disagreementRate: number;
+  crossDirectoryModules: number;
+  splitDirectories: number;
+  byReason: Record<string, number>;
+  disagreementExamples: {
+    file: string;
+    directory: string;
+    moduleId: string;
+    modulePluralityDirectory: string;
+  }[];
+}
+
 export interface SummaryResponse {
   root: string;
   files: number;
@@ -104,4 +170,5 @@ export interface SummaryResponse {
   };
   languages: Record<string, number>;
   topExternals: { name: string; count: number }[];
+  clustering: ClusteringSummary;
 }

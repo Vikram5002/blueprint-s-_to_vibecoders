@@ -1,7 +1,15 @@
 /**
  * Thin client over the local JSON API. The only route into the pipeline.
  */
-import type { EdgeResponse, GraphResponse, NodeResponse, SummaryResponse, ViewLevel } from './api-types';
+import type {
+  EdgeResponse,
+  GraphResponse,
+  ModuleDetailResponse,
+  ModuleViewResponse,
+  NodeResponse,
+  SummaryResponse,
+  ViewLevel,
+} from './api-types';
 
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(path, { headers: { accept: 'application/json' } });
@@ -29,6 +37,18 @@ export function fetchNode(id: string): Promise<NodeResponse> {
 
 export function fetchEdge(id: string): Promise<EdgeResponse> {
   return getJson<EdgeResponse>(`/api/edge/${id}`);
+}
+
+export function fetchModules(): Promise<ModuleViewResponse> {
+  return getJson<ModuleViewResponse>('/api/modules');
+}
+
+export function fetchModule(id: string): Promise<ModuleDetailResponse> {
+  return getJson<ModuleDetailResponse>(`/api/module/${encodeURIComponent(id)}`);
+}
+
+export function fetchModuleEdge(id: string): Promise<EdgeResponse> {
+  return getJson<EdgeResponse>(`/api/module-edge/${encodeURIComponent(id)}`);
 }
 
 /**
