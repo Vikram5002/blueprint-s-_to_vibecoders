@@ -2,9 +2,9 @@
   "extends": "./config/tsconfig.base.json",
   "compilerOptions": {
     "paths": {
-      "@app/*": ["src/*"],
-      "@lib/*": ["lib/*"],
-      "@exact": ["src/exact-match.ts"]
+      "@app/*": ["*"],
+      "@lib/*": ["../lib/*"],
+      "@exact": ["exact-match.ts"]
     }
   }
 }
