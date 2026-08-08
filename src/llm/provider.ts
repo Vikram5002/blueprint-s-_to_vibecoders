@@ -1,0 +1,61 @@
+/**
+ * Provider-agnostic completion interface.
+ *
+ * The rest of the codebase talks to this, never to a vendor SDK. Swapping
+ * providers, or running without one, changes only which factory is constructed
+ * — `pipeline/label.ts` takes a labeller as an argument and has no idea who
+ * answers it.
+ *
+ * Deliberately small. This project asks a model exactly one kind of question —
+ * "name this cluster" — so the interface is one call that returns text. No
+ * streaming, no tools, no conversation state: nothing here needs them, and an
+ * interface built for capabilities we do not use is an interface nobody can
+ * reimplement.
+ */
+
+export interface CompletionRequest {
+  /** Stable instructions. Kept separate so a provider can cache the prefix. */
+  readonly system: string;
+  /** The per-cluster payload. Untrusted repository content — see prompt.ts. */
+  readonly user: string;
+  readonly maxOutputTokens: number;
+  /**
+   * Sampling temperature, where the provider supports it.
+   *
+   * Present because a provider-agnostic interface needs it — most providers
+   * take it and 0 is the reproducible setting. The Anthropic adapter sends it
+   * only to models that still accept the parameter; see anthropic.ts.
+   */
+  readonly temperature?: number;
+}
+
+export interface CompletionUsage {
+  readonly promptTokens: number;
+  readonly completionTokens: number;
+  /** Prompt tokens served from the provider's own cache, when reported. */
+  readonly cachedPromptTokens: number;
+}
+
+export interface CompletionResponse {
+  readonly text: string;
+  readonly usage: CompletionUsage;
+  /** Model that actually served the request, which may differ from the one asked for. */
+  readonly model: string;
+}
+
+export type CompletionFailure =
+  /** The provider declined, or returned nothing usable. */
+  | { readonly kind: 'refused'; readonly message: string }
+  /** Network, auth, rate limit, or any other transport-level problem. */
+  | { readonly kind: 'unavailable'; readonly message: string };
+
+export interface CompletionProvider {
+  /** Short identifier for reporting, e.g. `anthropic:claude-opus-5`. */
+  readonly name: string;
+  readonly model: string;
+  complete(request: CompletionRequest): Promise<CompletionResult>;
+}
+
+export type CompletionResult =
+  | { readonly ok: true; readonly value: CompletionResponse }
+  | { readonly ok: false; readonly error: CompletionFailure };

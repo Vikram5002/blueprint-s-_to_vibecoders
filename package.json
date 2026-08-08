@@ -23,6 +23,7 @@
     "lint": "eslint . && tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.116.0",
     "@hono/node-server": "^2.1.0",
     "graphology": "^0.26.0",
     "graphology-communities-louvain": "^2.0.2",

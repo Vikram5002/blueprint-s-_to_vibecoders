@@ -1,0 +1,148 @@
+/**
+ * Anthropic implementation of CompletionProvider.
+ *
+ * The only file in the project that knows a vendor exists. It is reachable from
+ * the composition root alone — `graph/` and `parser/` may not import `llm/` at
+ * all (rule 1), and `pipeline/label.ts` takes an injected labeller rather than
+ * importing this.
+ *
+ * The SDK is loaded with a dynamic import so that a run with no API key never
+ * pays to load 6.5 MB of client library. Startup time matters for a CLI, and
+ * the no-key path is the common one.
+ *
+ * ## On temperature
+ *
+ * The brief asks for temperature 0. Current Anthropic models — Opus 5, Opus
+ * 4.8/4.7, Sonnet 5 — reject `temperature` outright with a 400; it was removed,
+ * not deprecated. So it is sent only to models that still accept it, and
+ * omitted otherwise.
+ *
+ * Nothing is lost. Temperature 0 was only ever a proxy for reproducibility, and
+ * it never actually guaranteed identical output. Reproducibility here comes
+ * from the response cache: an unchanged repository produces byte-identical
+ * prompts, so the model is asked once per distinct cluster and every later run
+ * replays the stored answer. That is a real guarantee where temperature 0 was
+ * an approximation of one.
+ */
+import { estimateCostUsd } from './pricing.js';
+import type {
+  CompletionProvider,
+  CompletionRequest,
+  CompletionResult,
+} from './provider.js';
+
+export const DEFAULT_MODEL = 'claude-opus-5';
+export const API_KEY_ENV = 'ANTHROPIC_API_KEY';
+
+/**
+ * Models that still accept `temperature`. Newer models removed the parameter
+ * and return 400 if it is present, so the request omits it for anything absent
+ * from this list.
+ */
+const ACCEPTS_TEMPERATURE: ReadonlySet<string> = new Set([
+  'claude-sonnet-4-6',
+  'claude-sonnet-4-5',
+  'claude-haiku-4-5',
+]);
+
+/** Shape the model must return. Enforced by the API, re-checked in validate.ts. */
+export const LABEL_SCHEMA = {
+  type: 'object',
+  properties: {
+    label: { type: 'string', description: 'Two to four words, title case.' },
+    description: { type: 'string', description: 'One line on what the module does.' },
+  },
+  required: ['label', 'description'],
+  additionalProperties: false,
+} as const;
+
+export interface AnthropicOptions {
+  readonly apiKey: string;
+  readonly model?: string;
+}
+
+/**
+ * Reads the key from the environment. Returns null when unset, which is the
+ * signal to run mechanically — not an error, and not something to warn about.
+ */
+export function readApiKey(env: NodeJS.ProcessEnv = process.env): string | null {
+  const key = env[API_KEY_ENV];
+  return key === undefined || key.trim() === '' ? null : key.trim();
+}
+
+export async function createAnthropicProvider(options: AnthropicOptions): Promise<CompletionProvider> {
+  const model = options.model ?? DEFAULT_MODEL;
+
+  // Dynamic so the no-key path never loads the SDK.
+  const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  const client = new Anthropic({ apiKey: options.apiKey });
+
+  return {
+    name: `anthropic:${model}`,
+    model,
+    complete: async (request: CompletionRequest): Promise<CompletionResult> => {
+      try {
+        const response = await client.messages.create({
+          model,
+          max_tokens: request.maxOutputTokens,
+          system: [
+            {
+              type: 'text',
+              text: request.system,
+              // The system prompt is identical for every cluster in a run, so
+              // caching it turns N calls into one full-price prefix plus N cheap
+              // reads.
+              cache_control: { type: 'ephemeral' },
+            },
+          ],
+          messages: [{ role: 'user', content: request.user }],
+          output_config: {
+            // Naming a cluster from paths and symbols is not a reasoning task.
+            effort: 'low',
+            format: { type: 'json_schema', schema: LABEL_SCHEMA },
+          },
+          ...(request.temperature !== undefined && ACCEPTS_TEMPERATURE.has(model)
+            ? { temperature: request.temperature }
+            : {}),
+        });
+
+        if (response.stop_reason === 'refusal') {
+          return { ok: false, error: { kind: 'refused', message: 'the model declined to answer' } };
+        }
+
+        // content is a discriminated union; narrow inside the callback so the
+        // SDK's own TextBlock type is what gets read.
+        const text = response.content
+          .flatMap((block) => (block.type === 'text' ? [block.text] : []))
+          .join('');
+
+        if (text.trim() === '') {
+          return { ok: false, error: { kind: 'refused', message: 'empty response' } };
+        }
+
+        return {
+          ok: true,
+          value: {
+            text,
+            model: response.model,
+            usage: {
+              promptTokens: response.usage.input_tokens,
+              completionTokens: response.usage.output_tokens,
+              cachedPromptTokens: response.usage.cache_read_input_tokens ?? 0,
+            },
+          },
+        };
+      } catch (cause: unknown) {
+        return {
+          ok: false,
+          error: {
+            kind: 'unavailable',
+            message: cause instanceof Error ? cause.message : String(cause),
+          },
+        };
+      }
+    },
+  };
+}
+
+export { estimateCostUsd };
