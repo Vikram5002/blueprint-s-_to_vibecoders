@@ -17,13 +17,8 @@ import {
   formatSummary,
 } from './output.js';
 import { openBrowser } from './open-browser.js';
-import { resolveRepository } from '../graph/resolve.js';
-import { buildDependencyGraph } from '../graph/build-graph.js';
-import { clusterRepository } from '../graph/cluster.js';
+import { analyseRepository } from '../pipeline/analyse.js';
 import { startServer, type RunningServer } from '../server/server.js';
-import { walkRepository } from '../ingest/walk.js';
-import { summariseWalk } from '../ingest/summary.js';
-import { parseRepository, summariseParse } from '../parser/parse-repository.js';
 
 export interface CliIo {
   readonly writeOut: (line: string) => void;
@@ -58,50 +53,30 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     io.writeErr(`Scanning ${options.targetPath}`);
   }
 
-  const walked = await walkRepository({
+  const analysed = await analyseRepository({
     root: options.targetPath,
     ...(showProgress
       ? {
           onProgress: (progress) =>
             io.writeErr(
-              formatProgress(progress.directoriesVisited, progress.filesFound, progress.currentDirectory),
+              progress.stage === 'walk'
+                ? formatProgress(progress.directoriesVisited, progress.filesFound, progress.currentDirectory)
+                : formatParseProgress(progress.filesParsed, progress.filesTotal, progress.currentFile),
             ),
         }
       : {}),
   });
 
-  if (!walked.ok) {
-    io.writeErr(formatError(walked.error.message));
+  if (!analysed.ok) {
+    io.writeErr(formatError(analysed.error.message));
     return EXIT_FAILURE;
   }
 
-  const result = walked.value;
-  const summary = summariseWalk(result);
-
-  const parseResult = await parseRepository({
-    files: result.files,
-    ...(showProgress
-      ? {
-          onProgress: (progress) =>
-            io.writeErr(formatParseProgress(progress.filesParsed, progress.filesTotal, progress.currentFile)),
-        }
-      : {}),
-  });
-
-  if (!parseResult.ok) {
-    io.writeErr(formatError(parseResult.error.message));
-    return EXIT_FAILURE;
-  }
-
-  const parseSummary = summariseParse(parseResult.value);
-
-  const resolution = await resolveRepository({ root: result.root, files: parseResult.value.files });
-  const graph = buildDependencyGraph({ files: parseResult.value.files, resolution });
-  const clustering = clusterRepository(graph);
+  const { walk: result, ingest: summary, parse, parseSummary, graph, clustering } = analysed.value;
 
   if (options.json) {
     io.writeOut(
-      formatJson(summary, result.files, result.stats.errors, parseSummary, parseResult.value, graph, clustering),
+      formatJson(summary, result.files, result.stats.errors, parseSummary, parse, graph, clustering),
     );
     return EXIT_OK;
   }
@@ -110,7 +85,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     io.writeOut(formatFileList(result.files));
   }
   io.writeOut(formatSummary(summary, result.stats.errors));
-  io.writeOut(formatParseSummary(parseSummary, parseResult.value.failures));
+  io.writeOut(formatParseSummary(parseSummary, parse.failures));
   io.writeOut(formatGraphSummary(graph));
   io.writeOut(formatClusterSummary(clustering));
 
@@ -123,7 +98,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     graph,
     ingest: summary,
     parse: parseSummary,
-    parseFailures: parseResult.value.failures,
+    parseFailures: parse.failures,
     clustering,
   });
 

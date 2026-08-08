@@ -41,6 +41,7 @@ src/
   ingest/       Repo walking, .gitignore handling, language detection
   parser/       tree-sitter wrappers, AST -> symbol extraction
   graph/        Dependency resolution, graph building, clustering
+  pipeline/     Stage orchestration: runs the deterministic half, then the LLM
   llm/          Provider adapters, prompt templates (labelling + intent)
   conformance/  Constraint model, intent extraction, violation detection
   store/        SQLite schema, snapshots, migrations
