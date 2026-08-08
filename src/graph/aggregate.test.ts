@@ -4,7 +4,14 @@ import { walkRepository } from '../ingest/walk.js';
 import { parseRepository } from '../parser/parse-repository.js';
 import { resolveRepository } from './resolve.js';
 import { buildDependencyGraph, type DependencyGraph } from './build-graph.js';
-import { decodeEdgeId, directoryOf, encodeEdgeId, projectGraph, splitFileEdgeKey } from './aggregate.js';
+import {
+  decodeEdgeId,
+  directoryOf,
+  encodeEdgeId,
+  projectGraph,
+  splitFileEdgeKey,
+  EXPANSION_FILE_LIMIT,
+} from './aggregate.js';
 
 const FIXTURES = fileURLToPath(new URL('./fixtures/', import.meta.url));
 
@@ -113,6 +120,51 @@ describe('directory projection', () => {
     const view = projectGraph(graph, { level: 'directory' });
     expect(view.expandable).toContain('packages/utils/src');
     expect(view.expandable).not.toContain('packages/app/src'); // single file
+  });
+
+  it('withholds expansion for a directory large enough to break the canvas', () => {
+    // pyright has a 1,279-file directory; expanding it would take a 61-node
+    // view to 1,339 and defeat the aggregation entirely.
+    const huge = {
+      ...graph,
+      graph: graph.graph.copy(),
+    };
+    for (let index = 0; index < EXPANSION_FILE_LIMIT + 5; index += 1) {
+      huge.graph.addNode(`samples/file-${index}.ts`, {
+        kind: 'file',
+        label: `file-${index}.ts`,
+        path: `samples/file-${index}.ts`,
+        language: 'typescript',
+        provenance: 'DERIVED',
+        llmLabelled: false,
+        userCorrected: false,
+      });
+    }
+
+    const view = projectGraph(huge, { level: 'directory' });
+    const samples = view.nodes.find((node) => node.id === 'samples');
+
+    expect(samples?.fileCount).toBe(EXPANSION_FILE_LIMIT + 5);
+    expect(view.expandable).not.toContain('samples');
+  });
+
+  it('still honours an explicit expand for an oversized directory', () => {
+    // The limit governs what the UI offers, not what the API can do.
+    const huge = { ...graph, graph: graph.graph.copy() };
+    for (let index = 0; index < EXPANSION_FILE_LIMIT + 5; index += 1) {
+      huge.graph.addNode(`samples/file-${index}.ts`, {
+        kind: 'file',
+        label: `file-${index}.ts`,
+        path: `samples/file-${index}.ts`,
+        language: 'typescript',
+        provenance: 'DERIVED',
+        llmLabelled: false,
+        userCorrected: false,
+      });
+    }
+
+    const view = projectGraph(huge, { level: 'directory', expanded: ['samples'] });
+    expect(view.nodes.map((n) => n.id)).toContain('samples/file-0.ts');
   });
 
   it('is deterministic', () => {

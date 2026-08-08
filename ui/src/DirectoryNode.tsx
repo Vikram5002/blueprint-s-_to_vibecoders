@@ -37,7 +37,7 @@ export function DirectoryNode({ data, selected }: NodeProps): JSX.Element {
       <div className="meta">
         {node.kind === 'directory' && <span>{node.fileCount} files</span>}
         <span>{languages.join(' ')}</span>
-        {node.expandable && (
+        {node.expandable ? (
           <button
             type="button"
             className="expand"
@@ -48,6 +48,13 @@ export function DirectoryNode({ data, selected }: NodeProps): JSX.Element {
           >
             {node.expanded ? 'collapse' : 'expand'}
           </button>
+        ) : (
+          node.kind === 'directory' &&
+          node.fileCount > 1 && (
+            <span title="Too many files to draw individually — open the node panel for the full list">
+              too large
+            </span>
+          )
         )}
       </div>
       <Handle type="source" position={Position.Right} />
