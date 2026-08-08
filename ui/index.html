@@ -3,6 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Inline so the browser never requests /favicon.ico, which the server
+         correctly 404s and which then shows up as a console error. -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230f1115'/%3E%3Ccircle cx='4.5' cy='8' r='2' fill='%236ea8fe'/%3E%3Ccircle cx='11.5' cy='4.5' r='1.6' fill='%235ec98a'/%3E%3Ccircle cx='11.5' cy='11.5' r='1.6' fill='%235ec98a'/%3E%3Cpath d='M6.2 7.2 9.9 5M6.2 8.8 9.9 11' stroke='%234a5568' stroke-width='1.1'/%3E%3C/svg%3E"
+    />
     <title>Vibe-Code Blueprint</title>
   </head>
   <body>

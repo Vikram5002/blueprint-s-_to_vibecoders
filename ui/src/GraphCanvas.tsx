@@ -61,9 +61,12 @@ export function GraphCanvas(props: GraphCanvasProps): JSX.Element {
       target: edge.to,
       selected: edge.id === selectedEdgeId,
       animated: false,
+      // A generous invisible hit area: the drawn line can be one pixel wide,
+      // and the evidence trail behind it is the whole point of clicking.
+      interactionWidth: 24,
       style: {
         strokeWidth: thickness(edge.importCount, heaviest),
-        stroke: edge.id === selectedEdgeId ? '#6ea8fe' : '#3a4457',
+        stroke: edge.id === selectedEdgeId ? '#6ea8fe' : '#4a5568',
       },
       label: edge.importCount > 1 ? String(edge.importCount) : undefined,
       labelStyle: { fill: '#9aa4b6', fontSize: 10 },
@@ -91,7 +94,17 @@ export function GraphCanvas(props: GraphCanvasProps): JSX.Element {
     >
       <Background color="#222834" gap={22} />
       <Controls showInteractive={false} />
-      <MiniMap pannable zoomable nodeColor="#2a3140" maskColor="rgba(15,17,21,0.8)" />
+      <MiniMap
+        pannable
+        zoomable
+        nodeColor="#4a5568"
+        nodeStrokeWidth={0}
+        maskColor="rgba(15,17,21,0.75)"
+        // The minimap's own background defaults to light and renders as a
+        // white slab over the canvas otherwise.
+        bgColor="#11141a"
+        style={{ border: '1px solid #2a3140', borderRadius: 6 }}
+      />
     </ReactFlow>
   );
 }

@@ -201,27 +201,36 @@ body {
   word-break: break-all;
 }
 
+/*
+ * Stacked, not side by side. A file:line label and a real import statement do
+ * not fit on one row in a 420px panel — laid out as a flex row, the statement
+ * was squeezed into a column about one character wide, which made the evidence
+ * unreadable. This is the feature the product is built around, so it gets the
+ * full width.
+ */
 .evidence-line {
-  display: flex;
-  gap: 10px;
+  display: block;
   padding: 6px 9px;
   background: var(--code);
   border-top: 1px solid var(--line);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .evidence-line .loc {
+  display: block;
   color: var(--accent);
-  flex: 0 0 auto;
   user-select: all;
+  margin-bottom: 3px;
+  word-break: break-all;
 }
 
 .evidence-line code {
+  display: block;
   color: var(--text);
-  word-break: break-word;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .provenance {
@@ -308,4 +317,21 @@ body {
 
 .react-flow__attribution {
   display: none;
+}
+
+/*
+ * The graph is read-only, so connection handles exist only as edge anchors.
+ * They are a fixed pixel size regardless of zoom, so on a large repository —
+ * where fit-to-view shrinks a node to about 34x12px — they cover the node
+ * entirely and swallow its clicks. Found by driving pyright in a browser:
+ * nodes were simply unselectable at the default zoom.
+ */
+.react-flow__handle {
+  pointer-events: none !important;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
 }

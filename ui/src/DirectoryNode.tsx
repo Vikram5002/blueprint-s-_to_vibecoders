@@ -30,7 +30,7 @@ export function DirectoryNode({ data, selected }: NodeProps): JSX.Element {
 
   return (
     <div className="node" data-kind={node.kind} data-selected={selected ? 'true' : 'false'}>
-      <Handle type="target" position={Position.Left} />
+      <Handle type="target" position={Position.Left} isConnectable={false} />
       <div className="name" title={node.path}>
         {node.label}
       </div>
@@ -57,7 +57,7 @@ export function DirectoryNode({ data, selected }: NodeProps): JSX.Element {
           )
         )}
       </div>
-      <Handle type="source" position={Position.Right} />
+      <Handle type="source" position={Position.Right} isConnectable={false} />
     </div>
   );
 }
