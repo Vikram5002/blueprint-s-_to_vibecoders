@@ -4,6 +4,7 @@
  */
 import { parseArguments } from './args.js';
 import {
+  formatClusterSummary,
   formatError,
   formatFileList,
   formatGraphSummary,
@@ -18,6 +19,7 @@ import {
 import { openBrowser } from './open-browser.js';
 import { resolveRepository } from '../graph/resolve.js';
 import { buildDependencyGraph } from '../graph/build-graph.js';
+import { clusterRepository } from '../graph/cluster.js';
 import { startServer, type RunningServer } from '../server/server.js';
 import { walkRepository } from '../ingest/walk.js';
 import { summariseWalk } from '../ingest/summary.js';
@@ -95,9 +97,12 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
 
   const resolution = await resolveRepository({ root: result.root, files: parseResult.value.files });
   const graph = buildDependencyGraph({ files: parseResult.value.files, resolution });
+  const clustering = clusterRepository(graph);
 
   if (options.json) {
-    io.writeOut(formatJson(summary, result.files, result.stats.errors, parseSummary, parseResult.value, graph));
+    io.writeOut(
+      formatJson(summary, result.files, result.stats.errors, parseSummary, parseResult.value, graph, clustering),
+    );
     return EXIT_OK;
   }
 
@@ -107,6 +112,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
   io.writeOut(formatSummary(summary, result.stats.errors));
   io.writeOut(formatParseSummary(parseSummary, parseResult.value.failures));
   io.writeOut(formatGraphSummary(graph));
+  io.writeOut(formatClusterSummary(clustering));
 
   if (!options.serve) {
     return EXIT_OK;
@@ -118,6 +124,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     ingest: summary,
     parse: parseSummary,
     parseFailures: parseResult.value.failures,
+    clustering,
   });
 
   io.writeOut(formatServing(server.url, options.open));

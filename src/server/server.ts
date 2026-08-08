@@ -14,6 +14,9 @@ import { Hono } from 'hono';
 import {
   buildEdgeResponse,
   buildGraphResponse,
+  buildModuleDetailResponse,
+  buildModuleEdgeResponse,
+  buildModuleViewResponse,
   buildNodeResponse,
   buildSummaryResponse,
 } from './api.js';
@@ -66,6 +69,21 @@ export function createApp(context: AnalysisContext): Hono {
     const id = decodeIdFromPath(c.req.path, '/api/edge/');
     const payload = buildEdgeResponse(context, id);
     return payload === null ? c.json({ error: `unknown edge: ${id}` }, 404) : c.json(payload);
+  });
+
+  app.get('/api/modules', (c) => c.json(buildModuleViewResponse(context)));
+
+  // Registered before /api/module/* so the more specific path wins.
+  app.get('/api/module-edge/*', (c) => {
+    const id = decodeIdFromPath(c.req.path, '/api/module-edge/');
+    const payload = buildModuleEdgeResponse(context, id);
+    return payload === null ? c.json({ error: `unknown module edge: ${id}` }, 404) : c.json(payload);
+  });
+
+  app.get('/api/module/*', (c) => {
+    const id = decodeIdFromPath(c.req.path, '/api/module/');
+    const payload = buildModuleDetailResponse(context, id);
+    return payload === null ? c.json({ error: `unknown module: ${id}` }, 404) : c.json(payload);
   });
 
   app.get('*', async (c) => {

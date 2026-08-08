@@ -189,6 +189,187 @@ function expansionFor(context: AnalysisContext, from: string, to: string): strin
   return expansion;
 }
 
+export interface ModuleViewResponse {
+  readonly nodes: readonly {
+    id: string;
+    kind: 'module';
+    label: string;
+    fileCount: number;
+    directories: readonly string[];
+    /** Files placed here by coupling despite living elsewhere on disk. */
+    disagreeingFiles: number;
+    provenance: string;
+    llmLabelled: boolean;
+  }[];
+  readonly edges: readonly {
+    id: string;
+    from: string;
+    to: string;
+    weight: number;
+    importCount: number;
+    provenance: string;
+  }[];
+  readonly positions: LayoutPositions;
+  readonly summary: unknown;
+  readonly counts: { nodes: number; edges: number; files: number };
+}
+
+/**
+ * The module-level view: Louvain communities rather than folders.
+ *
+ * Reuses the same layout as the directory view so switching between them does
+ * not also change how the picture is drawn — only what it groups by.
+ */
+export function buildModuleViewResponse(context: AnalysisContext): ModuleViewResponse {
+  const { clustering } = context;
+
+  const disagreementCounts = new Map<string, number>();
+  for (const disagreement of clustering.disagreements) {
+    disagreementCounts.set(
+      disagreement.moduleId,
+      (disagreementCounts.get(disagreement.moduleId) ?? 0) + 1,
+    );
+  }
+
+  const view = {
+    level: 'directory' as const,
+    expanded: [],
+    expandable: [],
+    nodes: clustering.modules.map((module) => ({
+      id: module.id,
+      kind: 'directory' as const,
+      path: module.id,
+      label: module.label,
+      fileCount: module.files.length,
+      languages: {},
+      parent: null,
+      provenance: module.provenance,
+    })),
+    edges: clustering.edges.map((edge) => ({
+      id: edge.id,
+      from: edge.from,
+      to: edge.to,
+      weight: edge.weight,
+      importCount: edge.importCount,
+      fileEdges: edge.fileEdges,
+      provenance: edge.provenance,
+    })),
+  };
+
+  return {
+    nodes: clustering.modules.map((module) => ({
+      id: module.id,
+      kind: 'module' as const,
+      label: module.label,
+      fileCount: module.files.length,
+      directories: module.directories,
+      disagreeingFiles: disagreementCounts.get(module.id) ?? 0,
+      provenance: module.provenance,
+      llmLabelled: module.llmLabelled,
+    })),
+    edges: clustering.edges.map((edge) => ({
+      id: edge.id,
+      from: edge.from,
+      to: edge.to,
+      weight: edge.weight,
+      importCount: edge.importCount,
+      provenance: edge.provenance,
+    })),
+    positions: computeLayout(view),
+    summary: clustering.summary,
+    counts: {
+      nodes: clustering.modules.length,
+      edges: clustering.edges.length,
+      files: context.graph.graph.order,
+    },
+  };
+}
+
+export interface ModuleDetailResponse {
+  readonly id: string;
+  readonly label: string;
+  readonly files: readonly {
+    path: string;
+    directory: string;
+    reason: string;
+    explanation: string;
+    disagrees: boolean;
+  }[];
+  readonly directories: readonly string[];
+  readonly inbound: readonly { id: string; weight: number; importCount: number; edgeId: string }[];
+  readonly outbound: readonly { id: string; weight: number; importCount: number; edgeId: string }[];
+}
+
+/** Per-module detail, including why each file landed here (property 3). */
+export function buildModuleDetailResponse(
+  context: AnalysisContext,
+  id: string,
+): ModuleDetailResponse | null {
+  const module = context.clustering.modules.find((candidate) => candidate.id === id);
+  if (module === undefined) {
+    return null;
+  }
+
+  const disagreeing = new Set(context.clustering.disagreements.map((d) => d.file));
+  const assignments = new Map(context.clustering.assignments.map((a) => [a.file, a]));
+
+  return {
+    id: module.id,
+    label: module.label,
+    directories: module.directories,
+    files: module.files.map((file) => {
+      const assignment = assignments.get(file);
+      return {
+        path: file,
+        directory: assignment?.directory ?? '',
+        reason: assignment?.reason ?? 'import-coupling',
+        explanation: assignment?.explanation ?? '',
+        disagrees: disagreeing.has(file),
+      };
+    }),
+    inbound: context.clustering.edges
+      .filter((edge) => edge.to === id)
+      .map((edge) => ({ id: edge.from, weight: edge.weight, importCount: edge.importCount, edgeId: edge.id })),
+    outbound: context.clustering.edges
+      .filter((edge) => edge.from === id)
+      .map((edge) => ({ id: edge.to, weight: edge.weight, importCount: edge.importCount, edgeId: edge.id })),
+  };
+}
+
+/** Every source line behind a module-to-module edge (rule 3 at module level). */
+export function buildModuleEdgeResponse(context: AnalysisContext, id: string): EdgeResponse | null {
+  const edge = context.clustering.edges.find((candidate) => candidate.id === id);
+  if (edge === undefined) {
+    return null;
+  }
+
+  const groups: EdgeEvidenceGroup[] = [];
+  for (const key of edge.fileEdges) {
+    const split = splitFileEdgeKey(key);
+    if (split === null || !context.graph.graph.hasEdge(split.source, split.target)) {
+      continue;
+    }
+    const graphEdge = context.graph.graph.edge(split.source, split.target);
+    if (graphEdge === undefined) {
+      continue;
+    }
+    groups.push({
+      source: split.source,
+      target: split.target,
+      evidence: context.graph.graph.getEdgeAttribute(graphEdge, 'evidence'),
+    });
+  }
+
+  return {
+    id: edge.id,
+    from: edge.from,
+    to: edge.to,
+    weight: edge.weight,
+    importCount: edge.importCount,
+    groups,
+  };
+}
+
 export interface SummaryResponse {
   readonly root: string;
   readonly files: number;
@@ -211,6 +392,25 @@ export interface SummaryResponse {
   };
   readonly languages: Readonly<Record<string, number>>;
   readonly topExternals: readonly { name: string; count: number }[];
+  readonly clustering: {
+    readonly moduleCount: number;
+    readonly modularity: number;
+    readonly resolution: number;
+    readonly seed: number;
+    readonly minClusterSize: number;
+    readonly mergedClusters: number;
+    readonly disagreementRate: number;
+    readonly crossDirectoryModules: number;
+    readonly splitDirectories: number;
+    readonly byReason: Readonly<Record<string, number>>;
+    /** A few real cases, so the disagreement rate is inspectable. */
+    readonly disagreementExamples: readonly {
+      file: string;
+      directory: string;
+      moduleId: string;
+      modulePluralityDirectory: string;
+    }[];
+  };
 }
 
 export function buildSummaryResponse(context: AnalysisContext): SummaryResponse {
@@ -246,5 +446,9 @@ export function buildSummaryResponse(context: AnalysisContext): SummaryResponse 
       name: external.name,
       count: external.count,
     })),
+    clustering: {
+      ...context.clustering.summary,
+      disagreementExamples: context.clustering.disagreements.slice(0, 50),
+    },
   };
 }

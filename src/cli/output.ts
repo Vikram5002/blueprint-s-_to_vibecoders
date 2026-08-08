@@ -9,6 +9,7 @@ import type { ParseSummary } from '../parser/parse-repository.js';
 import type { ParseFailure, ParseReport } from '../types/symbols.js';
 import type { ResolutionSummary } from '../types/resolution.js';
 import type { DependencyGraph } from '../graph/build-graph.js';
+import type { ClusteringResult } from '../types/modules.js';
 
 const LANGUAGE_LABELS: Readonly<Record<Language, string>> = {
   typescript: 'TypeScript',
@@ -106,6 +107,42 @@ export function formatParseSummary(summary: ParseSummary, failures: readonly Par
   return lines.join('\n');
 }
 
+/**
+ * Modularity is printed as a diagnostic, labelled as one. It says how sharply
+ * the graph divides, not whether the division is right — there is no ground
+ * truth for that — and it must not read as a quality score.
+ */
+export function formatClusterSummary(clustering: ClusteringResult): string {
+  const { summary } = clustering;
+  const lines = [
+    `  Modules             ${count(summary.moduleCount)}  (Louvain over import coupling)`,
+    `    from coupling     ${count(summary.byReason['import-coupling'])}  files`,
+    `    from directory    ${count(summary.byReason['directory-prior'])}  files with no imports either way`,
+    `    merged as small   ${count(summary.byReason['small-cluster-merge'])}  files in ${count(summary.mergedClusters)} clusters`,
+    '',
+    `  Coupling vs folders ${summary.disagreementRate.toFixed(1)}% of files disagree`,
+    `    cross-directory   ${count(summary.crossDirectoryModules)} modules span more than one folder`,
+    `    split directories ${count(summary.splitDirectories)} folders span more than one module`,
+  ];
+
+  if (clustering.disagreements.length > 0) {
+    lines.push('');
+    for (const example of clustering.disagreements.slice(0, 3)) {
+      lines.push(`    e.g. ${example.file}`);
+      lines.push(`         lives in ${example.directory}, grouped with ${example.modulePluralityDirectory}`);
+    }
+  }
+
+  lines.push(
+    '',
+    `  Modularity ${summary.modularity.toFixed(3)} (diagnostic only, not a quality score)` +
+      `  ·  resolution ${summary.resolution}  ·  seed ${summary.seed}  ·  min cluster ${summary.minClusterSize}`,
+    '',
+  );
+
+  return lines.join('\n');
+}
+
 export function formatServing(url: string, opening: boolean): string {
   return [
     `  Blueprint ready at  ${url}`,
@@ -174,6 +211,7 @@ export function formatJson(
   parseSummary: ParseSummary,
   report: ParseReport,
   graph: DependencyGraph,
+  clustering: ClusteringResult,
 ): string {
   return JSON.stringify(
     {
@@ -201,6 +239,21 @@ export function formatJson(
         })),
         externals: graph.externals,
         unresolved: graph.unresolved,
+      },
+      clustering: {
+        summary: clustering.summary,
+        modules: clustering.modules,
+        edges: clustering.edges.map((edge) => ({
+          id: edge.id,
+          from: edge.from,
+          to: edge.to,
+          weight: edge.weight,
+          importCount: edge.importCount,
+          provenance: edge.provenance,
+        })),
+        assignments: clustering.assignments,
+        disagreements: clustering.disagreements,
+        merges: clustering.merges,
       },
     },
     null,

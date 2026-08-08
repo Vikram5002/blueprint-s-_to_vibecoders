@@ -5,6 +5,7 @@ import { parseRepository, summariseParse } from '../parser/parse-repository.js';
 import { summariseWalk } from '../ingest/summary.js';
 import { resolveRepository } from '../graph/resolve.js';
 import { buildDependencyGraph } from '../graph/build-graph.js';
+import { clusterRepository } from '../graph/cluster.js';
 import { encodeEdgeId } from '../graph/aggregate.js';
 import { startServer, LOOPBACK_HOST, type RunningServer } from './server.js';
 import type { AnalysisContext } from './context.js';
@@ -21,12 +22,14 @@ async function analyse(root: string): Promise<AnalysisContext> {
   if (!parsed.ok) throw new Error(parsed.error.message);
 
   const resolution = await resolveRepository({ root, files: parsed.value.files });
+  const graph = buildDependencyGraph({ files: parsed.value.files, resolution });
   return {
     root,
-    graph: buildDependencyGraph({ files: parsed.value.files, resolution }),
+    graph,
     ingest: summariseWalk(walked.value),
     parse: summariseParse(parsed.value),
     parseFailures: parsed.value.failures,
+    clustering: clusterRepository(graph, { minClusterSize: 1 }),
   };
 }
 
@@ -191,6 +194,91 @@ describe('GET /api/edge — the evidence trail', () => {
 
   it('404s on an unknown edge', async () => {
     expect((await get(`/api/edge/${encodeEdgeId('nope', 'nowhere')}`)).status).toBe(404);
+  });
+});
+
+describe('GET /api/modules', () => {
+  it('returns module nodes with positions and DERIVED provenance', async () => {
+    const { status, body } = await get('/api/modules');
+    expect(status).toBe(200);
+
+    const view = body as {
+      nodes: { id: string; provenance: string; llmLabelled: boolean; fileCount: number }[];
+      positions: Record<string, unknown>;
+      counts: { files: number };
+    };
+
+    expect(view.nodes.length).toBeGreaterThan(0);
+    for (const node of view.nodes) {
+      expect(node.provenance).toBe('DERIVED');
+      expect(node.llmLabelled).toBe(false);
+      expect(view.positions[node.id]).toBeDefined();
+    }
+
+    const totalFiles = view.nodes.reduce((sum, node) => sum + node.fileCount, 0);
+    expect(totalFiles).toBe(view.counts.files);
+  });
+
+  it('reports clustering diagnostics in the summary', async () => {
+    const { body } = await get('/api/summary');
+    const summary = body as { clustering: Record<string, unknown> };
+
+    expect(summary.clustering['moduleCount']).toBeGreaterThan(0);
+    expect(summary.clustering['modularity']).toBeDefined();
+    expect(summary.clustering['seed']).toBeDefined();
+    expect(summary.clustering['disagreementRate']).toBeDefined();
+  });
+});
+
+describe('GET /api/module', () => {
+  it('explains why each file is in the module', async () => {
+    const view = (await get('/api/modules')).body as { nodes: { id: string }[] };
+    const first = view.nodes[0]?.id ?? '';
+
+    const { status, body } = await get(`/api/module/${first}`);
+    expect(status).toBe(200);
+
+    const detail = body as {
+      files: { path: string; reason: string; explanation: string }[];
+    };
+    expect(detail.files.length).toBeGreaterThan(0);
+    for (const file of detail.files) {
+      expect(['import-coupling', 'directory-prior', 'small-cluster-merge']).toContain(file.reason);
+      expect(file.explanation.length).toBeGreaterThan(10);
+    }
+  });
+
+  it('404s on an unknown module', async () => {
+    expect((await get('/api/module/module-999')).status).toBe(404);
+  });
+});
+
+describe('GET /api/module-edge — evidence at module level', () => {
+  it('returns the real source lines behind a module-to-module edge', async () => {
+    const view = (await get('/api/modules')).body as { edges: { id: string }[] };
+    if (view.edges.length === 0) {
+      return; // fixture too small to produce inter-module edges
+    }
+
+    const { status, body } = await get(`/api/module-edge/${view.edges[0]?.id ?? ''}`);
+    expect(status).toBe(200);
+
+    const edge = body as { groups: { source: string; evidence: { file: string; line: number; snippet: string }[] }[] };
+    expect(edge.groups.length).toBeGreaterThan(0);
+
+    // Rule 3 has to hold at module level too, not just at file level.
+    for (const group of edge.groups) {
+      expect(group.evidence.length).toBeGreaterThan(0);
+      for (const item of group.evidence) {
+        expect(item.file).toBe(group.source);
+        expect(item.line).toBeGreaterThan(0);
+        expect(item.snippet.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('404s on an unknown module edge', async () => {
+    expect((await get('/api/module-edge/module-999->module-998')).status).toBe(404);
   });
 });
 
