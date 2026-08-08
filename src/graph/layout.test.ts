@@ -66,6 +66,43 @@ describe('computeLayout', () => {
     expect(new Set(ys).size).toBe(3);
   });
 
+  it('keeps isolated nodes clear of the ranked structure', () => {
+    // pyright has 34 directories with no dependencies at all. Ranking them
+    // alongside the 27 that do buries the structure the diagram exists to show.
+    const ids = ['a', 'b', ...Array.from({ length: 20 }, (_, i) => `lone${i}`)];
+    const positions = computeLayout(view(ids, [edge('a', 'b')]));
+
+    const rankedRight = Math.max(positions['a']!.x, positions['b']!.x);
+    for (let index = 0; index < 20; index += 1) {
+      expect(positions[`lone${index}`]!.x).toBeGreaterThan(rankedRight);
+    }
+  });
+
+  it('wraps a rank taller than the limit into sub-columns', () => {
+    const ids = Array.from({ length: 30 }, (_, index) => `n${String(index).padStart(2, '0')}`);
+    // One hub everything points at, so all 30 sources share rank 0.
+    const positions = computeLayout(view([...ids, 'hub'], ids.map((id) => edge(id, 'hub'))), {
+      maxRankHeight: 10,
+    });
+
+    const columnXs = new Set(ids.map((id) => positions[id]!.x));
+    expect(columnXs.size).toBe(3);
+
+    const rowYs = ids.map((id) => positions[id]!.y);
+    expect(new Set(rowYs).size).toBe(10);
+  });
+
+  it('does not let a wrapped rank overlap the next one', () => {
+    const sources = Array.from({ length: 25 }, (_, index) => `s${index}`);
+    const positions = computeLayout(view([...sources, 'hub', 'tail'], [...sources.map((id) => edge(id, 'hub')), edge('hub', 'tail')]), {
+      maxRankHeight: 10,
+    });
+
+    const widestSource = Math.max(...sources.map((id) => positions[id]!.x));
+    expect(positions['hub']!.x).toBeGreaterThan(widestSource);
+    expect(positions['tail']!.x).toBeGreaterThan(positions['hub']!.x);
+  });
+
   it('is deterministic across runs', () => {
     const graph = view(
       ['a', 'b', 'c', 'd', 'e'],
