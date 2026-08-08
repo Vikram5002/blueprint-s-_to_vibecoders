@@ -194,6 +194,29 @@ describe('monorepo workspaces', () => {
     expect(item.targetPath).toBe('tools/scripts/src/index.ts');
   }, 30_000);
 
+  it('follows a package.json exports map to source, not to a build output', async () => {
+    // Modern packages expose subpaths through `exports`. zod does exactly this
+    // and it accounted for 194 of its 195 unresolved imports before support
+    // landed. The dist/ targets do not exist in a fresh clone; src/ does.
+    const all = await resolveFixture('ts-monorepo');
+    const item = pick(all, 'packages/app/src/main.ts', '@myorg/exported');
+
+    expect(item.status).toBe('INTERNAL');
+    expect(item.targetPath).toBe('packages/exported/src/index.ts');
+  }, 30_000);
+
+  it('resolves an exports subpath', async () => {
+    const all = await resolveFixture('ts-monorepo');
+    const item = pick(all, 'packages/app/src/main.ts', '@myorg/exported/deep');
+    expect(item.targetPath).toBe('packages/exported/src/deep/index.ts');
+  }, 30_000);
+
+  it('resolves a wildcard exports subpath', async () => {
+    const all = await resolveFixture('ts-monorepo');
+    const item = pick(all, 'packages/app/src/main.ts', '@myorg/exported/locales/fr.js');
+    expect(item.targetPath).toBe('packages/exported/src/locales/fr.ts');
+  }, 30_000);
+
   it('keeps real dependencies external in a workspace repo', async () => {
     const all = await resolveFixture('ts-monorepo');
     const item = pick(all, 'packages/app/src/main.ts', 'lodash');

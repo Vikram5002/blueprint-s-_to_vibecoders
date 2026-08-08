@@ -11,6 +11,13 @@ import { readFile, readdir } from 'node:fs/promises';
 import { posix } from 'node:path';
 import { normaliseRepoPath } from './repo-index.js';
 
+export interface ExportEntry {
+  /** Subpath pattern from `exports`, e.g. `.`, `./v4`, `./locales/*`. */
+  readonly pattern: string;
+  /** Target paths from every condition, source-looking ones first. */
+  readonly targets: readonly string[];
+}
+
 export interface WorkspacePackage {
   /** Name from the package's package.json, e.g. `@myorg/utils`. */
   readonly name: string;
@@ -18,6 +25,42 @@ export interface WorkspacePackage {
   readonly directory: string;
   /** Entry-point candidates from package.json, most specific first. */
   readonly entryCandidates: readonly string[];
+  /** Parsed `exports` subpath map, empty when the package has none. */
+  readonly exports: readonly ExportEntry[];
+}
+
+/**
+ * Applies an `exports` map to a subpath, returning package-relative candidates.
+ * `subpath` is '' for the package root. Exact patterns beat wildcards, and the
+ * longest wildcard prefix wins, as Node resolves them.
+ */
+export function applyExportsMap(pkg: WorkspacePackage, subpath: string): string[] {
+  const request = subpath === '' ? '.' : `./${subpath}`;
+
+  const exact = pkg.exports.find((entry) => entry.pattern === request);
+  if (exact !== undefined) {
+    return [...exact.targets];
+  }
+
+  let best: { entry: ExportEntry; wildcard: string; weight: number } | null = null;
+  for (const entry of pkg.exports) {
+    const star = entry.pattern.indexOf('*');
+    if (star === -1) {
+      continue;
+    }
+    const prefix = entry.pattern.slice(0, star);
+    const suffix = entry.pattern.slice(star + 1);
+    if (
+      request.startsWith(prefix) &&
+      request.endsWith(suffix) &&
+      request.length >= prefix.length + suffix.length &&
+      (best === null || prefix.length > best.weight)
+    ) {
+      best = { entry, wildcard: request.slice(prefix.length, request.length - suffix.length), weight: prefix.length };
+    }
+  }
+
+  return best === null ? [] : best.entry.targets.map((target) => target.replace('*', best.wildcard));
 }
 
 export type WorkspaceIndex = ReadonlyMap<string, WorkspacePackage>;
@@ -38,6 +81,7 @@ export async function discoverWorkspaces(root: string): Promise<WorkspaceIndex> 
         name: manifest.name,
         directory,
         entryCandidates: manifest.entryCandidates,
+        exports: manifest.exports,
       });
     }
   }
@@ -162,6 +206,61 @@ async function expandGlobs(root: string, globs: readonly string[]): Promise<stri
 interface PackageManifest {
   readonly name: string | undefined;
   readonly entryCandidates: readonly string[];
+  readonly exports: readonly ExportEntry[];
+}
+
+/**
+ * Flattens an `exports` map into patterns and candidate targets.
+ *
+ * Conditions are not evaluated the way a runtime would. This tool wants the
+ * SOURCE a subpath stands for, and published `types`/`import`/`require` targets
+ * usually point into a dist/ directory that does not exist in a fresh clone.
+ * So every condition's target is kept, with source-looking paths ordered first,
+ * and the resolver takes whichever actually exists.
+ */
+function parseExports(value: unknown): ExportEntry[] {
+  if (typeof value === 'string') {
+    return [{ pattern: '.', targets: [value] }];
+  }
+  if (typeof value !== 'object' || value === null) {
+    return [];
+  }
+
+  const entries: ExportEntry[] = [];
+  for (const [key, target] of Object.entries(value)) {
+    // A conditions object at the top level means the whole package, not a subpath.
+    const pattern = key.startsWith('.') ? key : '.';
+    const targets = collectConditionTargets(key.startsWith('.') ? target : value);
+    if (targets.length > 0) {
+      entries.push({ pattern, targets });
+    }
+    if (!key.startsWith('.')) {
+      break; // the whole object was one conditions map
+    }
+  }
+  return entries;
+}
+
+function collectConditionTargets(value: unknown): string[] {
+  if (typeof value === 'string') {
+    return [value];
+  }
+  if (typeof value !== 'object' || value === null) {
+    return [];
+  }
+
+  const targets = Object.values(value).flatMap((nested) => collectConditionTargets(nested));
+  const unique = [...new Set(targets)];
+
+  // Prefer a path that looks like source over one that looks like a build output.
+  return unique.sort((a, b) => sourceRank(a) - sourceRank(b));
+}
+
+function sourceRank(target: string): number {
+  if (/(^|\/)src\//.test(target)) return 0;
+  if (/\.(ts|tsx|mts|cts)$/.test(target)) return 1;
+  if (/(^|\/)(dist|build|lib|out)\//.test(target)) return 3;
+  return 2;
 }
 
 async function readPackageJson(root: string, directory: string): Promise<PackageManifest | null> {
@@ -184,7 +283,11 @@ async function readPackageJson(root: string, directory: string): Promise<Package
     .map((field) => manifest[field])
     .filter((value): value is string => typeof value === 'string');
 
-  return { name, entryCandidates: [...entryCandidates, 'index', 'src/index'] };
+  return {
+    name,
+    entryCandidates: [...entryCandidates, 'index', 'src/index'],
+    exports: parseExports(manifest['exports']),
+  };
 }
 
 async function readRepoFile(root: string, relativePath: string): Promise<string | null> {

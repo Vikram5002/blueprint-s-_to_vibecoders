@@ -17,7 +17,7 @@ import { existsSync } from 'node:fs';
 import { posix } from 'node:path';
 import { joinFromFile, resolveModulePath, type RepoIndex } from './repo-index.js';
 import { applyPathAliases, type TsconfigPaths } from './tsconfig.js';
-import { matchWorkspacePackage, type WorkspaceIndex } from './workspaces.js';
+import { applyExportsMap, matchWorkspacePackage, type WorkspaceIndex } from './workspaces.js';
 import type { ImportRecord } from '../types/symbols.js';
 import type { ResolvedImport } from '../types/resolution.js';
 
@@ -94,6 +94,15 @@ function resolveWorkspace(record: ImportRecord, context: TsResolveContext): Reso
   }
 
   const { pkg, subpath } = match;
+
+  // `exports` is authoritative when present: it is how the package says its
+  // subpaths map onto files, and guessing would contradict it.
+  for (const candidate of applyExportsMap(pkg, subpath)) {
+    const target = resolveModulePath(`${pkg.directory}/${candidate}`, context.index);
+    if (target !== null) {
+      return internal(record, target);
+    }
+  }
 
   if (subpath !== '') {
     const target = resolveModulePath(`${pkg.directory}/${subpath}`, context.index);

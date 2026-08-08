@@ -1,0 +1,23 @@
+{
+  "name": "@myorg/exported",
+  "version": "1.0.0",
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.cts",
+  "exports": {
+    ".": {
+      "@myorg/source": "./src/index.ts",
+      "types": "./dist/index.d.cts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./deep": {
+      "@myorg/source": "./src/deep/index.ts",
+      "import": "./dist/deep/index.js"
+    },
+    "./locales/*": {
+      "@myorg/source": "./src/locales/*",
+      "import": "./dist/locales/*"
+    },
+    "./package.json": "./package.json"
+  }
+}
