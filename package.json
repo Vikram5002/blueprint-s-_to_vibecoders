@@ -15,7 +15,9 @@
   ],
   "scripts": {
     "dev": "tsc --watch",
-    "build": "tsc",
+    "build": "tsc && npm run build:ui && node scripts/copy-static.mjs",
+    "build:server": "tsc",
+    "build:ui": "npm --prefix ui run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . && tsc --noEmit"

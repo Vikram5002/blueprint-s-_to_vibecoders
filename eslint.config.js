@@ -12,6 +12,8 @@ export const config = tseslint.config(
       'coverage/**',
       'src/parser/fixtures/**',
       'src/graph/fixtures/**',
+      // Built UI bundle, not source.
+      'src/server/static/**',
     ],
   },
   js.configs.recommended,
@@ -94,6 +96,14 @@ export const config = tseslint.config(
     files: ['**/*.test.ts'],
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',
+    },
+  },
+  {
+    // Plain Node build scripts: no TypeScript, so no-undef is live and needs
+    // the runtime globals declared.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly', URL: 'readonly' },
     },
   },
 );
