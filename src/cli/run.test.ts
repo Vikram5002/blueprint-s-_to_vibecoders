@@ -36,7 +36,7 @@ describe('runCli', () => {
     const root = await makeRepo({ 'src/index.ts': '', 'main.py': '', 'README.md': '' });
     const { io, out } = captureIo();
 
-    const code = await runCli([root], io, '0.1.0');
+    const code = await runCli([root, '--no-serve'], io, '0.1.0');
 
     expect(code).toBe(EXIT_OK);
     const text = out.join('\n');
@@ -65,7 +65,7 @@ describe('runCli', () => {
     const root = await makeRepo({ 'a.ts': '', 'b/c.py': '' });
     const { io, out } = captureIo();
 
-    await runCli([root, '--verbose'], io, '0.1.0');
+    await runCli([root, '--verbose', '--no-serve'], io, '0.1.0');
 
     const text = out.join('\n');
     expect(text).toContain('a.ts');

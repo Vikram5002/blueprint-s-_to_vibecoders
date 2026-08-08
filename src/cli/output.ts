@@ -26,9 +26,10 @@ export function formatHelp(binaryName: string): string {
     '  path             Repository to analyse (default: current directory)',
     '',
     'Options:',
-    '  --json           Emit machine-readable JSON on stdout',
+    '  --json           Emit machine-readable JSON on stdout (implies --no-serve)',
     '  -v, --verbose    Print progress lines and the full file list',
-    '  --no-open        Do not open a browser (no effect until the server lands)',
+    '  --no-open        Start the server but do not open a browser',
+    '  --no-serve       Print the summary and exit; do not start the server',
     '  -h, --help       Show this help',
     '      --version    Show the version',
     '',
@@ -103,6 +104,16 @@ export function formatParseSummary(summary: ParseSummary, failures: readonly Par
 
   lines.push('', `  Parsed in ${formatDuration(summary.durationMs)}`, '');
   return lines.join('\n');
+}
+
+export function formatServing(url: string, opening: boolean): string {
+  return [
+    `  Blueprint ready at  ${url}`,
+    opening ? '  Opening your browser…' : '  (browser not opened)',
+    '',
+    '  Click an edge to see the source lines behind it. Ctrl+C to stop.',
+    '',
+  ].join('\n');
 }
 
 export function formatGraphSummary(graph: DependencyGraph): string {

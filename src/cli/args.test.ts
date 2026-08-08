@@ -17,9 +17,29 @@ describe('parseArguments', () => {
       json: false,
       verbose: false,
       open: true,
+      serve: true,
       help: false,
       version: false,
     });
+  });
+
+  it('does not serve or open when emitting JSON', () => {
+    // --json exists to be piped; holding the terminal open would defeat it.
+    const options = parse(['--json']);
+    expect(options.serve).toBe(false);
+    expect(options.open).toBe(false);
+  });
+
+  it('serves without opening a browser for --no-open', () => {
+    const options = parse(['--no-open']);
+    expect(options.serve).toBe(true);
+    expect(options.open).toBe(false);
+  });
+
+  it('neither serves nor opens for --no-serve', () => {
+    const options = parse(['--no-serve']);
+    expect(options.serve).toBe(false);
+    expect(options.open).toBe(false);
   });
 
   it('takes the target path as a positional argument', () => {

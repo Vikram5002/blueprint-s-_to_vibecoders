@@ -12,10 +12,13 @@ import {
   formatParseProgress,
   formatParseSummary,
   formatProgress,
+  formatServing,
   formatSummary,
 } from './output.js';
+import { openBrowser } from './open-browser.js';
 import { resolveRepository } from '../graph/resolve.js';
 import { buildDependencyGraph } from '../graph/build-graph.js';
+import { startServer, type RunningServer } from '../server/server.js';
 import { walkRepository } from '../ingest/walk.js';
 import { summariseWalk } from '../ingest/summary.js';
 import { parseRepository, summariseParse } from '../parser/parse-repository.js';
@@ -105,5 +108,42 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
   io.writeOut(formatParseSummary(parseSummary, parseResult.value.failures));
   io.writeOut(formatGraphSummary(graph));
 
+  if (!options.serve) {
+    return EXIT_OK;
+  }
+
+  const server = await startServer({
+    root: result.root,
+    graph,
+    ingest: summary,
+    parse: parseSummary,
+    parseFailures: parseResult.value.failures,
+  });
+
+  io.writeOut(formatServing(server.url, options.open));
+  if (options.open) {
+    openBrowser(server.url);
+  }
+
+  await waitForShutdown(server, io);
   return EXIT_OK;
+}
+
+/**
+ * Holds the process open until Ctrl+C, then closes the listener so the port is
+ * released rather than left to the OS on exit.
+ */
+async function waitForShutdown(server: RunningServer, io: CliIo): Promise<void> {
+  await new Promise<void>((resolve) => {
+    const shutdown = (): void => {
+      process.off('SIGINT', shutdown);
+      process.off('SIGTERM', shutdown);
+      io.writeErr('');
+      io.writeErr('Shutting down.');
+      void server.close().then(resolve, resolve);
+    };
+
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
+  });
 }
