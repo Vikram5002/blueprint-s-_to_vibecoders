@@ -21,6 +21,7 @@
     "lint": "eslint . && tsc --noEmit"
   },
   "dependencies": {
+    "graphology": "^0.26.0",
     "ignore": "^7.0.6",
     "web-tree-sitter": "^0.26.11"
   },
