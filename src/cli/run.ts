@@ -6,6 +6,7 @@ import { parseArguments } from './args.js';
 import {
   formatError,
   formatFileList,
+  formatGraphSummary,
   formatHelp,
   formatJson,
   formatParseProgress,
@@ -13,6 +14,8 @@ import {
   formatProgress,
   formatSummary,
 } from './output.js';
+import { resolveRepository } from '../graph/resolve.js';
+import { buildDependencyGraph } from '../graph/build-graph.js';
 import { walkRepository } from '../ingest/walk.js';
 import { summariseWalk } from '../ingest/summary.js';
 import { parseRepository, summariseParse } from '../parser/parse-repository.js';
@@ -87,8 +90,11 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
 
   const parseSummary = summariseParse(parseResult.value);
 
+  const resolution = await resolveRepository({ root: result.root, files: parseResult.value.files });
+  const graph = buildDependencyGraph({ files: parseResult.value.files, resolution });
+
   if (options.json) {
-    io.writeOut(formatJson(summary, result.files, result.stats.errors, parseSummary, parseResult.value));
+    io.writeOut(formatJson(summary, result.files, result.stats.errors, parseSummary, parseResult.value, graph));
     return EXIT_OK;
   }
 
@@ -97,6 +103,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
   }
   io.writeOut(formatSummary(summary, result.stats.errors));
   io.writeOut(formatParseSummary(parseSummary, parseResult.value.failures));
+  io.writeOut(formatGraphSummary(graph));
 
   return EXIT_OK;
 }

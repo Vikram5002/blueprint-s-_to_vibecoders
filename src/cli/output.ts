@@ -7,6 +7,8 @@ import type { IngestSummary } from '../ingest/summary.js';
 import type { Language } from '../ingest/language.js';
 import type { ParseSummary } from '../parser/parse-repository.js';
 import type { ParseFailure, ParseReport } from '../types/symbols.js';
+import type { ResolutionSummary } from '../types/resolution.js';
+import type { DependencyGraph } from '../graph/build-graph.js';
 
 const LANGUAGE_LABELS: Readonly<Record<Language, string>> = {
   typescript: 'TypeScript',
@@ -103,12 +105,64 @@ export function formatParseSummary(summary: ParseSummary, failures: readonly Par
   return lines.join('\n');
 }
 
+export function formatGraphSummary(graph: DependencyGraph): string {
+  const { summary } = graph;
+  const lines = [
+    `  Graph               ${count(graph.graph.order)} nodes, ${count(graph.graph.size)} edges`,
+    `  Imports             ${count(summary.total)}`,
+    `    internal          ${count(summary.internal)}`,
+    `    external          ${count(summary.external)}${externalDetail(summary)}`,
+    `    unresolved        ${count(summary.unresolved)}`,
+    '',
+    `  Resolution rate     ${summary.resolutionRate.toFixed(1)}%`,
+  ];
+
+  if (summary.unresolved > 0) {
+    lines.push('', '  Unresolved by reason');
+    for (const [reason, total] of sortedReasons(summary.unresolvedByReason)) {
+      lines.push(`    ${reason.padEnd(24)}${count(total)}`);
+    }
+    lines.push(...unresolvedExamples(graph));
+  }
+
+  lines.push('');
+  return lines.join('\n');
+}
+
+/** A handful of real cases makes a reason code actionable rather than abstract. */
+function unresolvedExamples(graph: DependencyGraph): string[] {
+  const seen = new Set<string>();
+  const examples: string[] = [];
+
+  for (const item of graph.unresolved) {
+    if (seen.has(item.reason) || examples.length >= 3) {
+      continue;
+    }
+    seen.add(item.reason);
+    examples.push(`    e.g. ${item.specifier}  (${item.evidence.file}:${item.evidence.line})`);
+  }
+
+  return examples.length === 0 ? [] : ['', ...examples];
+}
+
+function externalDetail(summary: ResolutionSummary): string {
+  const parts = sortedReasons(summary.externalByReason).map(([reason, total]) => `${reason} ${count(total)}`);
+  return parts.length === 0 ? '' : `  (${parts.join(', ')})`;
+}
+
+function sortedReasons(counts: Readonly<Partial<Record<string, number>>>): [string, number][] {
+  return Object.entries(counts)
+    .filter((entry): entry is [string, number] => entry[1] !== undefined)
+    .sort((a, b) => b[1] - a[1]);
+}
+
 export function formatJson(
   summary: IngestSummary,
   files: readonly DiscoveredFile[],
   errors: readonly WalkError[],
   parseSummary: ParseSummary,
   report: ParseReport,
+  graph: DependencyGraph,
 ): string {
   return JSON.stringify(
     {
@@ -125,6 +179,17 @@ export function formatJson(
         failures: report.failures,
         skipped: report.skipped,
         files: report.files,
+      },
+      graph: {
+        summary: graph.summary,
+        nodes: graph.graph.mapNodes((_id, attributes) => attributes),
+        edges: graph.graph.mapEdges((_id, attributes, source, target) => ({
+          from: source,
+          to: target,
+          ...attributes,
+        })),
+        externals: graph.externals,
+        unresolved: graph.unresolved,
       },
     },
     null,
