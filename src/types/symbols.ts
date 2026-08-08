@@ -23,7 +23,11 @@ export type ImportKind =
   /** `import('...')` */
   | 'dynamic-import'
   /** `export ... from '...'` — a re-export is also a dependency */
-  | 'export-from';
+  | 'export-from'
+  /** Python `import x` / `import x.y as z` */
+  | 'python-import'
+  /** Python `from x import y`, including relative forms */
+  | 'python-from';
 
 export interface ImportedName {
   /** The name as exported by the target module. `default` for a default import. */
@@ -35,9 +39,22 @@ export interface ImportedName {
 }
 
 export interface ImportRecord {
-  /** Raw, unresolved module specifier exactly as written. */
+  /**
+   * Raw, unresolved module specifier.
+   *
+   * For Python relative imports the leading dots are NOT part of this string —
+   * they are counted in `relativeLevel`. `from ..pkg import x` gives a specifier
+   * of `pkg` and a level of 2; `from . import x` gives an empty specifier and a
+   * level of 1.
+   */
   readonly specifier: string;
   readonly kind: ImportKind;
+  /**
+   * Number of leading dots on a Python relative import; 0 for everything else.
+   * The resolver needs this and it cannot be recovered from the specifier once
+   * the dots have been stripped.
+   */
+  readonly relativeLevel: number;
   /** Empty for side-effect imports, namespace imports and star re-exports. */
   readonly names: readonly ImportedName[];
   /** `import * as ns` or `export * as ns`. */

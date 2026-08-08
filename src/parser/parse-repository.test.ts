@@ -70,10 +70,10 @@ describe('parseRepository', () => {
     expect(bad?.imports.map((i) => i.specifier)).toEqual(['./y']);
   }, 30_000);
 
-  it('skips Python rather than failing on it', async () => {
+  it('parses Python alongside TypeScript', async () => {
     const root = await makeRepo({
       'app.ts': `export const a = 1;\n`,
-      'script.py': `import os\n`,
+      'script.py': `import os\nfrom .local import thing\n`,
     });
 
     const report = await parseRepository({ files: await walkedFiles(root) });
@@ -81,10 +81,14 @@ describe('parseRepository', () => {
     if (!report.ok) return;
 
     const summary = summariseParse(report.value);
-    expect(summary.filesParsed).toBe(1);
-    expect(summary.filesSkipped).toBe(1);
+    expect(summary.filesParsed).toBe(2);
+    expect(summary.filesSkipped).toBe(0);
     expect(summary.filesFailed).toBe(0);
-    expect(report.value.skipped[0]).toMatchObject({ path: 'script.py', reason: 'no-grammar-yet' });
+
+    const python = report.value.files.find((file) => file.path === 'script.py');
+    expect(python?.language).toBe('python');
+    expect(python?.imports.map((i) => i.specifier)).toEqual(['os', 'local']);
+    expect(python?.imports[1]?.relativeLevel).toBe(1);
   }, 30_000);
 
   it('records an unreadable file as a failure without throwing', async () => {

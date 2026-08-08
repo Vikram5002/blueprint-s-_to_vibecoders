@@ -73,6 +73,7 @@ function collectImportStatement(node: Node, filePath: string, out: ImportRecord[
     out.push({
       specifier,
       kind: 'import-require',
+      relativeLevel: 0,
       names: [{ name: '*', alias: binding?.text ?? null, isType: false }],
       isNamespace: false,
       isDefault: false,
@@ -88,6 +89,7 @@ function collectImportStatement(node: Node, filePath: string, out: ImportRecord[
   out.push({
     specifier,
     kind: hasUnnamedChild(node, 'type') ? 'import-type' : 'import',
+    relativeLevel: 0,
     names,
     isNamespace: clause !== null && namedChildOfType(clause, 'namespace_import') !== null,
     isDefault: clause !== null && namedChildOfType(clause, 'identifier') !== null,
@@ -160,6 +162,7 @@ function collectCallExpression(node: Node, filePath: string, out: ImportRecord[]
   out.push({
     specifier,
     kind: isRequire ? 'require' : 'dynamic-import',
+    relativeLevel: 0,
     names: [],
     isNamespace: false,
     isDefault: false,
@@ -227,6 +230,7 @@ function collectReExport(
   imports.push({
     specifier,
     kind: 'export-from',
+    relativeLevel: 0,
     names,
     isNamespace: namespaceExport !== null,
     isDefault: false,

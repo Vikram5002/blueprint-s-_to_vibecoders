@@ -13,11 +13,12 @@ import { Parser } from 'web-tree-sitter';
 import { err, ok, type Result } from '../types/result.js';
 import { detectLanguage } from '../ingest/language.js';
 import { extractTypeScriptSymbols } from './extract-ts.js';
+import { extractPythonSymbols } from './extract-python.js';
 import { grammarKeyForPath, loadGrammar, type GrammarKey, type GrammarLoadError } from './grammars.js';
 import type { ParseFailure, ParsedFile } from '../types/symbols.js';
 
-/** Grammars with a working extractor. Python arrives in Week 3. */
-export const PARSEABLE_GRAMMARS: readonly GrammarKey[] = ['typescript', 'tsx', 'javascript'];
+/** Grammars with a working extractor. */
+export const PARSEABLE_GRAMMARS: readonly GrammarKey[] = ['typescript', 'tsx', 'javascript', 'python'];
 
 export interface ParseInput {
   /** Repo-relative path, forward slashes. Used as evidence, and to pick a grammar. */
@@ -78,7 +79,8 @@ function parseWith(parsers: Map<GrammarKey, Parser>, input: ParseInput): Result<
     }
 
     try {
-      const { imports, exports } = extractTypeScriptSymbols(tree.rootNode, input.path);
+      const extract = key === 'python' ? extractPythonSymbols : extractTypeScriptSymbols;
+      const { imports, exports } = extract(tree.rootNode, input.path);
       return ok({
         path: input.path,
         language,

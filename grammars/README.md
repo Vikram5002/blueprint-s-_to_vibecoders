@@ -25,7 +25,16 @@ version **0.3.1**, `wasm/` directory, unmodified.
 | `tree-sitter-javascript.wasm` | 0.39 MB | [tree-sitter-javascript](https://github.com/tree-sitter/tree-sitter-javascript) | MIT |
 | `tree-sitter-python.wasm` | 0.44 MB | [tree-sitter-python](https://github.com/tree-sitter/tree-sitter-python) | MIT |
 
-`tree-sitter-python.wasm` is vendored now but not used until Week 3.
+### ABI compatibility
+
+All four grammars were verified to load against `web-tree-sitter` 0.26 before
+being trusted, and report **ABI version 15**. `src/parser/grammars.test.ts`
+loads every one of them on each test run, so an incompatible replacement fails
+the suite rather than failing at runtime on a user's repository.
+
+This check is not academic. The alternative bundle noted above loads fine in
+isolation but throws inside `Language.load` with 0.26 — its grammars were
+compiled against an older ABI.
 
 ## Known grammar gaps
 

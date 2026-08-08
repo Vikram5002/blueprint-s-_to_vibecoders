@@ -86,7 +86,7 @@ export function formatParseSummary(summary: ParseSummary, failures: readonly Par
   ];
 
   if (summary.filesSkipped > 0) {
-    lines.push(`  Not parsed yet      ${count(summary.filesSkipped)}  (Python lands in Week 3)`);
+    lines.push(`  No extractor        ${count(summary.filesSkipped)}`);
   }
   if (summary.filesWithSyntaxErrors > 0) {
     lines.push(`  Syntax errors       ${count(summary.filesWithSyntaxErrors)}  (recovered, symbols are partial)`);
