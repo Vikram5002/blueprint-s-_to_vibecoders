@@ -21,7 +21,9 @@
     "lint": "eslint . && tsc --noEmit"
   },
   "dependencies": {
+    "@hono/node-server": "^2.1.0",
     "graphology": "^0.26.0",
+    "hono": "^4.13.1",
     "ignore": "^7.0.6",
     "web-tree-sitter": "^0.26.11"
   },

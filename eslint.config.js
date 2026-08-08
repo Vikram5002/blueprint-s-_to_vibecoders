@@ -82,6 +82,15 @@ export const config = tseslint.config(
     },
   },
   {
+    // Server tests drive the API by calling their own loopback server. That is
+    // not the outbound network access rule 6 exists to prevent, and the
+    // exemption is kept to test files so the server itself stays covered.
+    files: ['src/server/**/*.test.ts'],
+    rules: {
+      'no-restricted-globals': 'off',
+    },
+  },
+  {
     files: ['**/*.test.ts'],
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',
