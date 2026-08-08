@@ -135,6 +135,22 @@ describe('GET /api/node', () => {
   it('404s on an unknown node', async () => {
     expect((await get('/api/node/does/not/exist')).status).toBe(404);
   });
+
+  it('reads an empty node path as the repository root', async () => {
+    // The root node's id is ".", which browsers strip from a URL path — and
+    // Chrome strips "%2E" too, so the client cannot preserve it. The request
+    // arrives as /api/node/ and must resolve rather than 404. Clicking the root
+    // directory was broken by exactly this until a browser run caught it.
+    const response = await fetch(`${server.url}/api/graph`);
+    const graph = (await response.json()) as { nodes: { id: string }[] };
+    if (!graph.nodes.some((node) => node.id === '.')) {
+      return; // this fixture has no files at its root
+    }
+
+    const { status, body } = await get('/api/node/');
+    expect(status).toBe(200);
+    expect((body as { id: string }).id).toBe('.');
+  });
 });
 
 describe('GET /api/edge — the evidence trail', () => {
@@ -183,6 +199,13 @@ describe('static serving', () => {
     const { status } = await get('/some/client/route');
     // 200 when the UI is built, 503 with an explanation when it is not.
     expect([200, 503]).toContain(status);
+  });
+
+  it('404s a missing asset instead of returning the HTML shell', async () => {
+    // Serving index.html for a missing .js hands the browser HTML where it
+    // asked for JavaScript, which shows up as a MIME error rather than a 404.
+    const { status } = await get('/assets/does-not-exist.js');
+    expect([404, 503]).toContain(status);
   });
 
   it('refuses to serve files outside the static root', async () => {

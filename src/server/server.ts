@@ -17,7 +17,7 @@ import {
   buildNodeResponse,
   buildSummaryResponse,
 } from './api.js';
-import type { ViewLevel } from '../graph/aggregate.js';
+import { ROOT_DIRECTORY, type ViewLevel } from '../graph/aggregate.js';
 import type { AnalysisContext } from './context.js';
 
 export const LOOPBACK_HOST = '127.0.0.1';
@@ -73,7 +73,13 @@ export function createApp(context: AnalysisContext): Hono {
     if (served !== null) {
       return c.body(served.body, 200, { 'content-type': served.contentType });
     }
-    return c.text(MISSING_UI_MESSAGE, 503, { 'content-type': 'text/plain; charset=utf-8' });
+
+    // Distinguish "there is no UI" from "that one file is not there". A 503 on
+    // a missing favicon would send someone looking for a broken build.
+    const uiBuilt = (await readStaticFile('index.html')) !== null;
+    return uiBuilt
+      ? c.text(`Not found: ${c.req.path}`, 404, { 'content-type': 'text/plain; charset=utf-8' })
+      : c.text(MISSING_UI_MESSAGE, 503, { 'content-type': 'text/plain; charset=utf-8' });
   });
 
   return app;
@@ -99,13 +105,25 @@ export async function startServer(context: AnalysisContext): Promise<RunningServ
   };
 }
 
-/** Node ids are repo-relative paths, so they arrive as the wildcard remainder. */
+/**
+ * Node ids are repo-relative paths, so they arrive as the wildcard remainder.
+ *
+ * An empty remainder means the repository-root node, whose id is `.`. Browsers
+ * normalise a `.` path segment away before the request is sent, and Chrome does
+ * it to `%2E` too, so encoding on the client cannot preserve it. Interpreting
+ * the empty remainder here is the one place that works regardless of client.
+ */
 function decodeIdFromPath(path: string, prefix: string): string {
   const raw = path.startsWith(prefix) ? path.slice(prefix.length) : path;
+  const decoded = safeDecode(raw);
+  return decoded === '' ? ROOT_DIRECTORY : decoded;
+}
+
+function safeDecode(value: string): string {
   try {
-    return decodeURIComponent(raw);
+    return decodeURIComponent(value);
   } catch {
-    return raw;
+    return value;
   }
 }
 
@@ -126,7 +144,19 @@ async function serveStatic(requestPath: string): Promise<StaticFile | null> {
   if (direct !== null) {
     return direct;
   }
+
+  // A missing asset is a missing asset. Falling back to index.html for these
+  // hands the browser HTML where it asked for JavaScript, which surfaces as a
+  // confusing MIME error instead of an honest 404.
+  if (isAssetRequest(relative)) {
+    return null;
+  }
+
   return readStaticFile('index.html');
+}
+
+function isAssetRequest(relativePath: string): boolean {
+  return relativePath.startsWith('assets/') || /\.(js|css|map|svg|png|ico|woff2?)$/.test(relativePath);
 }
 
 async function readStaticFile(relativePath: string): Promise<StaticFile | null> {
