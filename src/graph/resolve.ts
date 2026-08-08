@@ -46,7 +46,7 @@ export async function resolveRepository(options: ResolveRepositoryOptions): Prom
       imports.push(
         file.language === 'python'
           ? resolvePythonImport(record, python)
-          : resolveTypeScriptImport(record, { index, workspaces, tsconfigFor }),
+          : resolveTypeScriptImport(record, { index, workspaces, tsconfigFor, root: options.root }),
       );
     }
   }

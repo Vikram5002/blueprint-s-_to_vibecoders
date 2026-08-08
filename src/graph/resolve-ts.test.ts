@@ -93,6 +93,15 @@ describe('ts-basic: relative resolution and extension inference', () => {
     expect(item.targetPath).toBeNull();
   });
 
+  it('distinguishes a real non-source file from a missing one', () => {
+    // package.json exists but is not a source file the walker indexes. Calling
+    // that "missing" would send someone hunting for a resolver bug that is not
+    // there; it gets its own reason instead.
+    const item = pick(all, FILE, '../package.json');
+    expect(item.status).toBe('UNRESOLVED');
+    expect(item.reason).toBe('target-not-in-repo');
+  });
+
   it('classifies a bare specifier as external', () => {
     const item = pick(all, FILE, 'react');
     expect(item.status).toBe('EXTERNAL');

@@ -13,6 +13,8 @@
  * calling it external would hide a resolver bug behind a healthy-looking rate.
  */
 import { builtinModules } from 'node:module';
+import { existsSync } from 'node:fs';
+import { posix } from 'node:path';
 import { joinFromFile, resolveModulePath, type RepoIndex } from './repo-index.js';
 import { applyPathAliases, type TsconfigPaths } from './tsconfig.js';
 import { matchWorkspacePackage, type WorkspaceIndex } from './workspaces.js';
@@ -26,6 +28,8 @@ export interface TsResolveContext {
   readonly workspaces: WorkspaceIndex;
   /** tsconfig nearest to the importing file, already merged through `extends`. */
   readonly tsconfigFor: (importingFile: string) => TsconfigPaths;
+  /** Absolute repository root, used only to distinguish a missing file from an untracked one. */
+  readonly root: string;
 }
 
 export function resolveTypeScriptImport(record: ImportRecord, context: TsResolveContext): ResolvedImport {
@@ -33,7 +37,7 @@ export function resolveTypeScriptImport(record: ImportRecord, context: TsResolve
   const importingFile = record.evidence.file;
 
   if (isRelative(specifier)) {
-    return resolveRelative(record, importingFile, context.index);
+    return resolveRelative(record, importingFile, context);
   }
 
   const workspaceHit = resolveWorkspace(record, context);
@@ -53,13 +57,34 @@ function isRelative(specifier: string): boolean {
   return specifier.startsWith('./') || specifier.startsWith('../') || specifier === '.' || specifier === '..';
 }
 
-function resolveRelative(record: ImportRecord, importingFile: string, index: RepoIndex): ResolvedImport {
+function resolveRelative(
+  record: ImportRecord,
+  importingFile: string,
+  context: TsResolveContext,
+): ResolvedImport {
   const base = joinFromFile(importingFile, record.specifier);
-  const target = base === null ? null : resolveModulePath(base, index);
+  if (base === null) {
+    return unresolved(record, 'relative-target-missing');
+  }
 
-  return target === null
-    ? unresolved(record, 'relative-target-missing')
-    : internal(record, target);
+  const target = resolveModulePath(base, context.index);
+  if (target !== null) {
+    return internal(record, target);
+  }
+
+  // A relative import of a real file that the walker does not index — a JSON
+  // manifest, a stylesheet, an asset. Reporting that as "missing" would be
+  // wrong: we know exactly what it is, it simply has no node in a graph of
+  // source files. Kept out of the rate rather than counted as a success.
+  if (existsInRepo(context.root, base)) {
+    return unresolved(record, 'target-not-in-repo');
+  }
+
+  return unresolved(record, 'relative-target-missing');
+}
+
+function existsInRepo(root: string, repoRelativePath: string): boolean {
+  return existsSync(posix.join(root.replace(/\\/g, '/'), repoRelativePath));
 }
 
 function resolveWorkspace(record: ImportRecord, context: TsResolveContext): ResolvedImport | null {
@@ -135,6 +160,9 @@ function external(record: ImportRecord, name: string, reason: 'npm-package' | 'n
   return { record, status: 'EXTERNAL', targetPath: null, externalName: name, reason };
 }
 
-function unresolved(record: ImportRecord, reason: 'relative-target-missing' | 'alias-target-missing'): ResolvedImport {
+function unresolved(
+  record: ImportRecord,
+  reason: 'relative-target-missing' | 'alias-target-missing' | 'target-not-in-repo',
+): ResolvedImport {
   return { record, status: 'UNRESOLVED', targetPath: null, externalName: null, reason };
 }
