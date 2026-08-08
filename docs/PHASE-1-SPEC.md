@@ -144,20 +144,54 @@ workspaces resolve to real files, and `exports` maps are followed to source rath
 
 **Deliverable:** Milestone 1. The browser shows the real graph.
 
-- [ ] Local HTTP server bound to `127.0.0.1` on a free port
-- [ ] JSON API: `GET /api/graph` returns nodes and edges; `GET /api/node/:id` returns detail
+- [x] Local HTTP server bound to `127.0.0.1` on a free port
+- [x] JSON API: `GET /api/graph` returns nodes and edges; `GET /api/node/:id` returns detail
       including evidence
-- [ ] React + Vite app in `ui/`, built into `src/server/static`
-- [ ] React Flow rendering with:
-  - [ ] Directory-based initial layout (full clustering comes in Phase 2)
-  - [ ] Click a node → side panel with file list and its edges
-  - [ ] Click an edge → show the evidence lines that produced it
-  - [ ] Zoom, pan, fit-to-view
-- [ ] Auto-open browser on start unless `--no-open`
-- [ ] Graceful shutdown on Ctrl+C
+- [x] React + Vite app in `ui/`, built into `src/server/static`
+- [x] React Flow rendering with:
+  - [x] Directory-based initial layout (full clustering comes in Phase 2)
+  - [x] Click a node → side panel with file list and its edges
+  - [x] Click an edge → show the evidence lines that produced it
+  - [x] Zoom, pan, fit-to-view
+- [x] Auto-open browser on start unless `--no-open`
+- [x] Graceful shutdown on Ctrl+C
 
 **Acceptance:** run on an unfamiliar repository and be able to answer "what depends on what?"
 purely from the visualisation, with every edge traceable to a source line.
+
+**Acceptance met.** Measured by driving a real browser against each repository — launch,
+click an edge, click a node, zoom, pan, fit, expand a directory.
+
+| Repo | Files | Default view | First paint | Fully rendered | Edge → evidence | Node → panel | Expand | Zoom | Pan | Fit |
+|---|---|---|---|---|---|---|---|---|---|---|
+| requests | 37 | 6 nodes, 3 edges | 465 ms | 722 ms | 38 ms | 19 ms | 36 ms | 32 ms | 88 ms | 26 ms |
+| zod | 406 | 45 nodes, 74 edges | 338 ms | 601 ms | 42 ms | 38 ms | 53 ms | 40 ms | 87 ms | 28 ms |
+| pyright | 1,917 | 61 nodes, 98 edges | 369 ms | 627 ms | 62 ms | 65 ms | 78 ms | 42 ms | 94 ms | 30 ms |
+
+Every interaction is under 100 ms on all three, including pyright. Full sessions produce
+zero non-OK responses and zero console errors.
+
+**The scale constraint decided the architecture, and it held.** Directory aggregation takes
+pyright from 1,917 nodes to 61 — a 31× reduction with nothing lost, since every aggregate
+edge keeps the file-level edges beneath it. Layout is computed once on the server; the
+browser only draws. Render time is effectively flat across a 52× range of repository size.
+
+One gap the benchmark caught: the default view was safe but a single click was not.
+Expanding pyright's 1,279-file test-samples directory produced 1,339 nodes. Directories over
+300 files are no longer offered for expansion, capping the worst case at about 323 nodes.
+
+**Four defects were only findable by running it.** Nodes were unselectable on pyright,
+because React Flow's fixed-size connection handles cover a node shrunk to 34×12px at
+fit-to-view. The evidence panel — the point of the product — rendered import statements one
+character wide. Clicking the repository-root directory always 404'd, because a `.` path
+segment is normalised out of a URL before it is sent. And missing assets returned the HTML
+shell with a 200. The test suite was green throughout; none of these are visible without a
+browser.
+
+The evidence trail is the deliverable, and it is checkable end to end: clicking the heaviest
+pyright edge lists 62 import statements across 62 file pairs, each quoted with its file and
+line, e.g. `packages/pyright-internal/src/typeServer/enums.ts:16` →
+`import { VariableDeclaration } from '../analyzer/declaration';`.
 
 ---
 
