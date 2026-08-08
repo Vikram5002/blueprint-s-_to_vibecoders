@@ -5,6 +5,28 @@ Week 5. Directory prior plus Louvain community detection over the import graph.
 Everything here is deterministic and mechanical. No LLM is involved: `graph/` may not
 import `llm/`, and module labels are a path prefix or an index. Semantic naming is Week 6.
 
+> `docs/PHASE-1-SPEC.md` covers Weeks 1–4 only and has no Week 5 section, so Week 5's
+> checklist lives here.
+
+## Week 5 status — complete
+
+- [x] Louvain over the file-level import graph, weighted by import counts
+- [x] Resolution parameter exposed; default documented and deliberately untuned
+- [x] Modularity reported per run, as a diagnostic rather than a quality claim
+- [x] Directory prior combined with Louvain under an explicit, documented rule
+- [x] Disagreement surfaced per file, with a per-repo rate
+- [x] Small clusters merged into the nearest neighbour by coupling strength
+- [x] Merge threshold configurable; every merge recorded
+- [x] Module nodes and edges carry `provenance: 'DERIVED'`
+- [x] Labels mechanical only — a path prefix or an index
+- [x] Module edges keep the underlying `evidence[]` reachable
+- [x] Module-level view in the UI, alongside the directory view, disagreement highlighted
+- [x] **Acceptance:** byte-identical output across 10 runs on all three repos
+- [x] **Acceptance:** stability reported against HEAD~1, HEAD~5, HEAD~20
+- [x] **Acceptance:** disagreement rate reported per repo
+- [x] **Acceptance:** pyright clusters inspected against its documented package structure
+- [x] **Acceptance:** browser QA
+
 ---
 
 ## This week has no ground truth
