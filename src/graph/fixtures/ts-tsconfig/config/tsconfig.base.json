@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": "../src",
+    "paths": {
+      "@app/*": ["../src/*"],
+      "@lib/*": ["../lib/*"]
+    }
+  }
+}

@@ -125,3 +125,31 @@ node dist/cli.js .   # Run against current directory
 - **Prefer partial results over failure.** If one file fails to parse, log it and continue.
   Vibe-coded repos contain broken code by definition; the tool must survive it.
 - **Performance target:** under 60 seconds for a 5,000-file repository on a laptop.
+
+## Git commit policy
+
+Commit at every meaningful step. Do not batch a week's work into one commit.
+
+**A meaningful step is a unit that could be reviewed or reverted on its own:**
+- A grammar or dependency vendored and loading
+- A single extractor or resolver rule working
+- A set of test fixtures added
+- A bug fixed
+- A refactor completed
+- A metric or report added
+
+**Rules:**
+- Never mix a refactor with a feature in one commit.
+- Tests go in the same commit as the code they cover, or the commit before.
+- Never commit a state where `npm test` fails.
+- Commit before starting anything you might want to undo.
+- Push after each commit, not once at the end.
+
+**Format:** Conventional Commits.
+`feat(parser): extract dynamic import() specifiers`
+`fix(ingest): handle symlinks pointing outside repo root`
+`test(resolver): add tsconfig paths alias fixtures`
+`chore(grammars): vendor tree-sitter-python 0.23.6`
+
+Expect roughly 6–12 commits per week of work. If a week produced 2 commits,
+the granularity was wrong.

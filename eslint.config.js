@@ -5,7 +5,14 @@ export const config = tseslint.config(
   {
     // Parser fixtures are deliberate specimens — some are syntactically broken
     // on purpose. They are inputs to tests, never compiled or linted.
-    ignores: ['dist/**', 'node_modules/**', 'ui/**', 'coverage/**', 'src/parser/fixtures/**'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'ui/**',
+      'coverage/**',
+      'src/parser/fixtures/**',
+      'src/graph/fixtures/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

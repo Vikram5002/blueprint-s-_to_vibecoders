@@ -31,6 +31,7 @@
   "exclude": [
     "src/**/*.test.ts",
     "src/parser/fixtures/**",
+    "src/graph/fixtures/**",
     "node_modules",
     "dist",
     "ui"
