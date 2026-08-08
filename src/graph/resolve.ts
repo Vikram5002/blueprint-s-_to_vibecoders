@@ -13,6 +13,7 @@ import { createRepoIndex, type RepoIndex } from './repo-index.js';
 import { loadTsconfig, EMPTY_TSCONFIG, type TsconfigPaths } from './tsconfig.js';
 import { discoverWorkspaces } from './workspaces.js';
 import { resolveTypeScriptImport } from './resolve-ts.js';
+import { buildPythonContext, resolvePythonImport } from './resolve-python.js';
 import type { ParsedFile } from '../types/symbols.js';
 import type {
   ExternalReason,
@@ -37,13 +38,16 @@ export async function resolveRepository(options: ResolveRepositoryOptions): Prom
   const workspaces = await discoverWorkspaces(options.root);
   const tsconfigFor = await createTsconfigLookup(options.root, options.files);
 
+  const python = buildPythonContext(index);
+
   const imports: ResolvedImport[] = [];
   for (const file of options.files) {
-    if (file.language === 'python') {
-      continue; // Python resolution lands in the next commit.
-    }
     for (const record of file.imports) {
-      imports.push(resolveTypeScriptImport(record, { index, workspaces, tsconfigFor }));
+      imports.push(
+        file.language === 'python'
+          ? resolvePythonImport(record, python)
+          : resolveTypeScriptImport(record, { index, workspaces, tsconfigFor }),
+      );
     }
   }
 
