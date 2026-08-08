@@ -3,7 +3,9 @@ import tseslint from 'typescript-eslint';
 
 export const config = tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', 'ui/**', 'coverage/**'],
+    // Parser fixtures are deliberate specimens — some are syntactically broken
+    // on purpose. They are inputs to tests, never compiled or linted.
+    ignores: ['dist/**', 'node_modules/**', 'ui/**', 'coverage/**', 'src/parser/fixtures/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

@@ -8,11 +8,14 @@ import {
   formatFileList,
   formatHelp,
   formatJson,
+  formatParseProgress,
+  formatParseSummary,
   formatProgress,
   formatSummary,
 } from './output.js';
 import { walkRepository } from '../ingest/walk.js';
 import { summariseWalk } from '../ingest/summary.js';
+import { parseRepository, summariseParse } from '../parser/parse-repository.js';
 
 export interface CliIo {
   readonly writeOut: (line: string) => void;
@@ -67,8 +70,25 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
   const result = walked.value;
   const summary = summariseWalk(result);
 
+  const parseResult = await parseRepository({
+    files: result.files,
+    ...(showProgress
+      ? {
+          onProgress: (progress) =>
+            io.writeErr(formatParseProgress(progress.filesParsed, progress.filesTotal, progress.currentFile)),
+        }
+      : {}),
+  });
+
+  if (!parseResult.ok) {
+    io.writeErr(formatError(parseResult.error.message));
+    return EXIT_FAILURE;
+  }
+
+  const parseSummary = summariseParse(parseResult.value);
+
   if (options.json) {
-    io.writeOut(formatJson(summary, result.files, result.stats.errors));
+    io.writeOut(formatJson(summary, result.files, result.stats.errors, parseSummary, parseResult.value));
     return EXIT_OK;
   }
 
@@ -76,6 +96,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     io.writeOut(formatFileList(result.files));
   }
   io.writeOut(formatSummary(summary, result.stats.errors));
+  io.writeOut(formatParseSummary(parseSummary, parseResult.value.failures));
 
   return EXIT_OK;
 }

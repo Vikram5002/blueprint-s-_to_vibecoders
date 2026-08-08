@@ -28,5 +28,11 @@
     "sourceMap": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts", "node_modules", "dist", "ui"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/parser/fixtures/**",
+    "node_modules",
+    "dist",
+    "ui"
+  ]
 }

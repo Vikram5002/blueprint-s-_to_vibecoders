@@ -10,7 +10,8 @@
     "vibe-blueprint": "dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "grammars"
   ],
   "scripts": {
     "dev": "tsc --watch",
@@ -20,7 +21,8 @@
     "lint": "eslint . && tsc --noEmit"
   },
   "dependencies": {
-    "ignore": "^7.0.6"
+    "ignore": "^7.0.6",
+    "web-tree-sitter": "^0.26.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",

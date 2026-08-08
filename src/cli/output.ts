@@ -5,6 +5,8 @@
 import type { DiscoveredFile, WalkError } from '../ingest/walk.js';
 import type { IngestSummary } from '../ingest/summary.js';
 import type { Language } from '../ingest/language.js';
+import type { ParseSummary } from '../parser/parse-repository.js';
+import type { ParseFailure, ParseReport } from '../types/symbols.js';
 
 const LANGUAGE_LABELS: Readonly<Record<Language, string>> = {
   typescript: 'TypeScript',
@@ -72,7 +74,42 @@ export function formatFileList(files: readonly DiscoveredFile[]): string {
   return files.map((file) => `  ${file.language.padEnd(10)} ${file.path}`).join('\n');
 }
 
-export function formatJson(summary: IngestSummary, files: readonly DiscoveredFile[], errors: readonly WalkError[]): string {
+export function formatParseProgress(filesParsed: number, filesTotal: number, currentFile: string): string {
+  return `  parsed ${count(filesParsed)}/${count(filesTotal)} — ${currentFile}`;
+}
+
+export function formatParseSummary(summary: ParseSummary, failures: readonly ParseFailure[]): string {
+  const lines = [
+    `  Files parsed        ${count(summary.filesParsed)}`,
+    `    imports           ${count(summary.importCount)}`,
+    `    exports           ${count(summary.exportCount)}`,
+  ];
+
+  if (summary.filesSkipped > 0) {
+    lines.push(`  Not parsed yet      ${count(summary.filesSkipped)}  (Python lands in Week 3)`);
+  }
+  if (summary.filesWithSyntaxErrors > 0) {
+    lines.push(`  Syntax errors       ${count(summary.filesWithSyntaxErrors)}  (recovered, symbols are partial)`);
+  }
+  if (failures.length > 0) {
+    lines.push(`  Failed to parse     ${count(failures.length)}`);
+    lines.push(...failures.slice(0, 5).map((failure) => `    ! ${failure.path}: ${failure.message}`));
+    if (failures.length > 5) {
+      lines.push(`    ... and ${count(failures.length - 5)} more`);
+    }
+  }
+
+  lines.push('', `  Parsed in ${formatDuration(summary.durationMs)}`, '');
+  return lines.join('\n');
+}
+
+export function formatJson(
+  summary: IngestSummary,
+  files: readonly DiscoveredFile[],
+  errors: readonly WalkError[],
+  parseSummary: ParseSummary,
+  report: ParseReport,
+): string {
   return JSON.stringify(
     {
       root: summary.root,
@@ -83,6 +120,12 @@ export function formatJson(summary: IngestSummary, files: readonly DiscoveredFil
       })),
       summary,
       errors,
+      parse: {
+        summary: parseSummary,
+        failures: report.failures,
+        skipped: report.skipped,
+        files: report.files,
+      },
     },
     null,
     2,

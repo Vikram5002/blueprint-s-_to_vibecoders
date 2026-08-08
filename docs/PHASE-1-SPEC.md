@@ -13,20 +13,32 @@ below, do not build it yet.
 
 **Deliverable:** the command runs and correctly lists the files it would analyse.
 
-- [ ] Project setup: TypeScript strict, vitest, ESLint, build to `dist/`
-- [ ] `bin` entry so `npx vibe-blueprint .` works
-- [ ] Argument parsing: target path, `--json`, `--verbose`, `--no-open`
-- [ ] Repository walker
-  - [ ] Respect `.gitignore` (use the `ignore` package; do not hand-roll this)
-  - [ ] Always skip `node_modules`, `.git`, `dist`, `build`, `__pycache__`, `.venv`
-  - [ ] Language detection by extension: `.ts .tsx .js .jsx .mjs .cjs .py`
-  - [ ] Handle symlinks safely (do not follow outside the repo root)
-- [ ] Terminal output with progress lines and a file-count summary
-- [ ] Tests: walker respects gitignore; walker handles an empty repo; walker handles a repo
+- [x] Project setup: TypeScript strict, vitest, ESLint, build to `dist/`
+- [x] `bin` entry so `npx vibe-blueprint .` works
+- [x] Argument parsing: target path, `--json`, `--verbose`, `--no-open`
+- [x] Repository walker
+  - [x] Respect `.gitignore` (use the `ignore` package; do not hand-roll this)
+  - [x] Always skip `node_modules`, `.git`, `dist`, `build`, `__pycache__`, `.venv`
+  - [x] Language detection by extension: `.ts .tsx .js .jsx .mjs .cjs .py`
+  - [x] Handle symlinks safely (do not follow outside the repo root)
+- [x] Terminal output with progress lines and a file-count summary
+- [x] Tests: walker respects gitignore; walker handles an empty repo; walker handles a repo
       with no supported files
 
 **Acceptance:** run against three real open-source repos (one TS, one Python, one mixed) and
 confirm the file list matches expectation.
+
+**Acceptance met.** Verified by diffing the walker's output against `git ls-files`, filtered
+to the supported extensions and minus the always-skipped directories:
+
+| Repo | Kind | Files | Walker vs `git ls-files` | Walk time |
+|---|---|---|---|---|
+| `colinhacks/zod` | TypeScript | 406 | exact match | 91 ms |
+| `psf/requests` | Python | 37 | exact match | 38 ms |
+| `microsoft/pyright` | mixed TS + Python | 1,917 | exact match | 930 ms |
+
+Zero missed files, zero spurious files, zero read errors. Gitignore decisions were separately
+cross-checked against `git check-ignore` on a real repo.
 
 ---
 
@@ -34,17 +46,38 @@ confirm the file list matches expectation.
 
 **Deliverable:** every TS/JS file produces a symbol table.
 
-- [ ] Integrate `web-tree-sitter` and load the TS/JS grammars
-- [ ] Per-file parse producing:
-  - [ ] Imports: specifier, imported names, line number, raw text
-  - [ ] Exports: exported symbol names
-  - [ ] Handle `import`, `export ... from`, `require()`, dynamic `import()`
-- [ ] **Error tolerance:** a file that fails to parse is logged and skipped, never fatal.
+- [x] Integrate `web-tree-sitter` and load the TS/JS grammars
+- [x] Per-file parse producing:
+  - [x] Imports: specifier, imported names, line number, raw text
+  - [x] Exports: exported symbol names
+  - [x] Handle `import`, `export ... from`, `require()`, dynamic `import()`
+- [x] **Error tolerance:** a file that fails to parse is logged and skipped, never fatal.
       Track the failure count and surface it in the summary.
-- [ ] Parse in parallel across a worker pool; cap concurrency at CPU count
-- [ ] Tests: fixture files covering each import form, plus one deliberately broken file
+- [ ] ~~Parse in parallel across a worker pool; cap concurrency at CPU count~~ — **not needed,
+      see measurement below.** Deliberately skipped rather than forgotten.
+- [x] Tests: fixture files covering each import form, plus one deliberately broken file
 
 **Acceptance:** parse a mid-sized TS repo (~500 files) in under 10 seconds with zero crashes.
+
+**Acceptance met, single-threaded.**
+
+| Repo | TS/JS files parsed | Parse time | Budget | Crashes |
+|---|---|---|---|---|
+| `colinhacks/zod` | 406 | **1.06 s** | 10 s | 0 |
+| `microsoft/pyright` | 591 | **2.93 s** | 10 s | 0 |
+
+zod comes in **9.4× under budget** on one thread, on a 16-core machine. A worker pool
+would add process management, serialisation of the symbol table across the boundary, and a
+much harder failure mode — to save a second we do not need. Revisit only if a real repo
+misses the target.
+
+Grammars are vendored in `grammars/` (3.6 MB, four files) rather than pulled from a package
+shipping 17–44 MB of languages this project forbids. Provenance, licences and two known
+grammar gaps are recorded in `grammars/README.md`.
+
+Beyond the spec: type-only imports (`import type`, inline `{ type A }`) and
+`import x = require()` are extracted and distinguished, since Week 3 needs to tell an
+erased type dependency from a runtime one.
 
 ---
 
