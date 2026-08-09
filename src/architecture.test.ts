@@ -147,7 +147,11 @@ describe('rule 2 — STATED and DERIVED never mix', () => {
   it('nothing outside the type definition can mint a DERIVED constraint', async () => {
     const offenders: string[] = [];
     for (const file of await filesUnder('src', ['.ts'])) {
-      if (file.endsWith('constraints.ts')) continue;
+      // Same exemption as rule 1, for the same reason: the rule is about what
+      // ships. A test builds DERIVED edge fixtures next to constraint fixtures
+      // — which is correct, edges really are DERIVED — and the proximity
+      // heuristic below cannot tell that apart from a real mistake.
+      if (file.endsWith('.test.ts') || file.endsWith('constraints.ts')) continue;
       const source = await readFile(join(repoRoot, file), 'utf8');
       // A Constraint literal always carries `provenance: 'STATED'`. The failure
       // this guards is someone copying an edge builder and leaving DERIVED in.

@@ -15,7 +15,7 @@ import { posix } from 'node:path';
 
 export type BlueprintDatabase = Database.Database;
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export function databasePathFor(root: string): string {
   return posix.join(root.replace(/\\/g, '/'), '.vibe', 'blueprint.db');
@@ -43,6 +43,9 @@ function migrate(db: BlueprintDatabase): void {
     return;
   }
 
+  // v1 -> v2 adds snapshots. Written as CREATE TABLE IF NOT EXISTS throughout,
+  // so an existing v1 database gains the new table and keeps its corrections —
+  // the one thing here that cannot be regenerated.
   db.exec(`
     CREATE TABLE IF NOT EXISTS corrections (
       id          TEXT PRIMARY KEY,
@@ -73,6 +76,31 @@ function migrate(db: BlueprintDatabase): void {
 
     CREATE INDEX IF NOT EXISTS run_outcomes_by_correction
       ON run_outcomes (correction_id);
+
+    -- One row per commit. Keyed on the sha rather than the snapshot id: one
+    -- snapshot per commit is the invariant the diff relies on, and keying on
+    -- content would let a single commit accumulate rows as the analyser
+    -- changed, charting the same point in history more than once.
+    --
+    -- The scalar columns are duplicated out of the body column so a history
+    -- query can read a chart without parsing 200 JSON blobs.
+    CREATE TABLE IF NOT EXISTS snapshots (
+      commit_sha      TEXT PRIMARY KEY,
+      snapshot_id     TEXT NOT NULL,
+      committed_at    TEXT NOT NULL,
+      subject         TEXT NOT NULL,
+      file_count      INTEGER NOT NULL,
+      edge_count      INTEGER NOT NULL,
+      module_count    INTEGER NOT NULL,
+      violation_count INTEGER NOT NULL,
+      drift_score     REAL NOT NULL,
+      body            TEXT NOT NULL,
+      created_at      TEXT NOT NULL
+    );
+
+    -- History is always read in commit-date order.
+    CREATE INDEX IF NOT EXISTS snapshots_by_date
+      ON snapshots (committed_at, commit_sha);
   `);
 
   db.pragma(`user_version = ${SCHEMA_VERSION}`);
