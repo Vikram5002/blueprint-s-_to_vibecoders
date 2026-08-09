@@ -7,3 +7,4 @@ coverage/
 .vibe/
 *.tsbuildinfo
 .DS_Store
+.env
