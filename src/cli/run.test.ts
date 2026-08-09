@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { EXIT_FAILURE, EXIT_OK, EXIT_USAGE, runCli, type CliIo } from './run.js';
@@ -77,13 +79,18 @@ describe('runCli', () => {
     expect(await runCli(['--nope'], io, '0.1.0')).toBe(EXIT_USAGE);
   });
 
-  it('returns a failure exit code for a missing path', async () => {
+  it('returns a failure exit code for a missing path, and creates nothing', async () => {
+    // Regression: opening the correction database used to run before the path
+    // was validated, and it creates .vibe/ under the root — so a mistyped path
+    // was silently created and then reported as an empty repository.
     const { io, err } = captureIo();
+    const missing = join(tmpdir(), `vibe-missing-${randomUUID()}`);
 
-    const code = await runCli([join(tmpdir(), 'vibe-missing-a71c')], io, '0.1.0');
+    const code = await runCli([missing, '--no-serve'], io, '0.1.0');
 
     expect(code).toBe(EXIT_FAILURE);
     expect(err.join('\n')).toContain('does not exist');
+    expect(existsSync(missing)).toBe(false);
   });
 
   it('prints help and the version without scanning', async () => {

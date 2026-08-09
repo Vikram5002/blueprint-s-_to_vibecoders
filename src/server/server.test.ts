@@ -6,6 +6,11 @@ import { summariseWalk } from '../ingest/summary.js';
 import { resolveRepository } from '../graph/resolve.js';
 import { buildDependencyGraph } from '../graph/build-graph.js';
 import { clusterRepository } from '../graph/cluster.js';
+import { labelModules } from '../pipeline/label.js';
+import { openDatabase, type BlueprintDatabase } from '../store/database.js';
+import { createCorrectionsStore } from '../store/corrections-store.js';
+
+const openDatabases: BlueprintDatabase[] = [];
 import { encodeEdgeId } from '../graph/aggregate.js';
 import { startServer, LOOPBACK_HOST, type RunningServer } from './server.js';
 import type { AnalysisContext } from './context.js';
@@ -23,13 +28,23 @@ async function analyse(root: string): Promise<AnalysisContext> {
 
   const resolution = await resolveRepository({ root, files: parsed.value.files });
   const graph = buildDependencyGraph({ files: parsed.value.files, resolution });
+  const clustering = clusterRepository(graph, { minClusterSize: 1 });
+
+  // In-memory store: the server accepts corrections, and the tests exercise
+  // that without leaving a database behind.
+  const db = openDatabase(':memory:');
+  openDatabases.push(db);
+
   return {
     root,
     graph,
     ingest: summariseWalk(walked.value),
     parse: summariseParse(parsed.value),
     parseFailures: parsed.value.failures,
-    clustering: clusterRepository(graph, { minClusterSize: 1 }),
+    clustering,
+    labels: await labelModules(clustering),
+    correctionOutcomes: clustering.correctionOutcomes,
+    store: createCorrectionsStore(db),
   };
 }
 
@@ -51,6 +66,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await server?.close();
+  for (const db of openDatabases.splice(0)) {
+    db.close();
+  }
 });
 
 describe('binding', () => {

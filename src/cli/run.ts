@@ -5,7 +5,9 @@
 import { parseArguments } from './args.js';
 import {
   formatClusterSummary,
+  formatCorrectionSummary,
   formatError,
+  formatLabelSummary,
   formatFileList,
   formatGraphSummary,
   formatHelp,
@@ -17,7 +19,7 @@ import {
   formatSummary,
 } from './output.js';
 import { openBrowser } from './open-browser.js';
-import { analyseRepository } from '../pipeline/analyse.js';
+import { runPipeline } from '../pipeline/run.js';
 import { startServer, type RunningServer } from '../server/server.js';
 
 export interface CliIo {
@@ -53,7 +55,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     io.writeErr(`Scanning ${options.targetPath}`);
   }
 
-  const analysed = await analyseRepository({
+  const run = await runPipeline({
     root: options.targetPath,
     ...(showProgress
       ? {
@@ -63,21 +65,24 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
                 ? formatProgress(progress.directoriesVisited, progress.filesFound, progress.currentDirectory)
                 : formatParseProgress(progress.filesParsed, progress.filesTotal, progress.currentFile),
             ),
+          onLabelProgress: (done, total, moduleId) => io.writeErr(`  named ${done}/${total} — ${moduleId}`),
         }
       : {}),
   });
 
-  if (!analysed.ok) {
-    io.writeErr(formatError(analysed.error.message));
+  if (!run.ok) {
+    io.writeErr(formatError(run.error.message));
     return EXIT_FAILURE;
   }
 
-  const { walk: result, ingest: summary, parse, parseSummary, graph, clustering } = analysed.value;
+  const { analysis, labels, correctionOutcomes, db, store } = run.value;
+  const { walk: result, ingest: summary, parse, parseSummary, graph, clustering } = analysis;
 
   if (options.json) {
     io.writeOut(
-      formatJson(summary, result.files, result.stats.errors, parseSummary, parse, graph, clustering),
+      formatJson(summary, result.files, result.stats.errors, parseSummary, parse, graph, clustering, labels),
     );
+    db.close();
     return EXIT_OK;
   }
 
@@ -88,8 +93,11 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
   io.writeOut(formatParseSummary(parseSummary, parse.failures));
   io.writeOut(formatGraphSummary(graph));
   io.writeOut(formatClusterSummary(clustering));
+  io.writeOut(formatLabelSummary(labels));
+  io.writeOut(formatCorrectionSummary(correctionOutcomes));
 
   if (!options.serve) {
+    db.close();
     return EXIT_OK;
   }
 
@@ -100,6 +108,9 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     parse: parseSummary,
     parseFailures: parse.failures,
     clustering,
+    labels,
+    correctionOutcomes,
+    store,
   });
 
   io.writeOut(formatServing(server.url, options.open));

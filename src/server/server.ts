@@ -20,6 +20,7 @@ import {
   buildNodeResponse,
   buildSummaryResponse,
 } from './api.js';
+import { buildCorrectionsResponse, parseCorrectionRequest } from './corrections-api.js';
 import { ROOT_DIRECTORY, type ViewLevel } from '../graph/aggregate.js';
 import type { AnalysisContext } from './context.js';
 
@@ -72,6 +73,28 @@ export function createApp(context: AnalysisContext): Hono {
   });
 
   app.get('/api/modules', (c) => c.json(buildModuleViewResponse(context)));
+
+  app.get('/api/corrections', (c) => c.json(buildCorrectionsResponse(context)));
+
+  app.post('/api/corrections', async (c) => {
+    const body: unknown = await c.req.json().catch(() => null);
+    const parsed = parseCorrectionRequest(context, body);
+    if (!parsed.ok) {
+      return c.json({ error: parsed.message }, 400);
+    }
+
+    const saved = context.store.save(parsed.correction);
+    // Deliberately not re-clustered here: a correction changes membership, and
+    // moving the graph under the user mid-session is worse than waiting.
+    return c.json({ correction: saved, appliesOn: 'next-run' }, 201);
+  });
+
+  app.delete('/api/corrections/*', (c) => {
+    const id = decodeIdFromPath(c.req.path, '/api/corrections/');
+    return context.store.remove(id)
+      ? c.json({ removed: id, appliesOn: 'next-run' })
+      : c.json({ error: `unknown correction: ${id}` }, 404);
+  });
 
   // Registered before /api/module/* so the more specific path wins.
   app.get('/api/module-edge/*', (c) => {

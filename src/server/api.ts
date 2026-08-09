@@ -194,6 +194,11 @@ export interface ModuleViewResponse {
     id: string;
     kind: 'module';
     label: string;
+    /** mechanical | llm | user — rule 2's three states. */
+    labelSource: string;
+    /** The deterministic name, always kept so the UI can show what it was. */
+    mechanicalLabel: string;
+    description: string | null;
     fileCount: number;
     directories: readonly string[];
     /** Files placed here by coupling despite living elsewhere on disk. */
@@ -222,6 +227,10 @@ export interface ModuleViewResponse {
  */
 export function buildModuleViewResponse(context: AnalysisContext): ModuleViewResponse {
   const { clustering } = context;
+  const labelFor = (moduleId: string, fallback: string): { label: string; source: string } => {
+    const entry = context.labels.labels.get(moduleId);
+    return { label: entry?.label ?? fallback, source: entry?.source ?? 'mechanical' };
+  };
 
   const disagreementCounts = new Map<string, number>();
   for (const disagreement of clustering.disagreements) {
@@ -257,16 +266,24 @@ export function buildModuleViewResponse(context: AnalysisContext): ModuleViewRes
   };
 
   return {
-    nodes: clustering.modules.map((module) => ({
-      id: module.id,
-      kind: 'module' as const,
-      label: module.label,
-      fileCount: module.files.length,
-      directories: module.directories,
-      disagreeingFiles: disagreementCounts.get(module.id) ?? 0,
-      provenance: module.provenance,
-      llmLabelled: module.llmLabelled,
-    })),
+    nodes: clustering.modules.map((module) => {
+      const named = labelFor(module.id, module.label);
+      return {
+        id: module.id,
+        kind: 'module' as const,
+        label: named.label,
+        // Rule 2: a name from a model must be distinguishable on screen from a
+        // derived fact, and from one the user wrote.
+        labelSource: named.source,
+        mechanicalLabel: module.label,
+        description: context.labels.labels.get(module.id)?.description ?? null,
+        fileCount: module.files.length,
+        directories: module.directories,
+        disagreeingFiles: disagreementCounts.get(module.id) ?? 0,
+        provenance: module.provenance,
+        llmLabelled: named.source === 'llm',
+      };
+    }),
     edges: clustering.edges.map((edge) => ({
       id: edge.id,
       from: edge.from,

@@ -10,6 +10,8 @@ import type { ParseFailure, ParseReport } from '../types/symbols.js';
 import type { ResolutionSummary } from '../types/resolution.js';
 import type { DependencyGraph } from '../graph/build-graph.js';
 import type { ClusteringResult } from '../types/modules.js';
+import type { LabelSet } from '../types/labels.js';
+import type { CorrectionOutcome } from '../types/corrections.js';
 
 const LANGUAGE_LABELS: Readonly<Record<Language, string>> = {
   typescript: 'TypeScript',
@@ -143,6 +145,91 @@ export function formatClusterSummary(clustering: ClusteringResult): string {
   return lines.join('\n');
 }
 
+/**
+ * Labelling. The no-key case says one quiet line and stops — a user who never
+ * configures a key should not be nagged on every run.
+ */
+export function formatLabelSummary(labels: LabelSet): string {
+  const { summary } = labels;
+
+  if (summary.degraded) {
+    return [
+      '  Module names        mechanical (no ANTHROPIC_API_KEY configured)',
+      '',
+    ].join('\n');
+  }
+
+  const lines = [
+    `  Module names        ${count(summary.llmLabelled)} from ${summary.provider ?? 'a model'}` +
+      `, ${count(summary.userCorrected)} yours, ${count(summary.mechanical)} mechanical`,
+    `    cache             ${count(summary.cacheHits)} hits, ${count(summary.cacheMisses)} misses` +
+      `  (${cacheRate(summary.cacheHits, summary.cacheMisses)})`,
+    `    tokens            ${count(summary.usage.promptTokens)} in, ${count(summary.usage.completionTokens)} out` +
+      `  ·  about $${summary.usage.estimatedCostUsd.toFixed(4)}`,
+  ];
+
+  if (summary.failures.length > 0) {
+    lines.push(`    not named         ${count(summary.failures.length)} (kept their mechanical name)`);
+    for (const failure of summary.failures.slice(0, 3)) {
+      lines.push(`      ! ${failure.moduleId}: ${failure.reason}`);
+    }
+  }
+
+  lines.push('');
+  return lines.join('\n');
+}
+
+function cacheRate(hits: number, misses: number): string {
+  const total = hits + misses;
+  return total === 0 ? 'nothing to do' : `${((hits / total) * 100).toFixed(0)}% hit rate`;
+}
+
+/**
+ * Correction outcomes. Drift and orphans are printed in full rather than
+ * summarised — a correction that quietly stopped matching is exactly the thing
+ * a user needs told.
+ */
+export function formatCorrectionSummary(outcomes: readonly CorrectionOutcome[]): string {
+  if (outcomes.length === 0) {
+    return '';
+  }
+
+  const applied = outcomes.filter((outcome) => outcome.status === 'applied');
+  const drifted = outcomes.filter((outcome) => outcome.status === 'applied-with-drift');
+  const orphaned = outcomes.filter((outcome) => outcome.status === 'orphaned');
+
+  const lines = [
+    `  Your corrections    ${count(outcomes.length)}  ` +
+      `(${count(applied.length)} applied, ${count(drifted.length)} with drift, ${count(orphaned.length)} orphaned)`,
+  ];
+
+  for (const outcome of drifted) {
+    lines.push('', `    drift  ${outcome.kind} on ${outcome.moduleId ?? '(unknown)'}`);
+    lines.push(`           ${outcome.explanation}`);
+    for (const file of outcome.joined.slice(0, 5)) {
+      lines.push(`           + ${file}`);
+    }
+    for (const file of outcome.left.slice(0, 5)) {
+      lines.push(`           - ${file}`);
+    }
+  }
+
+  for (const outcome of orphaned) {
+    lines.push('', `    orphan ${outcome.kind}  ${outcome.explanation}`);
+  }
+
+  const unresolved = outcomes.flatMap((outcome) => outcome.unresolved);
+  if (unresolved.length > 0) {
+    lines.push('', `    ${count(unresolved.length)} file(s) belong to neither side of a split and were left alone:`);
+    for (const file of unresolved.slice(0, 5)) {
+      lines.push(`           ? ${file}`);
+    }
+  }
+
+  lines.push('');
+  return lines.join('\n');
+}
+
 export function formatServing(url: string, opening: boolean): string {
   return [
     `  Blueprint ready at  ${url}`,
@@ -212,6 +299,7 @@ export function formatJson(
   report: ParseReport,
   graph: DependencyGraph,
   clustering: ClusteringResult,
+  labels: LabelSet,
 ): string {
   return JSON.stringify(
     {
@@ -254,6 +342,11 @@ export function formatJson(
         assignments: clustering.assignments,
         disagreements: clustering.disagreements,
         merges: clustering.merges,
+        correctionOutcomes: clustering.correctionOutcomes,
+      },
+      labelling: {
+        summary: labels.summary,
+        labels: [...labels.labels.values()],
       },
     },
     null,
