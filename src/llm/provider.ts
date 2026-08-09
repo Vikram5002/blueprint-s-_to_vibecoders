@@ -6,11 +6,11 @@
  * — `pipeline/label.ts` takes a labeller as an argument and has no idea who
  * answers it.
  *
- * Deliberately small. This project asks a model exactly one kind of question —
- * "name this cluster" — so the interface is one call that returns text. No
- * streaming, no tools, no conversation state: nothing here needs them, and an
- * interface built for capabilities we do not use is an interface nobody can
- * reimplement.
+ * Deliberately small. This project asks a model two kinds of question — "name
+ * this cluster" and "what does this document require" — and both are one call
+ * that returns structured text. No streaming, no tools, no conversation state:
+ * nothing here needs them, and an interface built for capabilities we do not
+ * use is an interface nobody can reimplement.
  */
 
 export interface CompletionRequest {
@@ -27,6 +27,21 @@ export interface CompletionRequest {
    * only to models that still accept the parameter; see anthropic.ts.
    */
   readonly temperature?: number;
+  /**
+   * JSON schema the answer must conform to.
+   *
+   * Passed per request rather than fixed by the provider, because the two call
+   * sites want different shapes. Validation still happens again on the way back
+   * — a provider-enforced schema is a convenience, not a guarantee, and for
+   * intent extraction it is guarding against hostile input rather than sloppy
+   * output.
+   */
+  readonly schema?: Readonly<Record<string, unknown>>;
+  /**
+   * How much reasoning the task warrants. Naming a cluster is a lookup; reading
+   * obligations out of prose is not.
+   */
+  readonly effort?: 'low' | 'medium' | 'high';
 }
 
 export interface CompletionUsage {

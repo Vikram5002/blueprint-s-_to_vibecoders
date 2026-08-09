@@ -107,8 +107,9 @@ export async function createAnthropicProvider(options: AnthropicOptions): Promis
           messages: [{ role: 'user', content: request.user }],
           output_config: {
             // Naming a cluster from paths and symbols is not a reasoning task.
-            effort: 'low',
-            format: { type: 'json_schema', schema: LABEL_SCHEMA },
+            // Reading obligations out of prose is, so the caller can raise it.
+            effort: request.effort ?? 'low',
+            format: { type: 'json_schema', schema: request.schema ?? LABEL_SCHEMA },
           },
           ...(request.temperature !== undefined && ACCEPTS_TEMPERATURE.has(model)
             ? { temperature: request.temperature }

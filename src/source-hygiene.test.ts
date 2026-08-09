@@ -68,4 +68,36 @@ describe('source hygiene', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  /**
+   * The same argument one level up. A zero-width space or a BOM in the middle of
+   * a string literal is invisible in a diff, in a terminal and in a test
+   * failure, so a bug involving one cannot be seen — only inferred. Nearly
+   * introduced one in extract-prompt.ts to defuse a delimiter, where a visible
+   * replacement does the job and can be read.
+   */
+  it('contains no invisible unicode characters', async () => {
+    const files: string[] = [];
+    for (const root of ROOTS) await collect(root, files);
+    files.sort();
+
+    // Zero-width space/non-joiner/joiner, word joiner, BOM, and the
+    // bidirectional overrides used in source-spoofing attacks.
+    const INVISIBLE = /[\u200b-\u200f\u2028\u2029\u202a-\u202e\u2060-\u2064\ufeff]/;
+
+    const offenders: string[] = [];
+    for (const file of files) {
+      const text = await readFile(join(repoRoot, file), 'utf8');
+      for (const [index, line] of text.split('\n').entries()) {
+        const match = INVISIBLE.exec(line);
+        if (match !== null) {
+          const code = `U+${(match[0].codePointAt(0) ?? 0).toString(16).toUpperCase().padStart(4, '0')}`;
+          offenders.push(`${relative('.', file).split('\\').join(posix.sep)}:${index + 1} has ${code}`);
+          break;
+        }
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
 });
