@@ -31,7 +31,16 @@ import type {
   CompletionResult,
 } from './provider.js';
 
-export const DEFAULT_MODEL = 'claude-opus-5';
+/**
+ * Naming a cluster from paths and symbols is a short, shallow task, and Week 14
+ * runs it across 50-100 repositories — so the default is the cheapest capable
+ * model rather than the most capable one. $1/$5 per MTok against Opus 5's
+ * $5/$25.
+ *
+ * Override with VIBE_LLM_MODEL to compare or to upgrade. Haiku also still
+ * accepts `temperature`, which the Opus and Sonnet 5 tiers do not.
+ */
+export const DEFAULT_MODEL = 'claude-haiku-4-5';
 export const API_KEY_ENV = 'ANTHROPIC_API_KEY';
 
 /**
