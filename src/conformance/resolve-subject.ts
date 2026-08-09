@@ -123,12 +123,19 @@ export function resolveSubject(phrase: string, options: ResolveOptions): Resolve
   // accept it if it corresponds to something real, so a stale path in an old
   // README is reported rather than silently becoming a constraint about nothing.
   if (looksLikePath(lower)) {
-    const pattern = normalisePattern(lower);
     const directories = options.directories ?? collectDirectories(options.candidates);
-    if (matchesAnyDirectory(pattern, directories)) {
-      return { phrase: trimmed, status: 'PATH_PATTERN', target: pattern, reason: null, similarity: 1, alternatives: [] };
+    const resolvedPath = resolvePathPattern(normalisePattern(lower), directories);
+    if (resolvedPath.status === 'ok') {
+      return {
+        phrase: trimmed,
+        status: 'PATH_PATTERN',
+        target: resolvedPath.pattern,
+        reason: null,
+        similarity: 1,
+        alternatives: [],
+      };
     }
-    return unresolved('no-candidate');
+    return unresolved(resolvedPath.reason, 0, resolvedPath.alternatives);
   }
 
   const wanted = tokenise(trimmed);
@@ -227,10 +234,50 @@ function collectDirectories(candidates: readonly ResolutionCandidate[]): string[
   return [...new Set(candidates.flatMap((candidate) => candidate.directories))];
 }
 
-function matchesAnyDirectory(pattern: string, directories: readonly string[]): boolean {
+type PathResolution =
+  | { readonly status: 'ok'; readonly pattern: string }
+  | { readonly status: 'fail'; readonly reason: SubjectUnresolvedReason; readonly alternatives: string[] };
+
+/**
+ * Matches a written path against the repository's real directories.
+ *
+ * Tried from the repository root first, then as a trailing segment. The second
+ * pass exists because documents overwhelmingly write shorthand: this project's
+ * own CLAUDE.md says `parser/` and `llm/` for directories that live at
+ * `src/parser` and `src/llm`. Rejecting those is not strictness, it is failing
+ * to read the document the way its author wrote it.
+ *
+ * Found by the oracle test in evaluate.test.ts, which put the hand-labelled
+ * constraints through the resolver and scored 44%: every root-relative
+ * shorthand in the gold set was being dropped, and only the two paths that
+ * happened to sit at the repository root resolved at all.
+ *
+ * A shorthand matching two directories is ambiguous and refused, for the same
+ * reason a tied module match is refused — `parser/` where both `src/parser` and
+ * `vendor/parser` exist genuinely does not pick one out.
+ */
+function resolvePathPattern(pattern: string, directories: readonly string[]): PathResolution {
   const prefix = pattern.replace(/\/?\*\*?$/, '').replace(/\*/g, '');
-  if (prefix === '') return false;
-  return directories.some((directory) => directory === prefix || directory.startsWith(`${prefix}/`));
+  if (prefix === '') return { status: 'fail', reason: 'no-candidate', alternatives: [] };
+
+  const fromRoot = directories.some((directory) => directory === prefix || directory.startsWith(`${prefix}/`));
+  if (fromRoot) return { status: 'ok', pattern };
+
+  const suffixMatches = [
+    ...new Set(
+      directories
+        .filter((directory) => directory === prefix || directory.endsWith(`/${prefix}`))
+        .map((directory) => directory),
+    ),
+  ].sort();
+
+  if (suffixMatches.length === 1) {
+    return { status: 'ok', pattern: `${suffixMatches[0] as string}/**` };
+  }
+  if (suffixMatches.length > 1) {
+    return { status: 'fail', reason: 'ambiguous', alternatives: suffixMatches.slice(0, 4) };
+  }
+  return { status: 'fail', reason: 'no-candidate', alternatives: [] };
 }
 
 export function summariseSubjects(subjects: readonly ResolvedSubject[]): SubjectResolutionSummary {

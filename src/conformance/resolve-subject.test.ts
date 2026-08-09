@@ -106,6 +106,28 @@ describe('path patterns', () => {
     expect(result.target).toBe('src/graph/**');
   });
 
+  it('resolves the shorthand documents actually use', () => {
+    // CLAUDE.md writes `parser/` for a directory that lives at src/parser.
+    const result = resolveSubject('parser/', { candidates, directories: ['src/parser', 'src/graph'] });
+    expect(result.status).toBe('PATH_PATTERN');
+    expect(result.target).toBe('src/parser/**');
+  });
+
+  it('refuses a shorthand that matches two directories', () => {
+    const result = resolveSubject('parser/', {
+      candidates,
+      directories: ['src/parser', 'vendor/parser'],
+    });
+    expect(result.status).toBe('UNRESOLVED');
+    expect(result.reason).toBe('ambiguous');
+    expect(result.alternatives).toEqual(['src/parser', 'vendor/parser']);
+  });
+
+  it('prefers a root match over a deeper one with the same name', () => {
+    const result = resolveSubject('parser/', { candidates, directories: ['parser', 'src/parser'] });
+    expect(result.target).toBe('parser/**');
+  });
+
   it('rejects a path that no longer exists rather than constraining nothing', () => {
     const result = resolveSubject('src/legacy/**', { candidates, directories: ['src/parser'] });
     expect(result.status).toBe('UNRESOLVED');
