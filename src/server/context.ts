@@ -11,6 +11,7 @@ import type { ClusteringResult } from '../types/modules.js';
 import type { LabelSet } from '../types/labels.js';
 import type { CorrectionOutcome } from '../types/corrections.js';
 import type { CorrectionsStore } from '../store/corrections-store.js';
+import type { IntentRunResult } from '../pipeline/intent.js';
 
 export interface AnalysisContext {
   /** Absolute repository root. */
@@ -27,4 +28,9 @@ export interface AnalysisContext {
   readonly correctionOutcomes: readonly CorrectionOutcome[];
   /** Open store, so corrections can be made while the server is up. */
   readonly store: CorrectionsStore;
+  /**
+   * What the repository says about itself. STATED, and served on its own
+   * route so the UI cannot accidentally render a claim inside the graph.
+   */
+  readonly intent: IntentRunResult;
 }

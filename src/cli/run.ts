@@ -123,6 +123,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     clustering,
     labels,
     correctionOutcomes,
+    intent,
     store,
   });
 

@@ -11,6 +11,7 @@ import type {
   NodeResponse,
   SummaryResponse,
   ViewLevel,
+  IntentResponse,
 } from './api-types';
 
 async function getJson<T>(path: string): Promise<T> {
@@ -82,6 +83,14 @@ export async function deleteCorrection(id: string): Promise<void> {
   if (!response.ok) {
     throw new Error(`delete failed: ${response.status}`);
   }
+}
+
+export async function fetchIntent(): Promise<IntentResponse> {
+  const response = await fetch('/api/intent');
+  if (!response.ok) {
+    throw new Error(`intent failed: ${response.status}`);
+  }
+  return (await response.json()) as IntentResponse;
 }
 
 /**

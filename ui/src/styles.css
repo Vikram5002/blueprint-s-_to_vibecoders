@@ -566,3 +566,99 @@ body {
   min-height: 0;
   border: 0;
 }
+
+/* --- stated intent ---
+ *
+ * Rule 2 made visible. Everything else in this UI is derived from a real import
+ * statement; this panel is a claim someone wrote down. It gets its own colour,
+ * its own left border and a STATED chip on every card, so a reader never has to
+ * work out which half of the model they are looking at.
+ *
+ * Violet, deliberately outside the palette used by the graph. The three label
+ * provenance states already use green, amber and blue, and reusing any of them
+ * would suggest a relationship that does not exist.
+ */
+:root {
+  --stated: #b98cff;
+}
+
+.stated {
+  border-left: 3px solid var(--stated);
+  padding-left: 12px;
+}
+
+.provenance.stated-chip {
+  color: var(--stated);
+  border-color: var(--stated);
+  background: rgba(185, 140, 255, 0.12);
+}
+
+.banner[data-tone='stated'] {
+  background: #241a38;
+  border-color: var(--stated);
+  color: #e2d4ff;
+}
+
+.evidence-group.constraint {
+  border-color: #3a2f52;
+}
+
+/* A constraint no Week 8 check can evaluate is dimmed, not hidden: the user
+ * should see that their document said something the tool could not act on. */
+.evidence-group.constraint[data-evaluable='false'] {
+  opacity: 0.75;
+  border-style: dashed;
+}
+
+.evidence-group.constraint header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1d1830;
+}
+
+.constraint-body {
+  padding: 8px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.constraint-rule {
+  font-size: 11px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.constraint-rule .rel {
+  color: var(--stated);
+  font-family: inherit;
+}
+
+.role {
+  background: #232a38;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+/* An unresolved role shows the words the document used, struck through, so it
+ * is obvious the tool could not find what the sentence was talking about. */
+.role.unresolved {
+  border-color: var(--bad);
+  color: var(--bad);
+  text-decoration: line-through;
+}
+
+.quote {
+  font-size: 11px;
+  font-style: italic;
+  color: #cfc4e6;
+  border-left: 2px solid var(--stated);
+  padding-left: 8px;
+}
+
+.tag-low {
+  color: var(--warn);
+  border: 1px dashed var(--warn);
+}

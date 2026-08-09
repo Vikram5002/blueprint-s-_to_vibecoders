@@ -21,6 +21,7 @@ import {
   buildSummaryResponse,
 } from './api.js';
 import { buildCorrectionsResponse, parseCorrectionRequest } from './corrections-api.js';
+import { buildIntentResponse } from './intent-api.js';
 import { ROOT_DIRECTORY, type ViewLevel } from '../graph/aggregate.js';
 import type { AnalysisContext } from './context.js';
 
@@ -73,6 +74,8 @@ export function createApp(context: AnalysisContext): Hono {
   });
 
   app.get('/api/modules', (c) => c.json(buildModuleViewResponse(context)));
+
+  app.get('/api/intent', (c) => c.json(buildIntentResponse(context)));
 
   app.get('/api/corrections', (c) => c.json(buildCorrectionsResponse(context)));
 

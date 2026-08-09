@@ -211,3 +211,56 @@ export interface SummaryResponse {
   topExternals: { name: string; count: number }[];
   clustering: ClusteringSummary;
 }
+
+/**
+ * STATED data. Kept in its own response, and its own types, so nothing in the
+ * graph views can render a claim by accident (rule 2).
+ */
+export interface ConstraintRole {
+  phrase: string;
+  status: 'MODULE' | 'PATH_PATTERN' | 'UNRESOLVED';
+  target: string | null;
+  reason: string | null;
+  similarity: number;
+}
+
+export interface ConstraintResponse {
+  id: string;
+  relation: string;
+  subject: ConstraintRole;
+  object: ConstraintRole;
+  via: ConstraintRole | null;
+  confidence: number;
+  lowConfidence: boolean;
+  evaluable: boolean;
+  rawText: string;
+  source: { type: string; location: string; line: number | null; timestamp: string | null };
+  provenance: 'STATED';
+}
+
+export interface IntentResponse {
+  degraded: boolean;
+  summary: {
+    documents: number;
+    architecturalStatements: number;
+    constraints: number;
+    uncheckable: number;
+    byUncheckableReason: Record<string, number>;
+    byRelation: Record<string, number>;
+    lowConfidence: number;
+    evaluable: number;
+    subjects: {
+      total: number;
+      module: number;
+      pathPattern: number;
+      unresolved: number;
+      resolutionRate: number;
+      byReason: Record<string, number>;
+    };
+    degraded: boolean;
+  };
+  constraints: ConstraintResponse[];
+  uncheckable: { rawText: string; reason: string; location: string }[];
+  failures: { location: string; reason: string }[];
+  emptyReason: 'not-attempted' | 'no-documents' | 'nothing-stated' | null;
+}

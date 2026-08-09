@@ -4,6 +4,7 @@ import {
   fetchCorrections,
   fetchEdge,
   fetchGraph,
+  fetchIntent,
   fetchModule,
   fetchModuleEdge,
   fetchModules,
@@ -13,6 +14,7 @@ import {
   type NewCorrectionRequest,
 } from './api';
 import { CorrectionsPanel } from './CorrectionsPanel';
+import { IntentPanel } from './IntentPanel';
 import { GraphCanvas } from './GraphCanvas';
 import { ModuleCanvas } from './ModuleCanvas';
 import { EvidencePanel } from './EvidencePanel';
@@ -23,6 +25,7 @@ import type {
   CorrectionsResponse,
   EdgeResponse,
   GraphResponse,
+  IntentResponse,
   ModuleDetailResponse,
   ModuleViewResponse,
   NodeResponse,
@@ -46,6 +49,7 @@ export function App(): JSX.Element {
   const [modules, setModules] = useState<ModuleViewResponse | null>(null);
   const [selectedModule, setSelectedModule] = useState<ModuleDetailResponse | null>(null);
   const [corrections, setCorrections] = useState<CorrectionsResponse | null>(null);
+  const [intent, setIntent] = useState<IntentResponse | null>(null);
   const [savingCorrection, setSavingCorrection] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [grouping, setGrouping] = useState<Grouping>('directory');
@@ -85,6 +89,10 @@ export function App(): JSX.Element {
   useEffect(() => {
     reloadCorrections();
   }, [reloadCorrections]);
+
+  useEffect(() => {
+    fetchIntent().then(setIntent).catch((cause: unknown) => setError(String(cause)));
+  }, []);
 
   const saveCorrectionAndRefresh = useCallback(
     (request: NewCorrectionRequest) => {
@@ -307,6 +315,11 @@ export function App(): JSX.Element {
             {corrections !== null && corrections.corrections.length > 0 && (
               <div style={{ marginBottom: 18 }}>
                 <CorrectionsPanel corrections={corrections} onDelete={forgetCorrection} />
+              </div>
+            )}
+            {intent !== null && (
+              <div style={{ marginBottom: 18 }}>
+                <IntentPanel intent={intent} />
               </div>
             )}
             {summary !== null ? <SummaryPanel summary={summary} /> : <div className="hint">Loading…</div>}
