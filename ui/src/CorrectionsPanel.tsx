@@ -45,8 +45,17 @@ export function CorrectionsPanel({ corrections, onDelete }: CorrectionsPanelProp
 
           {orphaned.length > 0 && (
             <div className="banner">
-              {orphaned.length} correction{orphaned.length === 1 ? '' : 's'} no longer match any module and{' '}
-              <b>were not reapplied</b>. The code moved too far since you made them.
+              {orphaned.length === 1 ? (
+                <>
+                  1 correction no longer matches any module and <b>was not reapplied</b>. The code
+                  moved too far since you made it.
+                </>
+              ) : (
+                <>
+                  {orphaned.length} corrections no longer match any module and{' '}
+                  <b>were not reapplied</b>. The code moved too far since you made them.
+                </>
+              )}
             </div>
           )}
 
