@@ -12,6 +12,7 @@ import type { DependencyGraph } from '../graph/build-graph.js';
 import type { ClusteringResult } from '../types/modules.js';
 import type { LabelSet } from '../types/labels.js';
 import type { CorrectionOutcome } from '../types/corrections.js';
+import type { IntentRunResult } from '../pipeline/intent.js';
 
 const LANGUAGE_LABELS: Readonly<Record<Language, string>> = {
   typescript: 'TypeScript',
@@ -230,6 +231,77 @@ export function formatCorrectionSummary(outcomes: readonly CorrectionOutcome[]):
   return lines.join('\n');
 }
 
+/**
+ * Stated intent.
+ *
+ * Written to keep STATED visibly apart from everything above it in the report.
+ * Every other section describes what the code does; this one describes what
+ * somebody claimed, and the wording says so — "claims", "stated", and the file
+ * and line behind each one. Week 8 is what compares them.
+ */
+export function formatIntentSummary(intent: IntentRunResult): string {
+  const { summary } = intent;
+  if (summary.degraded) {
+    return summary.documents === 0
+      ? ''
+      : [
+          `  Stated intent       ${count(summary.documents)} document(s) found, not read`,
+          '                      (no ANTHROPIC_API_KEY — reading prose needs a model, and there',
+          '                       is no mechanical fallback, so this is "not attempted", not "none")',
+          '',
+        ].join('\n');
+  }
+
+  const lines = [
+    `  Stated intent       ${count(summary.constraints)} constraint(s) from ${count(summary.documents)} document(s)`,
+  ];
+
+  for (const [relation, total] of Object.entries(summary.byRelation)) {
+    if (total > 0) lines.push(`    ${relation.padEnd(20)}${count(total)}`);
+  }
+
+  if (summary.uncheckable > 0) {
+    lines.push(
+      '',
+      `  Architectural but uncheckable  ${count(summary.uncheckable)}`,
+      '    Said about the architecture, but not decidable from an import graph.',
+    );
+    for (const [reason, total] of Object.entries(summary.byUncheckableReason)) {
+      if (total > 0) lines.push(`    ${reason.padEnd(28)}${count(total)}`);
+    }
+  }
+
+  if (summary.constraints > 0) {
+    // Reported separately from extraction on purpose: a constraint that was
+    // read correctly but whose subject could not be found is a different
+    // failure from one that was never read, and averaging them hides both.
+    lines.push(
+      '',
+      `  Subject resolution  ${summary.subjects.resolutionRate.toFixed(1)}%  ` +
+        `(${count(summary.subjects.module)} module, ${count(summary.subjects.pathPattern)} path, ` +
+        `${count(summary.subjects.unresolved)} unresolved)`,
+    );
+    for (const [reason, total] of Object.entries(summary.subjects.byReason)) {
+      if (total > 0) lines.push(`    ${reason.padEnd(20)}${count(total)}`);
+    }
+    lines.push(
+      '',
+      `  Evaluable in Week 8 ${count(summary.evaluable)} of ${count(summary.constraints)}`,
+      `  Low confidence      ${count(summary.lowConfidence)}`,
+    );
+  }
+
+  if (intent.failures.length > 0) {
+    lines.push('', `  Documents not read  ${count(intent.failures.length)}`);
+    for (const failure of intent.failures.slice(0, 3)) {
+      lines.push(`    ${failure.location}: ${failure.reason}`);
+    }
+  }
+
+  lines.push('');
+  return lines.join('\n');
+}
+
 export function formatServing(url: string, opening: boolean): string {
   return [
     `  Blueprint ready at  ${url}`,
@@ -300,6 +372,7 @@ export function formatJson(
   graph: DependencyGraph,
   clustering: ClusteringResult,
   labels: LabelSet,
+  intent: IntentRunResult,
 ): string {
   return JSON.stringify(
     {
@@ -347,6 +420,15 @@ export function formatJson(
       labelling: {
         summary: labels.summary,
         labels: [...labels.labels.values()],
+      },
+      // Kept in its own key, never folded into `graph` or `clustering`.
+      // Rule 2: a consumer must not be able to read a claim as a fact.
+      intent: {
+        summary: intent.summary,
+        constraints: intent.constraints,
+        uncheckable: intent.uncheckable,
+        failures: intent.failures,
+        usage: intent.usage,
       },
     },
     null,

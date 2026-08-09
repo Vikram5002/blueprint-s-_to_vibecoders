@@ -8,6 +8,7 @@ import {
   formatCorrectionSummary,
   formatError,
   formatLabelSummary,
+  formatIntentSummary,
   formatFileList,
   formatGraphSummary,
   formatHelp,
@@ -66,6 +67,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
                 : formatParseProgress(progress.filesParsed, progress.filesTotal, progress.currentFile),
             ),
           onLabelProgress: (done, total, moduleId) => io.writeErr(`  named ${done}/${total} — ${moduleId}`),
+          onIntentProgress: (done, total, location) => io.writeErr(`  read ${done}/${total} — ${location}`),
         }
       : {}),
   });
@@ -75,12 +77,22 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     return EXIT_FAILURE;
   }
 
-  const { analysis, labels, correctionOutcomes, db, store } = run.value;
+  const { analysis, labels, correctionOutcomes, intent, db, store } = run.value;
   const { walk: result, ingest: summary, parse, parseSummary, graph, clustering } = analysis;
 
   if (options.json) {
     io.writeOut(
-      formatJson(summary, result.files, result.stats.errors, parseSummary, parse, graph, clustering, labels),
+      formatJson(
+        summary,
+        result.files,
+        result.stats.errors,
+        parseSummary,
+        parse,
+        graph,
+        clustering,
+        labels,
+        intent,
+      ),
     );
     db.close();
     return EXIT_OK;
@@ -95,6 +107,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
   io.writeOut(formatClusterSummary(clustering));
   io.writeOut(formatLabelSummary(labels));
   io.writeOut(formatCorrectionSummary(correctionOutcomes));
+  io.writeOut(formatIntentSummary(intent));
 
   if (!options.serve) {
     db.close();

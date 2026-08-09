@@ -67,6 +67,13 @@ describe('rule 1 — the determinism boundary', () => {
   it.each(DETERMINISTIC)('%s does not import from llm/', async (directory) => {
     const offenders: string[] = [];
     for (const file of await filesUnder(directory, ['.ts', '.tsx'])) {
+      // Tests are exempt, and only tests. The rule is about what ships: a test
+      // that verifies the boundary holds — injection.test.ts drives a stub
+      // provider against the deterministic validators — has to be able to see
+      // both sides of it. Every production file in these directories is still
+      // checked, so a real violation cannot hide behind this.
+      if (file.endsWith('.test.ts') || file.endsWith('.test.tsx')) continue;
+
       const source = await readFile(join(repoRoot, file), 'utf8');
       for (const specifier of importedSpecifiers(source)) {
         if (/(^|\/)llm\//.test(specifier)) offenders.push(`${file} imports ${specifier}`);

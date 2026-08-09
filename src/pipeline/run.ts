@@ -1,13 +1,19 @@
 /**
- * One full run: analyse, apply stored corrections, label, record what happened.
+ * One full run: analyse, apply stored corrections, label, read intent, record.
  *
  * The order is the architecture. Deterministic analysis first; user corrections
- * next, because a person's decision outranks the algorithm's; labelling last,
- * because a name is cosmetic and must not be able to influence either.
+ * next, because a person's decision outranks the algorithm's; labelling after
+ * that, because a name is cosmetic and must not be able to influence either.
+ *
+ * Intent extraction runs last and touches nothing. It needs finished modules,
+ * because a constraint's subject resolves against them, and it produces STATED
+ * data that is kept entirely separate from the graph. Week 8 compares the two;
+ * this week they only ever sit side by side.
  */
 import { stat } from 'node:fs/promises';
 import { analyseRepository, type Analysis, type AnalysisFailure, type AnalysisProgress } from './analyse.js';
 import { labelRepository } from './label-repository.js';
+import { extractIntent, type IntentRunResult } from './intent.js';
 import { openDatabase, databasePathFor, type BlueprintDatabase } from '../store/database.js';
 import { createCorrectionsStore, type CorrectionsStore } from '../store/corrections-store.js';
 import { err, ok, type Result } from '../types/result.js';
@@ -20,6 +26,7 @@ export interface RunOptions {
   readonly env?: NodeJS.ProcessEnv;
   readonly onProgress?: (progress: AnalysisProgress) => void;
   readonly onLabelProgress?: (done: number, total: number, moduleId: string) => void;
+  readonly onIntentProgress?: (done: number, total: number, location: string) => void;
 }
 
 export interface RunResult {
@@ -27,6 +34,8 @@ export interface RunResult {
   readonly labels: LabelSet;
   readonly corrections: readonly Correction[];
   readonly correctionOutcomes: readonly CorrectionOutcome[];
+  /** STATED data. Never merged with the graph; see rule 2. */
+  readonly intent: IntentRunResult;
   /** Open handle, so a server can accept corrections during the session. */
   readonly db: BlueprintDatabase;
   readonly store: CorrectionsStore;
@@ -75,9 +84,26 @@ export async function runPipeline(options: RunOptions): Promise<Result<RunResult
     ...(options.onLabelProgress === undefined ? {} : { onProgress: options.onLabelProgress }),
   });
 
+  const intent = await extractIntent({
+    root: options.root,
+    clustering: analysed.value.clustering,
+    labels,
+    ...(options.useModel === undefined ? {} : { useModel: options.useModel }),
+    ...(options.env === undefined ? {} : { env: options.env }),
+    ...(options.onIntentProgress === undefined ? {} : { onProgress: options.onIntentProgress }),
+  });
+
   // Recorded even when nothing was corrected, so a run is always comparable
   // against the corrections that were in force when it happened.
   store.recordRun(outcomes);
 
-  return ok({ analysis: analysed.value, labels, corrections, correctionOutcomes: outcomes, db, store });
+  return ok({
+    analysis: analysed.value,
+    labels,
+    corrections,
+    correctionOutcomes: outcomes,
+    intent,
+    db,
+    store,
+  });
 }
