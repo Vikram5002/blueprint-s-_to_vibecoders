@@ -475,6 +475,84 @@ the accidental version as seriously as the hostile one.
 
 ---
 
+## Numbered findings
+
+Candidates for the paper's discussion section. Numbered so they can be cited
+from elsewhere without restating them.
+
+### Finding 1 — Documentation describes architecture roughly 20× more often than it constrains it
+
+Across 31 real documents from four projects, extraction returned **66
+architectural statements**. Of those:
+
+| | Count | Share |
+|---|---|---|
+| Checkable against an import graph | **3** | 4.5% |
+| Architectural but not checkable | **61** | 92.4% |
+| Rejected by validation | 2 | 3.0% |
+
+**A ratio of roughly 20 uncheckable statements for every checkable one.**
+
+The uncheckable majority is not noise, and it is not badly written
+documentation. It is `descriptive-not-normative` (18), `process-rule` (17),
+`runtime-behaviour` (13), `technology-choice` (9), `style-preference` (3). These
+are real, deliberate statements about how a system is meant to be built. They
+simply cannot be decided by asking which file imports which.
+
+Why this belongs in the discussion rather than the results:
+
+1. **It bounds what any import-graph conformance tool can ever check.** The
+   limit is not the extractor's accuracy or the model's capability. It is that
+   most architectural intent is not expressed as a dependency rule, so a tool
+   reading dependency rules sees a thin slice of it by construction.
+2. **It makes a bare violation rate misleading.** A repository that made 64
+   architectural claims and is measured against 3 of them can report perfect
+   conformance while ignoring 95% of what it said about itself. Week 14 must
+   publish the denominator alongside the rate, or the rate means very little.
+3. **It suggests the honest framing is coverage, not compliance.** "This tool
+   checked 3 of the 64 architectural statements your documentation makes"
+   is a more truthful headline than "your architecture is 100% conformant",
+   and it is the number a reader should see first.
+
+The 3:61 split is measured on one corpus of 31 documents and should be
+reported as such. The direction of the effect is unlikely to reverse — it is a
+fact about how engineers write documentation — but the magnitude will move
+between corpora.
+
+### Open item — the recall denominator is too small to cite
+
+Recall is currently **3 of 4**: one constraint is worth 25 percentage points.
+That is an anecdote with a decimal point on it, and it must not appear in the
+paper as a measured recall figure.
+
+**Target: 15-20 positive documents** — documents that genuinely contain
+constraints expressible in the four relations — before recall is quoted at all.
+At that size a single miss moves the figure by 5-7 points instead of 25, which
+is the difference between a measurement and a coin flip.
+
+The hard part is that positives are rare in the wild, which is Finding 1 again
+from the other side: 31 documents were read to find 4 constraints. Reaching 20
+positives by the same sampling rate would need on the order of 150 documents.
+
+Cheaper routes, in the order worth trying:
+
+1. **Sample agent-instruction files specifically.** `AGENTS.md`, `CLAUDE.md`
+   and `.cursorrules` are where checkable rules actually appear — the corpus's
+   only positive is one, and zod ships all three. Sampling those directly
+   rather than READMEs should raise the hit rate sharply.
+2. **Sample repositories that enforce layering already.** A project shipping
+   `dependency-cruiser`, `import-linter`, ESLint `no-restricted-imports` or an
+   ArchUnit suite has, by definition, written down checkable rules — and the
+   config doubles as an independent gold standard for the same repository.
+3. **Widen the relation set** so more of the 61 becomes checkable. This raises
+   the positive count and the coverage figure together, but every new relation
+   costs a checker in Week 8 and a new way to be wrong.
+
+Not this week's work. Logged so the number is never quoted before it can carry
+the weight.
+
+---
+
 ## Acceptance status
 
 | Item | Status |
