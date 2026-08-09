@@ -46,15 +46,19 @@ export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash';
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 /**
- * Models that reject `thinkingConfig`. `gemini-3.6-flash` returns 400 for
- * `thinkingBudget: 0`, so it is sent only where it is known to work.
+ * Headroom added to the caller's output budget when the model is thinking.
+ *
+ * `maxOutputTokens` in our interface means "how long may the *answer* be" — it
+ * is sized for a label, and 256 is plenty. Gemini bills thinking against the
+ * same budget, so passing the caller's number straight through means the model
+ * spends the entire allowance reasoning and gets cut off mid-JSON. That is
+ * exactly what happened: every label came back `MAX_TOKENS`, and the ones that
+ * did not were rejected downstream as `missing-label`.
+ *
+ * So the adapter translates rather than forwards. The caller's number still
+ * bounds the answer; this is the space the model is allowed to think in on top.
  */
-const ACCEPTS_THINKING_BUDGET: ReadonlySet<string> = new Set([
-  'gemini-3.5-flash',
-  'gemini-3.5-flash-lite',
-  'gemini-2.0-flash',
-  'gemini-2.0-flash-lite',
-]);
+const THINKING_HEADROOM_TOKENS = 4_096;
 
 /** Attempts per request, including the first. */
 export const MAX_ATTEMPTS = 5;
@@ -169,12 +173,26 @@ export function createGeminiProvider(options: GeminiOptions): CompletionProvider
   const doFetch = options.fetchImpl ?? fetch;
   const sleep = options.sleep ?? defaultSleep;
 
+  /**
+   * Whether this model accepts `thinkingConfig`, learned rather than declared.
+   *
+   * An allowlist was the first attempt and it was wrong within minutes:
+   * gemini-3.6-flash and gemini-3.5-flash-lite both reject `thinkingBudget`
+   * with a bare 400, and I had guessed the lite model accepted it. A hardcoded
+   * table of model capabilities rots every time Google ships a model, and it
+   * fails closed in the worst way — a 400 on every single call.
+   *
+   * So the first rejection flips this off for the lifetime of the provider and
+   * the request is retried without it. One wasted call per process, and it
+   * stays correct for models that do not exist yet.
+   */
+  let thinkingConfigSupported = true;
+
   return {
     name: `gemini:${model}`,
     model,
 
     complete: async (request: CompletionRequest): Promise<CompletionResult> => {
-      const body = buildRequestBody(model, request);
       let lastFailure: CompletionResult | null = null;
 
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
@@ -187,7 +205,7 @@ export function createGeminiProvider(options: GeminiOptions): CompletionProvider
               'x-goog-api-key': options.apiKey,
               'content-type': 'application/json',
             },
-            body: JSON.stringify(body),
+            body: JSON.stringify(buildRequestBody(request, { withThinkingConfig: thinkingConfigSupported })),
           });
         } catch (cause) {
           lastFailure = {
@@ -231,6 +249,13 @@ export function createGeminiProvider(options: GeminiOptions): CompletionProvider
           continue;
         }
 
+        // A 400 while sending thinkingConfig is probably the model refusing
+        // that parameter. Drop it and try once more before giving up.
+        if (response.status === 400 && thinkingConfigSupported && looksLikeThinkingRejection(text)) {
+          thinkingConfigSupported = false;
+          continue;
+        }
+
         return {
           ok: false,
           error: {
@@ -255,9 +280,18 @@ export function backoffFor(attempt: number, retryAfterMs: number | null): number
   return Math.min(BASE_BACKOFF_MS * 2 ** (attempt - 1), MAX_BACKOFF_MS);
 }
 
-function buildRequestBody(model: string, request: CompletionRequest): Record<string, unknown> {
+function buildRequestBody(
+  request: CompletionRequest,
+  options: { readonly withThinkingConfig: boolean },
+): Record<string, unknown> {
+  const budget = thinkingBudgetFor(request.effort);
+
   const generationConfig: Record<string, unknown> = {
-    maxOutputTokens: request.maxOutputTokens,
+    // The caller's budget bounds the answer; thinking gets its own room on top.
+    // When thinkingConfig cannot be sent, assume the model may think anyway and
+    // leave the full headroom, because a truncated answer is a wasted call.
+    maxOutputTokens:
+      request.maxOutputTokens + (options.withThinkingConfig ? budget : THINKING_HEADROOM_TOKENS),
     // The same structured-output guarantee the Anthropic adapter asks for.
     // Re-validated on the way back regardless; see validate.ts.
     responseMimeType: 'application/json',
@@ -274,15 +308,15 @@ function buildRequestBody(model: string, request: CompletionRequest): Record<str
    * Thinking is billed and slow, and naming a cluster does not need it.
    * Measured on gemini-3.5-flash: 332 thinking tokens and 2,299 ms with the
    * default budget, against 0 tokens and 1,026 ms with it disabled. Over a
-   * 46-module repository that is more than a minute of latency for a task
-   * that is a lookup.
+   * 46-module repository that is more than a minute of latency for a task that
+   * is a lookup.
    *
    * Raised for 'high' effort, which is what intent extraction asks for —
    * deciding whether a sentence carries a checkable obligation is a judgement,
-   * and there the thinking is worth paying for.
+   * and there the thinking earns its cost.
    */
-  if (ACCEPTS_THINKING_BUDGET.has(model)) {
-    generationConfig['thinkingConfig'] = { thinkingBudget: thinkingBudgetFor(request.effort) };
+  if (options.withThinkingConfig) {
+    generationConfig['thinkingConfig'] = { thinkingBudget: budget };
   }
 
   return {
@@ -290,6 +324,17 @@ function buildRequestBody(model: string, request: CompletionRequest): Record<str
     contents: [{ role: 'user', parts: [{ text: request.user }] }],
     generationConfig,
   };
+}
+
+/**
+ * Does this 400 mean "I do not accept thinkingConfig"?
+ *
+ * Gemini says only "Request contains an invalid argument", with no field path,
+ * so this is necessarily a guess — but a safe one, because the fallback is to
+ * retry once without the parameter and the worst case is one wasted call.
+ */
+function looksLikeThinkingRejection(body: string): boolean {
+  return /invalid argument/i.test(body) || /thinking/i.test(body);
 }
 
 export function thinkingBudgetFor(effort: CompletionRequest['effort']): number {

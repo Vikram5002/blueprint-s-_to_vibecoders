@@ -174,20 +174,88 @@ describe('request mapping', () => {
     expect(thinkingBudgetFor('high')).toBeGreaterThan(thinkingBudgetFor('medium'));
   });
 
-  it('does not send thinkingConfig to a model that rejects it', async () => {
-    // gemini-3.6-flash returns 400 for thinkingBudget: 0.
-    let body: { generationConfig?: Record<string, unknown> } = {};
+  it('drops thinkingConfig and retries when the model rejects it', async () => {
+    // gemini-3.6-flash and gemini-3.5-flash-lite both answer a thinkingBudget
+    // with a bare 400. Learned at runtime rather than from an allowlist, which
+    // was wrong within minutes of writing it.
+    const bodies: { generationConfig?: Record<string, unknown> }[] = [];
     const provider = createGeminiProvider({
       apiKey: SECRET,
       model: 'gemini-3.6-flash',
+      sleep: async () => undefined,
+      fetchImpl: (async (_url, init) => {
+        const body = JSON.parse(String(init?.body));
+        bodies.push(body);
+        return body.generationConfig.thinkingConfig !== undefined
+          ? jsonResponse({ error: { message: 'Request contains an invalid argument.' } }, 400)
+          : jsonResponse(OK_BODY);
+      }) as typeof fetch,
+    });
+
+    await expect(provider.complete(request)).resolves.toMatchObject({ ok: true });
+    expect(bodies).toHaveLength(2);
+    expect(bodies[0]?.generationConfig).toHaveProperty('thinkingConfig');
+    expect(bodies[1]?.generationConfig).not.toHaveProperty('thinkingConfig');
+  });
+
+  it('learns the rejection once, not once per call', async () => {
+    let withThinking = 0;
+    const provider = createGeminiProvider({
+      apiKey: SECRET,
+      model: 'gemini-3.6-flash',
+      sleep: async () => undefined,
+      fetchImpl: (async (_url, init) => {
+        const body = JSON.parse(String(init?.body));
+        if (body.generationConfig.thinkingConfig !== undefined) {
+          withThinking += 1;
+          return jsonResponse({ error: { message: 'Request contains an invalid argument.' } }, 400);
+        }
+        return jsonResponse(OK_BODY);
+      }) as typeof fetch,
+    });
+
+    await provider.complete(request);
+    await provider.complete(request);
+    await provider.complete(request);
+    // One wasted call for the whole process, not one per module.
+    expect(withThinking).toBe(1);
+  });
+
+  it('gives thinking its own room instead of spending the answer budget on it', async () => {
+    // The caller's maxOutputTokens sizes the *answer*. Gemini bills thinking
+    // against the same budget, so forwarding 256 verbatim truncated every
+    // response and the labels came back as missing-label.
+    let body: { generationConfig?: { maxOutputTokens?: number } } = {};
+    const provider = createGeminiProvider({
+      apiKey: SECRET,
       fetchImpl: (async (_url, init) => {
         body = JSON.parse(String(init?.body));
         return jsonResponse(OK_BODY);
       }) as typeof fetch,
     });
 
-    await provider.complete(request);
-    expect(body.generationConfig).not.toHaveProperty('thinkingConfig');
+    await provider.complete({ ...request, maxOutputTokens: 256, effort: 'high' });
+    expect(body.generationConfig?.maxOutputTokens).toBeGreaterThan(256 + 1000);
+  });
+
+  it('still leaves headroom when thinkingConfig cannot be sent', async () => {
+    const sizes: number[] = [];
+    const provider = createGeminiProvider({
+      apiKey: SECRET,
+      model: 'gemini-3.6-flash',
+      sleep: async () => undefined,
+      fetchImpl: (async (_url, init) => {
+        const body = JSON.parse(String(init?.body));
+        sizes.push(body.generationConfig.maxOutputTokens);
+        return body.generationConfig.thinkingConfig !== undefined
+          ? jsonResponse({ error: { message: 'Request contains an invalid argument.' } }, 400)
+          : jsonResponse(OK_BODY);
+      }) as typeof fetch,
+    });
+
+    await provider.complete({ ...request, maxOutputTokens: 256 });
+    // A model that thinks regardless of what we ask still needs the room.
+    expect(sizes.at(-1)).toBeGreaterThan(256 + 1000);
   });
 });
 
@@ -328,11 +396,13 @@ describe('rate limits are retried, never swallowed', () => {
       sleep: async () => undefined,
       fetchImpl: (async () => {
         badRequestCalls += 1;
-        return jsonResponse({ error: { message: 'invalid argument' } }, 400);
+        return jsonResponse({ error: { message: 'API key not valid. Pass a valid API key.' } }, 400);
       }) as typeof fetch,
     });
     await expect(broken.complete(request)).resolves.toMatchObject({ ok: false });
-    // A bad request fails identically five times; retrying only wastes time.
+    // A bad key fails identically five times; retrying only wastes time.
+    // (A 400 that *does* mention an invalid argument is retried once without
+    // thinkingConfig — covered separately above.)
     expect(badRequestCalls).toBe(1);
   });
 
