@@ -189,6 +189,70 @@ are answering different questions, and the second one is not visible from the fi
 
 ---
 
+## Stability re-check before Week 9
+
+Week 5 measured cluster stability specifically so that Week 9's drift work would
+not be built on churning clusters, and it flagged a concern: this repository's
+ARI against `HEAD~20` was **0.779**, the weakest number measured, on the
+smallest and fastest-growing repository in the set.
+
+Re-measured at 62 commits, before building the diff.
+
+### Against HEAD, as Week 5 measured it
+
+| Compared with | Shared files | ARI | Jaccard |
+|---|---|---|---|
+| `HEAD~1` | 186 | **1.000** | 1.000 |
+| `HEAD~5` | 179 | 0.909 | 0.947 |
+| `HEAD~10` | 178 | 0.909 | 0.946 |
+| `HEAD~20` | 163 | **0.824** | 0.898 |
+| `HEAD~30` | 135 | 0.586 | 0.722 |
+| `HEAD~40` | 110 | 0.589 | 0.762 |
+
+`HEAD~20` has *improved*, 0.779 → 0.824, as the repository grew and settled. The
+long distances look alarming — 0.586 at `HEAD~30` — but that window is one in
+which the codebase went from 135 files to 186, so most of that number is real
+growth rather than instability.
+
+### The measurement that actually matters
+
+Comparing old commits against HEAD answers "how far has the architecture moved".
+That is the wrong question for a drift chart, which walks history one commit at
+a time. What matters is whether *consecutive* commits agree, because noise
+between neighbours compounds into a chart full of change that never happened.
+
+`scripts/adjacent-stability.mjs` measures that. Over the last 25 commits:
+
+```
+  steps                 25
+  mean ARI              1.000
+  identical (ARI=1)     25/25  (100%)
+  weak    (ARI<0.8)     0/25
+```
+
+**Every adjacent pair produced an identical clustering.** Not merely similar —
+ARI and Jaccard both exactly 1.000 at all 25 steps, across commits that added
+33 files and moved the module count between 24 and 26.
+
+### What this means for Week 9
+
+Week 5's warning does not bite, with one condition attached.
+
+- **Adjacent-commit diffs are trustworthy.** Zero clustering movement between
+  neighbours means every regrouping a diff reports over one commit is real.
+  The false-restructure rate on this history is **0/25**.
+- **Long-range comparisons are not a substitute.** The 0.586 at `HEAD~30` is
+  what accumulates over thirty steps, and it decomposes into thirty individually
+  clean ones. A drift chart must therefore be built from **consecutive** steps
+  and summed, never from comparing each commit directly against HEAD — the
+  latter would attribute thirty commits of legitimate growth to whichever commit
+  happened to be at the far end.
+
+That is a design constraint on the drift chart, established before building it
+rather than discovered afterwards.
+
+---
+
 ## Known limitations
 
 - **A single-directory module of 1,274 files is a "module" only in the trivial sense.**

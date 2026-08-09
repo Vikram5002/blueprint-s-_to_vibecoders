@@ -548,6 +548,36 @@ Cheaper routes, in the order worth trying:
    the positive count and the coverage figure together, but every new relation
    costs a checker in Week 8 and a new way to be wrong.
 
+### Corpus selection: prioritise repositories with an admitted breach
+
+When the hunt for positives happens, weight sampling towards repositories that
+have a **known, documented violation of their own stated rule** — an open issue,
+a TODO, or a comment conceding the breach.
+
+The reason is that the corpus currently has a blind spot which the numbers hide.
+Week 8 measured this project against its own three constraints and found zero
+violations, which is the correct answer: it obeys its own rules. Every other
+repository in the corpus states no checkable rules at all. So across four
+repositories, **the detector has never once been shown a real violation** — only
+injected ones, which prove the mechanics work but say nothing about whether real
+breaches look the way the detector expects.
+
+That is a gap in the evidence, not in the code. "Evidence a tool correctly finds
+real violations" and "evidence a tool correctly finds none" are different
+claims, and only the second is currently supported by real data.
+
+A repository whose maintainers have written down both the rule and the admission
+that they broke it supplies both halves at once: a genuine constraint, and a
+genuine violation with an independent human judgement attached that the tool's
+verdict can be checked against. That is a far stronger gold standard than
+anything hand-labelled here, because it was written by people with no knowledge
+of this tool.
+
+Practical places to look: issues labelled `architecture` or `tech-debt`,
+`dependency-cruiser` or `import-linter` configs with documented exemptions
+(an exemption *is* an admitted breach, written down), and ADRs with a
+"superseded" or "we violated this" note.
+
 Not this week's work. Logged so the number is never quoted before it can carry
 the weight.
 

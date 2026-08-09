@@ -202,11 +202,14 @@ Measured on the three reference repositories (requests, zod, pyright) on
 
 - [x] **1. Works on TypeScript, JavaScript and Python repositories**
       — all three parse and resolve; pyright is TS, requests is Python, zod is TS.
-- [ ] **2. Handles a 5,000-file repo in under 60 seconds**
-      — **not verified at that size.** The largest repository to hand is pyright
-      at 1,917 files, which completes deterministic analysis in ~11 s. That
-      extrapolates comfortably, but extrapolation is not measurement, and this
-      box stays open until a 5,000-file repository has actually been run.
+- [x] **2. Handles a 5,000-file repo in under 60 seconds**
+      — **measured, not extrapolated.** `angular/angular` at depth 1: **6,976
+      analysed files, 22,480 imports, 201 modules, in 39.3 s** (second run;
+      42.9 s cold). That is 40% more files than the target, in two thirds of the
+      budget. Full deterministic pipeline — walk, parse, resolve, graph, cluster
+      — plus the no-key label and intent paths, measured as wall clock including
+      process startup. Resolution 97.3%, so it also clears criterion 5 on a
+      fourth repository.
 - [x] **3. Survives broken and unparseable files without crashing**
       — 36 files with syntax errors in pyright and 4 in zod, all recovered with
       partial symbols; no run aborted.
