@@ -150,14 +150,13 @@ export function formatClusterSummary(clustering: ClusteringResult): string {
  * Labelling. The no-key case says one quiet line and stops — a user who never
  * configures a key should not be nagged on every run.
  */
-export function formatLabelSummary(labels: LabelSet): string {
+export function formatLabelSummary(labels: LabelSet, keyEnv = 'GEMINI_API_KEY'): string {
   const { summary } = labels;
 
   if (summary.degraded) {
-    return [
-      '  Module names        mechanical (no ANTHROPIC_API_KEY configured)',
-      '',
-    ].join('\n');
+    // Names the variable the *configured* provider reads, so the hint is
+    // actionable when the default changes. Says nothing about the key's value.
+    return [`  Module names        mechanical (no ${keyEnv} configured)`, ''].join('\n');
   }
 
   const lines = [

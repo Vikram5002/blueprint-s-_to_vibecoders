@@ -14,9 +14,8 @@ import { discoverIntentDocuments, splitStatements, type IntentDocument } from '.
 import { compileCandidates } from '../conformance/compile.js';
 import { summariseSubjects } from '../conformance/resolve-subject.js';
 import { loadLabelCache } from '../llm/cache.js';
-import { createAnthropicProvider, readApiKey, DEFAULT_MODEL } from '../llm/anthropic.js';
+import { chooseProvider, createProvider } from '../llm/select-provider.js';
 import { createCachedExtractor } from '../llm/extract-intent.js';
-import { MODEL_ENV } from './label-repository.js';
 import type { ResolutionCandidate } from '../conformance/resolve-subject.js';
 import type { ClusteringResult } from '../types/modules.js';
 import type { LabelSet } from '../types/labels.js';
@@ -67,8 +66,8 @@ export async function extractIntent(options: IntentOptions): Promise<IntentRunRe
   const modules = candidatesFrom(options.clustering, options.labels);
   const directories = [...new Set(options.clustering.modules.flatMap((module) => module.directories))].sort();
 
-  const apiKey = options.useModel === false ? null : readApiKey(env);
-  if (apiKey === null || documents.length === 0) {
+  const provider = options.useModel === false ? null : await createProvider(chooseProvider(env));
+  if (provider === null || documents.length === 0) {
     /**
      * No key, or nothing to read.
      *
@@ -92,10 +91,6 @@ export async function extractIntent(options: IntentOptions): Promise<IntentRunRe
   }
 
   const cache = await loadLabelCache(options.root);
-  const provider = await createAnthropicProvider({
-    apiKey,
-    model: env[MODEL_ENV]?.trim() || DEFAULT_MODEL,
-  });
   const extractor = createCachedExtractor({
     provider,
     cache,

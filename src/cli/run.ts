@@ -20,6 +20,7 @@ import {
   formatSummary,
 } from './output.js';
 import { openBrowser } from './open-browser.js';
+import { chooseProvider } from '../llm/select-provider.js';
 import { runPipeline } from '../pipeline/run.js';
 import { startServer, type RunningServer } from '../server/server.js';
 
@@ -105,7 +106,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
   io.writeOut(formatParseSummary(parseSummary, parse.failures));
   io.writeOut(formatGraphSummary(graph));
   io.writeOut(formatClusterSummary(clustering));
-  io.writeOut(formatLabelSummary(labels));
+  io.writeOut(formatLabelSummary(labels, chooseProvider().keyEnv));
   io.writeOut(formatCorrectionSummary(correctionOutcomes));
   io.writeOut(formatIntentSummary(intent));
 

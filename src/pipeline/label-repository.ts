@@ -13,14 +13,17 @@
 import { labelModules } from './label.js';
 import { buildClusterEvidence } from './evidence.js';
 import { loadLabelCache } from '../llm/cache.js';
-import { createAnthropicProvider, readApiKey, DEFAULT_MODEL } from '../llm/anthropic.js';
+import { chooseProvider, createProvider } from '../llm/select-provider.js';
 import { createCachedLabeller } from '../llm/label-modules.js';
 import type { ClusteringResult } from '../types/modules.js';
 import type { LabelSet } from '../types/labels.js';
 import type { ParsedFile } from '../types/symbols.js';
 
-/** Overrides the model without a code change; see docs/LABELLING.md. */
-export const MODEL_ENV = 'VIBE_LLM_MODEL';
+/**
+ * Re-exported so callers keep one import site. Provider and model are both
+ * resolved in `llm/select-provider.ts`; see docs/PROVIDERS.md.
+ */
+export { MODEL_ENV, PROVIDER_ENV } from '../llm/select-provider.js';
 
 export interface LabelRepositoryOptions {
   readonly root: string;
@@ -36,9 +39,10 @@ export interface LabelRepositoryOptions {
 
 export async function labelRepository(options: LabelRepositoryOptions): Promise<LabelSet> {
   const env = options.env ?? process.env;
-  const apiKey = options.useModel === false ? null : readApiKey(env);
+  const choice = chooseProvider(env);
+  const provider = options.useModel === false ? null : await createProvider(choice);
 
-  if (apiKey === null) {
+  if (provider === null) {
     // No key, or explicitly disabled. Mechanical names, no warning, no cost.
     return labelModules(options.clustering, {
       ...(options.corrections === undefined ? {} : { corrections: options.corrections }),
@@ -46,10 +50,6 @@ export async function labelRepository(options: LabelRepositoryOptions): Promise<
   }
 
   const cache = await loadLabelCache(options.root);
-  const provider = await createAnthropicProvider({
-    apiKey,
-    model: env[MODEL_ENV]?.trim() || DEFAULT_MODEL,
-  });
 
   const labeller = createCachedLabeller({
     provider,

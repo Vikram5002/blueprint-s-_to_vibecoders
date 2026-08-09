@@ -89,6 +89,44 @@ describe('rule 1 — the determinism boundary', () => {
   });
 });
 
+describe('rule 6 — no network calls outside llm/', () => {
+  /**
+   * `fetch` in a deterministic directory would be a live call in the middle of
+   * analysis. The Gemini adapter uses it legitimately; nothing else may.
+   */
+  it('nothing outside llm/ calls fetch', async () => {
+    const offenders: string[] = [];
+    for (const directory of ['src/parser', 'src/graph', 'src/conformance', 'src/ingest', 'src/store', 'src/cli', 'src/pipeline']) {
+      for (const file of await filesUnder(directory, ['.ts'])) {
+        if (file.endsWith('.test.ts')) continue;
+        const source = await readFile(join(repoRoot, file), 'utf8');
+        if (/\bfetch\s*\(/.test(source)) offenders.push(`${file} calls fetch`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  /**
+   * Loading a .env mutates process.env for the whole process, so it belongs at
+   * the binary entry point and nowhere else.
+   *
+   * Found the hard way: calling it inside runCli made the CLI tests pick up a
+   * real GEMINI_API_KEY from the developer's repository root and start making
+   * live API calls, turning millisecond assertions into 5-second timeouts and
+   * quietly spending quota to check a file count.
+   */
+  it('only the binary entry point loads .env', async () => {
+    const offenders: string[] = [];
+    for (const file of await filesUnder('src', ['.ts'])) {
+      // filesUnder normalises to posix separators, so compare that way.
+      if (file.endsWith('.test.ts') || file.endsWith('env-file.ts') || file === 'src/cli.ts') continue;
+      const source = await readFile(join(repoRoot, file), 'utf8');
+      if (/\bloadEnvFile\s*\(/.test(source)) offenders.push(`${file} loads .env`);
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('rule 4 — the UI is a client, not a coupled module', () => {
   it('ui/ does not import from src/', async () => {
     const offenders: string[] = [];
