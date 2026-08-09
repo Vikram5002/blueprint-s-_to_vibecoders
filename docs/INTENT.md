@@ -340,34 +340,170 @@ So the degraded result is empty, flagged, and worded as "not attempted" — neve
 
 ---
 
+## Measured results
+
+Run against all 31 documents with **`gemini-3.5-flash-lite`** — the default
+`gemini-3.5-flash` has too tight a daily quota for 31 sequential calls.
+
+```bash
+node scripts/evaluate-intent.mjs --model=gemini-3.5-flash-lite
+```
+
+### Precision and recall
+
+| | |
+|---|---|
+| **Precision** | **100.0%** — 3 correct of 3 predicted |
+| **Recall** | **75.0%** — 3 found of 4 labelled |
+| **F1** | **85.7%** |
+| Clean documents | **30 of 30** produced nothing, correctly |
+
+Precision is the number that matters, and it is the one that came out well. The
+project's own proposal says a false violation costs more trust than a missed
+one, and across 30 documents stating no checkable rules — four CONTRIBUTING
+guides, two agent instruction files, a 52 kB configuration reference — the
+extractor invented **nothing**. Not one false positive.
+
+All three constraints it found scored confidence 1.00 with every role resolved,
+and it correctly split one sentence naming two subjects — "`parser/` and
+`graph/` must NEVER import from `llm/`" — into two constraints.
+
+### The one miss
+
+```
+may-only-import-via(ui/ -> src/ via server/)
+```
+
+CLAUDE.md's rule 4 is two sentences: the prohibition, then the permitted route
+("All access goes through the JSON API in `server/`"). The extractor took the
+prohibition and not the exception. That is the more conservative half — it
+under-permits rather than over-permits — but it is still a miss, and a
+`may-only-import-via` that degrades into a bare `must-not-import` would flag
+legitimate code in Week 8.
+
+### Read this number carefully
+
+**Recall is 3 of 4.** One constraint is 25 percentage points. A figure computed
+from a four-item positive set is an anecdote with a decimal point on it, and it
+must not be quoted as though it were measured across a corpus.
+
+That is not a flaw in the run — it is the headline finding above showing up in
+the arithmetic. 31 real documents yielded 4 checkable constraints in total.
+Improving the recall *estimate* means finding more documents that state rules,
+not running the extractor more times.
+
+### Uncheckable statements
+
+The count the brief asked for, and it dwarfs the constraint count:
+
+| Reason | Count |
+|---|---|
+| `descriptive-not-normative` | 18 |
+| `process-rule` | 17 |
+| `runtime-behaviour` | 13 |
+| `technology-choice` | 9 |
+| `style-preference` | 3 |
+| `unsupported-relation` | 1 |
+| **Total** | **61** |
+
+66 statements returned: 3 became constraints, 61 were architectural but not
+decidable from an import graph, 2 were rejected by validation.
+
+**61 against 3.** Roughly twenty times as much of what these projects say about
+their own architecture falls outside the four relations as falls inside. That is
+the strongest quantitative support for the headline finding, and it is the
+number to carry into Week 14 — a violation rate computed over 3 constraints
+describes almost nothing about a repository that made 64 architectural claims.
+
+On CLAUDE.md the model's classification agreed with the hand labelling almost
+exactly: rules 2, 3 and 5 as unsupported or runtime, rule 6 ("no network calls
+outside `llm/`") as runtime behaviour. Those labels were written before the run,
+so independent agreement is mild evidence the four-relation boundary is legible
+rather than arbitrary.
+
+### The quote check earned its place
+
+Two of 66 statements were rejected as `quote-not-in-source` — sentences the
+model produced that do not appear verbatim in the document it was reading, in
+`pyright-copilot-instructions.md` and `pyright-readme.md`.
+
+A 3% fabrication rate on a task this constrained is exactly what rule 3 exists
+to catch. Without that check both would have become constraints carrying a real
+file path, indistinguishable from the three genuine ones.
+
+### Cost
+
+31 documents, one call each, **$0** on the free tier. On a re-run the response
+cache answers every one and no call is made.
+
+### Surviving a 429
+
+The harness checkpoints after **every** document, atomically, and skips what is
+already recorded. A daily-quota 429 ends the run cleanly, scores what completed,
+lists what remains, and exits 2 so partial is distinguishable from complete.
+Per-minute limits never reach it — the adapter backs off through those — so the
+only thing that stops a run is the one thing waiting cannot fix.
+
+Verified by deleting three checkpoint entries and re-running: exactly those
+three were reprocessed, served from the response cache with no new API calls.
+
+Two layers, doing different jobs. The response cache stops a completed document
+costing a second API call; the checkpoint stops it costing a second compile, and
+is what makes partial scoring possible.
+
+### A lesson worth keeping
+
+The first run scored **0% recall**, and the model had found every rule.
+
+Only `rawText` was required by the output schema. `relation`, `subject` and
+`object` were optional, so a statement could legally come back as a bare
+sentence with no classification and no roles — and did. Making them required,
+with an explicit `not-checkable` relation so that declining to classify is
+itself a classification, took recall from 0% to 75%.
+
+Separately, the prompt asked for dependency rules and mentioned uncheckable
+statements almost in passing. The model read that as "return `[]` unless you
+find a rule", and 30 of 31 documents came back empty — including files full of
+style and process rules. Asking for both kinds explicitly took the uncheckable
+count from 2 to 61.
+
+Neither was a model failure. Both were the schema and the prompt permitting an
+answer to be silently absent, and silence is indistinguishable from a correct
+empty result. That is the same shape as the suppression attack described above,
+arrived at by accident rather than by an attacker — which is a reason to treat
+the accidental version as seriously as the hostile one.
+
+---
+
 ## Acceptance status
 
 | Item | Status |
 |---|---|
 | Hand-labelled set of ~30 real documents | **Done** — 31 documents, `fixtures/intent/gold.ts` |
-| Subject resolution rate, separate from extraction | **Done** — reported separately in CLI, API and UI; oracle ceiling 100% |
-| Count of statements discarded as uncheckable | **Instrumented**, reported per reason; needs a model to produce real counts |
+| **Precision and recall against the labelled set** | **Done** — 100% / 75%, F1 85.7% |
+| **Count of statements discarded as uncheckable** | **Done** — 61, broken down by reason |
+| Subject resolution rate, separate from extraction | **Done** — oracle ceiling 100%; all 3 extracted constraints resolved fully |
 | Deterministic; 100% cache hit unchanged | **Done** — verified on four repositories |
+| Resumable across a mid-run 429 | **Done** — per-document checkpoint, verified by partial replay |
 | Injection tests, both directions | **Done** — 11 tests, including one asserting the attack succeeds |
-| Cost per repo | **Done** — table above, from real prompts |
+| Cost per repo | **Done** — $0 measured on Gemini; projections for paid models above |
 | Browser QA, constraints distinct as STATED | **Done** — violet vs green, verified by computed style |
-| **Precision and recall against the labelled set** | **BLOCKED** — needs credentials |
+| **Haiku/Sonnet label comparison** | **PENDING** — needs `ANTHROPIC_API_KEY` |
 
-### What is blocked, and why
+### Still pending
 
-No Anthropic credentials exist in this environment. There is no
-`ANTHROPIC_API_KEY`, no `ANTHROPIC_AUTH_TOKEN` in any scope, no `~/.anthropic`,
-and no `ant` CLI.
+The **Haiku/Sonnet comparison** from Week 6 has not run. It was the precondition
+on moving the Anthropic default to Haiku, and no `ANTHROPIC_API_KEY` exists in
+this environment — no variable in any scope, no `~/.anthropic`, no `ant` CLI.
+The Anthropic default therefore remains a cost argument rather than a measured
+one.
 
-Blocked as a result:
+It is one command away, and `scripts/compare-label-models.mjs` now spans
+providers, so the comparison can carry Gemini as a third column:
 
-- **Precision and recall.** The harness, the matcher and the gold set are
-  written and tested; only the extraction run is missing.
-- **The real uncheckable count.** Instrumented and reported, but every
-  measurement is currently zero because nothing has been read.
-- **The Haiku/Sonnet label comparison** from Week 6, which was a precondition on
-  the model default and remains unrun. The default is still a cost argument, not
-  a measured one.
+```bash
+node scripts/compare-label-models.mjs . gemini-3.5-flash claude-haiku-4-5 claude-sonnet-5
+```
 
-The gold set is the durable artefact and it is finished. When a key is
-available, precision and recall are one command away.
+Nothing else is blocked. The gold set, the harness and the numbers above are
+complete.
