@@ -264,3 +264,65 @@ export interface IntentResponse {
   failures: { location: string; reason: string }[];
   emptyReason: 'not-attempted' | 'no-documents' | 'nothing-stated' | null;
 }
+
+/** Week 9: snapshots, diffs and drift over time. */
+export interface DiffEntryResponse {
+  kind: string;
+  key: string;
+  description: string;
+  evidence: string[];
+}
+
+export interface SnapshotDiffBody {
+  from: { commit: string; subject: string };
+  to: { commit: string; subject: string };
+  entries: DiffEntryResponse[];
+  summary: {
+    total: number;
+    byKind: Record<string, number>;
+    comparable: boolean;
+    comparabilityNote: string;
+    driftBefore: number;
+    driftAfter: number;
+    driftDelta: number;
+  };
+}
+
+export type DiffResponse =
+  | { ok: true; diff: SnapshotDiffBody }
+  | { ok: false; reason: string; available: string[] };
+
+export interface DriftPointResponse {
+  commit: string;
+  shortCommit: string;
+  committedAt: string;
+  subject: string;
+  score: number;
+  delta: number;
+  fileCount: number;
+  moduleCount: number;
+  edgeCount: number;
+  violationCount: number;
+  constraintCount: number;
+  causes: string[];
+  changeCount: number;
+}
+
+export type DriftHistoryResponse =
+  | {
+      ok: true;
+      history: {
+        points: DriftPointResponse[];
+        summary: {
+          commits: number;
+          first: number;
+          last: number;
+          peak: number;
+          trough: number;
+          movingSteps: number;
+          structuralOnlySteps: number;
+          note: string;
+        };
+      };
+    }
+  | { ok: false; reason: string };

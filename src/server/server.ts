@@ -22,6 +22,7 @@ import {
 } from './api.js';
 import { buildCorrectionsResponse, parseCorrectionRequest } from './corrections-api.js';
 import { buildIntentResponse } from './intent-api.js';
+import { buildDiffResponse, buildDriftHistoryResponse } from './history-api.js';
 import { ROOT_DIRECTORY, type ViewLevel } from '../graph/aggregate.js';
 import type { AnalysisContext } from './context.js';
 
@@ -76,6 +77,19 @@ export function createApp(context: AnalysisContext): Hono {
   app.get('/api/modules', (c) => c.json(buildModuleViewResponse(context)));
 
   app.get('/api/intent', (c) => c.json(buildIntentResponse(context)));
+
+  app.get('/api/diff', (c) => {
+    const from = c.req.query('from') ?? '';
+    const to = c.req.query('to') ?? '';
+    const response = buildDiffResponse(context, from, to);
+    // 404 rather than 400: the request is well formed, the snapshot is absent.
+    return c.json(response, response.ok ? 200 : 404);
+  });
+
+  app.get('/api/drift-history', (c) => {
+    const response = buildDriftHistoryResponse(context);
+    return c.json(response, response.ok ? 200 : 404);
+  });
 
   app.get('/api/corrections', (c) => c.json(buildCorrectionsResponse(context)));
 

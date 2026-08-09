@@ -12,6 +12,8 @@ import type {
   SummaryResponse,
   ViewLevel,
   IntentResponse,
+  DriftHistoryResponse,
+  DiffResponse,
 } from './api-types';
 
 async function getJson<T>(path: string): Promise<T> {
@@ -91,6 +93,19 @@ export async function fetchIntent(): Promise<IntentResponse> {
     throw new Error(`intent failed: ${response.status}`);
   }
   return (await response.json()) as IntentResponse;
+}
+
+export async function fetchDriftHistory(): Promise<DriftHistoryResponse> {
+  const response = await fetch('/api/drift-history');
+  // 404 carries a usable body here — "no snapshots yet" is a state, not a bug.
+  return (await response.json()) as DriftHistoryResponse;
+}
+
+export async function fetchDiff(from: string, to: string): Promise<DiffResponse> {
+  const response = await fetch(
+    `/api/diff?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+  );
+  return (await response.json()) as DiffResponse;
 }
 
 /**

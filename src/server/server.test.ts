@@ -62,6 +62,7 @@ async function analyse(root: string): Promise<AnalysisContext> {
     },
     conformance: detectViolations({ constraints: [], clustering, fileEdges: [] }),
     store: createCorrectionsStore(db),
+    db,
   };
 }
 

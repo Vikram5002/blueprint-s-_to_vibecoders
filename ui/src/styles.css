@@ -662,3 +662,53 @@ body {
   color: var(--warn);
   border: 1px dashed var(--warn);
 }
+
+/* --- timeline ---
+ *
+ * A bar per commit. Zero drift still renders a visible stub rather than
+ * nothing: a flat history should read as "measured, and flat", not as a chart
+ * that failed to load.
+ */
+.timeline {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 68px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+
+.tick {
+  background: none;
+  border: 0;
+  padding: 0 1px;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  flex: 0 0 auto;
+}
+
+.tick .bar {
+  display: block;
+  width: 9px;
+  background: var(--accent-dim);
+  border-top: 2px solid var(--accent);
+  border-radius: 1px 1px 0 0;
+}
+
+/* A step that moved the score is the interesting one; make it findable. */
+.tick[data-moved='true'] .bar {
+  background: var(--warn);
+  border-top-color: var(--warn);
+}
+
+.tick[data-selected='true'] .bar {
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.tick:hover .bar {
+  filter: brightness(1.35);
+}

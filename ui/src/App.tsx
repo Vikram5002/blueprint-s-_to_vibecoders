@@ -15,6 +15,7 @@ import {
 } from './api';
 import { CorrectionsPanel } from './CorrectionsPanel';
 import { IntentPanel } from './IntentPanel';
+import { TimelinePanel } from './TimelinePanel';
 import { GraphCanvas } from './GraphCanvas';
 import { ModuleCanvas } from './ModuleCanvas';
 import { EvidencePanel } from './EvidencePanel';
@@ -322,6 +323,9 @@ export function App(): JSX.Element {
                 <IntentPanel intent={intent} />
               </div>
             )}
+            <div style={{ marginBottom: 18 }}>
+              <TimelinePanel />
+            </div>
             {summary !== null ? <SummaryPanel summary={summary} /> : <div className="hint">Loading…</div>}
           </>
         )}

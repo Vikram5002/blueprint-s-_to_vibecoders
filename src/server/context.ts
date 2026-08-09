@@ -13,6 +13,7 @@ import type { CorrectionOutcome } from '../types/corrections.js';
 import type { CorrectionsStore } from '../store/corrections-store.js';
 import type { IntentRunResult } from '../pipeline/intent.js';
 import type { ConformanceResult } from '../types/violations.js';
+import type { BlueprintDatabase } from '../store/database.js';
 
 export interface AnalysisContext {
   /** Absolute repository root. */
@@ -29,6 +30,12 @@ export interface AnalysisContext {
   readonly correctionOutcomes: readonly CorrectionOutcome[];
   /** Open store, so corrections can be made while the server is up. */
   readonly store: CorrectionsStore;
+  /**
+   * Open handle, so the history routes can read snapshots the CLI recorded.
+   * They never write: a snapshot costs a worktree and a full re-analysis, and
+   * an HTTP handler that does that will be called twice by a page refresh.
+   */
+  readonly db: BlueprintDatabase;
   /**
    * What the repository says about itself. STATED, and served on its own
    * route so the UI cannot accidentally render a claim inside the graph.

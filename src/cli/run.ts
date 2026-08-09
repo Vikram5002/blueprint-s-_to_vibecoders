@@ -155,6 +155,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     intent,
     conformance,
     store,
+    db,
   });
 
   io.writeOut(formatServing(server.url, options.open));
