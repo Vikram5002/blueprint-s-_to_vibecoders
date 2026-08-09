@@ -195,6 +195,18 @@ describe('extraction', () => {
     expect(result.outcomes).toHaveLength(1);
   });
 
+  it('sends the output schema itself, not relying on a provider to supply one', async () => {
+    // This is the bug that only appeared with a second provider: the labeller
+    // omitted `schema` and the Anthropic adapter silently filled it in, so
+    // Gemini received no schema, returned a `name` field instead of `label`,
+    // and every module in the run was rejected as missing-label.
+    const provider = stubProvider(() => ONE_STATEMENT);
+    await createCachedExtractor({ provider, cache: memoryCache() }).extract([
+      { location: 'README.md', documentText: 'x', moduleHints: [] },
+    ]);
+    expect(provider.calls[0]?.schema).toBeDefined();
+  });
+
   it('asks for more than the lowest effort, since this is a judgement not a lookup', async () => {
     const provider = stubProvider(() => ONE_STATEMENT);
     await createCachedExtractor({ provider, cache: memoryCache() }).extract([

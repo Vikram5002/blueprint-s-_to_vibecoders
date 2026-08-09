@@ -54,16 +54,8 @@ const ACCEPTS_TEMPERATURE: ReadonlySet<string> = new Set([
   'claude-haiku-4-5',
 ]);
 
-/** Shape the model must return. Enforced by the API, re-checked in validate.ts. */
-export const LABEL_SCHEMA = {
-  type: 'object',
-  properties: {
-    label: { type: 'string', description: 'Two to four words, title case.' },
-    description: { type: 'string', description: 'One line on what the module does.' },
-  },
-  required: ['label', 'description'],
-  additionalProperties: false,
-} as const;
+// Defined in schemas.ts: it describes the request, not this vendor.
+export { LABEL_SCHEMA } from './schemas.js';
 
 export interface AnthropicOptions {
   readonly apiKey: string;
@@ -109,7 +101,13 @@ export async function createAnthropicProvider(options: AnthropicOptions): Promis
             // Naming a cluster from paths and symbols is not a reasoning task.
             // Reading obligations out of prose is, so the caller can raise it.
             effort: request.effort ?? 'low',
-            format: { type: 'json_schema', schema: request.schema ?? LABEL_SCHEMA },
+            // Structured output only when the caller asked for a shape. This
+            // adapter used to substitute the label schema whenever `schema` was
+            // unset, which made a caller that forgot to send one work here and
+            // fail against every other provider.
+            ...(request.schema === undefined
+              ? {}
+              : { format: { type: 'json_schema' as const, schema: request.schema } }),
           },
           ...(request.temperature !== undefined && ACCEPTS_TEMPERATURE.has(model)
             ? { temperature: request.temperature }

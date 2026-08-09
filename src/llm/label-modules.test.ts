@@ -51,6 +51,48 @@ function countingProvider(overrides: { text?: (n: number) => string } = {}) {
   return { provider, calls: () => calls };
 }
 
+describe('the request the provider actually receives', () => {
+  /**
+   * The labeller used to omit `schema` entirely, and nothing failed, because
+   * the Anthropic adapter substituted one whenever a caller left it unset.
+   *
+   * The first request to a second provider was the first time anyone found
+   * out: Gemini received no schema, returned `{"name": ...}` where the
+   * validator wanted `label`, and every module in the run was rejected. An
+   * interface that works only because one implementation guesses on your
+   * behalf is not provider-agnostic, and this asserts it is really sent.
+   */
+  it('sends the output schema rather than trusting a provider default', async () => {
+    const root = await tempRoot();
+    const cache = await loadLabelCache(root);
+
+    const seen: unknown[] = [];
+    const provider: CompletionProvider = {
+      name: 'fake:test-model',
+      model: 'test-model',
+      complete: async (request): Promise<CompletionResult> => {
+        seen.push(request.schema);
+        return {
+          ok: true,
+          value: {
+            text: '{"label":"A Module","description":"Does things."}',
+            model: 'test-model',
+            usage: { promptTokens: 10, completionTokens: 5, cachedPromptTokens: 0 },
+          },
+        };
+      },
+    };
+
+    await createCachedLabeller({ provider, cache, evidence: NO_EVIDENCE }).label(requests(1));
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toMatchObject({
+      type: 'object',
+      required: ['label', 'description'],
+    });
+  });
+});
+
 describe('caching', () => {
   it('calls the provider once per cluster on a cold cache', async () => {
     const root = await tempRoot();

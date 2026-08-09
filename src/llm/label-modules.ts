@@ -11,7 +11,7 @@ import { buildUserPrompt, SYSTEM_PROMPT, type ClusterSnippet } from './prompt.js
 import { cacheKey, type LabelCache } from './cache.js';
 import { parseLabelResponse } from './validate.js';
 import { estimateCostUsd } from './pricing.js';
-import { LABEL_SCHEMA } from './anthropic.js';
+import { LABEL_SCHEMA } from './schemas.js';
 import type { CompletionProvider } from './provider.js';
 import type { LabellerResult, LabelOutcome, LabelRequest, ModuleLabeller } from '../pipeline/label.js';
 
@@ -76,6 +76,9 @@ export function createCachedLabeller(options: CachedLabellerOptions): ModuleLabe
           system: SYSTEM_PROMPT,
           user,
           maxOutputTokens: MAX_OUTPUT_TOKENS,
+          // Sent explicitly. It used to be omitted and Anthropic filled it in,
+          // which worked until a second provider did not.
+          schema: LABEL_SCHEMA,
           ...(options.temperature === undefined ? {} : { temperature: options.temperature }),
         });
 
