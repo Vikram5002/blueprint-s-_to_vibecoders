@@ -268,7 +268,17 @@ See `docs/PROVIDERS.md`.
 
 See `docs/INTENT.md`.
 
-### Week 8 — violation detection — **in progress**
+### Week 8 — violation detection — **complete**
+- [x] Four detectors: forbidden import, bypassed route, cycle, upward dependency
+- [x] may-only-import-via semantics decided and documented (direct-edge only)
+- [x] Severity formula, explainable in one sentence, with its exclusions stated
+- [x] Every violation carries the evidence from every edge that breaks it
+- [x] checked / satisfied / unchecked reported separately
+- [x] Violation precision 100%, recall 100% against injected known positives
+- [x] Deterministic: same graph and constraints give byte-identical violations
+- [x] Exposed on the CLI, in --json, and as an overlay on /api/graph
+
+See `docs/VIOLATIONS.md`.
 
 ---
 
