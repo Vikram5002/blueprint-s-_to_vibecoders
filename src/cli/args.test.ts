@@ -18,9 +18,28 @@ describe('parseArguments', () => {
       verbose: false,
       open: true,
       serve: true,
+      // History is opt-in: it costs a worktree and a full re-analysis per
+      // commit, so an ordinary run must never pay for it by accident.
+      history: null,
       help: false,
       version: false,
     });
+  });
+
+  it('parses --history=N', () => {
+    expect(parse(['--history=20']).history).toBe(20);
+  });
+
+  it('ignores a nonsensical history count rather than guessing', () => {
+    // An expensive opt-in doing something unexpected on a typo is worse than
+    // it doing nothing.
+    expect(parse(['--history=abc']).history).toBeNull();
+    expect(parse(['--history=0']).history).toBeNull();
+    expect(parse(['--history=-5']).history).toBeNull();
+  });
+
+  it('caps the history walk, so a typo cannot start a thousand analyses', () => {
+    expect(parse(['--history=99999']).history).toBe(200);
   });
 
   it('does not serve or open when emitting JSON', () => {

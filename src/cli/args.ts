@@ -19,6 +19,14 @@ export interface CliOptions {
    * and by `--json`, which exists to be piped into something.
    */
   readonly serve: boolean;
+  /**
+   * Build one snapshot per commit for the last N commits and chart drift.
+   *
+   * Off by default and opt-in with a count, because it materialises a git
+   * worktree per commit and re-analyses each one — seconds per commit, not
+   * milliseconds. Nobody should pay that on an ordinary run.
+   */
+  readonly history: number | null;
   readonly help: boolean;
   readonly version: boolean;
 }
@@ -40,6 +48,7 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
         verbose: { type: 'boolean', short: 'v', default: false },
         'no-open': { type: 'boolean', default: false },
         'no-serve': { type: 'boolean', default: false },
+        history: { type: 'string' },
         help: { type: 'boolean', short: 'h', default: false },
         version: { type: 'boolean', default: false },
       },
@@ -65,6 +74,7 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
     // --json is for piping; holding the terminal open with a server would
     // defeat that, so it implies --no-serve.
     serve: parsed.values['no-serve'] !== true && !json,
+    history: parseHistory(parsed.values['history']),
     help: parsed.values.help === true,
     version: parsed.values.version === true,
   });
@@ -72,4 +82,15 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
 
 function describeParseFailure(cause: unknown): string {
   return cause instanceof Error ? cause.message : 'could not parse arguments';
+}
+
+/**
+ * `--history=N`. Absent means no history walk; a bad value means none either,
+ * rather than a crash or a silent 0 — this is an expensive opt-in and doing
+ * something unexpected with a typo would be worse than doing nothing.
+ */
+function parseHistory(value: unknown): number | null {
+  if (typeof value !== 'string') return null;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 1 ? Math.min(parsed, 200) : null;
 }

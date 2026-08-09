@@ -10,6 +10,7 @@ import {
   formatLabelSummary,
   formatIntentSummary,
   formatConformanceSummary,
+  formatDriftHistory,
   formatFileList,
   formatGraphSummary,
   formatHelp,
@@ -23,6 +24,9 @@ import {
 import { openBrowser } from './open-browser.js';
 import { chooseProvider } from '../llm/select-provider.js';
 import { runPipeline } from '../pipeline/run.js';
+import { snapshotHistory } from '../pipeline/history.js';
+import { buildDriftHistory } from '../pipeline/drift-history.js';
+import { createSnapshotStore } from '../store/snapshots.js';
 import { startServer, type RunningServer } from '../server/server.js';
 
 export interface CliIo {
@@ -112,6 +116,27 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
   io.writeOut(formatCorrectionSummary(correctionOutcomes));
   io.writeOut(formatIntentSummary(intent));
   io.writeOut(formatConformanceSummary(conformance));
+
+  /**
+   * History is opt-in because it costs a worktree and a full re-analysis per
+   * commit. Snapshots are persisted as they are built, so an interrupted walk
+   * leaves the commits it did finish available to the next run.
+   */
+  if (options.history !== null) {
+    const snapshotStore = createSnapshotStore(db);
+    io.writeErr(`  Snapshotting the last ${options.history} commits…`);
+
+    const snapshots = await snapshotHistory({
+      root: options.targetPath,
+      count: options.history,
+      corrections: run.value.corrections,
+      onProgress: (done, total, commit) =>
+        io.writeErr(`  snapshot ${done}/${total} — ${commit.sha.slice(0, 7)} ${commit.subject.slice(0, 50)}`),
+    });
+
+    for (const snapshot of snapshots) snapshotStore.save(snapshot);
+    io.writeOut(formatDriftHistory(buildDriftHistory(snapshots)));
+  }
 
   if (!options.serve) {
     db.close();

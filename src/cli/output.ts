@@ -14,6 +14,7 @@ import type { LabelSet } from '../types/labels.js';
 import type { CorrectionOutcome } from '../types/corrections.js';
 import type { IntentRunResult } from '../pipeline/intent.js';
 import type { ConformanceResult } from '../types/violations.js';
+import type { DriftHistory } from '../pipeline/drift-history.js';
 
 const LANGUAGE_LABELS: Readonly<Record<Language, string>> = {
   typescript: 'TypeScript',
@@ -37,6 +38,7 @@ export function formatHelp(binaryName: string): string {
     '  --no-serve       Print the summary and exit; do not start the server',
     '  -h, --help       Show this help',
     '      --version    Show the version',
+    '      --history=N  Snapshot the last N commits and chart drift over them',
     '',
     'Phase 1: ingest and parse. This tool measures. It never generates code.',
   ].join('\n');
@@ -540,4 +542,55 @@ function count(value: number): string {
 
 function formatDuration(milliseconds: number): string {
   return milliseconds < 1000 ? `${milliseconds}ms` : `${(milliseconds / 1000).toFixed(1)}s`;
+}
+
+/**
+ * The drift chart.
+ *
+ * A sparkline plus the cause of every move. Week 5's standard for the
+ * clustering metrics applies here too: a number nobody can interrogate is a
+ * number nobody should trust, so no point on this chart appears without the
+ * diff entries that produced it.
+ */
+export function formatDriftHistory(history: DriftHistory): string {
+  const { points, summary } = history;
+  if (points.length === 0) {
+    return '  Drift history       no commits analysed\n';
+  }
+
+  const peak = Math.max(summary.peak, 1);
+  const lines = [
+    `  Drift history       ${count(summary.commits)} commits, ` +
+      `score ${summary.first.toFixed(1)} → ${summary.last.toFixed(1)} ` +
+      `(peak ${summary.peak.toFixed(1)})`,
+    '',
+  ];
+
+  for (const point of points) {
+    // Eight blocks is enough resolution for a terminal and avoids implying a
+    // precision the score does not have.
+    const filled = summary.peak === 0 ? 0 : Math.round((point.score / peak) * 8);
+    const bar = '#'.repeat(filled).padEnd(8, '·');
+    const delta = point.delta === 0 ? '     ' : `${point.delta > 0 ? '+' : ''}${point.delta.toFixed(1)}`;
+
+    lines.push(
+      `    ${point.shortCommit}  ${bar}  ${point.score.toFixed(1).padStart(6)}  ${delta.padStart(6)}  ` +
+        `${String(point.fileCount).padStart(4)}f ${String(point.moduleCount).padStart(3)}m ` +
+        `${String(point.changeCount).padStart(3)}Δ  ${truncate(point.subject, 46)}`,
+    );
+
+    for (const cause of point.causes.slice(0, 3)) {
+      lines.push(`              ↳ ${truncate(cause, 92)}`);
+    }
+  }
+
+  lines.push(
+    '',
+    `    ${count(summary.movingSteps)} step(s) moved the score, ` +
+      `${count(summary.structuralOnlySteps)} changed the architecture without moving it.`,
+    `    ${summary.note}`,
+    '',
+  );
+
+  return lines.join('\n');
 }

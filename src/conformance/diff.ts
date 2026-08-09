@@ -106,6 +106,34 @@ export interface SnapshotDiff {
   readonly summary: DiffSummary;
 }
 
+/**
+ * A name for a module that a reader can actually tell apart from its siblings.
+ *
+ * Mechanical labels are the common path prefix of a module's files, so a
+ * repository whose modules all sit under `src/` produces several modules all
+ * labelled `src/`. The first real diff run said "Module 'src/' no longer exists
+ * as a unit. Its closest survivor, 'src/', shares only 57% of its files" —
+ * true, and useless.
+ *
+ * So the label is qualified with the directories the module actually occupies,
+ * which is information the snapshot already holds. Only added when it
+ * disambiguates; a module whose label already names its one directory is left
+ * alone rather than padded out to `src/parser/ (src/parser)`.
+ */
+export function describeModule(module: SnapshotModule): string {
+  const directories = [
+    ...new Set(module.files.map((file) => file.split('/').slice(0, -1).join('/')).filter((d) => d !== '')),
+  ].sort();
+
+  const label = module.label;
+  const informative = directories.filter((directory) => directory !== label.replace(/\/$/, ''));
+  if (informative.length === 0) return `"${label}"`;
+
+  const shown = informative.slice(0, 2).join(', ');
+  const more = informative.length > 2 ? `, +${informative.length - 2} more` : '';
+  return `"${label}" (${shown}${more})`;
+}
+
 export function diffSnapshots(from: Snapshot, to: Snapshot): SnapshotDiff {
   const entries: DiffEntry[] = [
     ...diffModules(from.modules, to.modules),
@@ -193,7 +221,7 @@ function diffModules(before: readonly SnapshotModule[], after: readonly Snapshot
       entries.push({
         kind: 'module-renamed',
         key: match.after.id,
-        description: `Module "${match.before.label}" is now called "${match.after.label}". Its files did not change.`,
+        description: `Module ${describeModule(match.before)} is now called "${match.after.label}". Its files did not change.`,
         evidence: [`${match.before.files.length} file(s), identical membership`],
       });
       continue;
@@ -203,7 +231,7 @@ function diffModules(before: readonly SnapshotModule[], after: readonly Snapshot
       kind: 'module-renamed',
       key: match.after.id,
       description:
-        `Module "${match.after.label}" is the same module as "${match.before.label}" ` +
+        `Module ${describeModule(match.after)} is the same module as "${match.before.label}" ` +
         `(${(match.overlap * 100).toFixed(0)}% of its files are shared), ` +
         `but ${gained.length} file(s) joined and ${lost.length} left.`,
       evidence: [
@@ -231,8 +259,8 @@ function diffModules(before: readonly SnapshotModule[], after: readonly Snapshot
         kind: 'module-restructured',
         key: module.id,
         description:
-          `Module "${module.label}" no longer exists as a unit. Its closest survivor, ` +
-          `"${bestAfter.candidate.label}", shares only ${(bestAfter.overlap * 100).toFixed(0)}% ` +
+          `Module ${describeModule(module)} no longer exists as a unit. Its closest survivor, ` +
+          `${describeModule(bestAfter.candidate)}, shares only ${(bestAfter.overlap * 100).toFixed(0)}% ` +
           `of its files — below the ${(RENAME_OVERLAP_THRESHOLD * 100).toFixed(0)}% needed to call it the same module.`,
         evidence: module.files.slice(0, 5).map((file) => `was: ${file}`),
       });
@@ -242,7 +270,7 @@ function diffModules(before: readonly SnapshotModule[], after: readonly Snapshot
     entries.push({
       kind: 'module-removed',
       key: module.id,
-      description: `Module "${module.label}" is gone, along with all ${module.files.length} of its files.`,
+      description: `Module ${describeModule(module)} is gone, along with all ${module.files.length} of its files.`,
       evidence: module.files.slice(0, 5).map((file) => `was: ${file}`),
     });
   }
@@ -251,7 +279,7 @@ function diffModules(before: readonly SnapshotModule[], after: readonly Snapshot
     entries.push({
       kind: 'module-added',
       key: module.id,
-      description: `New module "${module.label}", containing ${module.files.length} file(s).`,
+      description: `New module ${describeModule(module)}, containing ${module.files.length} file(s).`,
       evidence: module.files.slice(0, 5).map((file) => `now: ${file}`),
     });
   }
