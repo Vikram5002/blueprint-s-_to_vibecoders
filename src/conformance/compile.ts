@@ -77,6 +77,14 @@ const UNCHECKABLE_REASONS: readonly UncheckableReason[] = [
 /** Long enough for any real sentence; short enough to bound a hostile payload. */
 const MAX_RAW_TEXT = 500;
 
+/**
+ * The schema's explicit "this is not a dependency rule" answer.
+ *
+ * Not a ConstraintRelation — it exists so the model cannot stay silent. See
+ * EXTRACT_SCHEMA for why silence was the failure mode worth designing out.
+ */
+const NOT_CHECKABLE = 'not-checkable';
+
 export function compileCandidates(options: CompileOptions): CompileResult {
   const constraints: Constraint[] = [];
   const uncheckable: UncheckableStatement[] = [];
@@ -119,6 +127,20 @@ export function compileCandidates(options: CompileOptions): CompileResult {
     // hedging, and the conservative reading is that it did not fit the schema.
     if (uncheckableReason !== null) {
       uncheckable.push({ rawText, reason: uncheckableReason, source: options.source });
+      continue;
+    }
+
+    /**
+     * `not-checkable` without a reason still counts as uncheckable.
+     *
+     * The schema forces the model to classify every statement, and
+     * `not-checkable` is the honest answer for most architectural prose. When
+     * it declines to say *which* kind, the statement is still a real finding —
+     * dropping it would undercount exactly the number the report exists to
+     * show — so it lands under the generic reason rather than being rejected.
+     */
+    if (candidate.relation === NOT_CHECKABLE) {
+      uncheckable.push({ rawText, reason: 'unsupported-relation', source: options.source });
       continue;
     }
 

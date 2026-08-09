@@ -39,13 +39,54 @@ export const EXTRACT_SCHEMA = {
             type: 'string',
             description: 'The sentence copied from the document, exactly as written.',
           },
+          /**
+           * Required, and carries an explicit escape hatch.
+           *
+           * This field used to be optional, with the prompt asking for an
+           * `uncheckableReason` instead when nothing fitted. The schema then
+           * permitted a statement with *neither*, and that is exactly what came
+           * back: on the first real evaluation run, `parser/` and `graph/` must
+           * NEVER import from `llm/` was returned as bare rawText with no
+           * classification at all, and was dropped. Recall was zero, and the
+           * model had actually found every rule.
+           *
+           * A schema that allows an answer to decline to answer will get one.
+           * Making the choice mandatory — with 'not-checkable' as a first-class
+           * option — means the model must commit, and an omission becomes a
+           * validation failure instead of a silent loss.
+           */
           relation: {
             type: 'string',
-            enum: ['must-not-import', 'may-only-import-via', 'must-not-cycle', 'must-be-layer-above'],
-            description: 'Omit when the statement is not checkable against an import graph.',
+            enum: [
+              'must-not-import',
+              'may-only-import-via',
+              'must-not-cycle',
+              'must-be-layer-above',
+              'not-checkable',
+            ],
+            description:
+              'Use not-checkable when the statement cannot be decided from an import graph, and give an uncheckableReason alongside it.',
           },
-          subject: { type: 'string', description: 'The noun phrase the document uses for the constrained part.' },
-          object: { type: 'string', description: 'The noun phrase for the other side of the relation.' },
+          /**
+           * Required for the same reason `relation` is. These were optional,
+           * and the model duly returned `must-not-import` with no subject and
+           * no object — rejected as incomplete-roles, and the one document in
+           * the corpus that states real rules scored zero recall because of it.
+           *
+           * Every optional field in this schema is a way for an answer to go
+           * missing quietly. For a statement that is not checkable, both are
+           * the empty string.
+           */
+          subject: {
+            type: 'string',
+            description:
+              'The noun phrase the document uses for the constrained part. Empty string when relation is not-checkable.',
+          },
+          object: {
+            type: 'string',
+            description:
+              'The other side of the relation. Repeat the subject for must-not-cycle; empty string when not-checkable.',
+          },
           via: { type: 'string', description: 'Only for may-only-import-via.' },
           uncheckableReason: {
             type: 'string',
@@ -60,7 +101,7 @@ export const EXTRACT_SCHEMA = {
             description: 'Give this instead of a relation when the statement cannot be checked.',
           },
         },
-        required: ['rawText'],
+        required: ['rawText', 'relation', 'subject', 'object'],
         additionalProperties: false,
       },
     },
@@ -148,6 +189,11 @@ export function createCachedExtractor(options: CachedExtractorOptions): IntentEx
           user,
           maxOutputTokens: MAX_OUTPUT_TOKENS,
           schema: EXTRACT_SCHEMA,
+          // Providers that still accept it sample far less across runs. Not a
+          // reproducibility guarantee — the cache is that — but three
+          // back-to-back runs of the same document should not disagree about
+          // what the document says.
+          temperature: 0,
           // Deciding whether a sentence carries a checkable obligation is a
           // judgement, not a lookup. Week 6's 'low' is the wrong setting here.
           effort: 'medium',

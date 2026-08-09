@@ -94,6 +94,29 @@ describe('uncheckable statements are counted, not kept', () => {
     expect(result.uncheckable[0]?.source.location).toBe('AGENTS.md');
   });
 
+  it('counts an explicit not-checkable even without a reason', () => {
+    // The schema forces a classification precisely so a statement cannot come
+    // back unclassified and vanish. Dropping it here would undercount the
+    // number the uncheckable report exists to show.
+    const result = compile([
+      { rawText: 'We favour composition over inheritance.', relation: 'not-checkable' },
+    ]);
+    expect(result.constraints).toEqual([]);
+    expect(result.rejected).toEqual([]);
+    expect(result.uncheckable[0]?.reason).toBe('unsupported-relation');
+  });
+
+  it('prefers the stated reason over the generic one', () => {
+    const result = compile([
+      {
+        rawText: 'We favour composition over inheritance.',
+        relation: 'not-checkable',
+        uncheckableReason: 'style-preference',
+      },
+    ]);
+    expect(result.uncheckable[0]?.reason).toBe('style-preference');
+  });
+
   it('prefers the uncheckable reason when the model supplies both', () => {
     const result = compile([
       {

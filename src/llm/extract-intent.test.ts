@@ -70,8 +70,10 @@ describe('the prompt', () => {
   });
 
   it('tells the model that an empty answer is a valid one', () => {
-    // Without this, a document with no rules invites invention.
-    expect(EXTRACT_SYSTEM_PROMPT).toContain('return an empty list');
+    // Without this, a document with no rules invites invention. The wording
+    // now also says when empty is *not* the right answer, because the model
+    // was returning [] for documents full of uncheckable statements.
+    expect(EXTRACT_SYSTEM_PROMPT).toContain('Return an empty list only if');
   });
 
   it('names suppression explicitly, since that is the attack it must ignore', () => {
