@@ -9,12 +9,20 @@ that against the architecture the developer (or their AI agent) *said* they were
 
 ## Current status
 
-**Phase 1 (Weeks 1-4): CLI and Parser.**
-Goal: `npx vibe-blueprint .` produces a real dependency graph of any TS/JS/Python repo,
-rendered in a browser.
+**Phase 1 (Weeks 1-4): complete.** `npx vibe-blueprint .` produces a real dependency
+graph of any TS/JS/Python repo, rendered in a browser. Resolution 99.3-99.7% on the
+three reference repositories.
 
-See `docs/PHASE-1-SPEC.md` for what to build right now.
+**Phase 2 (Weeks 5-7): complete.** Clustering, LLM labelling with user corrections,
+and intent extraction — the STATED half of the data model.
+
+**Week 8: violation detection.** Comparing STATED constraints against the DERIVED
+graph. This is the first stage where the two halves meet.
+
+See `docs/PHASE-1-SPEC.md` for the full tracker, week by week.
 See `docs/ARCHITECTURE.md` for the data model and full pipeline.
+Per-stage detail: `CLUSTERING.md`, `LABELLING.md`, `CORRECTIONS.md`, `PROVIDERS.md`,
+`INTENT.md`.
 
 ---
 

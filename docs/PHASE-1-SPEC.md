@@ -197,13 +197,78 @@ line, e.g. `packages/pyright-internal/src/typeServer/enums.ts:16` →
 
 ## Phase 1 definition of done
 
-1. Works on TypeScript, JavaScript and Python repositories
-2. Handles a 5,000-file repo in under 60 seconds
-3. Survives broken and unparseable files without crashing
-4. Every edge is traceable to a real file and line number
-5. Import resolution rate above 95% on real-world repositories
-6. Unit tests pass for walker, parser and resolver
-7. A single command takes a user from nothing to a rendered graph
+Measured on the three reference repositories (requests, zod, pyright) on
+2026-08-09.
+
+- [x] **1. Works on TypeScript, JavaScript and Python repositories**
+      — all three parse and resolve; pyright is TS, requests is Python, zod is TS.
+- [ ] **2. Handles a 5,000-file repo in under 60 seconds**
+      — **not verified at that size.** The largest repository to hand is pyright
+      at 1,917 files, which completes deterministic analysis in ~11 s. That
+      extrapolates comfortably, but extrapolation is not measurement, and this
+      box stays open until a 5,000-file repository has actually been run.
+- [x] **3. Survives broken and unparseable files without crashing**
+      — 36 files with syntax errors in pyright and 4 in zod, all recovered with
+      partial symbols; no run aborted.
+- [x] **4. Every edge is traceable to a real file and line number**
+      — enforced by test, not convention: `architectural rules > gives every edge
+      non-empty evidence pointing at a real line (rule 3)`.
+- [x] **5. Import resolution rate above 95% on real-world repositories**
+      — requests 99.7%, zod 99.6%, pyright 99.3%.
+- [x] **6. Unit tests pass for walker, parser and resolver**
+      — 538 tests across 35 files.
+- [x] **7. A single command takes a user from nothing to a rendered graph**
+      — `npx vibe-blueprint .` walks, parses, clusters, labels, reads intent and
+      serves the UI.
+
+---
+
+## Phase 2 progress
+
+Phase 2 was not specified in this document when it was written. Recorded here so
+there is one tracker rather than three.
+
+### Week 5 — clustering — **complete**
+- [x] Louvain community detection over import coupling, seeded and deterministic
+- [x] Content-derived cluster ids, stable across runs
+- [x] Directory prior for files with no imports either way
+- [x] Small-cluster merging
+- [x] Stability measurement: adjusted Rand index and Jaccard overlap
+- [x] Modularity reported as a diagnostic, explicitly not a quality score
+
+See `docs/CLUSTERING.md`.
+
+### Week 6 — LLM labelling and user corrections — **complete**
+- [x] Provider-agnostic adapter, response cache, cost reporting
+- [x] Three label provenance states: mechanical, model, user — visually distinct
+- [x] SQLite corrections store: rename, merge, split
+- [x] Jaccard matching with three honest outcomes: applied, drifted, orphaned
+- [x] Determinism: labelling on or off produces byte-identical structure
+- [ ] Haiku/Sonnet label comparison — **pending**, needs `ANTHROPIC_API_KEY`
+
+See `docs/LABELLING.md` and `docs/CORRECTIONS.md`.
+
+### Week 6a — Gemini provider — **complete**
+- [x] Gemini adapter, quota-aware retry, key never logged
+- [x] Gemini the default (free); Anthropic wired and one variable away
+- [x] Measured on all three repos: 6/6, 19/19, 46/46 modules labelled at $0
+
+See `docs/PROVIDERS.md`.
+
+### Week 7 — intent extraction — **complete**
+- [x] Four-relation constraint model, STATED provenance, never mixed with DERIVED
+- [x] Source discovery: AGENTS.md, CLAUDE.md, README, ADRs, commits, chat logs
+- [x] Deterministic subject resolution with reasoned refusals
+- [x] Confidence computed outside the model's influence
+- [x] Hand-labelled evaluation set: 31 real documents
+- [x] Precision 100%, recall 75% (n=4), F1 85.7%
+- [x] 61 uncheckable statements counted and classified
+- [x] Injection tests in both directions, including one that asserts the attack succeeds
+- [x] Resumable evaluation harness surviving a mid-run 429
+
+See `docs/INTENT.md`.
+
+### Week 8 — violation detection — **in progress**
 
 ---
 
