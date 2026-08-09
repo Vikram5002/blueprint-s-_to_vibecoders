@@ -30,6 +30,7 @@ export function ModuleCanvas(props: ModuleCanvasProps): JSX.Element {
           fileCount: node.fileCount,
           directoryCount: node.directories.length,
           disagreeingFiles: node.disagreeingFiles,
+          labelSource: node.labelSource,
         } satisfies ModuleNodeData,
       })),
     [view, selectedModuleId],

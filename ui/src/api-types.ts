@@ -87,17 +87,56 @@ export interface EdgeResponse {
   groups: EdgeEvidenceGroup[];
 }
 
+/** Rule 2's three states. Each must be visually distinct on screen. */
+export type LabelSource = 'mechanical' | 'llm' | 'user';
+
 export interface ModuleNodeSummary {
   id: string;
-  kind: 'module';
-  /** Mechanical only this week — a shared path prefix or the index. */
+  /** What to show. May be mechanical, model-supplied, or user-written. */
   label: string;
+  kind: 'module';
+  labelSource: LabelSource;
+  /** The deterministic name, always kept, so the derived answer stays visible. */
+  mechanicalLabel: string;
+  description: string | null;
   fileCount: number;
   directories: string[];
   /** Files coupling placed here despite them living elsewhere on disk. */
   disagreeingFiles: number;
   provenance: 'DERIVED' | 'STATED';
   llmLabelled: boolean;
+}
+
+export type CorrectionKind = 'rename' | 'merge' | 'split';
+export type CorrectionStatus = 'applied' | 'applied-with-drift' | 'orphaned' | 'pending';
+
+export interface CorrectionSummary {
+  id: string;
+  kind: CorrectionKind;
+  label: string | null;
+  members: string[];
+  sides: { label: string; files: string[] }[];
+  createdAt: string;
+  status: CorrectionStatus;
+  overlap: number;
+  /** Files that joined the module since the correction was made. */
+  joined: string[];
+  /** Files that left it. */
+  left: string[];
+  /** Split only: files no side claims, deliberately placed nowhere. */
+  unresolved: string[];
+  explanation: string;
+}
+
+export interface CorrectionsResponse {
+  corrections: CorrectionSummary[];
+  summary: {
+    total: number;
+    applied: number;
+    drifted: number;
+    orphaned: number;
+    unresolvedFiles: number;
+  };
 }
 
 export interface ModuleEdgeSummary {

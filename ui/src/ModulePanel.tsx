@@ -1,8 +1,18 @@
-import type { ModuleDetailResponse } from './api-types';
+import { CorrectionControls } from './CorrectionControls';
+import { ProvenanceBadge } from './ProvenanceBadge';
+import type { LabelSource, ModuleDetailResponse, ModuleNodeSummary } from './api-types';
+import type { NewCorrectionRequest } from './api';
 
 export interface ModulePanelProps {
   module: ModuleDetailResponse;
   onSelectEdge: (edgeId: string) => void;
+  /** Where this module's name came from, and what it would be without a model. */
+  labelSource: LabelSource;
+  mechanicalLabel: string;
+  description: string | null;
+  allModules: readonly ModuleNodeSummary[];
+  onSaveCorrection: (request: NewCorrectionRequest) => void;
+  savingCorrection: boolean;
 }
 
 const REASON_LABEL: Record<string, string> = {
@@ -17,18 +27,36 @@ const REASON_LABEL: Record<string, string> = {
  * behind it, and files whose folder disagrees with the grouping are called out
  * rather than blended in — that disagreement is the finding.
  */
-export function ModulePanel({ module, onSelectEdge }: ModulePanelProps): JSX.Element {
+export function ModulePanel(props: ModulePanelProps): JSX.Element {
+  const { module, onSelectEdge, labelSource, mechanicalLabel, description } = props;
   const disagreeing = module.files.filter((file) => file.disagrees);
 
   return (
     <div>
       <h2>
         Module
-        <span className="provenance">DERIVED</span>
+        {/* The grouping is always DERIVED; only the name can come from elsewhere. */}
+        <span className="provenance" title="The grouping is derived from real import edges.">
+          DERIVED
+        </span>
       </h2>
       <div className="hint mono" style={{ marginBottom: 4, wordBreak: 'break-all' }}>
+        <ProvenanceBadge source={labelSource} />
         {module.label}
       </div>
+
+      {description !== null && (
+        <div className="hint" style={{ marginBottom: 6, fontStyle: 'italic' }}>
+          {description}
+        </div>
+      )}
+
+      {labelSource !== 'mechanical' && (
+        <div className="hint" style={{ marginBottom: 6, fontSize: 10 }}>
+          derived name was <span className="mono">{mechanicalLabel}</span>
+        </div>
+      )}
+
       <div className="hint" style={{ marginBottom: 10 }}>
         {module.id} · {module.files.length} files · {module.directories.length}{' '}
         {module.directories.length === 1 ? 'directory' : 'directories'}
@@ -71,6 +99,13 @@ export function ModulePanel({ module, onSelectEdge }: ModulePanelProps): JSX.Ele
           </div>
         ))}
       </div>
+
+      <CorrectionControls
+        module={module}
+        allModules={props.allModules}
+        onSave={props.onSaveCorrection}
+        busy={props.savingCorrection}
+      />
     </div>
   );
 }

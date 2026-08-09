@@ -1,4 +1,6 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { ProvenanceBadge } from './ProvenanceBadge';
+import type { LabelSource } from './api-types';
 
 export interface ModuleNodeData extends Record<string, unknown> {
   label: string;
@@ -6,6 +8,7 @@ export interface ModuleNodeData extends Record<string, unknown> {
   fileCount: number;
   directoryCount: number;
   disagreeingFiles: number;
+  labelSource: LabelSource;
 }
 
 /**
@@ -26,12 +29,14 @@ export function ModuleNode({ data, selected }: NodeProps): JSX.Element {
       data-kind="module"
       data-selected={selected ? 'true' : 'false'}
       data-disagrees={spans ? 'true' : 'false'}
+      data-label-source={node.labelSource}
     >
       <Handle type="target" position={Position.Left} isConnectable={false} />
       <div className="name" title={`${node.moduleId} — ${node.label}`}>
         {node.label}
       </div>
       <div className="meta">
+        <ProvenanceBadge source={node.labelSource} />
         <span>{node.fileCount} files</span>
         {spans && (
           <span className="tag-disagree" title="This module's files come from more than one folder">

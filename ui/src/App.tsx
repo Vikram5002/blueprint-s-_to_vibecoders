@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  deleteCorrection,
+  fetchCorrections,
   fetchEdge,
   fetchGraph,
   fetchModule,
@@ -7,7 +9,10 @@ import {
   fetchModules,
   fetchNode,
   fetchSummary,
+  saveCorrection,
+  type NewCorrectionRequest,
 } from './api';
+import { CorrectionsPanel } from './CorrectionsPanel';
 import { GraphCanvas } from './GraphCanvas';
 import { ModuleCanvas } from './ModuleCanvas';
 import { EvidencePanel } from './EvidencePanel';
@@ -15,6 +20,7 @@ import { NodePanel } from './NodePanel';
 import { ModulePanel } from './ModulePanel';
 import { SummaryPanel } from './SummaryPanel';
 import type {
+  CorrectionsResponse,
   EdgeResponse,
   GraphResponse,
   ModuleDetailResponse,
@@ -39,6 +45,9 @@ export function App(): JSX.Element {
   const [graph, setGraph] = useState<GraphResponse | null>(null);
   const [modules, setModules] = useState<ModuleViewResponse | null>(null);
   const [selectedModule, setSelectedModule] = useState<ModuleDetailResponse | null>(null);
+  const [corrections, setCorrections] = useState<CorrectionsResponse | null>(null);
+  const [savingCorrection, setSavingCorrection] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [grouping, setGrouping] = useState<Grouping>('directory');
   const [level, setLevel] = useState<ViewLevel>('directory');
   const [expanded, setExpanded] = useState<string[]>([]);
@@ -68,6 +77,43 @@ export function App(): JSX.Element {
     }
     fetchModules().then(setModules).catch((cause: unknown) => setError(String(cause)));
   }, [grouping, modules]);
+
+  const reloadCorrections = useCallback(() => {
+    fetchCorrections().then(setCorrections).catch((cause: unknown) => setError(String(cause)));
+  }, []);
+
+  useEffect(() => {
+    reloadCorrections();
+  }, [reloadCorrections]);
+
+  const saveCorrectionAndRefresh = useCallback(
+    (request: NewCorrectionRequest) => {
+      setSavingCorrection(true);
+      setNotice(null);
+      saveCorrection(request)
+        .then(() => {
+          // Deliberately not re-clustered here: the graph would move under the
+          // user mid-session. Say when it takes effect instead.
+          setNotice(`Saved. Your ${request.kind} applies the next time you run the tool.`);
+          reloadCorrections();
+        })
+        .catch((cause: unknown) => setError(String(cause)))
+        .finally(() => setSavingCorrection(false));
+    },
+    [reloadCorrections],
+  );
+
+  const forgetCorrection = useCallback(
+    (id: string) => {
+      deleteCorrection(id)
+        .then(() => {
+          setNotice('Correction removed. The next run will not reapply it.');
+          reloadCorrections();
+        })
+        .catch((cause: unknown) => setError(String(cause)));
+    },
+    [reloadCorrections],
+  );
 
   const clearSelection = useCallback(() => {
     setSelectedEdge(null);
@@ -204,6 +250,14 @@ export function App(): JSX.Element {
 
       <aside className="side">
         {error && <div className="banner">{error}</div>}
+        {notice !== null && (
+          <div className="banner" data-tone="info">
+            {notice}{' '}
+            <button type="button" className="link" onClick={() => setNotice(null)}>
+              dismiss
+            </button>
+          </div>
+        )}
 
         {level === 'file' && graph !== null && graph.counts.nodes > FILE_LEVEL_WARNING_THRESHOLD && (
           <div className="banner">
@@ -215,7 +269,18 @@ export function App(): JSX.Element {
         {selectedEdge !== null && <EvidencePanel edge={selectedEdge} />}
 
         {selectedEdge === null && selectedModule !== null && (
-          <ModulePanel module={selectedModule} onSelectEdge={selectModuleEdge} />
+          <ModulePanel
+            module={selectedModule}
+            onSelectEdge={selectModuleEdge}
+            labelSource={modules?.nodes.find((n) => n.id === selectedModule.id)?.labelSource ?? 'mechanical'}
+            mechanicalLabel={
+              modules?.nodes.find((n) => n.id === selectedModule.id)?.mechanicalLabel ?? selectedModule.label
+            }
+            description={modules?.nodes.find((n) => n.id === selectedModule.id)?.description ?? null}
+            allModules={modules?.nodes ?? []}
+            onSaveCorrection={saveCorrectionAndRefresh}
+            savingCorrection={savingCorrection}
+          />
         )}
 
         {selectedEdge === null && selectedModule === null && selectedNode !== null && (
@@ -239,6 +304,11 @@ export function App(): JSX.Element {
                 </>
               )}
             </div>
+            {corrections !== null && corrections.corrections.length > 0 && (
+              <div style={{ marginBottom: 18 }}>
+                <CorrectionsPanel corrections={corrections} onDelete={forgetCorrection} />
+              </div>
+            )}
             {summary !== null ? <SummaryPanel summary={summary} /> : <div className="hint">Loading…</div>}
           </>
         )}

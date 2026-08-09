@@ -174,6 +174,204 @@ body {
   white-space: nowrap;
 }
 
+/*
+ * Rule 2: the three label states must be distinguishable without guessing.
+ * Different colour AND different border style AND different wording, so the
+ * distinction survives colour-blindness and a greyscale screenshot.
+ */
+.prov {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  padding: 0 4px;
+  border-radius: 3px;
+  margin-right: 5px;
+  white-space: nowrap;
+}
+
+.prov[data-source='mechanical'] {
+  color: var(--good);
+  border: 1px solid var(--good);
+}
+
+.prov[data-source='llm'] {
+  color: var(--warn);
+  border: 1px dashed var(--warn);
+  background: rgba(230, 180, 85, 0.08);
+}
+
+.prov[data-source='user'] {
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  background: rgba(110, 168, 254, 0.12);
+}
+
+/* A model-named node is tinted so the graph reads at a glance, not just up close. */
+.node[data-label-source='llm'] {
+  border-style: dashed;
+}
+
+.node[data-label-source='user'] {
+  border-color: var(--accent);
+}
+
+/* --- corrections --- */
+.corrections {
+  border-top: 1px solid var(--line);
+  margin-top: 14px;
+  padding-top: 10px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.control {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.control:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.control:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.control.primary {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.form label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.form input[type='text'],
+.form input:not([type]) {
+  background: var(--code);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 5px 7px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.two-up {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.checklist {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px;
+  background: var(--code);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 2px 0;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.check .mono {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-status {
+  display: inline-block;
+  font-size: 9px;
+  padding: 0 5px;
+  border-radius: 3px;
+  margin-right: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tag-applied {
+  color: var(--good);
+  border: 1px solid var(--good);
+}
+
+.tag-applied-with-drift {
+  color: var(--warn);
+  border: 1px solid var(--warn);
+}
+
+.tag-orphaned {
+  color: var(--bad);
+  border: 1px solid var(--bad);
+}
+
+.tag-pending {
+  color: var(--muted);
+  border: 1px dashed var(--muted);
+}
+
+.evidence-group[data-status='orphaned'] {
+  border-color: var(--bad);
+}
+
+.evidence-group[data-status='applied-with-drift'] {
+  border-color: var(--warn);
+}
+
+.banner[data-tone='info'] {
+  background: #12253a;
+  border-color: var(--accent);
+  color: #cfe2ff;
+}
+
+[data-tone='joined'] {
+  color: var(--good);
+}
+
+[data-tone='left'] {
+  color: var(--bad);
+}
+
+[data-tone='unresolved'] {
+  color: var(--warn);
+}
+
 .tag-reason {
   display: inline-block;
   color: var(--muted);

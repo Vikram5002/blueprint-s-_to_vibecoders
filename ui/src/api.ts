@@ -2,6 +2,8 @@
  * Thin client over the local JSON API. The only route into the pipeline.
  */
 import type {
+  CorrectionKind,
+  CorrectionsResponse,
   EdgeResponse,
   GraphResponse,
   ModuleDetailResponse,
@@ -49,6 +51,37 @@ export function fetchModule(id: string): Promise<ModuleDetailResponse> {
 
 export function fetchModuleEdge(id: string): Promise<EdgeResponse> {
   return getJson<EdgeResponse>(`/api/module-edge/${encodeURIComponent(id)}`);
+}
+
+export function fetchCorrections(): Promise<CorrectionsResponse> {
+  return getJson<CorrectionsResponse>('/api/corrections');
+}
+
+export interface NewCorrectionRequest {
+  kind: CorrectionKind;
+  moduleIds: string[];
+  label?: string;
+  sides?: { label: string; files: string[] }[];
+}
+
+/** Saved immediately; takes effect on the next run, which the caller must say. */
+export async function saveCorrection(request: NewCorrectionRequest): Promise<void> {
+  const response = await fetch('/api/corrections', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) {
+    const detail = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(detail?.error ?? `save failed: ${response.status}`);
+  }
+}
+
+export async function deleteCorrection(id: string): Promise<void> {
+  const response = await fetch(`/api/corrections/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  if (!response.ok) {
+    throw new Error(`delete failed: ${response.status}`);
+  }
 }
 
 /**
