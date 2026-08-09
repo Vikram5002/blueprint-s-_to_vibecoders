@@ -283,6 +283,19 @@ See `docs/INTENT.md`.
 
 See `docs/VIOLATIONS.md`.
 
+### Week 9 — versioning and drift — **complete**
+- [x] One deterministic snapshot per commit, stored in SQLite (schema v2)
+- [x] Active corrections recorded per snapshot; Week 6 wiring confirmed, not assumed
+- [x] Semantic diff over modules, edges, constraints and violations
+- [x] Rename vs restructure decided by file overlap; threshold 0.6, documented
+- [x] Drift score implemented per ARCHITECTURE.md and charted across history
+- [x] Every score movement reports the diff entries that caused it
+- [x] Week 5 stability re-checked first: adjacent ARI 1.000, false-restructure rate 0/25
+- [x] GET /api/diff and GET /api/drift-history, plus a minimal timeline UI
+- [x] Snapshot determinism verified on all three reference repositories
+
+See `docs/DRIFT.md`.
+
 ---
 
 ## Suggested build order within each week
