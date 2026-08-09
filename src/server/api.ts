@@ -27,6 +27,8 @@ export interface GraphResponse {
     readonly fileEdges: number;
   };
   readonly expandable: readonly string[];
+  /** Rule 2: kept beside the edges, never written onto them. */
+  readonly violations: ViolationOverlay;
 }
 
 export function buildGraphResponse(
@@ -49,6 +51,86 @@ export function buildGraphResponse(
       fileEdges: context.graph.graph.size,
     },
     expandable: view.expandable,
+    violations: violationOverlayFor(context),
+  };
+}
+
+/**
+ * Which edges in the current view break a stated rule.
+ *
+ * Deliberately an *overlay* keyed by edge id rather than violation objects
+ * embedded in the edges themselves. Rule 2: an edge is DERIVED, a constraint is
+ * STATED, and a violation is a comparison of the two. Writing severity onto the
+ * edge would make a claim look like a property of the code, and a client
+ * rendering edges would then have no way to tell which of the two it was
+ * drawing.
+ *
+ * Week 9-10 gets the full violation panel; this is the minimum a graph view
+ * needs to mark an edge and say why.
+ */
+export interface ViolationOverlayEntry {
+  readonly violationId: string;
+  readonly constraintId: string;
+  readonly kind: string;
+  readonly severity: string;
+  readonly severityScore: number;
+  readonly explanation: string;
+  /** The sentence that was broken, so the marking is arguable at a glance. */
+  readonly rawText: string;
+  readonly source: { readonly location: string; readonly line: number | null };
+}
+
+export interface ViolationOverlay {
+  /** File-level edge id -> the violations that edge participates in. */
+  readonly byEdge: Readonly<Record<string, readonly ViolationOverlayEntry[]>>;
+  readonly counts: {
+    readonly violations: number;
+    readonly high: number;
+    readonly medium: number;
+    readonly low: number;
+    readonly checked: number;
+    readonly unchecked: number;
+    readonly satisfied: number;
+  };
+}
+
+export function violationOverlayFor(context: AnalysisContext): ViolationOverlay {
+  const byEdge: Record<string, ViolationOverlayEntry[]> = {};
+
+  for (const violation of context.conformance.violations) {
+    const entry: ViolationOverlayEntry = {
+      violationId: violation.id,
+      constraintId: violation.constraintId,
+      kind: violation.kind,
+      severity: violation.severity,
+      severityScore: violation.severityScore,
+      explanation: violation.explanation,
+      rawText: violation.constraint.rawText,
+      source: {
+        location: violation.constraint.source.location,
+        line: violation.constraint.source.line,
+      },
+    };
+
+    for (const edge of violation.edges) {
+      const existing = byEdge[edge.edgeId];
+      if (existing === undefined) byEdge[edge.edgeId] = [entry];
+      else existing.push(entry);
+    }
+  }
+
+  const { summary } = context.conformance;
+  return {
+    byEdge,
+    counts: {
+      violations: summary.violations,
+      high: summary.bySeverity.high,
+      medium: summary.bySeverity.medium,
+      low: summary.bySeverity.low,
+      checked: summary.checked,
+      unchecked: summary.unchecked,
+      satisfied: summary.satisfied,
+    },
   };
 }
 

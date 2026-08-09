@@ -13,6 +13,7 @@ import type { ClusteringResult } from '../types/modules.js';
 import type { LabelSet } from '../types/labels.js';
 import type { CorrectionOutcome } from '../types/corrections.js';
 import type { IntentRunResult } from '../pipeline/intent.js';
+import type { ConformanceResult } from '../types/violations.js';
 
 const LANGUAGE_LABELS: Readonly<Record<Language, string>> = {
   typescript: 'TypeScript',
@@ -301,6 +302,86 @@ export function formatIntentSummary(intent: IntentRunResult): string {
   return lines.join('\n');
 }
 
+/**
+ * Conformance.
+ *
+ * Leads with what was checked, not with what failed. A violation count on its
+ * own is unreadable — zero could mean a clean repository or a repository whose
+ * every rule was unevaluable, and those are opposite findings.
+ */
+export function formatConformanceSummary(conformance: ConformanceResult): string {
+  const { summary } = conformance;
+  if (summary.constraints === 0) {
+    return '';
+  }
+
+  const lines = [
+    `  Conformance         ${count(summary.checked)} of ${count(summary.constraints)} constraint(s) checked`,
+  ];
+
+  if (summary.unchecked > 0) {
+    lines.push(`    not checkable     ${count(summary.unchecked)}`);
+    for (const [reason, total] of Object.entries(summary.byUncheckedReason)) {
+      if (total > 0) lines.push(`      ${reason.padEnd(18)}${count(total)}`);
+    }
+  }
+
+  if (summary.violations === 0) {
+    // The good case, stated as a result rather than as an absence of output.
+    lines.push(
+      `    satisfied         ${count(summary.satisfied)}`,
+      '',
+      '  No violations. Every rule that could be checked, holds.',
+      '',
+    );
+    return lines.join('\n');
+  }
+
+  lines.push(
+    `    satisfied         ${count(summary.satisfied)}`,
+    `    violated          ${count(summary.violated)}`,
+    '',
+    `  Violations          ${count(summary.violations)}  ` +
+      `(${count(summary.bySeverity.high)} high, ${count(summary.bySeverity.medium)} medium, ` +
+      `${count(summary.bySeverity.low)} low)  across ${count(summary.implicatedEdges)} edge(s)`,
+  );
+
+  // Highest severity first, then by score, so the worst thing is at the top.
+  const ranked = [...conformance.violations].sort(
+    (a, b) => b.severityScore - a.severityScore || a.id.localeCompare(b.id),
+  );
+
+  for (const violation of ranked.slice(0, 5)) {
+    lines.push('', `    [${violation.severity}] ${violation.explanation}`);
+    lines.push(`           rule: "${truncate(violation.constraint.rawText, 96)}"`);
+    lines.push(
+      `           from: ${violation.constraint.source.location}` +
+        (violation.constraint.source.line === null ? '' : `:${violation.constraint.source.line}`),
+    );
+    // Rule 3 one level up: point at the import line, not just the file.
+    for (const edge of violation.edges.slice(0, 3)) {
+      const first = edge.evidence[0];
+      if (first === undefined) continue;
+      lines.push(`           ${first.file}:${first.line}  ${truncate(first.snippet.trim(), 72)}`);
+    }
+    if (violation.edges.length > 3) {
+      lines.push(`           … and ${count(violation.edges.length - 3)} more edge(s)`);
+    }
+  }
+
+  if (ranked.length > 5) {
+    lines.push('', `    … and ${count(ranked.length - 5)} more violation(s)`);
+  }
+
+  lines.push('');
+  return lines.join('\n');
+}
+
+function truncate(text: string, limit: number): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  return flat.length <= limit ? flat : `${flat.slice(0, limit - 1)}…`;
+}
+
 export function formatServing(url: string, opening: boolean): string {
   return [
     `  Blueprint ready at  ${url}`,
@@ -372,6 +453,7 @@ export function formatJson(
   clustering: ClusteringResult,
   labels: LabelSet,
   intent: IntentRunResult,
+  conformance: ConformanceResult,
 ): string {
   return JSON.stringify(
     {
@@ -428,6 +510,13 @@ export function formatJson(
         uncheckable: intent.uncheckable,
         failures: intent.failures,
         usage: intent.usage,
+      },
+      // A comparison of the two halves, and its own key for the same reason:
+      // a violation is neither a fact about the code nor a claim on its own.
+      conformance: {
+        summary: conformance.summary,
+        violations: conformance.violations,
+        unchecked: conformance.unchecked,
       },
     },
     null,

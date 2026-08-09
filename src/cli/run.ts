@@ -9,6 +9,7 @@ import {
   formatError,
   formatLabelSummary,
   formatIntentSummary,
+  formatConformanceSummary,
   formatFileList,
   formatGraphSummary,
   formatHelp,
@@ -78,7 +79,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     return EXIT_FAILURE;
   }
 
-  const { analysis, labels, correctionOutcomes, intent, db, store } = run.value;
+  const { analysis, labels, correctionOutcomes, intent, conformance, db, store } = run.value;
   const { walk: result, ingest: summary, parse, parseSummary, graph, clustering } = analysis;
 
   if (options.json) {
@@ -93,6 +94,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
         clustering,
         labels,
         intent,
+        conformance,
       ),
     );
     db.close();
@@ -109,6 +111,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
   io.writeOut(formatLabelSummary(labels, chooseProvider().keyEnv));
   io.writeOut(formatCorrectionSummary(correctionOutcomes));
   io.writeOut(formatIntentSummary(intent));
+  io.writeOut(formatConformanceSummary(conformance));
 
   if (!options.serve) {
     db.close();
@@ -125,6 +128,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     labels,
     correctionOutcomes,
     intent,
+    conformance,
     store,
   });
 

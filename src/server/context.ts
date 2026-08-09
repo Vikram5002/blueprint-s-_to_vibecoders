@@ -12,6 +12,7 @@ import type { LabelSet } from '../types/labels.js';
 import type { CorrectionOutcome } from '../types/corrections.js';
 import type { CorrectionsStore } from '../store/corrections-store.js';
 import type { IntentRunResult } from '../pipeline/intent.js';
+import type { ConformanceResult } from '../types/violations.js';
 
 export interface AnalysisContext {
   /** Absolute repository root. */
@@ -33,4 +34,9 @@ export interface AnalysisContext {
    * route so the UI cannot accidentally render a claim inside the graph.
    */
   readonly intent: IntentRunResult;
+  /**
+   * Where STATED and DERIVED disagree. A comparison, not a third truth — the
+   * graph and the constraints are both served unchanged alongside it.
+   */
+  readonly conformance: ConformanceResult;
 }

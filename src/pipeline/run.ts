@@ -5,7 +5,7 @@
  * next, because a person's decision outranks the algorithm's; labelling after
  * that, because a name is cosmetic and must not be able to influence either.
  *
- * Intent extraction runs last and touches nothing. It needs finished modules,
+ * Intent extraction runs after that and touches nothing. It needs finished modules,
  * because a constraint's subject resolves against them, and it produces STATED
  * data that is kept entirely separate from the graph. Week 8 compares the two;
  * this week they only ever sit side by side.
@@ -14,11 +14,13 @@ import { stat } from 'node:fs/promises';
 import { analyseRepository, type Analysis, type AnalysisFailure, type AnalysisProgress } from './analyse.js';
 import { labelRepository } from './label-repository.js';
 import { extractIntent, type IntentRunResult } from './intent.js';
+import { checkConformance } from './conformance.js';
 import { openDatabase, databasePathFor, type BlueprintDatabase } from '../store/database.js';
 import { createCorrectionsStore, type CorrectionsStore } from '../store/corrections-store.js';
 import { err, ok, type Result } from '../types/result.js';
 import type { LabelSet } from '../types/labels.js';
 import type { Correction, CorrectionOutcome } from '../types/corrections.js';
+import type { ConformanceResult } from '../types/violations.js';
 
 export interface RunOptions {
   readonly root: string;
@@ -36,6 +38,8 @@ export interface RunResult {
   readonly correctionOutcomes: readonly CorrectionOutcome[];
   /** STATED data. Never merged with the graph; see rule 2. */
   readonly intent: IntentRunResult;
+  /** Where the two halves disagree. Neither is modified to produce it. */
+  readonly conformance: ConformanceResult;
   /** Open handle, so a server can accept corrections during the session. */
   readonly db: BlueprintDatabase;
   readonly store: CorrectionsStore;
@@ -93,6 +97,14 @@ export async function runPipeline(options: RunOptions): Promise<Result<RunResult
     ...(options.onIntentProgress === undefined ? {} : { onProgress: options.onIntentProgress }),
   });
 
+  // Last, and reads only what the earlier stages produced. Comparing the two
+  // halves cannot change either of them.
+  const conformance = checkConformance({
+    graph: analysed.value.graph,
+    clustering: analysed.value.clustering,
+    constraints: intent.constraints,
+  });
+
   // Recorded even when nothing was corrected, so a run is always comparable
   // against the corrections that were in force when it happened.
   store.recordRun(outcomes);
@@ -103,6 +115,7 @@ export async function runPipeline(options: RunOptions): Promise<Result<RunResult
     corrections,
     correctionOutcomes: outcomes,
     intent,
+    conformance,
     db,
     store,
   });

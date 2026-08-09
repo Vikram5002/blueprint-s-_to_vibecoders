@@ -13,6 +13,8 @@ import { createCorrectionsStore } from '../store/corrections-store.js';
 const openDatabases: BlueprintDatabase[] = [];
 import { encodeEdgeId } from '../graph/aggregate.js';
 import { startServer, LOOPBACK_HOST, type RunningServer } from './server.js';
+import { detectViolations } from '../conformance/violations.js';
+import { summariseSubjects } from '../conformance/resolve-subject.js';
 import type { AnalysisContext } from './context.js';
 
 const FIXTURE = fileURLToPath(new URL('../graph/fixtures/ts-monorepo', import.meta.url));
@@ -44,7 +46,49 @@ async function analyse(root: string): Promise<AnalysisContext> {
     clustering,
     labels: await labelModules(clustering),
     correctionOutcomes: clustering.correctionOutcomes,
+    /**
+     * No key in tests, so both model-dependent stages are empty — which is
+     * exactly the shape a real no-key run produces. Supplied explicitly rather
+     * than left off: tests are excluded from `tsc`, so a missing context field
+     * is not a compile error, it is a runtime failure in whichever route
+     * happens to read it first.
+     */
+    intent: {
+      constraints: [],
+      uncheckable: [],
+      summary: emptyIntentSummary(),
+      usage: { promptTokens: 0, completionTokens: 0, estimatedCostUsd: 0, cacheHits: 0, cacheMisses: 0 },
+      failures: [],
+    },
+    conformance: detectViolations({ constraints: [], clustering, fileEdges: [] }),
     store: createCorrectionsStore(db),
+  };
+}
+
+function emptyIntentSummary(): AnalysisContext['intent']['summary'] {
+  return {
+    documents: 0,
+    architecturalStatements: 0,
+    constraints: 0,
+    uncheckable: 0,
+    byUncheckableReason: {
+      'style-preference': 0,
+      'process-rule': 0,
+      'runtime-behaviour': 0,
+      'unsupported-relation': 0,
+      'descriptive-not-normative': 0,
+      'technology-choice': 0,
+    },
+    byRelation: {
+      'must-not-import': 0,
+      'may-only-import-via': 0,
+      'must-not-cycle': 0,
+      'must-be-layer-above': 0,
+    },
+    lowConfidence: 0,
+    evaluable: 0,
+    subjects: summariseSubjects([]),
+    degraded: true,
   };
 }
 
@@ -131,6 +175,25 @@ describe('GET /api/graph', () => {
     const { body } = await get('/api/graph?expand=packages%2Futils%2Fsrc&expand=packages%2Fapp%2Fsrc');
     const graph = body as { expanded: string[] };
     expect(graph.expanded).toHaveLength(2);
+  });
+
+  it('carries a violation overlay alongside the edges, never on them', async () => {
+    const { body } = await get('/api/graph');
+    const graph = body as {
+      edges: Record<string, unknown>[];
+      violations: { byEdge: Record<string, unknown>; counts: Record<string, number> };
+    };
+
+    expect(graph.violations).toBeDefined();
+    expect(graph.violations.counts.violations).toBe(0);
+
+    // Rule 2: an edge is DERIVED. A violation is a comparison, and writing it
+    // onto the edge would make a claim look like a property of the code.
+    for (const edge of graph.edges) {
+      expect(edge['severity']).toBeUndefined();
+      expect(edge['violation']).toBeUndefined();
+      expect(edge['violations']).toBeUndefined();
+    }
   });
 });
 
