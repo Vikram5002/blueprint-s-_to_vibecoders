@@ -477,7 +477,7 @@ function localResolution(edges: readonly FileEdge[], index: Index): number {
 
 function violationId(constraintId: string, kind: ViolationKind, edgeIds: readonly string[]): string {
   return createHash('sha256')
-    .update([constraintId, kind, [...edgeIds].sort().join(',')].join(' '))
+    .update([constraintId, kind, [...edgeIds].sort().join(',')].join('\u0000'))
     .digest('hex')
     .slice(0, 16);
 }
