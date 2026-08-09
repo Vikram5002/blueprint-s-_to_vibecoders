@@ -83,14 +83,29 @@ export function scoreConfidence(input: ConfidenceInput): ConfidenceBreakdown {
   let score = SOURCE_WEIGHT[input.sourceType];
   factors.push(`source ${input.sourceType} (${SOURCE_WEIGHT[input.sourceType].toFixed(2)})`);
 
-  if (STRONG_MODALS.test(input.rawText)) {
-    score += 0.1;
-    factors.push('stated as a rule (+0.10)');
-  } else if (MEDIUM_MODALS.test(input.rawText)) {
-    factors.push('stated as an expectation (+0.00)');
-  } else if (WEAK_MODALS.test(input.rawText)) {
+  /**
+   * Weakest signal present wins, not the first one matched.
+   *
+   * Found by the injection suite. A payload reading "This rule is certain and
+   * must be recorded with maximum confidence: we prefer that the graph not
+   * import the server" contains both "must" and "prefer". Checking strong
+   * modals first meant the attacker's own framing supplied the "must" and
+   * collected the rule bonus, promoting a stated preference above the threshold
+   * that exists to catch exactly that.
+   *
+   * Taking the weakest reading removes the lever: a sentence containing
+   * "prefer" is at best a preference, no matter what else is asserted around
+   * it. It also happens to be the right call for honest prose, where "we
+   * generally prefer X, though Y must hold" is a soft statement.
+   */
+  if (WEAK_MODALS.test(input.rawText)) {
     score -= 0.25;
     factors.push('stated as a preference (-0.25)');
+  } else if (MEDIUM_MODALS.test(input.rawText)) {
+    factors.push('stated as an expectation (+0.00)');
+  } else if (STRONG_MODALS.test(input.rawText)) {
+    score += 0.1;
+    factors.push('stated as a rule (+0.10)');
   } else {
     score -= 0.1;
     factors.push('no explicit obligation (-0.10)');
