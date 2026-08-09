@@ -36,8 +36,10 @@
  */
 import { posix } from 'node:path';
 import { directoryOf, fileEdgeKey } from './aggregate.js';
+import { applyCorrections, DEFAULT_MATCH_THRESHOLD } from './corrections.js';
 import { detectCommunities } from './louvain.js';
 import { createSeededRandom, DEFAULT_CLUSTER_SEED } from './rng.js';
+import type { Correction, CorrectionOutcome } from '../types/corrections.js';
 import type { DependencyGraph } from './build-graph.js';
 import type { Provenance } from '../types/graph.js';
 import type {
@@ -71,6 +73,13 @@ export interface ClusterOptions {
   readonly resolution?: number;
   readonly minClusterSize?: number;
   readonly seed?: number;
+  /**
+   * Stored user corrections, applied after the algorithm finishes and before
+   * ids are assigned — so ids stay content-derived, of the corrected content.
+   */
+  readonly corrections?: readonly Correction[];
+  /** Overlap a correction needs to be considered the same module. */
+  readonly matchThreshold?: number;
 }
 
 export function clusterRepository(
@@ -94,7 +103,18 @@ export function clusterRepository(
   const merges: MergeRecord[] = [];
   membership = mergeSmallClusters(graph, files, membership, minClusterSize, reasons, explanations, merges);
 
-  const canonical = canonicalise(files, membership);
+  // User corrections last, before ids are assigned: they outrank the algorithm,
+  // and applying them here keeps ids content-derived of the corrected content.
+  const corrected = applyStoredCorrections(
+    membership,
+    options.corrections ?? [],
+    options.matchThreshold ?? DEFAULT_MATCH_THRESHOLD,
+    reasons,
+    explanations,
+  );
+
+  const canonical = canonicalise(files, corrected.membership);
+  const correctionLabels = remapCorrectionLabels(corrected.membership, canonical, corrected.labels);
   return assemble({
     graph,
     files,
@@ -106,7 +126,72 @@ export function clusterRepository(
     resolution,
     seed,
     minClusterSize,
+    correctionOutcomes: corrected.outcomes,
+    correctionLabels,
   });
+}
+
+/**
+ * Turns synthetic correction keys into the canonical module ids they became.
+ *
+ * A correction's label is attached to a key like `correction:ab12`; once
+ * canonicalisation has run, that group is `module-004`. The label has to follow.
+ */
+function remapCorrectionLabels(
+  membership: ReadonlyMap<string, string>,
+  canonical: ReadonlyMap<string, string>,
+  labels: ReadonlyMap<string, string>,
+): Record<string, string> {
+  const remapped: Record<string, string> = {};
+
+  for (const [syntheticKey, label] of labels) {
+    for (const [file, key] of membership) {
+      if (key === syntheticKey) {
+        const moduleId = canonical.get(file);
+        if (moduleId !== undefined) {
+          remapped[moduleId] = label;
+        }
+        break;
+      }
+    }
+  }
+
+  return remapped;
+}
+
+/**
+ * Rewrites membership according to stored corrections.
+ *
+ * Every correction reports an outcome whether or not it applied, and drift is
+ * flagged rather than swallowed — see graph/corrections.ts.
+ */
+function applyStoredCorrections(
+  membership: Map<string, string>,
+  corrections: readonly Correction[],
+  threshold: number,
+  reasons: Map<string, ClusterReason>,
+  explanations: Map<string, string>,
+): {
+  membership: Map<string, string>;
+  outcomes: readonly CorrectionOutcome[];
+  labels: ReadonlyMap<string, string>;
+} {
+  if (corrections.length === 0) {
+    return { membership, outcomes: [], labels: new Map() };
+  }
+
+  const applied = applyCorrections(groupMembers(membership), corrections, threshold);
+
+  for (const [file, cluster] of applied.overrides) {
+    if (!membership.has(file)) {
+      continue; // named a file that no longer exists
+    }
+    membership.set(file, cluster);
+    reasons.set(file, 'user-correction');
+    explanations.set(file, 'You placed this file in this module by hand.');
+  }
+
+  return { membership, outcomes: applied.outcomes, labels: applied.labels };
 }
 
 interface Detected {
@@ -321,6 +406,9 @@ interface AssembleInput {
   readonly resolution: number;
   readonly seed: number;
   readonly minClusterSize: number;
+  readonly correctionOutcomes: readonly CorrectionOutcome[];
+  /** Already remapped from synthetic correction keys onto canonical module ids. */
+  readonly correctionLabels: Readonly<Record<string, string>>;
 }
 
 function assemble(input: AssembleInput): ClusteringResult {
@@ -360,6 +448,8 @@ function assemble(input: AssembleInput): ClusteringResult {
     disagreements,
     merges: input.merges,
     summary: summarise(input, modules, assignments, disagreements),
+    correctionOutcomes: input.correctionOutcomes,
+    correctionLabels: input.correctionLabels,
   };
 }
 
@@ -460,6 +550,7 @@ function summarise(
     'import-coupling': 0,
     'directory-prior': 0,
     'small-cluster-merge': 0,
+    'user-correction': 0,
   };
   for (const assignment of assignments) {
     byReason[assignment.reason] += 1;
@@ -503,7 +594,14 @@ function emptyResult(resolution: number, seed: number, minClusterSize: number): 
       disagreementRate: 0,
       crossDirectoryModules: 0,
       splitDirectories: 0,
-      byReason: { 'import-coupling': 0, 'directory-prior': 0, 'small-cluster-merge': 0 },
+      byReason: {
+        'import-coupling': 0,
+        'directory-prior': 0,
+        'small-cluster-merge': 0,
+        'user-correction': 0,
+      },
     },
+    correctionOutcomes: [],
+    correctionLabels: {},
   };
 }

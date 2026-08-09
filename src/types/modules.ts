@@ -9,6 +9,7 @@
  * Semantic naming is Week 6 and needs an LLM, which graph/ may not touch.
  */
 import type { Provenance } from './graph.js';
+import type { CorrectionOutcome } from './corrections.js';
 
 export type ClusterReason =
   /** Import coupling put it here — Louvain's own decision. */
@@ -16,7 +17,9 @@ export type ClusterReason =
   /** No coupling to go on, so the filesystem decided. */
   | 'directory-prior'
   /** Its cluster was below the size threshold and was merged. */
-  | 'small-cluster-merge';
+  | 'small-cluster-merge'
+  /** A stored user correction put it here. Outranks all of the above. */
+  | 'user-correction';
 
 export interface FileAssignment {
   readonly file: string;
@@ -99,4 +102,8 @@ export interface ClusteringResult {
   readonly disagreements: readonly Disagreement[];
   readonly merges: readonly MergeRecord[];
   readonly summary: ClusteringSummary;
+  /** One entry per stored correction, applied or not. Empty when there are none. */
+  readonly correctionOutcomes: readonly CorrectionOutcome[];
+  /** Names the user gave, keyed by the module id they landed on. */
+  readonly correctionLabels: Readonly<Record<string, string>>;
 }
