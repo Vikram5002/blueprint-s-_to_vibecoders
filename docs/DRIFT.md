@@ -278,6 +278,54 @@ commits, verifiable from their subjects.
 
 ---
 
+## The chart could not move (fixed)
+
+Recorded because the bug was invisible from the output: every point read 0.0,
+which is exactly what a healthy repository also looks like.
+
+`snapshotHistory` passed `constraints: []` to every historical conformance
+check, so no snapshot had anything to violate. The chart was structurally
+incapable of moving, on any repository, forever. This document already
+described the intended behaviour — the current run's rules held constant across
+the window — so it was a gap between the design and the code rather than a
+decision.
+
+It was found only by trying to satisfy the Week 10 acceptance item that asks for
+a real drift-moving commit, and building a history where the second commit
+breaks a stated rule produced a flat line.
+
+### Before and after, on this repository's real history
+
+Both sets of snapshots are in the same database, so the contrast is direct:
+
+| | Before | After |
+|---|---|---|
+| Snapshots | 7 | 20 |
+| Constraints per snapshot | **0** | **3** |
+| Drift explanation | *"No constraints were stated, so there is nothing to drift from."* | *"0 weighted violation point(s) (0x3 + 0x2 + 0x1) over 3 stated constraint(s)."* |
+
+The three rules from `CLAUDE.md` now travel through history and are checked at
+every commit:
+
+```
+  must-not-import(`parser/` -> `llm/`)   CLAUDE.md:68
+  must-not-import(`graph/`  -> `llm/`)   CLAUDE.md:68
+  must-not-import(`ui/`     -> `src/`)   CLAUDE.md:79
+```
+
+**The chart is still flat at 0.0 across all 20 commits — and now that is a
+result rather than an artefact.** This project does not break its own three
+rules at any commit in the window, which is the correct answer and was
+previously indistinguishable from the tool being unable to tell.
+
+Ten of nineteen steps changed the architecture without moving the score, and
+the chart says so explicitly.
+
+The drift path itself is exercised in `docs/VIOLATIONS.md`, on a purpose-built
+history where a commit does break a rule: 0.0 → 150.0 with the cause named.
+
+---
+
 ## Deferred items
 
 Recorded, not acted on. Both are small; both are worth doing properly rather

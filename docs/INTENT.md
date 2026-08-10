@@ -475,6 +475,92 @@ the accidental version as seriously as the hostile one.
 
 ---
 
+### Re-run after the truncation fix: what held and what did not
+
+Week 10 found that extraction on this project's own `CLAUDE.md` was silently
+truncated — a run reported zero constraints from a document that states three.
+That raised a fair question about everything above: if one document truncated
+without saying so, the 31-document numbers might be built on others that did
+the same.
+
+All 31 documents were re-extracted with a cleared cache, an 8,192-token budget
+and explicit truncation detection.
+
+#### No hidden truncations
+
+**Zero documents were cut off**, in this run or the original. The original
+checkpoint records no errors, and the re-run — now able to name truncation
+specifically — flagged none.
+
+So the truncation bug did not corrupt the eval set. It was caught on `CLAUDE.md`
+in live use because that document is unusually dense in rules, not because the
+eval set was quietly broken.
+
+#### Precision and recall are stable
+
+| | First run | Re-run |
+|---|---|---|
+| Precision | 100.0% | **100.0%** |
+| Recall | 75.0% (3 of 4) | **75.0% (3 of 4)** |
+| F1 | 85.7% | **85.7%** |
+| Clean documents | 30 | **30** |
+
+Same three constraints found, same one missed (`may-only-import-via(ui/ →
+src/)`). Two independent runs agreeing exactly is real evidence these figures
+are not an artefact of one sampling.
+
+#### The uncheckable count is *not* stable, and that is the finding
+
+| | First run | Re-run | Change |
+|---|---|---|---|
+| Statements returned | 66 | 86 | **+30%** |
+| Uncheckable | **61** | **76** | **+25%** |
+| Rejected (`quote-not-in-source`) | 2 | 7 | +5 |
+
+Identical inputs, identical model, identical prompt, temperature 0 — and a
+quarter more uncheckable statements. Per document the swings are larger still:
+
+```
+  pyright-typeshed-agent.md            3 -> 24
+  pyright-copilot-instructions.md      6 ->  3
+  pyright-ci-integration.md            4 ->  0
+  pyright-internals.md                 5 ->  7
+  zod-error-handling.md                4 ->  2
+```
+
+This is **not** truncation recovery — nothing truncated in either run. It is
+run-to-run variance in what the model volunteers as "architectural but not
+checkable".
+
+The asymmetry is explainable. Precision and recall are measured against four
+hand-labelled constraints that are unambiguous — `parser/ must NEVER import
+llm/` is either found or not. The uncheckable count has no gold standard: it
+measures how many sentences the model *chose* to report as architectural, and
+that judgement is genuinely soft. "Tests are the specification for Pyright
+behavior" is architectural on one reading and process on another, and nothing
+in the prompt forces a particular answer.
+
+#### What this changes
+
+**Finding 1 stands.** The ratio was 61:3 and is now 76:3 — roughly 20:1 either
+way. The direction and order of magnitude are robust; both runs say the same
+thing, which is that documentation describes architecture far more often than
+it constrains it.
+
+**The precise figure does not stand.** It should be quoted as **"roughly 20:1,
+observed at 61:3 and 76:3 across two runs"** rather than as 61. Anything in the
+paper that leans on the exact number needs the range instead.
+
+**Two runs is not a distribution.** The honest statement is that the count
+varies materially between runs, not that it varies by exactly 25%. Establishing
+a real interval would need several more runs, and that is worth doing before the
+number is published — but it is a measurement task, not a code change.
+
+The stable numbers — precision, recall, the constraint count, the 20:1 order of
+magnitude — are safe to build on. The exact uncheckable figure is not.
+
+---
+
 ## Numbered findings
 
 Candidates for the paper's discussion section. Numbered so they can be cited
@@ -492,6 +578,11 @@ architectural statements**. Of those:
 | Rejected by validation | 2 | 3.0% |
 
 **A ratio of roughly 20 uncheckable statements for every checkable one.**
+
+> **Quote this as a range, not a point.** A second independent run of the same
+> 31 documents produced 76 uncheckable rather than 61 — same inputs, same
+> model, same prompt. The ratio held at roughly 20:1 both times, but the exact
+> count did not. See "Re-run after the truncation fix" above.
 
 The uncheckable majority is not noise, and it is not badly written
 documentation. It is `descriptive-not-normative` (18), `process-rule` (17),
