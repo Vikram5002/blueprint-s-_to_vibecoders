@@ -14,6 +14,8 @@ import type {
   IntentResponse,
   DriftHistoryResponse,
   DiffResponse,
+  ViolationsResponse,
+  SnapshotResponse,
 } from './api-types';
 
 async function getJson<T>(path: string): Promise<T> {
@@ -93,6 +95,18 @@ export async function fetchIntent(): Promise<IntentResponse> {
     throw new Error(`intent failed: ${response.status}`);
   }
   return (await response.json()) as IntentResponse;
+}
+
+export async function fetchViolations(): Promise<ViolationsResponse> {
+  const response = await fetch('/api/violations');
+  if (!response.ok) throw new Error(`violations failed: ${response.status}`);
+  return (await response.json()) as ViolationsResponse;
+}
+
+export async function fetchSnapshot(commit: string): Promise<SnapshotResponse> {
+  const response = await fetch(`/api/snapshot?commit=${encodeURIComponent(commit)}`);
+  // 404 carries a usable body: "no snapshots yet" is a state, not a failure.
+  return (await response.json()) as SnapshotResponse;
 }
 
 export async function fetchDriftHistory(): Promise<DriftHistoryResponse> {

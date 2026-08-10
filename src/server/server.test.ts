@@ -198,6 +198,62 @@ describe('GET /api/graph', () => {
   });
 });
 
+describe('GET /api/violations', () => {
+  it('serves the ledger even when there is nothing to report', async () => {
+    const { status, body } = await get('/api/violations');
+    expect(status).toBe(200);
+
+    const response = body as {
+      violations: unknown[];
+      summary: { constraints: number; satisfied: number };
+      emptyReason: string | null;
+      uncheckableStatements: { total: number };
+    };
+    expect(response.violations).toEqual([]);
+    expect(response.summary.constraints).toBe(0);
+  });
+
+  /**
+   * The distinction Week 8 computes and Week 10 has to make visible. This
+   * fixture states no constraints, so the answer must be "nothing was
+   * measured" and never "everything passed" — they are opposite findings that
+   * both render as a zero.
+   */
+  it('says zero violations is because zero rules were stated', async () => {
+    const { body } = await get('/api/violations');
+    expect((body as { emptyReason: string }).emptyReason).toBe('no-constraints');
+  });
+
+  it('reports drift as unmeasured rather than perfect when nothing was stated', async () => {
+    const { body } = await get('/api/violations');
+    const drift = (body as { drift: { score: number; explanation: string } }).drift;
+    expect(drift.score).toBe(0);
+    expect(drift.explanation).toContain('not measured');
+  });
+});
+
+describe('GET /api/drift-history', () => {
+  it('returns 200 with a reason when no history has been recorded', async () => {
+    // Every run starts here — history is opt-in — so an empty history is a
+    // normal state of an existing resource, not a missing one. A 404 here put
+    // a red error in the browser console on a first visit.
+    const { status, body } = await get('/api/drift-history');
+    expect(status).toBe(200);
+    expect((body as { ok: boolean }).ok).toBe(false);
+    expect((body as { reason: string }).reason).toContain('--history');
+  });
+});
+
+describe('GET /api/snapshot', () => {
+  it('404s with a usable reason when no history has been recorded', async () => {
+    const { status, body } = await get('/api/snapshot?commit=abc1234');
+    expect(status).toBe(404);
+    expect((body as { ok: boolean; reason: string }).ok).toBe(false);
+    // The message has to name the fix; history is opt-in and expensive.
+    expect((body as { reason: string }).reason).toContain('--history');
+  });
+});
+
 describe('GET /api/node', () => {
   it('returns files, neighbours and externals for a directory', async () => {
     const { status, body } = await get('/api/node/packages/app/src');

@@ -5,6 +5,7 @@ import {
   fetchEdge,
   fetchGraph,
   fetchIntent,
+  fetchViolations,
   fetchModule,
   fetchModuleEdge,
   fetchModules,
@@ -15,6 +16,7 @@ import {
 } from './api';
 import { CorrectionsPanel } from './CorrectionsPanel';
 import { IntentPanel } from './IntentPanel';
+import { ViolationsPanel } from './ViolationsPanel';
 import { TimelinePanel } from './TimelinePanel';
 import { GraphCanvas } from './GraphCanvas';
 import { ModuleCanvas } from './ModuleCanvas';
@@ -27,6 +29,7 @@ import type {
   EdgeResponse,
   GraphResponse,
   IntentResponse,
+  ViolationsResponse,
   ModuleDetailResponse,
   ModuleViewResponse,
   NodeResponse,
@@ -51,6 +54,13 @@ export function App(): JSX.Element {
   const [selectedModule, setSelectedModule] = useState<ModuleDetailResponse | null>(null);
   const [corrections, setCorrections] = useState<CorrectionsResponse | null>(null);
   const [intent, setIntent] = useState<IntentResponse | null>(null);
+  const [violations, setViolations] = useState<ViolationsResponse | null>(null);
+  /**
+   * Files implicated by the violation the user last clicked. Lives here rather
+   * than in the panel because the graph is a sibling, not a child — the whole
+   * point is that a violation can point at something outside its own panel.
+   */
+  const [implicated, setImplicated] = useState<readonly string[]>([]);
   const [savingCorrection, setSavingCorrection] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [grouping, setGrouping] = useState<Grouping>('directory');
@@ -93,6 +103,7 @@ export function App(): JSX.Element {
 
   useEffect(() => {
     fetchIntent().then(setIntent).catch((cause: unknown) => setError(String(cause)));
+    fetchViolations().then(setViolations).catch((cause: unknown) => setError(String(cause)));
   }, []);
 
   const saveCorrectionAndRefresh = useCallback(
@@ -253,6 +264,7 @@ export function App(): JSX.Element {
             onSelectNode={selectNode}
             onSelectEdge={selectEdge}
             onToggleDirectory={toggleDirectory}
+            implicatedFiles={implicated}
           />
         )}
       </div>
@@ -316,6 +328,15 @@ export function App(): JSX.Element {
             {corrections !== null && corrections.corrections.length > 0 && (
               <div style={{ marginBottom: 18 }}>
                 <CorrectionsPanel corrections={corrections} onDelete={forgetCorrection} />
+              </div>
+            )}
+            {violations !== null && (
+              <div style={{ marginBottom: 18 }}>
+                <ViolationsPanel
+                  violations={violations}
+                  onHighlight={setImplicated}
+                  highlighted={implicated}
+                />
               </div>
             )}
             {intent !== null && (

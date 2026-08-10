@@ -57,8 +57,13 @@ const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
  *
  * So the adapter translates rather than forwards. The caller's number still
  * bounds the answer; this is the space the model is allowed to think in on top.
+ *
+ * Generous, because on models that reject `thinkingConfig` there is no way to
+ * cap thinking at all — the only lever left is to leave enough room that it
+ * cannot crowd out the answer. Unused headroom costs nothing: billing is on
+ * tokens produced, not tokens permitted.
  */
-const THINKING_HEADROOM_TOKENS = 4_096;
+const THINKING_HEADROOM_TOKENS = 8_192;
 
 /** Attempts per request, including the first. */
 export const MAX_ATTEMPTS = 5;

@@ -326,3 +326,69 @@ export type DriftHistoryResponse =
       };
     }
   | { ok: false; reason: string };
+
+/** Week 10: violations and one stored snapshot, both read-only projections. */
+export interface ViolationEdgeResponse {
+  edgeId: string;
+  fromFile: string;
+  toFile: string;
+  fromModule: string;
+  toModule: string;
+  importCount: number;
+  evidence: { file: string; line: number; snippet: string }[];
+}
+
+export interface ViolationResponse {
+  id: string;
+  constraintId: string;
+  kind: string;
+  severity: 'high' | 'medium' | 'low';
+  severityScore: number;
+  severityFactors: string[];
+  explanation: string;
+  cycle: string[];
+  edges: ViolationEdgeResponse[];
+  constraint: {
+    relation: string;
+    subject: string;
+    object: string;
+    via: string | null;
+    rawText: string;
+    confidence: number;
+    lowConfidence: boolean;
+    provenance: 'STATED';
+    source: { type: string; location: string; line: number | null };
+  };
+}
+
+export interface ViolationsResponse {
+  violations: ViolationResponse[];
+  unchecked: { constraintId: string; reason: string; explanation: string; rawText: string; source: string }[];
+  summary: {
+    constraints: number;
+    checked: number;
+    satisfied: number;
+    unchecked: number;
+    violated: number;
+    violations: number;
+    bySeverity: Record<'high' | 'medium' | 'low', number>;
+    implicatedEdges: number;
+  };
+  emptyReason: 'no-constraints' | 'all-unchecked' | 'all-satisfied' | null;
+  uncheckableStatements: { total: number; byReason: Record<string, number>; documents: number };
+  drift: { score: number; explanation: string };
+}
+
+export interface SnapshotBody {
+  commit: string;
+  committedAt: string;
+  subject: string;
+  fileCount: number;
+  moduleCount: number;
+  edgeCount: number;
+  violationCount: number;
+  violations: { id: string; severity: 'high' | 'medium' | 'low'; explanation: string; kind: string }[];
+  drift: { score: number; explanation: string };
+}
+
+export type SnapshotResponse = { ok: true; snapshot: SnapshotBody } | { ok: false; reason: string };

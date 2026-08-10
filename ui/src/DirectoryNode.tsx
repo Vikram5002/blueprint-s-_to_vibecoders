@@ -9,6 +9,8 @@ export interface GraphNodeData extends Record<string, unknown> {
   expandable: boolean;
   expanded: boolean;
   onToggle: (path: string) => void;
+  /** Set when a clicked violation implicates this node. */
+  implicated?: boolean;
 }
 
 const LANGUAGE_MARK: Record<string, string> = {
@@ -29,7 +31,12 @@ export function DirectoryNode({ data, selected }: NodeProps): JSX.Element {
     .map(([language]) => LANGUAGE_MARK[language] ?? language.slice(0, 2).toUpperCase());
 
   return (
-    <div className="node" data-kind={node.kind} data-selected={selected ? 'true' : 'false'}>
+    <div
+      className="node"
+      data-kind={node.kind}
+      data-selected={selected ? 'true' : 'false'}
+      data-implicated={node.implicated === true ? 'true' : 'false'}
+    >
       <Handle type="target" position={Position.Left} isConnectable={false} />
       <div className="name" title={node.path}>
         {node.label}

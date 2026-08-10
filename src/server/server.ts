@@ -23,6 +23,7 @@ import {
 import { buildCorrectionsResponse, parseCorrectionRequest } from './corrections-api.js';
 import { buildIntentResponse } from './intent-api.js';
 import { buildDiffResponse, buildDriftHistoryResponse } from './history-api.js';
+import { buildViolationsResponse, buildSnapshotResponse } from './violations-api.js';
 import { ROOT_DIRECTORY, type ViewLevel } from '../graph/aggregate.js';
 import type { AnalysisContext } from './context.js';
 
@@ -78,6 +79,13 @@ export function createApp(context: AnalysisContext): Hono {
 
   app.get('/api/intent', (c) => c.json(buildIntentResponse(context)));
 
+  app.get('/api/violations', (c) => c.json(buildViolationsResponse(context)));
+
+  app.get('/api/snapshot', (c) => {
+    const response = buildSnapshotResponse(context, c.req.query('commit') ?? '');
+    return c.json(response, response.ok ? 200 : 404);
+  });
+
   app.get('/api/diff', (c) => {
     const from = c.req.query('from') ?? '';
     const to = c.req.query('to') ?? '';
@@ -86,10 +94,16 @@ export function createApp(context: AnalysisContext): Hono {
     return c.json(response, response.ok ? 200 : 404);
   });
 
-  app.get('/api/drift-history', (c) => {
-    const response = buildDriftHistoryResponse(context);
-    return c.json(response, response.ok ? 200 : 404);
-  });
+  /**
+   * 200 even when empty, unlike /api/diff and /api/snapshot.
+   *
+   * A repository with no recorded history is a legitimate state of a resource
+   * that exists, not a missing resource — every run starts there, since
+   * history is opt-in. Returning 404 put a red error in the browser console on
+   * an entirely normal first visit. Asking for a *specific* commit that was
+   * never snapshotted is a genuine 404 and stays one.
+   */
+  app.get('/api/drift-history', (c) => c.json(buildDriftHistoryResponse(context)));
 
   app.get('/api/corrections', (c) => c.json(buildCorrectionsResponse(context)));
 

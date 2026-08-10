@@ -712,3 +712,115 @@ body {
 .tick:hover .bar {
   filter: brightness(1.35);
 }
+
+/* --- conformance panel (Week 10) ---
+ *
+ * Severity is a rating of a claim, not a property of the code, so the colours
+ * are deliberately the warning palette rather than the STATED violet — a
+ * violation is where the two halves disagree, and it belongs to neither.
+ */
+.conformance .ledger {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 14px;
+  background: var(--panel-2);
+}
+
+.row .v[data-tone='good'] { color: var(--good); }
+.row .v[data-tone='bad'] { color: var(--bad); }
+.row .v[data-tone='warn'] { color: var(--warn); }
+
+.banner[data-tone='good'] {
+  background: #16301f;
+  border-color: var(--good);
+  color: #cdeedb;
+}
+
+.evidence-group.violation header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel-2);
+}
+
+.evidence-group.violation header .spacer { flex: 1; }
+
+/* A left edge coloured by severity, so the list scans at a glance without
+ * reading every card. */
+.evidence-group.violation[data-severity='high'] { border-left: 3px solid var(--bad); }
+.evidence-group.violation[data-severity='medium'] { border-left: 3px solid var(--warn); }
+.evidence-group.violation[data-severity='low'] { border-left: 3px solid var(--muted); }
+
+.tag-sev-high { color: var(--bad); border: 1px solid var(--bad); }
+.tag-sev-medium { color: var(--warn); border: 1px solid var(--warn); }
+.tag-sev-low { color: var(--muted); border: 1px solid var(--muted); }
+
+/* The DERIVED half of a violation: real import lines, marked as derived so it
+ * cannot be confused with the quoted rule directly above it. */
+.derived-evidence {
+  border-left: 2px solid var(--good);
+  padding-left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.derived-evidence .evidence-line {
+  border-top: 0;
+  padding: 3px 0 3px 6px;
+  border-radius: 3px;
+}
+
+.control[data-active='true'] {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+/* --- timeline legend and detail --- */
+.legend {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 10px;
+  color: var(--muted);
+  margin: 6px 0;
+  flex-wrap: wrap;
+}
+
+.swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+
+.swatch-flat { background: var(--accent-dim); }
+.swatch-changed { background: var(--accent); }
+.swatch-moved { background: var(--warn); }
+
+/* Three states, three colours: nothing changed, the architecture changed but
+ * broke no rule, and the score actually moved. Week 9 found the middle one is
+ * what makes a flat chart look broken. */
+.tick[data-changed='true'] .bar {
+  background: var(--accent);
+}
+
+.tick[data-moved='true'] .bar {
+  background: var(--warn);
+  border-top-color: var(--warn);
+}
+
+.commit-detail {
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+/* --- graph highlighting from a violation --- */
+.node[data-implicated='true'] {
+  border-color: var(--bad);
+  box-shadow: 0 0 0 2px rgba(226, 102, 111, 0.45);
+}

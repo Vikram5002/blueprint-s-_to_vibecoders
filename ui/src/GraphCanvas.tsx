@@ -20,6 +20,15 @@ export interface GraphCanvasProps {
   onSelectNode: (id: string) => void;
   onSelectEdge: (id: string) => void;
   onToggleDirectory: (path: string) => void;
+  /**
+   * Files implicated in a violation the user clicked. Marked on the graph so
+   * "this rule is broken" and "here is where" are the same gesture.
+   *
+   * A directory node counts as implicated when it contains one — at the
+   * directory level the offending file may not have its own node, and silently
+   * highlighting nothing would look like the button was broken.
+   */
+  implicatedFiles?: readonly string[];
 }
 
 /**
@@ -28,6 +37,7 @@ export interface GraphCanvasProps {
  */
 export function GraphCanvas(props: GraphCanvasProps): JSX.Element {
   const { graph, selectedNodeId, selectedEdgeId } = props;
+  const implicated = props.implicatedFiles ?? [];
 
   const nodes = useMemo<Node[]>(() => {
     const expandable = new Set(graph.expandable);
@@ -45,12 +55,15 @@ export function GraphCanvas(props: GraphCanvasProps): JSX.Element {
         languages: node.languages,
         expandable: expandable.has(node.id) || (node.kind === 'file' && node.parent !== null),
         expanded: node.kind === 'file' && node.parent !== null,
+        implicated: implicated.some(
+          (file) => file === node.id || (node.kind !== 'file' && file.startsWith(`${node.id}/`)),
+        ),
         onToggle: (path: string) => {
           props.onToggleDirectory(node.kind === 'file' ? (node.parent ?? path) : path);
         },
       } satisfies GraphNodeData,
     }));
-  }, [graph, selectedNodeId, props]);
+  }, [graph, selectedNodeId, props, implicated]);
 
   const edges = useMemo<Edge[]>(() => {
     const heaviest = Math.max(1, ...graph.edges.map((edge) => edge.importCount));

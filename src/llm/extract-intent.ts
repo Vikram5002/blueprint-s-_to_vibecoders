@@ -24,7 +24,21 @@ import type { RawCandidate } from '../conformance/compile.js';
  */
 export const MAX_STATEMENTS_PER_DOCUMENT = 25;
 
-const MAX_OUTPUT_TOKENS = 2_048;
+/**
+ * Room for up to MAX_STATEMENTS_PER_DOCUMENT statements, each carrying rawText,
+ * relation, subject, object and sometimes a reason.
+ *
+ * Raised from 2,048 after a live run on this project's own CLAUDE.md came back
+ * MAX_TOKENS and reported zero constraints from a document that had previously
+ * yielded seven statements. Week 7 made every field required — which was the
+ * right call, since optional fields let answers go missing — and that made each
+ * statement several times larger than when this number was chosen.
+ *
+ * A truncated extraction is the worst possible failure here: it is
+ * indistinguishable from a document that stated nothing, which is precisely the
+ * ambiguity the whole intent pipeline is built to avoid.
+ */
+const MAX_OUTPUT_TOKENS = 8_192;
 
 export const EXTRACT_SCHEMA = {
   type: 'object',
