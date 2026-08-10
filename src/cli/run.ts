@@ -130,6 +130,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
       root: options.targetPath,
       count: options.history,
       corrections: run.value.corrections,
+      constraints: intent.constraints,
       onProgress: (done, total, commit) =>
         io.writeErr(`  snapshot ${done}/${total} — ${commit.sha.slice(0, 7)} ${commit.subject.slice(0, 50)}`),
     });

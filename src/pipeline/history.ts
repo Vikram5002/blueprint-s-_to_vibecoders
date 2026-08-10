@@ -31,6 +31,7 @@ import { fileEdgesFrom } from '../conformance/graph-adapter.js';
 import { labelModules } from './label.js';
 import type { Snapshot } from '../types/snapshots.js';
 import type { Correction } from '../types/corrections.js';
+import type { Constraint } from '../types/constraints.js';
 
 const run = promisify(execFile);
 
@@ -46,6 +47,21 @@ export interface HistoryOptions {
   readonly count: number;
   /** Corrections in force. Recorded on every snapshot for comparability. */
   readonly corrections?: readonly Correction[];
+  /**
+   * Constraints from the caller's current run, held constant across the window.
+   *
+   * The chart shows the *code* moving against a fixed set of rules, not the
+   * rules moving too — re-extracting intent at every commit would need a model
+   * call per commit and would make a snapshot's identity depend on what that
+   * model said that day.
+   *
+   * Subjects resolved to a path pattern carry across history unchanged, which
+   * is the common case for the shorthand documents actually use (`parser/`,
+   * `llm/`). A subject resolved to a specific module id will simply not match
+   * an older commit, and the constraint reports as unchecked there rather than
+   * as satisfied — which is the honest answer.
+   */
+  readonly constraints?: readonly Constraint[];
   readonly onProgress?: (done: number, total: number, commit: CommitRef) => void;
 }
 
@@ -98,6 +114,7 @@ export async function listCommits(root: string, count: number): Promise<CommitRe
 export async function snapshotHistory(options: HistoryOptions): Promise<Snapshot[]> {
   const commits = await listCommits(options.root, options.count);
   const correctionIds = (options.corrections ?? []).map((correction) => correction.id);
+  const constraints = options.constraints ?? [];
   const workRoot = await mkdtemp(join(tmpdir(), 'vibe-history-'));
   const snapshots: Snapshot[] = [];
 
@@ -117,15 +134,10 @@ export async function snapshotHistory(options: HistoryOptions): Promise<Snapshot
         const labels = await labelModules(clustering);
 
         /**
-         * No intent extraction while walking history.
-         *
-         * It needs a model, so it would be a network call per commit — slow,
-         * quota-bound, and non-reproducible. Constraints therefore come from
-         * the caller's current run and are held constant across the window,
-         * which is stated in docs/DRIFT.md: the chart shows the code moving
-         * against a fixed set of rules, not the rules moving too.
+         * No intent extraction while walking history — see `constraints` above.
+         * The current run's rules are checked against each historical graph.
          */
-        const conformance = checkConformance({ graph, clustering, constraints: [] });
+        const conformance = checkConformance({ graph, clustering, constraints });
 
         snapshots.push(
           buildSnapshot({
@@ -135,7 +147,7 @@ export async function snapshotHistory(options: HistoryOptions): Promise<Snapshot
             clustering,
             labels,
             fileEdges: fileEdgesFrom(graph),
-            constraints: [],
+            constraints,
             conformance,
             activeCorrections: correctionIds,
             fileCount: parse.files.length,
