@@ -310,6 +310,18 @@ See `docs/DRIFT.md`.
 
 See the Week 10 section of `docs/VIOLATIONS.md`.
 
+### Post-Week-10 correctness fixes — **complete**
+- [x] Drift chart: current run's constraints now reach every historical snapshot
+- [x] Verified on blueprint's real history — 0 constraints/snapshot before, 3 after
+- [x] Truncation given its own failure kind in both adapters (Anthropic never detected it at all)
+- [x] Incomplete extraction reported above the counts, never folded into a zero
+- [x] Eval harness excludes truncated documents from scoring rather than counting them as misses
+- [x] All 31 eval documents re-extracted with a cleared cache: no hidden truncations
+- [x] Precision/recall confirmed stable across two independent runs (100% / 75%)
+- [x] Uncheckable count found unstable (61 -> 76) and requalified as a range
+
+### Week 11 — MCP server and static export — **in progress**
+
 ---
 
 ## Suggested build order within each week
