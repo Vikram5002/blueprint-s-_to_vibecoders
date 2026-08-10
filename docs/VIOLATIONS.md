@@ -273,6 +273,173 @@ and edges supplied in reverse order, must produce identical JSON.
 
 ---
 
+## Week 10 — the conformance UI
+
+Weeks 8 and 9 computed violations and drift correctly and left both reachable
+only by `curl`. This week makes them readable. **No new detection or diff
+logic**: two read-only routes project data the pipeline already produced, and
+the panels render it.
+
+That constraint is not just scope discipline. A server that recomputed
+conformance on request would be a second implementation of the rules, free to
+drift out of agreement with the first, and the disagreement would surface as a
+UI that contradicts the CLI.
+
+### What was added
+
+| Route | Serves |
+|---|---|
+| `GET /api/violations` | The full violation list with evidence, the ledger, and Week 7's uncheckable count |
+| `GET /api/snapshot?commit=` | One recorded snapshot, so the timeline can show a past commit |
+
+`/api/graph` keeps its lightweight overlay — enough to mark an edge. The new
+route carries what a reader needs to *judge* a violation, which is too much to
+attach to every edge in a graph response.
+
+---
+
+### The ledger comes before the violations
+
+A violation count cannot be read on its own. Zero could mean a clean repository
+or one whose every rule was unevaluable, and those are opposite findings.
+
+So the panel opens with what was checked:
+
+```
+  rules stated                 3
+  checked against the graph    3
+  satisfied                    3
+  violated                     0
+  drift score                  0.0
+```
+
+and the three zeroes are told apart **in words**, not left to inference:
+
+- *"No violations, because no rules were found. … This is not a clean bill of
+  health — it is an unmeasured one."*
+- *"No violations, but nothing was actually checked."*
+- *"No violations. All 3 rules hold."*
+
+Week 8 already computed this distinction; Week 10 surfaces it rather than
+re-deriving it.
+
+### Week 7's uncheckable count, where it changes the reading
+
+Next to the ledger sits a note: *"4 further statements found, not checkable."*
+
+Three constraints out of a document that made sixty-odd architectural
+statements is a very different thing from a document with three sentences in
+it, and without the note a user is left believing the second.
+
+---
+
+### A violation arrives with its evidence
+
+Each card carries both halves of the disagreement, marked as such, because rule
+2 does not relax in a UI:
+
+- the **STATED** side — the quoted rule, its file and line, its confidence
+- the **DERIVED** side — the actual import lines that break it
+
+Severity colours the left edge so a list scans without reading every card, and
+"show on graph" marks the implicated files. A directory node counts as
+implicated when it *contains* one: at directory level the offending file often
+has no node of its own, and highlighting nothing would look like a broken
+button.
+
+---
+
+### The timeline explains itself
+
+Week 9 found that a flat line next to a real refactor reads as a bug. Three
+situations all render as "the line did not move", and the panel tells them
+apart:
+
+1. **The score moved** — and here are the diff entries that moved it.
+2. **The architecture changed but no rule broke** — *"The score did not move,
+   and that is correct. This commit made 2 architectural changes, but drift only
+   moves when a stated rule breaks or is fixed — and none did."*
+3. **Nothing changed at all** — files may have changed, but no import, module,
+   rule or violation did.
+
+Ticks are coloured by which of the three applies, so the interesting commits are
+findable without clicking through the history.
+
+Clicking a commit shows its diff **and** the violations as they stood at that
+commit, so "drift jumped here" leads directly to "here is exactly what broke".
+
+---
+
+### Three defects the UI work exposed
+
+All three were found by looking at running software, not by tests.
+
+**The drift chart could never move.** `snapshotHistory` passed `constraints: []`
+to every historical conformance check, so every snapshot had nothing to violate
+and every point scored 0 — on any repository, forever. `DRIFT.md` already
+described the intended behaviour, so this was a gap between the documented
+design and the code. Found only by trying to satisfy the acceptance item that
+asks for a real drift-moving commit.
+
+**Extraction silently truncated.** A live run on this project's own `CLAUDE.md`
+came back `MAX_TOKENS` and reported zero constraints from a document that had
+previously yielded seven statements. Week 7 made every schema field required —
+correct, since optional fields let answers go missing — and that made each
+statement several times larger than when the 2,048-token budget was chosen. A
+truncated extraction is the worst failure available here: it is
+indistinguishable from a document that stated nothing.
+
+**An empty history returned 404.** History is opt-in, so every run starts with
+none, and a red console error on a normal first visit is noise. An empty
+collection is a state of a resource that exists; asking for a *specific* commit
+that was never snapshotted is a real 404 and stays one.
+
+---
+
+### Verification
+
+Browser QA on four repositories, zero console errors and zero non-OK responses
+throughout.
+
+| Repository | Ledger | Panel state |
+|---|---|---|
+| blueprint | 3 stated, 3 checked, 3 satisfied | *"All 3 rules hold"* |
+| blueprint (breached copy) | 4 stated, 2 satisfied, **2 violated**, drift **150.0** | 2 high cards, 3 nodes highlighted |
+| requests | 0 stated | *"because no rules were found"* |
+| zod | 0 stated, 10 uncheckable across 5 documents | *"because no rules were found"* |
+| pyright | 0 stated, 2 uncheckable across 2 documents | *"because no rules were found"* |
+
+Provenance stayed distinct in every panel: `DERIVED` green
+`rgb(94, 201, 138)`, `STATED` violet `rgb(185, 140, 255)`.
+
+#### The drift-moving commit
+
+The brief suggested zod's circular-import fix. **It cannot demonstrate drift
+movement**, and the reason is worth stating: zod states no checkable
+constraints, so its architecture moves while drift stays flat by definition.
+That commit is still an excellent semantic-diff case — see the real-world
+validation in `DRIFT.md` — but it exercises the diff, not the score.
+
+To exercise the score, a purpose-built repository: an `AGENTS.md` stating two
+rules, a first commit where both hold, a second that breaks one.
+
+```
+  70df3c2  ········     0.0    172f  22m   0Δ  feat: initial import, both rules hold
+  9af33e0  ########   150.0  +150.0  172f  22m   4Δ  feat(parser): read the model name from llm/
+            ↳ A stated rule is now broken: `parser/` imports `llm/` in 1 file(s) …
+```
+
+150.0 is one high violation (weight 3) over two constraints. Clicking the moving
+tick in the browser shows the cause, the four architectural changes, and the
+violation as it stood at that commit.
+
+This is a constructed history, and it is labelled as one. It is the only way to
+exercise the drift path, because no repository in the corpus both states a rule
+and breaks it — which is exactly the gap already logged in `INTENT.md` as a
+corpus-selection criterion.
+
+---
+
 ## Where violations appear
 
 - **CLI** — a conformance section that leads with what was checked. Zero

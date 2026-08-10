@@ -296,6 +296,20 @@ See `docs/VIOLATIONS.md`.
 
 See `docs/DRIFT.md`.
 
+### Week 10 — the conformance UI — **complete**
+- [x] Violation panel: ranked by severity, evidence attached, plain language
+- [x] Clicking a violation highlights the implicated files on the graph
+- [x] Zero-violations-because-satisfied told apart from zero-because-none-stated
+- [x] Week 7's uncheckable count surfaced beside the constraint ledger
+- [x] Drift timeline annotates every point with the diff entries that moved it
+- [x] Flat-but-changed commits explain themselves rather than looking broken
+- [x] Clicking a commit shows its diff and the violations as they stood then
+- [x] Rule 2 held: STATED and DERIVED visually distinct in every panel
+- [x] Read-only throughout; no new detection or diff logic
+- [x] Browser QA on all three reference repos plus blueprint and a breached copy
+
+See the Week 10 section of `docs/VIOLATIONS.md`.
+
 ---
 
 ## Suggested build order within each week
