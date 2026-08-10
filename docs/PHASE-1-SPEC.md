@@ -347,13 +347,28 @@ See `docs/MCP.md`.
 - [x] **Acceptance: a real client exchange**, on this repository and on a
       constructed breach repository — reported in `docs/MCP.md`, including the
       two bugs it found.
-- [ ] **Reference-repo QA (`requests`, `zod`, `pyright`) not re-run.** Not present
-      on this machine; re-cloning and re-analysing each is bounded by the daily
-      model quota. Scale was exercised on this repository instead (208 files, 25
-      modules, 452 edges — the same order as `zod`). Carried forward.
-- [ ] **No packaged MCP host attached.** The recorded exchanges came from a
-      scripted client speaking the same wire protocol, which proves the framing
-      and payloads but not discovery inside a shipped host. Carried forward.
+- [x] **Reference-repo QA on `zod`** (407 files, 724 edges, 19 modules). Checked
+      against Week 9's independently-authored ground truth — zod's own
+      circular-import fix commit — and reproduced it exactly: `iso.ts` imports
+      `schemas.ts` through 2 statements, `schemas.ts -> iso.ts` absent. 0 of 724
+      edges lacked evidence. Static export: zero console errors, no external
+      references.
+- [x] **A real MCP host attached** — the official MCP Inspector v2.1.0, not the
+      scripted client. Discovery plus a real `check_import` returning `forbidden`
+      with the sentence and its location. `requests` and `pyright` were not
+      re-checked (quota, not obstacle); Claude Code's CLI is not on PATH in this
+      environment, so the Inspector stood in as the independent host.
+
+**A third bug, found by the real host:** the server analysed the whole repository
+before answering `initialize`, and a real host times the connection out at 15s.
+The scripted client had no timeout and never showed it. The handshake is now
+served from static data while the pipeline runs alongside — ~195ms to
+`initialize` regardless of repository size.
+
+**Also confirmed empirically:** re-running extraction over a zod `AGENTS.md` that
+our own export had grown by 284 lines produced 5 cache hits and 0 misses, which
+is only possible if the generated block is stripped before reading. The export
+does not read itself back in.
 
 **Two correctness bugs found by acceptance, both fixed:**
 

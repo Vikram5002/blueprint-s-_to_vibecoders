@@ -245,26 +245,98 @@ tool and stop calling it.
 
 ---
 
-## Verified, and not
+## Verified
 
-**Verified.** The full handshake and all four tools against a scripted JSON-RPC
-client, on this repository and on a constructed breach repository — including
-`forbidden` on a known-violating edge with the sentence and location attached,
-and `cannot-determine` on an unresolvable path. `blueprint.html` generated from
-both, executed in a DOM harness: valid embedded payload, zero console errors, no
-external references, timestamp and commit rendered. `AGENTS.md` splices without
-disturbing surrounding prose and survives repeated regeneration.
+Both open items from the first pass are now closed. The two exchanges below were
+driven by the **official MCP Inspector v2.1.0** (`@modelcontextprotocol/inspector`)
+— an independently written host, not the scripted client used earlier.
 
-**Not verified.**
+### Discovery and `check_import` through a real host
 
-- **The three reference repositories (`requests`, `zod`, `pyright`) were not
-  re-checked.** They are not present on this machine, and re-cloning plus
-  re-analysing each is bounded by the same daily model quota. The scale property
-  was exercised instead on this repository (208 files, 25 modules, 452 edges),
-  which is the same order as `zod`.
-- **A packaged MCP client (Claude Code itself) was not attached.** The exchanges
-  recorded above came from a scripted client speaking the same wire protocol,
-  which proves the framing and the payloads but not the discovery path in a
-  shipped host.
+Against the constructed breach repository:
+
+```
+$ npx @modelcontextprotocol/inspector --cli node <launcher>     --method tools/call --tool-name check_import     --tool-arg from=src/parser/parse.js to=src/llm/client.js
+
+verdict : forbidden
+finding : forbidden-import | provenance: STATED
+rule    : 1. `src/parser/` must never import from `src/llm/`.
+source  : AGENTS.md:5
+```
+
+`tools/list` returns all four tools with their schemas. Discovery works; the
+handshake, the notification, and the call all behave.
+
+> **Launcher note.** The Inspector's own CLI parser consumes unrecognised flags
+> before they reach the server command, so `--mcp` must be baked into a launcher
+> script rather than passed through. Left unwrapped, the server starts in normal
+> mode, writes a human summary to stdout, and the host times out on a stream full
+> of non-JSON. This cost an hour and is worth knowing.
+
+### zod (407 files, 724 edges, 19 modules)
+
+Checked against the **independently-authored ground truth** from Week 9 — zod's
+own commit `fix(v4): break circular import between classic schemas and iso
+(#5275)`, written by a maintainer who had never heard of this tool:
+
+| Maintainer's claim | Expected | Measured via MCP |
+|---|---|---|
+| "schemas.ts no longer imports iso.ts" | absent | **absent** |
+| "iso.ts imports schemas.ts through 2 statements" | present, count 2 | **present, count 2** (lines 2 and 4) |
+
+Also on that run: **0 of 724 edges lacked evidence** (rule 3), and every edge was
+`DERIVED` (rule 2).
+
+`check_import` on both directions of that pair returns `allowed` with the honest
+wording — "*every document was read and none states a checkable constraint
+covering these modules*". That is the correct **measured** zero: zod's five
+documents were all read successfully, and they state 8 architectural statements
+that no import graph can decide and none that it can. Consistent with Finding 1.
+
+The static export from the same run: valid embedded payload, **zero console
+errors**, no external references, timestamp and commit rendered,
+`violationsEmptyReason: no-constraints` rendering as "not measured" rather than
+"clean".
+
+### The export does not read itself back in
+
+The strongest available evidence, and it came free. Writing into zod's own
+`AGENTS.md` added 284 lines (**0 deletions** — every one of their 139 existing
+lines preserved, our block appended at 140–422). Re-running extraction over the
+now-larger file produced **5 cache hits and 0 misses**.
+
+That is only possible if the generated block was stripped before extraction: had
+it leaked through, the document text would have differed, the cache key would
+have changed, and it would have spent a fresh API call. Same 0 constraints, same
+8 uncheckable. No self-measurement, no double-counting.
+
+## Still not verified
+
+- **`requests` and `pyright` were not re-checked.** Only zod was, being closest
+  in scale to this project and the one with independent ground truth to check
+  against. The remaining two are a quota cost, not a technical obstacle.
 - **The Haiku/Sonnet label comparison remains unrun** (no `ANTHROPIC_API_KEY`),
   as since Week 5.
+- **Claude Code was not the host.** Its CLI is not on PATH in this environment
+  (the session runs inside the VSCode extension), so the official Inspector was
+  used instead. It is a real, independently written MCP host, which is what the
+  criterion was actually for — but it is not the specific host named.
+
+## What the quota actually costs
+
+Worth recording for the funding decision, because it is now the binding
+constraint and not cost:
+
+- The default model (`gemini-3.5-flash`) exhausted its free daily quota partway
+  through labelling this repository — roughly 20 requests.
+- Quota is **per model per day**, so `VIBE_LLM_MODEL=gemini-3.5-flash-lite`
+  bought a second budget, which is what made the zod run and the breach-repo runs
+  possible at all. That is a rotation trick with maybe two or three models of
+  headroom, not a strategy.
+- One zod run costs 19 labelling calls plus 5 extraction calls. Three reference
+  repositories plus this one is on the order of 100 calls for a *single* pass,
+  against a free-tier ceiling of roughly 20 per model per day.
+- The response cache absorbs re-runs well (5/5 hits above, 22/25 on this
+  repository), so the cost is per *new* repository, not per run. Week 14's
+  corpus work is the problem: 100 repositories is ~2,000 calls, which is not
+  reachable on free tier by rotation.
