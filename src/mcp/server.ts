@@ -31,10 +31,18 @@ import type { AnalysisContext } from '../server/context.js';
  * error, and it is the single easiest thing to get wrong in a hand-rolled
  * implementation.
  */
-export function handleMessage(
-  context: AnalysisContext,
+/**
+ * Supplies the analysis, computed at most once.
+ *
+ * A function rather than a value because a real host times the handshake.
+ * See `serveMcp`.
+ */
+export type ContextProvider = () => Promise<AnalysisContext>;
+
+export async function handleMessage(
+  getContext: ContextProvider,
   request: JsonRpcRequest,
-): JsonRpcResponse | null {
+): Promise<JsonRpcResponse | null> {
   if (isNotification(request)) return null;
   const id = request.id ?? null;
 
@@ -66,7 +74,15 @@ export function handleMessage(
        * as a transport failure would make a recoverable mistake look fatal.
        */
       try {
-        const outcome = callTool(context, name, asObject(params['arguments']));
+        /**
+         * The analysis is awaited *here*, not at startup.
+         *
+         * `initialize` and `tools/list` are answered from static data, so the
+         * handshake completes in milliseconds however large the repository is.
+         * Only a call that actually needs the graph waits for it, and hosts
+         * allow far longer for a tool call than for a connection.
+         */
+        const outcome = callTool(await getContext(), name, asObject(params['arguments']));
         return success(id, { content: outcome.content, isError: outcome.isError });
       } catch (cause: unknown) {
         const message = cause instanceof Error ? cause.message : String(cause);
@@ -99,8 +115,27 @@ export interface McpStreams {
  * One JSON object per line, both directions. Nothing else may ever be written
  * to this stream — a stray log line is indistinguishable from a malformed
  * message to the client.
+ *
+ * ## Why the context arrives as a promise
+ *
+ * Found by attaching a real MCP host: the official Inspector gives up on a
+ * connection after 15 seconds. The first version analysed the repository and
+ * *then* began serving, so on any repository big enough to be interesting the
+ * host timed out before the handshake and the server looked broken. A scripted
+ * client with no timeout never showed this, which is the whole reason the
+ * acceptance criterion asked for a real one.
+ *
+ * So the loop starts immediately. `initialize`, `ping` and `tools/list` are
+ * answered from static data and never touch the analysis; only a tool call
+ * awaits it. The caller kicks the pipeline off in parallel, so by the time an
+ * agent asks a real question the answer is usually already there.
+ *
+ * Messages are handled strictly in order. Concurrency would let a fast
+ * `tools/list` overtake a slow `tools/call`, and while JSON-RPC permits
+ * out-of-order responses, serialising them keeps this server's behaviour
+ * reproducible — which is the property the whole project is built on.
  */
-export async function serveMcp(context: AnalysisContext, streams: McpStreams): Promise<void> {
+export async function serveMcp(getContext: ContextProvider, streams: McpStreams): Promise<void> {
   const lines = createInterface({ input: streams.input, crlfDelay: Infinity });
 
   for await (const line of lines) {
@@ -112,7 +147,7 @@ export async function serveMcp(context: AnalysisContext, streams: McpStreams): P
       continue;
     }
 
-    const response = handleMessage(context, parsed);
+    const response = await handleMessage(getContext, parsed);
     if (response !== null) streams.write(JSON.stringify(response));
   }
 }

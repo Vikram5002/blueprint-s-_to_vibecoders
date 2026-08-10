@@ -64,6 +64,18 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     io.writeErr(`Scanning ${options.targetPath}`);
   }
 
+  /**
+   * MCP starts serving *before* the pipeline runs.
+   *
+   * A real MCP host times the connection — the official Inspector gives up
+   * after 15 seconds — and analysing first meant the handshake never arrived
+   * on any repository big enough to be worth analysing. The handshake needs no
+   * analysis, so it is answered immediately while the pipeline runs alongside.
+   */
+  if (options.mcp) {
+    return await runMcp(options, io, version);
+  }
+
   const run = await runPipeline({
     root: options.targetPath,
     ...(showProgress
@@ -135,24 +147,6 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     for (const file of written) io.writeErr(`  wrote ${file.path} (${file.bytes} bytes)`);
   }
 
-  /**
-   * MCP owns stdout from here on.
-   *
-   * Placed above every other `writeOut` deliberately: in this mode stdout is a
-   * JSON-RPC transport, and one summary line written before the loop starts
-   * would be read by the client as a malformed message. Progress and errors
-   * still reach stderr, which MCP clients ignore.
-   */
-  if (options.mcp) {
-    io.writeErr('Serving MCP on stdio. No port is open.');
-    await serveMcp(analysisContext, {
-      input: process.stdin,
-      write: (line) => process.stdout.write(`${line}\n`),
-    });
-    db.close();
-    return EXIT_OK;
-  }
-
   if (options.verbose && result.files.length > 0) {
     io.writeOut(formatFileList(result.files));
   }
@@ -220,4 +214,78 @@ async function waitForShutdown(server: RunningServer, io: CliIo): Promise<void> 
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
   });
+}
+
+/**
+ * The MCP path: serve first, analyse in parallel.
+ *
+ * Kept as its own function because it inverts the order of everything else in
+ * this file — the transport comes up before the work does. Still no business
+ * logic here (rule 5): it starts the pipeline, hands the resulting context to
+ * the server, and formats nothing.
+ */
+async function runMcp(
+  options: { readonly targetPath: string; readonly exportFiles: boolean },
+  io: CliIo,
+  version: string,
+): Promise<number> {
+  io.writeErr(`vibe-blueprint ${version}`);
+  io.writeErr('Serving MCP on stdio. No port is open.');
+
+  /**
+   * Started immediately and memoised, so the analysis is usually finished
+   * before an agent asks its first real question — but never blocks the
+   * handshake, which is what a host is timing.
+   */
+  const analysis = (async () => {
+    const run = await runPipeline({ root: options.targetPath });
+    if (!run.ok) throw new Error(run.error.message);
+
+    const { analysis: parsed, labels, correctionOutcomes, intent, conformance, db, store } = run.value;
+
+    const context = {
+      root: parsed.walk.root,
+      graph: parsed.graph,
+      ingest: parsed.ingest,
+      parse: parsed.parseSummary,
+      parseFailures: parsed.parse.failures,
+      clustering: parsed.clustering,
+      labels,
+      correctionOutcomes,
+      intent,
+      conformance,
+      store,
+      db,
+    };
+
+    if (options.exportFiles) {
+      const written = await writeExports(context, {
+        generatedAt: new Date().toISOString(),
+        commit: await currentCommit(context.root),
+      });
+      for (const file of written) io.writeErr(`  wrote ${file.path} (${file.bytes} bytes)`);
+    }
+
+    io.writeErr(`  Ready: ${parsed.clustering.modules.length} module(s), ${parsed.graph.graph.order} file(s).`);
+    return context;
+  })();
+
+  /**
+   * A rejection here would otherwise be an unhandled promise before the first
+   * tool call arrives. Swallowed at this level and re-thrown to whichever tool
+   * call awaits it, which turns a crash into an error result the agent can act
+   * on.
+   */
+  analysis.catch(() => undefined);
+
+  await serveMcp(() => analysis, {
+    input: process.stdin,
+    write: (line) => process.stdout.write(`${line}
+`),
+  });
+
+  // Closed off the resolved context rather than a captured handle, so a
+  // pipeline that never finished leaves nothing to close.
+  await analysis.then((context) => context.db.close()).catch(() => undefined);
+  return EXIT_OK;
 }

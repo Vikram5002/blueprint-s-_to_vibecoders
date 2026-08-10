@@ -130,6 +130,11 @@ function context(): AnalysisContext {
   } as unknown as AnalysisContext;
 }
 
+/** The analysis, supplied lazily — the shape the server now takes. */
+function provider(): () => Promise<AnalysisContext> {
+  return () => Promise.resolve(context());
+}
+
 function request(method: string, params?: unknown, id: number | string = 1): JsonRpcRequest {
   return { jsonrpc: '2.0', id, method, ...(params === undefined ? {} : { params }) };
 }
@@ -139,8 +144,8 @@ function request(method: string, params?: unknown, id: number | string = 1): Jso
  * that is what a model actually reads. The helper tolerates both rather than
  * assuming every payload parses.
  */
-function call(name: string, args: Record<string, unknown> = {}): Record<string, unknown> {
-  const response = handleMessage(context(), request('tools/call', { name, arguments: args }));
+async function call(name: string, args: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
+  const response = await handleMessage(provider(), request('tools/call', { name, arguments: args }));
   const result = (response as { result: { content: { text: string }[]; isError: boolean } }).result;
   const text = result.content[0]?.text ?? '';
 
@@ -154,8 +159,8 @@ function call(name: string, args: Record<string, unknown> = {}): Record<string, 
 // ---------------------------------------------------------------- handshake
 
 describe('the handshake', () => {
-  it('answers initialize with a version, capabilities and a name', () => {
-    const response = handleMessage(context(), request('initialize', { protocolVersion: '2025-06-18' }));
+  it('answers initialize with a version, capabilities and a name', async () => {
+    const response = await handleMessage(provider(), request('initialize', { protocolVersion: '2025-06-18' }));
     const result = (response as { result: Record<string, unknown> }).result;
 
     expect(result['protocolVersion']).toBe('2025-06-18');
@@ -163,47 +168,124 @@ describe('the handshake', () => {
     expect(result['capabilities']).toEqual({ tools: {} });
   });
 
-  it('declares no capability that implies writing', () => {
+  it('declares no capability that implies writing', async () => {
     // Read-only is a promise made at discovery time. If this ever grows a
     // `resources` or `prompts` entry it should be a deliberate decision with a
     // failing test in front of it.
-    const response = handleMessage(context(), request('initialize', {}));
+    const response = await handleMessage(provider(), request('initialize', {}));
     const capabilities = (response as { result: { capabilities: Record<string, unknown> } }).result
       .capabilities;
     expect(Object.keys(capabilities)).toEqual(['tools']);
   });
 
-  it('echoes a version it knows and falls back to its newest otherwise', () => {
+  it('echoes a version it knows and falls back to its newest otherwise', async () => {
     expect(negotiateVersion('2024-11-05')).toBe('2024-11-05');
     expect(negotiateVersion('1999-01-01')).toBe(SUPPORTED_PROTOCOL_VERSIONS[0]);
     expect(negotiateVersion(undefined)).toBe(SUPPORTED_PROTOCOL_VERSIONS[0]);
   });
 
-  it('never answers a notification', () => {
+  it('never answers a notification', async () => {
     // JSON-RPC 2.0 §4.1. Replying to notifications/initialized makes stricter
     // clients report a protocol error, and it is the easiest thing to get
     // wrong in a hand-rolled server.
     const notification: JsonRpcRequest = { jsonrpc: '2.0', method: 'notifications/initialized' };
-    expect(handleMessage(context(), notification)).toBeNull();
+    expect(await handleMessage(provider(), notification)).toBeNull();
   });
 
-  it('answers ping', () => {
-    expect((handleMessage(context(), request('ping')) as { result: unknown }).result).toEqual({});
+  it('answers ping', async () => {
+    expect((await handleMessage(provider(), request('ping')) as { result: unknown }).result).toEqual({});
   });
 
-  it('reports an unknown method as method-not-found rather than crashing', () => {
-    const response = handleMessage(context(), request('resources/list'));
+  it('reports an unknown method as method-not-found rather than crashing', async () => {
+    const response = await handleMessage(provider(), request('resources/list'));
     expect((response as { error: { code: number } }).error.code).toBe(ERROR_METHOD_NOT_FOUND);
   });
 });
 
+describe('the handshake never waits for the analysis', () => {
+  /**
+   * Found by attaching the official MCP Inspector: it abandons a connection
+   * after 15 seconds. The first version analysed the repository and *then*
+   * started serving, so on any repository big enough to be worth analysing the
+   * host timed out before the handshake and the server looked broken.
+   *
+   * The scripted client had no timeout and so never showed this, which is
+   * exactly why the acceptance criterion asked for a real host.
+   */
+  function neverResolves(): { provider: () => Promise<AnalysisContext>; asked: () => number } {
+    let calls = 0;
+    return {
+      provider: () => {
+        calls += 1;
+        return new Promise<AnalysisContext>(() => undefined);
+      },
+      asked: () => calls,
+    };
+  }
+
+  it.each(['initialize', 'ping', 'tools/list'])(
+    'answers %s while the analysis is still running',
+    async (method) => {
+      const { provider: pending, asked } = neverResolves();
+      const response = await handleMessage(pending, request(method, {}));
+
+      expect(response).not.toBeNull();
+      expect('result' in (response as object)).toBe(true);
+      // The decisive assertion: it never even asked for the analysis.
+      expect(asked()).toBe(0);
+    },
+  );
+
+  it('completes a full handshake over the stream without the analysis finishing', async () => {
+    const { provider: pending } = neverResolves();
+    const input = new PassThrough();
+    const written: string[] = [];
+
+    const done = serveMcp(pending, { input, write: (line) => written.push(line) });
+    input.write(`${JSON.stringify(request('initialize', {}, 1))}\n`);
+    input.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`);
+    input.write(`${JSON.stringify(request('tools/list', undefined, 2))}\n`);
+    input.end();
+    await done;
+
+    expect(written).toHaveLength(2);
+    expect(JSON.parse(written[0] as string).result.serverInfo.name).toBe('vibe-blueprint');
+  });
+
+  it('does wait when a tool call genuinely needs the graph', async () => {
+    // The other half of the trade: a call that needs the analysis must not be
+    // answered from thin air just to look fast.
+    let resolved = false;
+    const slow = () =>
+      new Promise<AnalysisContext>((resolve) => {
+        setTimeout(() => {
+          resolved = true;
+          resolve(context());
+        }, 10);
+      });
+
+    const response = await handleMessage(slow, request('tools/call', { name: 'get_constraints' }));
+    expect(resolved).toBe(true);
+    expect((response as { result: { isError: boolean } }).result.isError).toBe(false);
+  });
+
+  it('turns a failed analysis into a tool error, not a dead connection', async () => {
+    const failing = () => Promise.reject(new Error('could not read the repository'));
+    const response = await handleMessage(failing, request('tools/call', { name: 'get_constraints' }));
+
+    const result = (response as { result: { isError: boolean; content: { text: string }[] } }).result;
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain('could not read the repository');
+  });
+});
+
 describe('framing', () => {
-  it('turns a malformed line into a parse error instead of throwing', () => {
+  it('turns a malformed line into a parse error instead of throwing', async () => {
     const parsed = parseMessage('{not json');
     expect(isFailure(parsed) && parsed.error.code).toBe(ERROR_PARSE);
   });
 
-  it('rejects a message that is not JSON-RPC 2.0', () => {
+  it('rejects a message that is not JSON-RPC 2.0', async () => {
     const parsed = parseMessage(JSON.stringify({ jsonrpc: '1.0', method: 'x', id: 1 }));
     expect(isFailure(parsed) && parsed.error.code).toBe(ERROR_INVALID_REQUEST);
   });
@@ -212,7 +294,7 @@ describe('framing', () => {
     const input = new PassThrough();
     const written: string[] = [];
 
-    const done = serveMcp(context(), { input, write: (line) => written.push(line) });
+    const done = serveMcp(provider(), { input, write: (line) => written.push(line) });
     input.write(`${JSON.stringify(request('initialize', {}, 1))}\n`);
     input.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`);
     input.write(`${JSON.stringify(request('tools/list', undefined, 2))}\n`);
@@ -229,8 +311,8 @@ describe('framing', () => {
 // ---------------------------------------------------------------- tools
 
 describe('tools/list', () => {
-  it('offers the four read-only tools', () => {
-    const response = handleMessage(context(), request('tools/list'));
+  it('offers the four read-only tools', async () => {
+    const response = await handleMessage(provider(), request('tools/list'));
     const tools = (response as { result: { tools: { name: string }[] } }).result.tools;
     expect(tools.map((tool) => tool.name).sort()).toEqual([
       'check_import',
@@ -240,7 +322,7 @@ describe('tools/list', () => {
     ]);
   });
 
-  it('gives every tool a schema a client can validate against', () => {
+  it('gives every tool a schema a client can validate against', async () => {
     for (const tool of TOOL_DEFINITIONS) {
       expect(tool.inputSchema['type']).toBe('object');
       expect(tool.description.length).toBeGreaterThan(80);
@@ -249,8 +331,8 @@ describe('tools/list', () => {
 });
 
 describe('check_import over the wire', () => {
-  it('forbids the import the repository forbids', () => {
-    const result = call('check_import', { from: 'src/parser/parse.ts', to: 'src/llm/a.ts' }) as {
+  it('forbids the import the repository forbids', async () => {
+    const result = await call('check_import', { from: 'src/parser/parse.ts', to: 'src/llm/a.ts' }) as {
       verdict: string;
       explanation: string;
     };
@@ -258,36 +340,36 @@ describe('check_import over the wire', () => {
     expect(result.explanation).toContain('CLAUDE.md:7');
   });
 
-  it('allows the reverse direction', () => {
+  it('allows the reverse direction', async () => {
     expect(
-      (call('check_import', { from: 'src/llm/a.ts', to: 'src/parser/parse.ts' }) as { verdict: string })
+      (await call('check_import', { from: 'src/llm/a.ts', to: 'src/parser/parse.ts' }) as { verdict: string })
         .verdict,
     ).toBe('allowed');
   });
 
-  it('says cannot-determine for a path it does not know', () => {
+  it('says cannot-determine for a path it does not know', async () => {
     expect(
-      (call('check_import', { from: 'src/parser/parse.ts', to: 'src/nope/x.ts' }) as { verdict: string })
+      (await call('check_import', { from: 'src/parser/parse.ts', to: 'src/nope/x.ts' }) as { verdict: string })
         .verdict,
     ).toBe('cannot-determine');
   });
 
-  it('reports a missing argument as a tool error, not a protocol error', () => {
+  it('reports a missing argument as a tool error, not a protocol error', async () => {
     // The distinction matters to an agent: a protocol error reads as "this
     // server is broken", a tool error as "try something else".
-    const response = handleMessage(context(), request('tools/call', { name: 'check_import', arguments: {} }));
+    const response = await handleMessage(provider(), request('tools/call', { name: 'check_import', arguments: {} }));
     expect('result' in (response as object)).toBe(true);
     expect((response as { result: { isError: boolean } }).result.isError).toBe(true);
   });
 
-  it('reports an unknown tool as a tool error', () => {
-    expect((call('write_file', { path: 'x' }) as { isError: boolean }).isError).toBe(true);
+  it('reports an unknown tool as a tool error', async () => {
+    expect((await call('write_file', { path: 'x' }) as { isError: boolean }).isError).toBe(true);
   });
 });
 
 describe('provenance survives the boundary (rule 2)', () => {
-  it('marks derived architecture DERIVED', () => {
-    const result = call('get_architecture', {}) as {
+  it('marks derived architecture DERIVED', async () => {
+    const result = await call('get_architecture', {}) as {
       provenance: string;
       modules: { provenance: string }[];
       edges: { provenance: string }[];
@@ -297,8 +379,8 @@ describe('provenance survives the boundary (rule 2)', () => {
     expect(result.edges.every((edge) => edge.provenance === 'DERIVED')).toBe(true);
   });
 
-  it('marks stated constraints STATED', () => {
-    const result = call('get_constraints') as {
+  it('marks stated constraints STATED', async () => {
+    const result = await call('get_constraints') as {
       provenance: string;
       constraints: { provenance: string }[];
     };
@@ -306,12 +388,12 @@ describe('provenance survives the boundary (rule 2)', () => {
     expect(result.constraints.every((c) => c.provenance === 'STATED')).toBe(true);
   });
 
-  it('marks violations a comparison, never a fact about either half', () => {
-    expect((call('get_violations') as { provenance: string }).provenance).toBe('COMPARISON');
+  it('marks violations a comparison, never a fact about either half', async () => {
+    expect((await call('get_violations') as { provenance: string }).provenance).toBe('COMPARISON');
   });
 
-  it('carries evidence on every file edge (rule 3)', () => {
-    const result = call('get_architecture', { level: 'file' }) as {
+  it('carries evidence on every file edge (rule 3)', async () => {
+    const result = await call('get_architecture', { level: 'file' }) as {
       edges: { evidence: { file: string; line: number }[] }[];
     };
     expect(result.edges.length).toBeGreaterThan(0);
@@ -323,21 +405,21 @@ describe('provenance survives the boundary (rule 2)', () => {
 });
 
 describe('the other read tools', () => {
-  it('filters violations by severity and says so', () => {
-    expect((call('get_violations', { severity: 'high' }) as { violations: unknown[] }).violations).toHaveLength(1);
-    expect((call('get_violations', { severity: 'low' }) as { violations: unknown[] }).violations).toHaveLength(0);
-    expect((call('get_violations', { severity: 'low' }) as { filteredBy: string }).filteredBy).toBe('low');
+  it('filters violations by severity and says so', async () => {
+    expect((await call('get_violations', { severity: 'high' }) as { violations: unknown[] }).violations).toHaveLength(1);
+    expect((await call('get_violations', { severity: 'low' }) as { violations: unknown[] }).violations).toHaveLength(0);
+    expect((await call('get_violations', { severity: 'low' }) as { filteredBy: string }).filteredBy).toBe('low');
   });
 
-  it('rejects a severity it does not recognise', () => {
-    expect((call('get_violations', { severity: 'critical' }) as { isError: boolean }).isError).toBe(true);
+  it('rejects a severity it does not recognise', async () => {
+    expect((await call('get_violations', { severity: 'critical' }) as { isError: boolean }).isError).toBe(true);
   });
 
-  it('surfaces the uncheckable count rather than only the checkable few', () => {
+  it('surfaces the uncheckable count rather than only the checkable few', async () => {
     // Without this an agent sees one constraint and concludes the repository
     // states almost nothing about itself, when in fact most of what it states
     // is simply not decidable from an import graph.
-    const result = call('get_constraints') as { uncheckable: { total: number; note: string } };
+    const result = await call('get_constraints') as { uncheckable: { total: number; note: string } };
     expect(result.uncheckable.total).toBe(61);
     expect(result.uncheckable.note).toContain('counted, not enforced');
   });
