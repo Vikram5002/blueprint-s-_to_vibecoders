@@ -344,6 +344,24 @@ which **six consecutive requests returned 429 immediately** — including
 sequential ones, so this is not a concurrency limit. The window cleared after
 roughly **90 seconds**.
 
+### All three reference repositories
+
+| Repo | Files | Modules | Labelled | Fallback | Cause of fallback | Intent docs | Intent failures |
+|---|---:|---:|---:|---:|---|---:|---:|
+| `psf/requests` | 37 | 6 | 6 / 6 | 0 | — | 1 | 0 |
+| `colinhacks/zod` | 407 | 19 | 19 / 19 | 0 | — | 5 | 0 |
+| `microsoft/pyright` | 1,919 | 46 | 42 / 46 | 4 | **all 4 truncation**, 0 rate limits | 2 | 0 |
+
+After the backoff fix, **rate limiting disappeared entirely** — pyright made 48
+calls across ~35 minutes without a single 429. The remaining four failures are
+genuine truncations: `llama-3.3-70b` runs past the label token budget on some
+modules and is caught by the `finish_reason` check rather than recorded as an
+empty label.
+
+pyright also shows the throughput cost plainly: **~35 minutes for 48 calls**,
+against roughly 90 seconds for the same work on Gemini. At corpus scale that is
+the number that matters.
+
 This produced a real regression on first use. The adapter initially inherited
 Gemini's retry policy — 5 attempts spanning about 15 seconds — and 15 seconds
 is far inside a 90-second window:
@@ -371,6 +389,10 @@ Same repository (zod), same 19 modules, same prompt:
 | Repeated labels | none | `Validation Framework` ×3 |
 | Domain-aware (names the project) | 4 | 0 |
 | Average words per label | 2.95 | 2.37 |
+
+The gap widens with repository size: on pyright, Bluesminds produced **35
+distinct labels out of 42** (83%) — seven collisions across a 46-module graph,
+where the whole point of a label is telling modules apart.
 
 **Gemini's labels are better**, and not marginally. Where Gemini distinguished
 `Classic Zod API`, `Zod Core Engine`, `Classic Zod Schemas` and
@@ -404,16 +426,17 @@ Measured from `GET /v1/dashboard/billing/usage`:
 | Baseline, before any run | 0.0223 |
 | After requests + zod + model probing | 0.9765 |
 | After the full zod re-run | 1.7954 |
+| After pyright (48 calls) | 2.8359 |
 
-**≈1.77 consumed** for roughly 60 calls across two repositories plus eleven
-model probes. Following OpenAI's convention — which this gateway's API mirrors
-— `total_usage` is in **cents**, putting the whole exercise near **US$0.018**.
+**≈2.81 consumed** for roughly 110 calls across all three reference
+repositories plus eleven model probes. Following OpenAI's convention — which this gateway's API mirrors
+— `total_usage` is in **cents**, putting the whole exercise near **US$0.028**.
 The unit is not documented, so that reading is stated rather than asserted; the
 reported limits (`hard_limit_usd: 100000000`) are placeholders and give no
 independent check.
 
-Either way the order of magnitude is the finding: this is roughly a cent and a
-half for work that Gemini's free tier could not complete at all. **Cost is not
+Either way the order of magnitude is the finding: under three cents for work
+that Gemini's free tier could not complete at all. **Cost is not
 the constraint. Throughput, reliability and label quality are.**
 
 ---
