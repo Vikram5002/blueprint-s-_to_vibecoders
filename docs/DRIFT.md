@@ -278,6 +278,62 @@ commits, verifiable from their subjects.
 
 ---
 
+## Deferred items
+
+Recorded, not acted on. Both are small; both are worth doing properly rather
+than in passing.
+
+### 1. Preserve the zod circular-import diff as a first-class validation case
+
+The strongest evidence this project has produced is the diff of zod's
+`fix(v4): break circular import between classic schemas and iso (#5275)`:
+
+```
+fbe8ad1 -> dfd8766   8 entries
+  [edge-removed]        packages/zod/src/v4/classic/schemas.ts no longer imports
+                        packages/zod/src/v4/classic/iso.ts.
+  [edge-weight-changed] packages/zod/src/v4/classic/iso.ts imports schemas.ts through
+                        2 statement(s), more than the 1 before.
+```
+
+It is currently written up inside the verification section of this document,
+which undersells it. It deserves its own place, kept **separate from the
+synthetic violation tests**, because it is a different *kind* of evidence:
+
+- The synthetic tests prove the mechanics — inject a known edge, see it
+  detected. They are constructed by the same person who wrote the detector, so
+  they can only ever confirm that the code does what its author intended.
+- This one is ground truth written by a zod maintainer who had never heard of
+  this tool, in a commit message describing the change in their own words. The
+  tool independently reported the cycle broken in one direction and the
+  surviving dependency strengthening in the other.
+
+**To do:** capture the terminal output verbatim (and the timeline UI showing the
+same diff), and give it a named section — "Real-world validation" — that a
+reader can find without reading the whole document. Pin the commit shas so the
+case can be re-run.
+
+### 2. A fixture test for the 57% borderline restructure
+
+`RENAME_OVERLAP_THRESHOLD` is 0.6, and this repository's own history contains
+the only genuine boundary case observed anywhere: a module that scored **57%**
+overlap and was correctly reported as `module-restructured` rather than as a
+rename.
+
+That matters because adjacent clusterings are otherwise identical — overlaps
+land at 1.0 or near 0, so **the threshold is almost never exercised in the range
+where it actually decides something**. Unit tests cover the boundary with
+hand-built module sets, which is worth having but is again the author checking
+their own arithmetic.
+
+**To do:** freeze that commit pair's two snapshots as a fixture and assert the
+57% case classifies as a restructure. Cheap, and it converts the one real
+boundary observation into a regression test before the history grows past it.
+
+Neither blocks Week 10.
+
+---
+
 ## Where to see it
 
 ```bash
