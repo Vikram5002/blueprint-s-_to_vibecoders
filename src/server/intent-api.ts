@@ -64,7 +64,12 @@ export interface IntentResponse {
    * Why the panel is empty, in words, when it is empty. "Not attempted" and
    * "nothing stated" look identical in a count and mean opposite things.
    */
-  readonly emptyReason: 'not-attempted' | 'no-documents' | 'nothing-stated' | null;
+  readonly emptyReason:
+    | 'not-attempted'
+    | 'no-documents'
+    | 'nothing-stated'
+    | 'extraction-failed'
+    | null;
 }
 
 export function buildIntentResponse(context: AnalysisContext): IntentResponse {
@@ -132,5 +137,19 @@ function emptyReason(context: AnalysisContext): IntentResponse['emptyReason'] {
   if (intent.summary.degraded) {
     return intent.summary.documents === 0 ? 'no-documents' : 'not-attempted';
   }
-  return intent.summary.documents === 0 ? 'no-documents' : 'nothing-stated';
+  if (intent.summary.documents === 0) return 'no-documents';
+  /**
+   * Checked before 'nothing-stated', because they are opposite findings that
+   * both arrive here as an empty constraint list.
+   *
+   * Found in Week 11 acceptance: with the daily model quota exhausted this
+   * repository's own CLAUDE.md went unread, and the panel reported "nothing
+   * stated" for a document that states six numbered rules. Same family as the
+   * truncation bug and the drift bug — an unmeasured zero rendering as a
+   * measured one.
+   */
+  if (intent.failures.length > 0 || intent.summary.incompleteDocuments > 0) {
+    return 'extraction-failed';
+  }
+  return 'nothing-stated';
 }

@@ -88,11 +88,40 @@ export interface CheckImportResult {
   /** How many stated rules were evaluated to reach this. */
   readonly constraintsConsidered: number;
   /**
+   * True when some document went unread, so the constraint set may be short.
+   * A machine-readable companion to the explanation, for a client that wants
+   * to treat an incomplete read differently from a genuine absence of rules.
+   */
+  readonly extractionIncomplete: boolean;
+  /**
    * A comparison of STATED against DERIVED — never a third kind of truth.
    * Named explicitly so a client cannot mistake the verdict for a fact about
    * the code or for a fact about the documentation.
    */
   readonly provenance: 'COMPARISON';
+}
+
+/**
+ * How complete the constraint set actually is.
+ *
+ * Without this, "we read every document and it forbids nothing" and "we could
+ * not read the documents" both arrive here as an empty constraint list and
+ * both come back as `allowed`. That is the same zero-versus-zero bug this
+ * project has now fixed twice — once for truncated extraction, once for the
+ * drift chart — and it is worst here, because this is the answer an agent acts
+ * on before writing code.
+ *
+ * Found in Week 11 acceptance: with the Gemini daily quota exhausted, asking
+ * whether `parser/` may import `llm/` returned "allowed, no stated rule applies"
+ * on a repository whose CLAUDE.md forbids exactly that in capital letters.
+ */
+export interface ExtractionHealth {
+  /** No model was consulted at all. */
+  readonly degraded: boolean;
+  /** Documents that failed to extract. */
+  readonly failures: number;
+  /** Documents cut off at the token limit. */
+  readonly incompleteDocuments: number;
 }
 
 export interface CheckImportOptions {
@@ -101,6 +130,12 @@ export interface CheckImportOptions {
   readonly constraints: readonly Constraint[];
   readonly clustering: ClusteringResult;
   readonly fileEdges: readonly FileEdge[];
+  /**
+   * Omitted means "assume the constraint set is complete". Every caller inside
+   * this project passes it; it is optional only so the checker stays testable
+   * with three hand-written constraints.
+   */
+  readonly extraction?: ExtractionHealth;
 }
 
 export function checkImport(options: CheckImportOptions): CheckImportResult {
@@ -121,6 +156,7 @@ export function checkImport(options: CheckImportOptions): CheckImportResult {
         `Without knowing which module it belongs to, no stated rule can be applied to it — ` +
         `answering "allowed" here would be a guess.`,
       constraintsConsidered: 0,
+      extractionIncomplete: unreadDocuments(options.extraction) !== null,
       provenance: 'COMPARISON',
     };
   }
@@ -156,24 +192,51 @@ export function checkImport(options: CheckImportOptions): CheckImportResult {
     if (finding !== null) findings.push(finding);
   }
 
+  const unread = unreadDocuments(options.extraction);
+
   return {
-    verdict: verdictFor(findings, indeterminate),
+    verdict: verdictFor(findings, indeterminate, unread),
     from,
     to,
     findings,
     indeterminate,
-    explanation: explain(findings, indeterminate, from, to, considered),
+    explanation: explain(findings, indeterminate, from, to, considered, unread),
     constraintsConsidered: considered,
+    extractionIncomplete: unread !== null,
     provenance: 'COMPARISON',
   };
+}
+
+/**
+ * A sentence naming why the constraint set may be short, or null when it is
+ * known to be complete.
+ */
+function unreadDocuments(extraction: ExtractionHealth | undefined): string | null {
+  if (extraction === undefined) return null;
+
+  const reasons: string[] = [];
+  if (extraction.degraded) reasons.push('no model was available, so no document was read');
+  if (extraction.failures > 0) {
+    reasons.push(`${extraction.failures} document(s) could not be read`);
+  }
+  if (extraction.incompleteDocuments > 0) {
+    reasons.push(`${extraction.incompleteDocuments} document(s) were cut off before the end`);
+  }
+  return reasons.length === 0 ? null : reasons.join(', and ');
 }
 
 function verdictFor(
   findings: readonly ImportFinding[],
   indeterminate: readonly IndeterminateConstraint[],
+  unread: string | null,
 ): ImportVerdict {
+  // A rule that definitely breaks is still a definite answer, even if other
+  // documents went unread — the finding cannot be un-found by missing data.
   if (findings.length > 0) return 'forbidden';
   if (indeterminate.length > 0) return 'cannot-determine';
+  // Nothing forbade it, but we did not see everything. "Allowed" here would be
+  // a claim about documents nobody read.
+  if (unread !== null) return 'cannot-determine';
   return 'allowed';
 }
 
@@ -183,6 +246,7 @@ function explain(
   from: ResolvedEndpoint,
   to: ResolvedEndpoint,
   considered: number,
+  unread: string | null,
 ): string {
   const pair = `${from.query} -> ${to.query}`;
 
@@ -204,10 +268,18 @@ function explain(
     );
   }
 
+  if (unread !== null) {
+    return (
+      `Cannot determine for ${pair}. ${considered} stated rule(s) were checked and none forbid it, ` +
+      `but the rules are incomplete: ${unread}. A rule in an unread document could forbid this. ` +
+      `This is "we did not finish reading", not "this repository states nothing".`
+    );
+  }
+
   if (considered === 0) {
     return (
-      `Allowed for ${pair}, but only because no stated rule applies to it. ` +
-      `This repository stated no checkable constraint covering these modules, so this is ` +
+      `Allowed for ${pair}, but only because no stated rule applies to it. Every document was read ` +
+      `and none states a checkable constraint covering these modules, so this is ` +
       `"nothing forbids it", not "the architecture endorses it".`
     );
   }

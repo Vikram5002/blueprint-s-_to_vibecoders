@@ -262,7 +262,7 @@ export interface IntentResponse {
   constraints: ConstraintResponse[];
   uncheckable: { rawText: string; reason: string; location: string }[];
   failures: { location: string; reason: string }[];
-  emptyReason: 'not-attempted' | 'no-documents' | 'nothing-stated' | null;
+  emptyReason: 'not-attempted' | 'no-documents' | 'nothing-stated' | 'extraction-failed' | null;
 }
 
 /** Week 9: snapshots, diffs and drift over time. */

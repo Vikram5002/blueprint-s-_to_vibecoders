@@ -172,6 +172,63 @@ describe('the answer an agent gets before writing the line', () => {
   });
 });
 
+describe('an unread document is not an absent rule', () => {
+  /**
+   * Found in Week 11 acceptance, on this repository. The Gemini daily quota
+   * was exhausted, CLAUDE.md was never read, and asking whether `parser/` may
+   * import `llm/` came back "allowed — no stated rule applies" against a
+   * document that forbids exactly that in capital letters.
+   *
+   * Same shape as the truncation bug in Week 10 and the drift bug before it:
+   * an empty result and an unmeasured one are byte-identical unless something
+   * insists on telling them apart. Here it matters most, because this is the
+   * answer an agent acts on before writing the line.
+   */
+  const healthy = { degraded: false, failures: 0, incompleteDocuments: 0 };
+
+  function withHealth(extraction: typeof healthy) {
+    return checkImport({
+      from: 'src/parser/parse.ts',
+      to: 'src/llm/anthropic.ts',
+      constraints: [],
+      clustering: clustering(MODULES),
+      fileEdges: [],
+      extraction,
+    });
+  }
+
+  it('says allowed when every document was read and none forbids it', () => {
+    const result = withHealth(healthy);
+    expect(result.verdict).toBe('allowed');
+    expect(result.extractionIncomplete).toBe(false);
+    expect(result.explanation).toContain('Every document was read');
+  });
+
+  it.each([
+    ['a document failed to read', { ...healthy, failures: 1 }],
+    ['no model was available', { ...healthy, degraded: true }],
+    ['a document was truncated', { ...healthy, incompleteDocuments: 1 }],
+  ])('refuses to say allowed when %s', (_name, extraction) => {
+    const result = withHealth(extraction);
+    expect(result.verdict).toBe('cannot-determine');
+    expect(result.extractionIncomplete).toBe(true);
+    expect(result.explanation).toContain('did not finish reading');
+  });
+
+  it('still says forbidden when a rule breaks, even with documents unread', () => {
+    // Missing data cannot un-find a finding.
+    const result = checkImport({
+      from: 'src/parser/parse.ts',
+      to: 'src/llm/anthropic.ts',
+      constraints: [constraint('must-not-import', subject('m-parser'), subject('m-llm'))],
+      clustering: clustering(MODULES),
+      fileEdges: [],
+      extraction: { degraded: false, failures: 3, incompleteDocuments: 0 },
+    });
+    expect(result.verdict).toBe('forbidden');
+  });
+});
+
 // ---------------------------------------------------------------- directions
 
 describe('layering, which is the easy thing to get backwards', () => {

@@ -15,6 +15,8 @@ const EMPTY_MESSAGE: Record<string, string> = {
   'not-attempted': 'Documents were found but not read — reading prose needs a model, and there is no mechanical fallback. This is "not attempted", not "nothing stated".',
   'no-documents': 'No README, AGENTS.md, CLAUDE.md or ADRs were found, so there was nothing to read.',
   'nothing-stated': 'The documents were read and stated no dependency rules that can be checked against an import graph.',
+  'extraction-failed':
+    'Some documents could not be read to the end, so this list is incomplete. A rule may exist that is simply missing here — this is "we did not finish reading", not "nothing stated".',
 };
 
 /**

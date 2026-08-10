@@ -150,6 +150,16 @@ function handleCheckImport(
       constraints: context.intent.constraints,
       clustering: context.clustering,
       fileEdges: fileEdgesFrom(context.graph),
+      /**
+       * Passed, never defaulted. If extraction was degraded or a document
+       * failed, "no rule forbids this" is a statement about documents nobody
+       * read, and the checker downgrades it to cannot-determine.
+       */
+      extraction: {
+        degraded: context.intent.summary.degraded,
+        failures: context.intent.failures.length,
+        incompleteDocuments: context.intent.summary.incompleteDocuments,
+      },
     }),
   );
 }
