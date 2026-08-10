@@ -21,8 +21,25 @@ describe('parseArguments', () => {
       // History is opt-in: it costs a worktree and a full re-analysis per
       // commit, so an ordinary run must never pay for it by accident.
       history: null,
+      mcp: false,
       help: false,
       version: false,
+    });
+  });
+
+  describe('--mcp', () => {
+    it('never opens a port or a browser', () => {
+      // stdout is a JSON-RPC transport in this mode. Starting the HTTP server
+      // would also break the "no new network exposure" scope for the week.
+      const options = parse(['--mcp']);
+      expect(options.mcp).toBe(true);
+      expect(options.serve).toBe(false);
+      expect(options.open).toBe(false);
+    });
+
+    it('is off unless asked for', () => {
+      expect(parse([]).mcp).toBe(false);
+      expect(parse(['--json']).mcp).toBe(false);
     });
   });
 

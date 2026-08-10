@@ -39,6 +39,8 @@ export function formatHelp(binaryName: string): string {
     '  -h, --help       Show this help',
     '      --version    Show the version',
     '      --history=N  Snapshot the last N commits and chart drift over them',
+    '      --mcp        Serve architecture context to a coding agent over MCP',
+    '                   (stdio, read-only, no port opened)',
     '',
     'Phase 1: ingest and parse. This tool measures. It never generates code.',
   ].join('\n');

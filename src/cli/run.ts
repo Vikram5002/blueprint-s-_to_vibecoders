@@ -28,6 +28,7 @@ import { snapshotHistory } from '../pipeline/history.js';
 import { buildDriftHistory } from '../pipeline/drift-history.js';
 import { createSnapshotStore } from '../store/snapshots.js';
 import { startServer, type RunningServer } from '../server/server.js';
+import { serveMcp } from '../mcp/server.js';
 
 export interface CliIo {
   readonly writeOut: (line: string) => void;
@@ -100,6 +101,37 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
         intent,
         conformance,
       ),
+    );
+    db.close();
+    return EXIT_OK;
+  }
+
+  /**
+   * MCP owns stdout from here on.
+   *
+   * Placed above every other `writeOut` deliberately: in this mode stdout is a
+   * JSON-RPC transport, and one summary line written before the loop starts
+   * would be read by the client as a malformed message. Progress and errors
+   * still reach stderr, which MCP clients ignore.
+   */
+  if (options.mcp) {
+    io.writeErr('Serving MCP on stdio. No port is open.');
+    await serveMcp(
+      {
+        root: result.root,
+        graph,
+        ingest: summary,
+        parse: parseSummary,
+        parseFailures: parse.failures,
+        clustering,
+        labels,
+        correctionOutcomes,
+        intent,
+        conformance,
+        store,
+        db,
+      },
+      { input: process.stdin, write: (line) => process.stdout.write(`${line}\n`) },
     );
     db.close();
     return EXIT_OK;

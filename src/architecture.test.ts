@@ -96,7 +96,7 @@ describe('rule 6 — no network calls outside llm/', () => {
    */
   it('nothing outside llm/ calls fetch', async () => {
     const offenders: string[] = [];
-    for (const directory of ['src/parser', 'src/graph', 'src/conformance', 'src/ingest', 'src/store', 'src/cli', 'src/pipeline']) {
+    for (const directory of ['src/parser', 'src/graph', 'src/conformance', 'src/ingest', 'src/store', 'src/cli', 'src/pipeline', 'src/mcp']) {
       for (const file of await filesUnder(directory, ['.ts'])) {
         if (file.endsWith('.test.ts')) continue;
         const source = await readFile(join(repoRoot, file), 'utf8');
@@ -122,6 +122,55 @@ describe('rule 6 — no network calls outside llm/', () => {
       if (file.endsWith('.test.ts') || file.endsWith('env-file.ts') || file === 'src/cli.ts') continue;
       const source = await readFile(join(repoRoot, file), 'utf8');
       if (/\bloadEnvFile\s*\(/.test(source)) offenders.push(`${file} loads .env`);
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('the MCP surface stays read-only and off the network', () => {
+  /**
+   * Week 11 scope: "Bind to the same local-only surface as the HTTP server. No
+   * new network exposure." stdio is stronger than that — it opens nothing at
+   * all — and this keeps it that way. A future `createServer` here would be a
+   * new listening port reachable by anything on the host, added silently.
+   */
+  it('opens no socket, port or listener', async () => {
+    const offenders: string[] = [];
+    for (const file of await filesUnder('src/mcp', ['.ts'])) {
+      if (file.endsWith('.test.ts')) continue;
+      const source = await readFile(join(repoRoot, file), 'utf8');
+      for (const specifier of importedSpecifiers(source)) {
+        if (/^node:(net|http|https|tls|dgram)$/.test(specifier) || /hono/.test(specifier)) {
+          offenders.push(`${file} imports ${specifier}`);
+        }
+      }
+      if (/\b(createServer|listen)\s*\(/.test(source)) offenders.push(`${file} starts a listener`);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  /**
+   * "No write access via MCP. If this changes later it's a deliberate,
+   * separate decision, not a default."
+   *
+   * Enforced by absence of capability rather than by a guard clause: the tools
+   * never reach a store, so there is no write path to accidentally re-enable.
+   * Adding one now means deleting this test, which is exactly the deliberate
+   * step the scope note asks for.
+   */
+  it('reaches no store, database or filesystem writer', async () => {
+    const offenders: string[] = [];
+    for (const file of await filesUnder('src/mcp', ['.ts'])) {
+      if (file.endsWith('.test.ts')) continue;
+      const source = await readFile(join(repoRoot, file), 'utf8');
+      for (const specifier of importedSpecifiers(source)) {
+        if (/corrections-store|snapshots|store\/database|better-sqlite3/.test(specifier)) {
+          offenders.push(`${file} imports ${specifier}`);
+        }
+      }
+      if (/\bwriteFile|\bmkdir|\bappendFile|\bunlink/.test(source)) {
+        offenders.push(`${file} writes to disk`);
+      }
     }
     expect(offenders).toEqual([]);
   });

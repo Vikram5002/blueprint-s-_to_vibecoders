@@ -27,6 +27,15 @@ export interface CliOptions {
    * milliseconds. Nobody should pay that on an ordinary run.
    */
   readonly history: number | null;
+  /**
+   * Speak MCP on stdin/stdout instead of printing a summary.
+   *
+   * Implies `--no-serve` and `--no-open`, and silences every human-facing line
+   * on stdout: in this mode stdout is a JSON-RPC transport, and a single stray
+   * summary line corrupts the stream for the client. Diagnostics still go to
+   * stderr, which MCP clients ignore.
+   */
+  readonly mcp: boolean;
   readonly help: boolean;
   readonly version: boolean;
 }
@@ -49,6 +58,7 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
         'no-open': { type: 'boolean', default: false },
         'no-serve': { type: 'boolean', default: false },
         history: { type: 'string' },
+        mcp: { type: 'boolean', default: false },
         help: { type: 'boolean', short: 'h', default: false },
         version: { type: 'boolean', default: false },
       },
@@ -65,16 +75,19 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
   }
 
   const json = parsed.values.json === true;
+  const mcp = parsed.values.mcp === true;
 
   return ok({
     targetPath: parsed.positionals[0] ?? '.',
     json,
     verbose: parsed.values.verbose === true,
-    open: parsed.values['no-open'] !== true && parsed.values['no-serve'] !== true && !json,
+    open: parsed.values['no-open'] !== true && parsed.values['no-serve'] !== true && !json && !mcp,
     // --json is for piping; holding the terminal open with a server would
-    // defeat that, so it implies --no-serve.
-    serve: parsed.values['no-serve'] !== true && !json,
+    // defeat that, so it implies --no-serve. --mcp owns stdout for the same
+    // reason and additionally must not open a port.
+    serve: parsed.values['no-serve'] !== true && !json && !mcp,
     history: parseHistory(parsed.values['history']),
+    mcp,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
   });
