@@ -402,10 +402,23 @@ function readSuccess(raw: string, model: string): CompletionResult {
     return { ok: false, error: { kind: 'refused', message: 'no candidates returned' } };
   }
 
-  // MAX_TOKENS means the JSON is truncated and will fail validation anyway.
-  // Saying so here produces a better message than "malformed label".
+  /**
+   * Truncation, reported as truncation.
+   *
+   * The JSON is cut off and would fail validation anyway, but "malformed
+   * label" or "refused" would both be the wrong story: nothing was refused and
+   * nothing was malformed, the answer was simply too long for the budget. A
+   * caller counting results needs to know the difference between "the model
+   * found nothing" and "we did not let the model finish".
+   */
   if (candidate.finishReason === 'MAX_TOKENS') {
-    return { ok: false, error: { kind: 'refused', message: 'response hit the output token limit' } };
+    return {
+      ok: false,
+      error: {
+        kind: 'incomplete',
+        message: 'the answer was cut off at the output token limit, so nothing from this document was read',
+      },
+    };
   }
   if (candidate.finishReason === 'SAFETY' || candidate.finishReason === 'PROHIBITED_CONTENT') {
     return { ok: false, error: { kind: 'refused', message: `stopped: ${String(candidate.finishReason)}` } };

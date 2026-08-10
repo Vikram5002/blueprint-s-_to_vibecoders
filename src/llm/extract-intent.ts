@@ -145,9 +145,22 @@ export interface ExtractUsage {
   readonly cacheMisses: number;
 }
 
+export interface ExtractFailure {
+  readonly location: string;
+  readonly reason: string;
+  /**
+   * True when the answer was cut off rather than refused or unreachable.
+   *
+   * Carried separately all the way to the report, because a truncated document
+   * yields zero statements and is otherwise indistinguishable from a document
+   * that stated nothing.
+   */
+  readonly incomplete: boolean;
+}
+
 export interface ExtractResult {
   readonly outcomes: readonly ExtractOutcome[];
-  readonly failures: readonly { readonly location: string; readonly reason: string }[];
+  readonly failures: readonly ExtractFailure[];
   readonly usage: ExtractUsage;
 }
 
@@ -165,7 +178,7 @@ export function createCachedExtractor(options: CachedExtractorOptions): IntentEx
   return {
     extract: async (requests: readonly ExtractRequest[]): Promise<ExtractResult> => {
       const outcomes: ExtractOutcome[] = [];
-      const failures: { location: string; reason: string }[] = [];
+      const failures: ExtractFailure[] = [];
       let promptTokens = 0;
       let completionTokens = 0;
       let estimatedCostUsd = 0;
@@ -214,7 +227,11 @@ export function createCachedExtractor(options: CachedExtractorOptions): IntentEx
         });
 
         if (!completion.ok) {
-          failures.push({ location: request.location, reason: completion.error.message });
+          failures.push({
+            location: request.location,
+            reason: completion.error.message,
+            incomplete: completion.error.kind === 'incomplete',
+          });
           options.onProgress?.(index + 1, requests.length, request.location);
           continue;
         }

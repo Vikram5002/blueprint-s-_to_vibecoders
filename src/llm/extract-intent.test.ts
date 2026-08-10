@@ -217,3 +217,60 @@ describe('extraction', () => {
     expect(provider.calls[0]?.effort).toBe('medium');
   });
 });
+
+describe('truncation is never a silent zero', () => {
+  /**
+   * The bug this guards against happened for real, on this project's own
+   * CLAUDE.md: a run reported zero constraints from a document that states
+   * three. A truncated answer parses to an empty statement list, which is
+   * byte-identical to a document that stated nothing.
+   */
+  it('reports a cut-off answer as incomplete, not as an empty result', async () => {
+    const provider: CompletionProvider = {
+      name: 'stub',
+      model: 'claude-haiku-4-5',
+      complete: async () => ({
+        ok: false,
+        error: { kind: 'incomplete', message: 'the answer was cut off at the output token limit' },
+      }),
+    };
+
+    const result = await createCachedExtractor({ provider, cache: memoryCache() }).extract([
+      { location: 'CLAUDE.md', documentText: 'The api must not import the database.', moduleHints: [] },
+    ]);
+
+    expect(result.outcomes).toEqual([]);
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0]?.incomplete).toBe(true);
+  });
+
+  it('does not mark an ordinary refusal as incomplete', async () => {
+    // Otherwise every failure would read as a budget problem and the
+    // distinction would be worthless.
+    const provider: CompletionProvider = {
+      name: 'stub',
+      model: 'claude-haiku-4-5',
+      complete: async () => ({ ok: false, error: { kind: 'refused', message: 'declined' } }),
+    };
+
+    const result = await createCachedExtractor({ provider, cache: memoryCache() }).extract([
+      { location: 'README.md', documentText: 'x', moduleHints: [] },
+    ]);
+    expect(result.failures[0]?.incomplete).toBe(false);
+  });
+
+  it('never caches a truncated answer', async () => {
+    // Caching one would make the silent zero permanent for that document.
+    const cache = memoryCache();
+    const provider: CompletionProvider = {
+      name: 'stub',
+      model: 'claude-haiku-4-5',
+      complete: async () => ({ ok: false, error: { kind: 'incomplete', message: 'cut off' } }),
+    };
+
+    await createCachedExtractor({ provider, cache }).extract([
+      { location: 'CLAUDE.md', documentText: 'x', moduleHints: [] },
+    ]);
+    expect(cache.size).toBe(0);
+  });
+});

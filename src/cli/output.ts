@@ -254,9 +254,29 @@ export function formatIntentSummary(intent: IntentRunResult): string {
         ].join('\n');
   }
 
+  const complete = summary.documents - summary.incompleteDocuments;
   const lines = [
-    `  Stated intent       ${count(summary.constraints)} constraint(s) from ${count(summary.documents)} document(s)`,
+    `  Stated intent       ${count(summary.constraints)} constraint(s) from ` +
+      `${count(complete)} of ${count(summary.documents)} document(s)`,
   ];
+
+  /**
+   * Incompleteness is stated before the counts, not after them.
+   *
+   * A truncated document contributes zero constraints, so the headline number
+   * is a floor rather than a result — and printing it plainly would invite the
+   * reader to treat it as final. This happened for real on this project's own
+   * CLAUDE.md: the run reported zero constraints from a document that states
+   * three, and the only clue was a "documents not read" line further down.
+   */
+  if (summary.incompleteDocuments > 0) {
+    lines.unshift(
+      `  !! EXTRACTION INCOMPLETE — ${count(summary.incompleteDocuments)} document(s) were cut off`,
+      '     at the output token limit and contributed nothing. The counts below are a',
+      '     floor, not a result: treat them as unmeasured for those documents.',
+      '',
+    );
+  }
 
   for (const [relation, total] of Object.entries(summary.byRelation)) {
     if (total > 0) lines.push(`    ${relation.padEnd(20)}${count(total)}`);

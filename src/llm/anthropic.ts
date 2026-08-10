@@ -118,6 +118,26 @@ export async function createAnthropicProvider(options: AnthropicOptions): Promis
           return { ok: false, error: { kind: 'refused', message: 'the model declined to answer' } };
         }
 
+        /**
+         * Truncation was previously unhandled here, and that was a real bug.
+         *
+         * A response stopped at `max_tokens` came back as a success carrying
+         * partial JSON, which then failed to parse and became an empty result
+         * — a silent zero, indistinguishable from a document that stated
+         * nothing. The Gemini adapter caught this from the start; this one did
+         * not, so the failure mode was live on the Anthropic path the whole
+         * time and would never have shown up in a count.
+         */
+        if (response.stop_reason === 'max_tokens') {
+          return {
+            ok: false,
+            error: {
+              kind: 'incomplete',
+              message: 'the answer was cut off at the output token limit, so nothing from this document was read',
+            },
+          };
+        }
+
         // content is a discriminated union; narrow inside the callback so the
         // SDK's own TextBlock type is what gets read.
         const text = response.content

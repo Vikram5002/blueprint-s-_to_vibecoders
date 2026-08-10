@@ -62,7 +62,18 @@ export type CompletionFailure =
   /** The provider declined, or returned nothing usable. */
   | { readonly kind: 'refused'; readonly message: string }
   /** Network, auth, rate limit, or any other transport-level problem. */
-  | { readonly kind: 'unavailable'; readonly message: string };
+  | { readonly kind: 'unavailable'; readonly message: string }
+  /**
+   * The answer was cut off at the output token limit.
+   *
+   * Its own kind, not a flavour of `refused`, because it is the one failure
+   * that is indistinguishable from success unless it is named. A truncated
+   * extraction parses to an empty statement list, which reads exactly like a
+   * document that stated nothing — and that ambiguity is precisely what the
+   * whole intent pipeline exists to avoid. Anything downstream that reports a
+   * count must be able to say "incomplete" instead of "none".
+   */
+  | { readonly kind: 'incomplete'; readonly message: string };
 
 export interface CompletionProvider {
   /** Short identifier for reporting, e.g. `anthropic:claude-opus-5`. */

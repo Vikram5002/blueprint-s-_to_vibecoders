@@ -141,7 +141,14 @@ export async function extractIntent(options: IntentOptions): Promise<IntentRunRe
   return {
     constraints: located.sort((a, b) => a.id.localeCompare(b.id)),
     uncheckable,
-    summary: summarise(documents.length, architecturalStatements, located, uncheckable, false),
+    summary: summarise(
+      documents.length,
+      architecturalStatements,
+      located,
+      uncheckable,
+      false,
+      result.failures.filter((failure) => failure.incomplete).length,
+    ),
     usage: result.usage,
     failures: result.failures,
   };
@@ -210,6 +217,7 @@ function emptySummary(documents: number, degraded: boolean): ExtractionSummary {
     evaluable: 0,
     subjects: summariseSubjects([]),
     degraded,
+    incompleteDocuments: 0,
   };
 }
 
@@ -219,6 +227,7 @@ function summarise(
   constraints: readonly Constraint[],
   uncheckable: readonly UncheckableStatement[],
   degraded: boolean,
+  incompleteDocuments: number,
 ): ExtractionSummary {
   const byRelation = emptyRelations();
   const byUncheckableReason = emptyUncheckable();
@@ -249,5 +258,6 @@ function summarise(
     evaluable,
     subjects: summariseSubjects(subjects),
     degraded,
+    incompleteDocuments,
   };
 }

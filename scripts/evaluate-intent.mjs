@@ -204,15 +204,30 @@ for (const [index, file] of pending.entries()) {
   ]);
 
   if (result.failures.length > 0) {
-    const reason = result.failures[0].reason;
+    const failure = result.failures[0];
+    const reason = failure.reason;
     if (isDailyQuota(reason)) {
       // Nothing was recorded for this document, so tomorrow's run picks it up.
       console.log('quota exhausted');
       stoppedEarly = true;
       break;
     }
-    console.log(`failed: ${reason.slice(0, 60)}`);
-    state.documents[file] = { error: reason, constraints: [], uncheckable: [], statements: 0 };
+    /**
+     * A truncated document is NOT a zero-constraint document.
+     *
+     * Recording it as one would fold a budget problem into the recall figure
+     * and make the eval quietly wrong — the same silent-zero failure this run
+     * exists to rule out. It is marked here and excluded from scoring below,
+     * so it is neither a hit nor a miss.
+     */
+    console.log(`${failure.incomplete ? 'INCOMPLETE' : 'failed'}: ${reason.slice(0, 56)}`);
+    state.documents[file] = {
+      error: reason,
+      incomplete: failure.incomplete === true,
+      constraints: [],
+      uncheckable: [],
+      statements: 0,
+    };
     saveCheckpoint(state);
     continue;
   }
@@ -255,7 +270,12 @@ await cache.flush();
 
 // ---------- score what exists ----------
 
-const processed = GOLD.filter((entry) => state.documents[entry.file] !== undefined);
+// Truncated documents were never read, so they are excluded from scoring
+// entirely rather than counted as having produced nothing.
+const incomplete = GOLD.filter((entry) => state.documents[entry.file]?.incomplete === true);
+const processed = GOLD.filter(
+  (entry) => state.documents[entry.file] !== undefined && state.documents[entry.file].incomplete !== true,
+);
 const processedFiles = new Set(processed.map((entry) => entry.file));
 
 const predicted = [];
@@ -273,6 +293,13 @@ for (const entry of processed) {
 const gold = GOLD_CONSTRAINTS.filter((entry) => processedFiles.has(entry.file));
 const documentsWithNoGold = processed.filter((entry) => entry.constraints.length === 0).length;
 const matrix = score(predicted, gold, documentsWithNoGold);
+
+if (incomplete.length > 0) {
+  console.log(`\n  !! ${incomplete.length} document(s) were cut off at the token limit and are`);
+  console.log('     excluded from scoring — they were not read, so they are neither a hit');
+  console.log('     nor a miss. Every figure below is over the remainder only.');
+  for (const entry of incomplete) console.log(`       ${entry.file}`);
+}
 
 console.log(`\n=== precision and recall (${processed.length} of ${GOLD.length} documents) ===\n`);
 console.log(formatMatrix(matrix));

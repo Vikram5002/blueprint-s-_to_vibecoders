@@ -201,6 +201,16 @@ export interface ExtractionSummary {
   readonly subjects: SubjectResolutionSummary;
   /** True when no model was consulted. */
   readonly degraded: boolean;
+  /**
+   * Documents whose extraction was cut off at the token limit.
+   *
+   * Reported alongside the constraint count and never folded into it. A run
+   * with incomplete documents has not measured those documents at all, and a
+   * zero from such a run is not a finding about the repository — it is a fact
+   * about the budget. Every consumer of `constraints` has to be able to see
+   * this to know whether the number means anything.
+   */
+  readonly incompleteDocuments: number;
 }
 
 export interface IntentResult {
