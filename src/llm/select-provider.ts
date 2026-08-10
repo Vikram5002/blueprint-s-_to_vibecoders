@@ -7,17 +7,19 @@
  *
  * ## Three providers, with different jobs
  *
- * - **Bluesminds** is the default, for corpus-scale labelling and extraction.
- *   Gemini's free tier caps at roughly 20 requests per model per day, which a
- *   single repository can exhaust; that cap, not money, is what blocks Week 14.
- * - **Gemini** is the fallback, retained and working.
+ * - **Gemini** is the default. Free, fast, and measurably better output than
+ *   the alternative — see `docs/PROVIDERS.md` for the numbers.
+ * - **Bluesminds** is a documented fallback, not the default. It was made the
+ *   default for one day on the theory that an uncapped gateway was what
+ *   corpus work needed, and measurement said otherwise: worse labels, worse
+ *   extraction, ~23x the wall-clock time.
  * - **Anthropic** is reserved for the Haiku/Sonnet comparison, which must run
  *   direct. Routing a provider comparison through a gateway measures the
  *   gateway.
  *
  * Bluesminds is a *gateway*, and a result from it cannot be attributed to a
- * specific model version with certainty — see `docs/PROVIDERS.md`. That is
- * acceptable for bulk work and not acceptable for a measured claim.
+ * specific model version with certainty — see `docs/PROVIDERS.md`. That alone
+ * disqualifies it from producing any number the paper depends on.
  *
  * Selection is explicit rather than "whichever key is present". A machine with
  * both keys set would otherwise pick a provider by accident, and the run would
@@ -37,8 +39,11 @@ export type ProviderName = 'bluesminds' | 'gemini' | 'anthropic';
 export const PROVIDER_ENV = 'VIBE_LLM_PROVIDER';
 export const MODEL_ENV = 'VIBE_LLM_MODEL';
 
-/** Not quota-capped, which is what corpus-scale work needs. */
-export const DEFAULT_PROVIDER: ProviderName = 'bluesminds';
+/**
+ * Free, fast, and the best output measured. Reverted here from `bluesminds`
+ * after a day: see `docs/PROVIDERS.md` → "Why Bluesminds is not the default".
+ */
+export const DEFAULT_PROVIDER: ProviderName = 'gemini';
 
 export interface ProviderChoice {
   readonly provider: ProviderName;

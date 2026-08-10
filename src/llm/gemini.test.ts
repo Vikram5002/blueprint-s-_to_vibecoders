@@ -433,20 +433,20 @@ describe('rate limits are retried, never swallowed', () => {
 });
 
 describe('provider selection', () => {
-  it('defaults to Bluesminds, because it is not quota-capped', () => {
-    // Gemini's free tier caps at roughly 20 requests per model per day, which
-    // one repository can exhaust. That cap, not money, is what blocks corpus
-    // work — so the default is the provider that can actually finish a run.
-    expect(DEFAULT_PROVIDER).toBe('bluesminds');
-    const choice = chooseProvider({ BLUESMINDS_API_KEY: 'k' });
-    expect(choice.provider).toBe('bluesminds');
-    expect(choice.model).toBe(DEFAULT_BLUESMINDS_MODEL);
-  });
-
-  it('keeps Gemini reachable as the fallback', () => {
-    const choice = chooseProvider({ VIBE_LLM_PROVIDER: 'gemini', GEMINI_API_KEY: 'k' });
+  it('defaults to Gemini, which measured best', () => {
+    // Briefly defaulted to Bluesminds on the theory that an uncapped gateway
+    // was what corpus work needed. Measurement disagreed: worse labels, worse
+    // extraction, ~23x wall-clock. See docs/PROVIDERS.md.
+    expect(DEFAULT_PROVIDER).toBe('gemini');
+    const choice = chooseProvider({ GEMINI_API_KEY: 'k' });
     expect(choice.provider).toBe('gemini');
     expect(choice.model).toBe(DEFAULT_GEMINI_MODEL);
+  });
+
+  it('keeps Bluesminds reachable as a documented fallback', () => {
+    const choice = chooseProvider({ VIBE_LLM_PROVIDER: 'bluesminds', BLUESMINDS_API_KEY: 'k' });
+    expect(choice.provider).toBe('bluesminds');
+    expect(choice.model).toBe(DEFAULT_BLUESMINDS_MODEL);
   });
 
   it('switches to Anthropic on request, keeping it wired', () => {
@@ -459,25 +459,24 @@ describe('provider selection', () => {
     // Every key present: the choice must still be the declared default, not an
     // accident of the machine's environment.
     const choice = chooseProvider({ ANTHROPIC_API_KEY: 'a', GEMINI_API_KEY: 'g', BLUESMINDS_API_KEY: 'b' });
-    expect(choice.provider).toBe('bluesminds');
+    expect(choice.provider).toBe('gemini');
   });
 
   it('ignores a provider name it does not recognise', () => {
-    expect(chooseProvider({ VIBE_LLM_PROVIDER: 'openai' }).provider).toBe('bluesminds');
+    expect(chooseProvider({ VIBE_LLM_PROVIDER: 'openai' }).provider).toBe('gemini');
   });
 
   it('reports no key rather than failing', () => {
     expect(chooseProvider({}).apiKey).toBeNull();
-    expect(chooseProvider({}).keyEnv).toBe('BLUESMINDS_API_KEY');
+    expect(chooseProvider({}).keyEnv).toBe('GEMINI_API_KEY');
   });
 
   it('honours a model override per provider', () => {
-    expect(chooseProvider({ VIBE_LLM_MODEL: 'meta/llama-3.1-8b-instruct' }).model).toBe(
-      'meta/llama-3.1-8b-instruct',
-    );
+    expect(chooseProvider({ VIBE_LLM_MODEL: 'gemini-3.6-flash' }).model).toBe('gemini-3.6-flash');
     expect(
-      chooseProvider({ VIBE_LLM_PROVIDER: 'gemini', VIBE_LLM_MODEL: 'gemini-3.6-flash' }).model,
-    ).toBe('gemini-3.6-flash');
+      chooseProvider({ VIBE_LLM_PROVIDER: 'bluesminds', VIBE_LLM_MODEL: 'meta/llama-3.1-8b-instruct' })
+        .model,
+    ).toBe('meta/llama-3.1-8b-instruct');
     expect(chooseProvider({ VIBE_LLM_PROVIDER: 'anthropic', VIBE_LLM_MODEL: 'claude-opus-5' }).model).toBe(
       'claude-opus-5',
     );

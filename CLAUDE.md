@@ -38,7 +38,7 @@ Per-stage detail: `CLUSTERING.md`, `LABELLING.md`, `CORRECTIONS.md`, `PROVIDERS.
 | Storage | `better-sqlite3` | Local file at `.vibe/blueprint.db` |
 | Server | `hono` (or `express`) | Local only, binds to 127.0.0.1 |
 | UI | React 18 + Vite + React Flow | Separate `ui/` package |
-| LLM | Provider-agnostic adapter, user's own API key | Bluesminds (default), Gemini, Anthropic. Never bundled |
+| LLM | Provider-agnostic adapter, user's own API key | Gemini (default), Bluesminds, Anthropic. Never bundled |
 | Testing | `vitest` | Unit tests on parser and graph logic are mandatory |
 
 ---

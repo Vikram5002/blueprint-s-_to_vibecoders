@@ -8,30 +8,91 @@ the pipeline — is provider-agnostic and unaware of any of them.
 
 | Provider | Role | Why |
 |---|---|---|
-| **Bluesminds** | Default, for corpus-scale labelling and extraction | Not quota-capped. Gemini's free tier caps at roughly 20 requests per model per day, which one repository can exhaust — that cap, not money, is what blocks Week 14. |
-| **Gemini** | Fallback, retained and working | Free, fast, and measurably better label quality (below). The right choice for anything small enough to fit the daily cap. |
+| **Gemini** | **Default** | Free, fast, and the best output measured — 100% distinct labels, domain-aware, and the extraction baseline every Week 7 number rests on. |
+| **Bluesminds** | Documented fallback | An OpenAI-compatible gateway. Works, and is kept wired, but produces measurably worse output at ~23x the wall-clock time. See below. |
 | **Anthropic** | Reserved for the Haiku/Sonnet comparison | That comparison **must run direct**. Routing a provider comparison through a gateway measures the gateway. |
 
 ```bash
-# default: Bluesminds
+# default: Gemini
 vibe-blueprint .
 
-VIBE_LLM_PROVIDER=gemini    vibe-blueprint .
-VIBE_LLM_PROVIDER=anthropic vibe-blueprint .
-VIBE_LLM_MODEL=meta/llama-3.1-8b-instruct vibe-blueprint .
+VIBE_LLM_PROVIDER=bluesminds vibe-blueprint .
+VIBE_LLM_PROVIDER=anthropic  vibe-blueprint .
+VIBE_LLM_MODEL=gemini-3.5-flash-lite vibe-blueprint .
 ```
 
 | Variable | Meaning |
 |---|---|
-| `VIBE_LLM_PROVIDER` | `bluesminds` (default), `gemini`, or `anthropic` |
+| `VIBE_LLM_PROVIDER` | `gemini` (default), `bluesminds`, or `anthropic` |
 | `VIBE_LLM_MODEL` | Overrides the model for the selected provider |
-| `BLUESMINDS_API_KEY` | Read from the environment or `.env` |
 | `GEMINI_API_KEY` | Read from the environment or `.env` |
+| `BLUESMINDS_API_KEY` | Read from the environment or `.env` |
 | `ANTHROPIC_API_KEY` | Read from the environment or `.env` |
 
 Selection is explicit, never "whichever key happens to be set". A machine with
 all three keys would otherwise pick a provider by accident, and a run would be
 reproducible only until somebody's environment changed.
+
+---
+
+## Why Bluesminds is not the default
+
+It was, for one day. The reasoning was that Gemini's free tier caps at roughly
+20 requests per model per day and an uncapped gateway is what a 100-repository
+corpus needs. Measurement did not support it, and the default was reverted.
+
+**1. Measurably worse output.** Same zod repository, same 19 modules, same
+prompt:
+
+| | Gemini `3.5-flash-lite` | Bluesminds `llama-3.3-70b` |
+|---|---|---|
+| Distinct labels | **19 (100%)** | 17 (89.5%) |
+| Domain-aware labels | **4** | 0 |
+| Uncheckable statements found | **8** | 0 |
+
+Gemini distinguished `Classic Zod API`, `Zod Core Engine`, `Classic Zod
+Schemas` and `Schema Validation Core`; Bluesminds returned `Validation
+Framework` three times. On pyright the gap widened to 83% distinct.
+
+**2. ~23x the wall-clock time.** pyright took **~35 minutes** on Bluesminds
+against roughly 90 seconds on Gemini. The uncapped-throughput argument does not
+survive contact with a 15-second-per-call model.
+
+**3. Extraction must stay comparable to itself.** Finding 1's ratio — roughly
+20:1 uncheckable to checkable — is a Week 7 measurement taken on Gemini.
+Switching the extraction provider makes the corpus numbers incomparable to the
+baseline they would be reported against, and "0 uncheckable" versus "8" on
+identical documents is exactly that break. A ratio that cannot be compared to
+itself is not a finding.
+
+**4. Provenance.** A gateway result cannot be attributed to a specific model
+version (below), which disqualifies it from producing any number the paper
+depends on.
+
+### The key-tier re-probe (2026-08-10)
+
+The default was reconsidered once more when the API key was replaced, on the
+theory that a different tier might reach stronger models. It reaches fewer:
+
+- `GET /v1/models` returns **0 models** (`{"data":[],"success":true}`), against
+  137 on the previous key.
+- Every model probed — including `meta/llama-3.3-70b-instruct` and
+  `meta/llama-3.1-8b-instruct`, which the previous key ran successfully —
+  returns **403 `"This token has no access to model X"`**. Claude, GPT, Gemini,
+  DeepSeek and GLM families: all 403.
+- The key authenticates and bills fine (`total_usage: 0`), so this is an
+  entitlement state, not an auth failure.
+
+Rate limiting is unchanged and still undocumented: **6 sequential requests then
+429**, no `Retry-After`, no `x-ratelimit-*` headers. Notably the limiter counts
+*rejected* requests — six 403s that performed no model work consumed the entire
+budget, so a client retrying against a 403 burns its own rate limit.
+
+**The adapter stays.** It is tested, it handles this gateway's specific
+failure modes (410 end-of-life, 200-with-empty-body truncation, schema
+downgrade), and the work is sound. Only the default changed.
+
+---
 
 ---
 
@@ -406,10 +467,9 @@ Extraction is worse too: on the same five zod documents Gemini found **8**
 architectural-but-uncheckable statements; Bluesminds found **0**. Both found 0
 checkable constraints.
 
-**So the default is a throughput decision, not a quality one.** Bluesminds is
-the default because it can finish a 100-repository run and Gemini cannot. For
-any single repository small enough to fit the daily cap, `VIBE_LLM_PROVIDER=gemini`
-gives better output.
+**This is why the default was reverted to Gemini.** The throughput argument
+that justified the switch does not survive the ~23x wall-clock cost, and the
+quality gap is not marginal. See "Why Bluesminds is not the default" above.
 
 ### Cost
 
