@@ -2,6 +2,7 @@
  * Terminal formatting. Pure string production — callers do the writing.
  * No business logic (CLAUDE.md rule 5).
  */
+import { isPricedModel } from '../llm/pricing.js';
 import type { DiscoveredFile, WalkError } from '../ingest/walk.js';
 import type { IngestSummary } from '../ingest/summary.js';
 import type { Language } from '../ingest/language.js';
@@ -45,6 +46,29 @@ export function formatHelp(binaryName: string): string {
     '',
     'Phase 1: ingest and parse. This tool measures. It never generates code.',
   ].join('\n');
+}
+
+
+/**
+ * What a run cost, or an admission that we do not know.
+ *
+ * "$0.0000" is a zero that means two opposite things: Gemini's free tier costs
+ * genuinely nothing, while a gateway whose rates are not in the pricing table
+ * costs *something we cannot compute*. Printing the same string for both is
+ * the same unmeasured-versus-measured conflation this project has now fixed in
+ * extraction, drift and check_import — and here it would understate a real
+ * bill as free.
+ *
+ * The provider string is `vendor:model`; the model is what the pricing table
+ * is keyed on.
+ */
+export function describeCost(provider: string | null, estimatedCostUsd: number): string {
+  const model = provider === null ? '' : provider.slice(provider.indexOf(':') + 1);
+
+  if (model !== '' && !isPricedModel(model)) {
+    return 'cost not tracked here — check your provider balance';
+  }
+  return `about $${estimatedCostUsd.toFixed(4)}`;
 }
 
 export function formatSummary(summary: IngestSummary, errors: readonly WalkError[]): string {
@@ -171,7 +195,7 @@ export function formatLabelSummary(labels: LabelSet, keyEnv = 'GEMINI_API_KEY'):
     `    cache             ${count(summary.cacheHits)} hits, ${count(summary.cacheMisses)} misses` +
       `  (${cacheRate(summary.cacheHits, summary.cacheMisses)})`,
     `    tokens            ${count(summary.usage.promptTokens)} in, ${count(summary.usage.completionTokens)} out` +
-      `  ·  about $${summary.usage.estimatedCostUsd.toFixed(4)}`,
+      `  ·  ${describeCost(summary.provider, summary.usage.estimatedCostUsd)}`,
   ];
 
   if (summary.failures.length > 0) {

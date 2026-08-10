@@ -56,6 +56,17 @@ export interface CompletionResponse {
   readonly usage: CompletionUsage;
   /** Model that actually served the request, which may differ from the one asked for. */
   readonly model: string;
+  /**
+   * True when the provider could not enforce the requested output schema and
+   * the call fell back to asking for plain JSON.
+   *
+   * Optional because most providers never do this. Reported rather than
+   * swallowed: `validate.ts` still checks the shape on the way back, so the
+   * answer is not less safe — but it is less *constrained*, and a run that
+   * silently downgraded is a run whose output quality has a different
+   * explanation than the model.
+   */
+  readonly schemaDowngraded?: boolean;
 }
 
 export type CompletionFailure =

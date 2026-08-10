@@ -45,6 +45,19 @@ export const PRICING: Readonly<Record<string, ModelPricing>> = {
   'gemini-3.6-flash': { inputPerMillion: 0, outputPerMillion: 0 },
   'gemini-2.0-flash': { inputPerMillion: 0, outputPerMillion: 0 },
   'gemini-2.0-flash-lite': { inputPerMillion: 0, outputPerMillion: 0 },
+
+  /**
+   * Bluesminds is a prepaid gateway: it bills against a credit balance at
+   * rates it does not publish per model in a form this table could track, and
+   * the balance is the thing a user actually cares about.
+   *
+   * Deliberately absent from this table rather than entered as zero. Zero
+   * would claim these calls are free, which is false — `isPricedModel` returns
+   * false for them, so a run reports "unknown model" and the CLI points at the
+   * gateway's own usage endpoint instead of printing a confident wrong number.
+   * Measured consumption for a full three-repository run is recorded in
+   * docs/PROVIDERS.md.
+   */
 };
 
 /** Models billed at nothing, as opposed to models whose price is unknown. */

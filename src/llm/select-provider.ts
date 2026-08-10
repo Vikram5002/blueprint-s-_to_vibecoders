@@ -5,13 +5,19 @@
  * and `gemini.ts` know how to talk to their vendors; neither knows it is the
  * default, and nothing above this file knows either vendor exists.
  *
- * ## Gemini is the default because it is free
+ * ## Three providers, with different jobs
  *
- * Week 14 runs labelling across 50-100 repositories, and a free tier turns a
- * real bill into no bill. Anthropic stays fully wired and one environment
- * variable away — `VIBE_LLM_PROVIDER=anthropic` — because the free tier has
- * daily caps that a study-scale run will hit, and because a provider-agnostic
- * interface with only one live implementation is a claim nobody has checked.
+ * - **Bluesminds** is the default, for corpus-scale labelling and extraction.
+ *   Gemini's free tier caps at roughly 20 requests per model per day, which a
+ *   single repository can exhaust; that cap, not money, is what blocks Week 14.
+ * - **Gemini** is the fallback, retained and working.
+ * - **Anthropic** is reserved for the Haiku/Sonnet comparison, which must run
+ *   direct. Routing a provider comparison through a gateway measures the
+ *   gateway.
+ *
+ * Bluesminds is a *gateway*, and a result from it cannot be attributed to a
+ * specific model version with certainty — see `docs/PROVIDERS.md`. That is
+ * acceptable for bulk work and not acceptable for a measured claim.
  *
  * Selection is explicit rather than "whichever key is present". A machine with
  * both keys set would otherwise pick a provider by accident, and the run would
@@ -19,15 +25,20 @@
  */
 import { createAnthropicProvider, readApiKey, DEFAULT_MODEL as DEFAULT_ANTHROPIC_MODEL } from './anthropic.js';
 import { createGeminiProvider, readGeminiApiKey, DEFAULT_GEMINI_MODEL } from './gemini.js';
+import {
+  createBluesmindsProvider,
+  readBluesmindsApiKey,
+  DEFAULT_BLUESMINDS_MODEL,
+} from './bluesminds.js';
 import type { CompletionProvider } from './provider.js';
 
-export type ProviderName = 'gemini' | 'anthropic';
+export type ProviderName = 'bluesminds' | 'gemini' | 'anthropic';
 
 export const PROVIDER_ENV = 'VIBE_LLM_PROVIDER';
 export const MODEL_ENV = 'VIBE_LLM_MODEL';
 
-/** Free, so it is what a user gets without being asked to spend anything. */
-export const DEFAULT_PROVIDER: ProviderName = 'gemini';
+/** Not quota-capped, which is what corpus-scale work needs. */
+export const DEFAULT_PROVIDER: ProviderName = 'bluesminds';
 
 export interface ProviderChoice {
   readonly provider: ProviderName;
@@ -45,23 +56,37 @@ export interface ProviderChoice {
  */
 export function chooseProvider(env: NodeJS.ProcessEnv = process.env): ProviderChoice {
   const requested = env[PROVIDER_ENV]?.trim().toLowerCase();
-  const provider: ProviderName = requested === 'anthropic' ? 'anthropic' : DEFAULT_PROVIDER;
+  const provider: ProviderName =
+    requested === 'anthropic' || requested === 'gemini' || requested === 'bluesminds'
+      ? requested
+      : DEFAULT_PROVIDER;
   const override = env[MODEL_ENV]?.trim();
+  const pick = (fallback: string): string =>
+    override !== undefined && override !== '' ? override : fallback;
 
   if (provider === 'anthropic') {
     return {
       provider,
-      model: override !== undefined && override !== '' ? override : DEFAULT_ANTHROPIC_MODEL,
+      model: pick(DEFAULT_ANTHROPIC_MODEL),
       apiKey: readApiKey(env),
       keyEnv: 'ANTHROPIC_API_KEY',
     };
   }
 
+  if (provider === 'gemini') {
+    return {
+      provider,
+      model: pick(DEFAULT_GEMINI_MODEL),
+      apiKey: readGeminiApiKey(env),
+      keyEnv: 'GEMINI_API_KEY',
+    };
+  }
+
   return {
     provider,
-    model: override !== undefined && override !== '' ? override : DEFAULT_GEMINI_MODEL,
-    apiKey: readGeminiApiKey(env),
-    keyEnv: 'GEMINI_API_KEY',
+    model: pick(DEFAULT_BLUESMINDS_MODEL),
+    apiKey: readBluesmindsApiKey(env),
+    keyEnv: 'BLUESMINDS_API_KEY',
   };
 }
 
@@ -78,5 +103,8 @@ export async function createProvider(choice: ProviderChoice): Promise<Completion
   if (choice.provider === 'anthropic') {
     return createAnthropicProvider({ apiKey: choice.apiKey, model: choice.model });
   }
-  return createGeminiProvider({ apiKey: choice.apiKey, model: choice.model });
+  if (choice.provider === 'gemini') {
+    return createGeminiProvider({ apiKey: choice.apiKey, model: choice.model });
+  }
+  return createBluesmindsProvider({ apiKey: choice.apiKey, model: choice.model });
 }

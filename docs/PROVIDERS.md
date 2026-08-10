@@ -1,31 +1,113 @@
 # LLM providers
 
-Two adapters implement `CompletionProvider`: Anthropic and Google Gemini.
-Everything above them — the cached labeller, the intent extractor, the pipeline
-— is provider-agnostic and unaware of either.
+Three adapters implement `CompletionProvider`: Bluesminds, Google Gemini and
+Anthropic. Everything above them — the cached labeller, the intent extractor,
+the pipeline — is provider-agnostic and unaware of any of them.
 
-**Gemini is the default**, because it is genuinely free and Week 14 runs
-labelling across 50–100 repositories. Anthropic stays fully wired and one
-variable away.
+## The three have different jobs
+
+| Provider | Role | Why |
+|---|---|---|
+| **Bluesminds** | Default, for corpus-scale labelling and extraction | Not quota-capped. Gemini's free tier caps at roughly 20 requests per model per day, which one repository can exhaust — that cap, not money, is what blocks Week 14. |
+| **Gemini** | Fallback, retained and working | Free, fast, and measurably better label quality (below). The right choice for anything small enough to fit the daily cap. |
+| **Anthropic** | Reserved for the Haiku/Sonnet comparison | That comparison **must run direct**. Routing a provider comparison through a gateway measures the gateway. |
 
 ```bash
-# default: Gemini
+# default: Bluesminds
 vibe-blueprint .
 
+VIBE_LLM_PROVIDER=gemini    vibe-blueprint .
 VIBE_LLM_PROVIDER=anthropic vibe-blueprint .
-VIBE_LLM_MODEL=gemini-3.5-flash-lite vibe-blueprint .
+VIBE_LLM_MODEL=meta/llama-3.1-8b-instruct vibe-blueprint .
 ```
 
 | Variable | Meaning |
 |---|---|
-| `VIBE_LLM_PROVIDER` | `gemini` (default) or `anthropic` |
+| `VIBE_LLM_PROVIDER` | `bluesminds` (default), `gemini`, or `anthropic` |
 | `VIBE_LLM_MODEL` | Overrides the model for the selected provider |
+| `BLUESMINDS_API_KEY` | Read from the environment or `.env` |
 | `GEMINI_API_KEY` | Read from the environment or `.env` |
 | `ANTHROPIC_API_KEY` | Read from the environment or `.env` |
 
 Selection is explicit, never "whichever key happens to be set". A machine with
-both keys would otherwise pick a provider by accident, and a run would be
+all three keys would otherwise pick a provider by accident, and a run would be
 reproducible only until somebody's environment changed.
+
+---
+
+## ⚠️ Provenance: what a gateway result can and cannot support
+
+**For the paper's methodology section.**
+
+Bluesminds is a *gateway*. It resells access to upstream models behind an
+OpenAI-compatible API, and that changes what a result from it means:
+
+- **A request routed through a third-party gateway cannot be attributed to a
+  specific model version with certainty.** We send a model string and receive
+  an answer. What actually served it — which weights, which quantisation, which
+  serving stack, which silently substituted fallback — is not observable from
+  the client.
+- **Any result that needs firm provenance must be reproduced on a direct
+  provider** (Gemini or Anthropic, calling the vendor's own endpoint) before it
+  is published.
+
+This is not hypothetical caution. Concretely observed on 2026-08-10:
+
+- Every one of the 137 models in `GET /v1/models` reports `"owned_by": "openai"`,
+  including `meta/*`, `nvidia/*`, `google/*` and `mistralai/*`. The field is a
+  placeholder, not provenance.
+- Response headers carry `nvcf-reqid` and `nvcf-status`, which identify
+  **NVIDIA Cloud Functions** as the upstream for at least some models. The
+  gateway itself runs `new-api` (`x-new-api-version: v1.0.0-rc.21`). Neither
+  fact is documented; both were read off the wire.
+- The catalogue advertises model names this project could not verify as genuine
+  upstream releases (`gpt-5.5`, `deepseek-v4-pro`, `kimi-k2.6`, `gemma-4`).
+  Some may be real; the point is that the gateway is the only witness.
+
+The adapter reports the model the gateway *says* served each request, rather
+than echoing the one we asked for, so a substitution is at least visible when
+it is declared. It cannot detect an undeclared one.
+
+**Practical rule:** Bluesminds for bulk work where the finding is about
+repositories; Gemini or Anthropic for any finding about a model.
+
+---
+
+## The catalogue is not a list of working models
+
+`GET /v1/models` returned **137 entries**. Eleven were probed with a real
+schema-constrained request. **Two worked.**
+
+| Model | Result |
+|---|---|
+| `meta/llama-3.3-70b-instruct` | ✅ works, ~15s, schema honoured, `finish_reason=length` correct |
+| `meta/llama-3.1-8b-instruct` | ✅ works, ~1.3s, schema honoured, `finish_reason=length` correct |
+| `nvidia/llama-3.3-nemotron-super-49b-v1.5` | ⚠️ HTTP 200, `finish_reason=length`, **empty content** — spent the whole budget reasoning |
+| `mistralai/mistral-medium-3.5-128b` | ❌ 410 end-of-life 2026-08-07 (three days before testing) |
+| `deepseek-ai/deepseek-v4-flash` | ❌ 410 end-of-life 2026-08-07 |
+| `qwen/qwen3-next-80b-a3b-instruct` | ❌ 410 end-of-life 2026-07-27 |
+| `z-ai/glm4.7` | ❌ 410 end-of-life 2026-05-14 |
+| `gpt-4o-mini` | ❌ 400 `"No connected db."`, later 429 |
+| `gpt-4o` | ❌ 500 upstream error |
+| `openai/gpt-oss-120b` | ❌ 504 gateway timeout |
+| `google/gemma-3-12b-it` | ❌ 404 naming an internal function id |
+
+Four of eleven were **listed but end-of-life**. The list endpoint is not
+filtered against what is actually served, so "check the API instead of the
+docs" is necessary but not sufficient — the only reliable test is a real call.
+
+The adapter names a 410 explicitly rather than surfacing a bare status, because
+the failure otherwise looks like a typo in a model string and is not.
+
+### The pinned default
+
+`meta/llama-3.3-70b-instruct`, an exact string. Never a floating alias, for the
+same reason as `gemini-3.5-flash`: the response cache is keyed on the model
+string, so an alias that silently repointed would mix two models' answers in
+one cache file and break reproducibility.
+
+`meta/llama-3.1-8b-instruct` is the fast alternative — roughly 1.3s against 15s
+— when throughput matters more than label quality.
 
 ---
 
@@ -248,10 +330,98 @@ node scripts/compare-label-models.mjs . gemini-3.5-flash claude-haiku-4-5
 
 ---
 
+## Bluesminds, measured
+
+All figures from 2026-08-10 against the three reference repositories.
+
+### Rate limits: real, and undocumented
+
+**The gateway sends no `Retry-After` and no `x-ratelimit-*` headers at all.**
+A client has nothing to pace against; backoff is the only lever.
+
+Measured: a full zod run (19 labels + 5 documents) exhausted the limit, after
+which **six consecutive requests returned 429 immediately** — including
+sequential ones, so this is not a concurrency limit. The window cleared after
+roughly **90 seconds**.
+
+This produced a real regression on first use. The adapter initially inherited
+Gemini's retry policy — 5 attempts spanning about 15 seconds — and 15 seconds
+is far inside a 90-second window:
+
+| zod run | Labelled | Mechanical fallback | Intent failures |
+|---|---|---|---|
+| Gemini retry policy (5 attempts, ~15s) | 12 / 19 | 7 | 3 of 5 documents |
+| Tuned policy (6 attempts, ~120s) | **19 / 19** | **0** | **0** |
+
+Nine of the ten failures were `rate limited after 5 attempt(s)`. The tenth was
+a genuine truncation, correctly reported as `incomplete` rather than accepted
+as an empty label — the Week 10 check doing its job in production.
+
+The gateway is also intermittently unstable independent of rate limiting: 504s
+from `openresty` appeared under load on models that worked moments earlier.
+
+### Label quality against the Gemini baseline
+
+Same repository (zod), same 19 modules, same prompt:
+
+| | Gemini `3.5-flash-lite` | Bluesminds `llama-3.3-70b` |
+|---|---|---|
+| Modules labelled | 19 / 19 | 19 / 19 |
+| **Distinct labels** | **19 (100%)** | 17 (89.5%) |
+| Repeated labels | none | `Validation Framework` ×3 |
+| Domain-aware (names the project) | 4 | 0 |
+| Average words per label | 2.95 | 2.37 |
+
+**Gemini's labels are better**, and not marginally. Where Gemini distinguished
+`Classic Zod API`, `Zod Core Engine`, `Classic Zod Schemas` and
+`Schema Validation Core`, Bluesminds returned `Validation Framework` three
+times plus `Validation Framework Core` — generic, repeated, and much less
+useful in a diagram whose whole purpose is telling modules apart. Gemini also
+correctly identified `Open Graph Image Generator` where Bluesminds guessed
+`Edge Config Module`.
+
+Extraction is worse too: on the same five zod documents Gemini found **8**
+architectural-but-uncheckable statements; Bluesminds found **0**. Both found 0
+checkable constraints.
+
+**So the default is a throughput decision, not a quality one.** Bluesminds is
+the default because it can finish a 100-repository run and Gemini cannot. For
+any single repository small enough to fit the daily cap, `VIBE_LLM_PROVIDER=gemini`
+gives better output.
+
+### Cost
+
+The gateway bills a prepaid balance and does not publish per-model rates in a
+form the pricing table could track, so **Bluesminds models are deliberately
+absent from `PRICING`**. `isPricedModel` returns false for them and the CLI
+prints *"cost not tracked here — check your provider balance"* rather than
+`$0.0000`, which would claim the calls were free.
+
+Measured from `GET /v1/dashboard/billing/usage`:
+
+| Point | `total_usage` |
+|---|---|
+| Baseline, before any run | 0.0223 |
+| After requests + zod + model probing | 0.9765 |
+| After the full zod re-run | 1.7954 |
+
+**≈1.77 consumed** for roughly 60 calls across two repositories plus eleven
+model probes. Following OpenAI's convention — which this gateway's API mirrors
+— `total_usage` is in **cents**, putting the whole exercise near **US$0.018**.
+The unit is not documented, so that reading is stated rather than asserted; the
+reported limits (`hard_limit_usd: 100000000`) are placeholders and give no
+independent check.
+
+Either way the order of magnitude is the finding: this is roughly a cent and a
+half for work that Gemini's free tier could not complete at all. **Cost is not
+the constraint. Throughput, reliability and label quality are.**
+
+---
+
 ## Secrets
 
-- Read from `GEMINI_API_KEY` / `ANTHROPIC_API_KEY`, in the environment or in
-  `.env` (gitignored).
+- Read from `BLUESMINDS_API_KEY` / `GEMINI_API_KEY` / `ANTHROPIC_API_KEY`, in
+  the environment or in `.env` (gitignored).
 - `.env` is loaded **only** at the binary entry point, and from the *working
   directory* — never from the repository being analysed. Pointing this tool at
   an untrusted checkout must not pick up a stranger's `.env` and spend against
@@ -259,6 +429,12 @@ node scripts/compare-label-models.mjs . gemini-3.5-flash claude-haiku-4-5
 - The Gemini key travels in the `x-goog-api-key` **header**, never a `?key=`
   query parameter, so it cannot surface in a URL that reaches an error message,
   a proxy log or a stack trace.
+- The Bluesminds key travels as a `Bearer` **header**, never in a URL. Unlike
+  Google's `AIza…`, this token has no documented shape to pattern-match, so
+  redaction is an **exact substring replacement against the configured key**
+  rather than a regex — a shape-based rule would silently fail to redact it.
+  `Bearer …` sequences are scrubbed as well, since some gateways echo the
+  received request back inside an error body.
 - Every error body is passed through a redaction pass before display, and a test
   asserts no failure message contains the key.
 - Nothing logs, returns or formats a key value. `describeKeySource` reports
