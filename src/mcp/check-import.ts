@@ -44,6 +44,21 @@ export interface ResolvedEndpoint {
   readonly status: EndpointStatus;
   /** Module ids this endpoint covers. Empty when unknown. */
   readonly modules: readonly string[];
+  /**
+   * The actual files this endpoint covers.
+   *
+   * Membership is tested against *these*, never against `modules`. A
+   * `PATH_PATTERN` role like `src/parser/` is narrower than the module its
+   * files happen to land in, so comparing module ids silently widens every
+   * such rule to its whole module — and on a small repository, where
+   * clustering puts everything in one module, that makes every rule forbid
+   * every import.
+   *
+   * That is not hypothetical: it is what this tool did on its own acceptance
+   * fixture, reporting a clean `api -> parser` edge as forbidden. The detector
+   * never had the bug because it has always crossed *file* sets.
+   */
+  readonly files: readonly string[];
   /** How many analysed files it covers. Zero when unknown. */
   readonly fileCount: number;
   /** Why it did not resolve, in words. Null when it did. */
@@ -328,28 +343,29 @@ export function resolveEndpoint(query: string, index: Index): ResolvedEndpoint {
 
   const exactModule = index.moduleByFile.get(normalised);
   if (exactModule !== undefined) {
-    return endpoint(query, 'file', [exactModule], 1);
+    return endpoint(query, 'file', [exactModule], [normalised]);
   }
 
-  const underDirectory = [...index.moduleByFile.keys()].filter((file) =>
-    file.startsWith(`${normalised}/`),
-  );
+  const underDirectory = [...index.moduleByFile.keys()]
+    .filter((file) => file.startsWith(`${normalised}/`))
+    .sort();
   if (underDirectory.length > 0) {
     const modules = [
       ...new Set(underDirectory.map((file) => index.moduleByFile.get(file) as string)),
     ].sort();
-    return endpoint(query, 'directory', modules, underDirectory.length);
+    return endpoint(query, 'directory', modules, underDirectory);
   }
 
   const asModule = index.filesByModule.get(normalised);
   if (asModule !== undefined) {
-    return endpoint(query, 'module', [normalised], asModule.size);
+    return endpoint(query, 'module', [normalised], [...asModule].sort());
   }
 
   return {
     query,
     status: 'unknown',
     modules: [],
+    files: [],
     fileCount: 0,
     reason:
       'matched no file, directory or module in the analysed repository (it may be a new path, ' +
@@ -362,9 +378,17 @@ function endpoint(
   query: string,
   status: EndpointStatus,
   modules: readonly string[],
-  fileCount: number,
+  files: readonly string[],
 ): ResolvedEndpoint {
-  return { query, status, modules, fileCount, reason: null, provenance: 'DERIVED' };
+  return {
+    query,
+    status,
+    modules,
+    files,
+    fileCount: files.length,
+    reason: null,
+    provenance: 'DERIVED',
+  };
 }
 
 // ---------------------------------------------------------------- evaluation
@@ -489,8 +513,9 @@ function evaluateProspective(
       if (!overlaps(constraint.subject, from, index) || !overlaps(constraint.object, to, index)) {
         return null;
       }
-      const via = constraint.via === null ? new Set<string>() : modulesFor(constraint.via, index);
-      if (from.modules.some((id) => via.has(id)) || to.modules.some((id) => via.has(id))) {
+      // File-level, like the detector's own `via.has(edge.from)` check.
+      const via = constraint.via === null ? new Set<string>() : filesFor(constraint.via, index);
+      if (from.files.some((file) => via.has(file)) || to.files.some((file) => via.has(file))) {
         return null;
       }
       return finding(
@@ -534,9 +559,15 @@ function evaluateProspective(
   return null;
 }
 
+/**
+ * Does this endpoint fall inside the role's scope?
+ *
+ * Tested on files, exactly as `crossingEdges` does in the detector. Comparing
+ * module ids here was a real false-positive bug — see `ResolvedEndpoint.files`.
+ */
 function overlaps(subject: ResolvedSubject, endpointValue: ResolvedEndpoint, index: Index): boolean {
-  const modules = modulesFor(subject, index);
-  return endpointValue.modules.some((id) => modules.has(id));
+  const files = filesFor(subject, index);
+  return endpointValue.files.some((file) => files.has(file));
 }
 
 /**

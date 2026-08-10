@@ -300,6 +300,85 @@ describe('cycles, which depend on the graph that already exists', () => {
   });
 });
 
+describe('path-pattern rules stay as narrow as they were written', () => {
+  /**
+   * The false positive found in Week 11 acceptance, on the constructed breach
+   * repository.
+   *
+   * Its rules resolve as PATH_PATTERN (`src/parser/`, `src/llm/`), and the repo
+   * is small enough that clustering puts every file in one module. Comparing
+   * *module* ids therefore made both roles match the same module, every
+   * endpoint overlap succeed, and every import come back forbidden — including
+   * `api -> parser`, which the documentation explicitly permits.
+   *
+   * A confident, systematic false positive is the worst outcome this tool can
+   * produce: it is exactly the failure that makes an agent stop trusting the
+   * answers and stop calling the tool.
+   */
+  /** `src/parser/**` — the exact shape `resolve-subject` emits for a directory. */
+  function pattern(directory: string): ResolvedSubject {
+    return {
+      phrase: directory,
+      status: 'PATH_PATTERN',
+      target: `${directory}/**`,
+      reason: null,
+      similarity: 1,
+      alternatives: [],
+    };
+  }
+
+  // One module holding all three directories — the shape that broke it.
+  const oneModule = [
+    module('module-000', ['src/parser/parse.js', 'src/llm/client.js', 'src/api/handler.js']),
+  ];
+
+  const rules = [
+    constraint('must-not-import', pattern('src/parser'), pattern('src/llm'), {
+      rawText: '`src/parser/` must never import from `src/llm/`.',
+    }),
+  ];
+
+  it('forbids the edge the rule actually names', () => {
+    expect(check('src/parser/parse.js', 'src/llm/client.js', rules, oneModule).verdict).toBe(
+      'forbidden',
+    );
+  });
+
+  it('does not forbid an unrelated edge inside the same module', () => {
+    const result = check('src/api/handler.js', 'src/parser/parse.js', rules, oneModule);
+    expect(result.verdict).toBe('allowed');
+    expect(result.findings).toEqual([]);
+  });
+
+  it('does not forbid the reverse of the named edge', () => {
+    expect(check('src/llm/client.js', 'src/parser/parse.js', rules, oneModule).verdict).toBe(
+      'allowed',
+    );
+  });
+
+  it('agrees with the detector on every pair in that repository', () => {
+    // The strongest form of the check: for all nine ordered pairs, forbidden
+    // here must mean a violation there, and vice versa.
+    const files = ['src/parser/parse.js', 'src/llm/client.js', 'src/api/handler.js'];
+
+    for (const from of files) {
+      for (const to of files) {
+        if (from === to) continue;
+
+        const prospective = check(from, to, rules, oneModule).verdict === 'forbidden';
+        const detected =
+          detectViolations({
+            constraints: rules,
+            clustering: clustering(oneModule),
+            fileEdges: [edge(from, to)],
+          }).violations.length > 0;
+
+        expect(`${from}->${to}: ${prospective}`).toBe(`${from}->${to}: ${detected}`);
+      }
+    }
+  });
+});
+
 // ---------------------------------------------------------------- resolution
 
 describe('resolving what the agent typed', () => {
