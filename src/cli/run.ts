@@ -29,6 +29,7 @@ import { buildDriftHistory } from '../pipeline/drift-history.js';
 import { createSnapshotStore } from '../store/snapshots.js';
 import { startServer, type RunningServer } from '../server/server.js';
 import { serveMcp } from '../mcp/server.js';
+import { writeExports, currentCommit } from '../export/write.js';
 
 export interface CliIo {
   readonly writeOut: (line: string) => void;
@@ -106,6 +107,34 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     return EXIT_OK;
   }
 
+  const analysisContext = {
+    root: result.root,
+    graph,
+    ingest: summary,
+    parse: parseSummary,
+    parseFailures: parse.failures,
+    clustering,
+    labels,
+    correctionOutcomes,
+    intent,
+    conformance,
+    store,
+    db,
+  };
+
+  /**
+   * Exports are written before the MCP branch, so `--mcp --export` produces
+   * both. Progress goes to stderr because stdout may already belong to the
+   * protocol.
+   */
+  if (options.exportFiles) {
+    const written = await writeExports(analysisContext, {
+      generatedAt: new Date().toISOString(),
+      commit: await currentCommit(result.root),
+    });
+    for (const file of written) io.writeErr(`  wrote ${file.path} (${file.bytes} bytes)`);
+  }
+
   /**
    * MCP owns stdout from here on.
    *
@@ -116,23 +145,10 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
    */
   if (options.mcp) {
     io.writeErr('Serving MCP on stdio. No port is open.');
-    await serveMcp(
-      {
-        root: result.root,
-        graph,
-        ingest: summary,
-        parse: parseSummary,
-        parseFailures: parse.failures,
-        clustering,
-        labels,
-        correctionOutcomes,
-        intent,
-        conformance,
-        store,
-        db,
-      },
-      { input: process.stdin, write: (line) => process.stdout.write(`${line}\n`) },
-    );
+    await serveMcp(analysisContext, {
+      input: process.stdin,
+      write: (line) => process.stdout.write(`${line}\n`),
+    });
     db.close();
     return EXIT_OK;
   }
@@ -176,20 +192,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     return EXIT_OK;
   }
 
-  const server = await startServer({
-    root: result.root,
-    graph,
-    ingest: summary,
-    parse: parseSummary,
-    parseFailures: parse.failures,
-    clustering,
-    labels,
-    correctionOutcomes,
-    intent,
-    conformance,
-    store,
-    db,
-  });
+  const server = await startServer(analysisContext);
 
   io.writeOut(formatServing(server.url, options.open));
   if (options.open) {

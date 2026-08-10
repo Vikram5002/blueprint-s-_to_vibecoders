@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { discoverIntentDocuments, splitStatements, type IntentDocument } from './sources.js';
+import {
+  discoverIntentDocuments,
+  splitStatements,
+  stripGeneratedBlocks,
+  type IntentDocument,
+} from './sources.js';
 import { detectFormat, parseChatLog } from './chat-log.js';
 
 async function repo(files: Record<string, string>): Promise<string> {
@@ -238,5 +243,45 @@ describe('chat transcripts', () => {
     const result = parseChatLog(raw, 'session.jsonl');
     expect(result.malformedLines).toBe(1);
     expect(result.documents).toHaveLength(1);
+  });
+});
+
+describe('the export block is never read back in as intent', () => {
+  /**
+   * `--export` writes a measured summary into AGENTS.md, which is one of the
+   * documents intent extraction reads. Left alone, the second run would read
+   * the first run's output as newly stated intent — the tool measuring itself,
+   * counting every constraint twice, and making a rule it merely *reported*
+   * indistinguishable from one a human wrote.
+   */
+  const BEGIN = '<!-- BEGIN vibe-blueprint -->';
+  const END = '<!-- END vibe-blueprint -->';
+
+  it('keeps the human prose and drops the generated block', () => {
+    const document = `# Rules\n\nThe api must not import the db.\n\n${BEGIN}\n- **must-not-import** the api -> the db\n${END}\n\nTrailing note.\n`;
+    const stripped = stripGeneratedBlocks(document);
+
+    expect(stripped).toContain('The api must not import the db.');
+    expect(stripped).toContain('Trailing note.');
+    expect(stripped).not.toContain('must-not-import');
+  });
+
+  it('leaves a document that has never been exported to untouched', () => {
+    const document = '# Rules\n\nThe api must not import the db.\n';
+    expect(stripGeneratedBlocks(document)).toBe(document);
+  });
+
+  it('drops everything after an unterminated block', () => {
+    // A half-written block from an interrupted run is still our output.
+    expect(stripGeneratedBlocks(`Keep me.\n${BEGIN}\ngenerated`)).toBe('Keep me.\n');
+  });
+
+  it('handles more than one block', () => {
+    const document = `a\n${BEGIN}\nx\n${END}\nb\n${BEGIN}\ny\n${END}\nc`;
+    const stripped = stripGeneratedBlocks(document);
+    expect(stripped).not.toContain('x');
+    expect(stripped).not.toContain('y');
+    expect(stripped).toContain('a');
+    expect(stripped).toContain('c');
   });
 });

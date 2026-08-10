@@ -105,14 +105,55 @@ export async function discoverIntentDocuments(options: DiscoverOptions): Promise
   return documents.sort((a, b) => a.location.localeCompare(b.location));
 }
 
+/**
+ * Removes this tool's own generated export block before reading a document.
+ *
+ * `--export` writes a measured summary into AGENTS.md, and AGENTS.md is one of
+ * the documents intent extraction reads. Without this, the second run reads
+ * the first run's output as freshly stated intent: the tool measures itself,
+ * every constraint is counted twice, and a rule the export merely *reported*
+ * becomes indistinguishable from one a human actually wrote.
+ *
+ * The markers are matched literally rather than by import, because
+ * `conformance/` must not depend on `export/` — that would be a cycle between
+ * two modules that have no business knowing about each other.
+ *
+ * Deliberately tolerant: an unmatched BEGIN truncates from there to the end,
+ * because a half-written block from an interrupted run is still our output and
+ * still must not be read back in.
+ */
+export function stripGeneratedBlocks(text: string): string {
+  const begin = '<!-- BEGIN vibe-blueprint -->';
+  const end = '<!-- END vibe-blueprint -->';
+
+  let result = '';
+  let cursor = 0;
+
+  for (;;) {
+    const start = text.indexOf(begin, cursor);
+    if (start === -1) {
+      result += text.slice(cursor);
+      return result;
+    }
+
+    result += text.slice(cursor, start);
+    const close = text.indexOf(end, start);
+    if (close === -1) return result;
+    cursor = close + end.length;
+  }
+}
+
 async function readDocument(
   root: string,
   path: string,
   type: ConstraintSourceType,
 ): Promise<IntentDocument | null> {
   const absolute = join(root, ...path.split('/'));
-  const raw = await readFile(absolute, 'utf8').catch(() => null);
-  if (raw === null || raw.trim() === '') return null;
+  const onDisk = await readFile(absolute, 'utf8').catch(() => null);
+  if (onDisk === null || onDisk.trim() === '') return null;
+
+  const raw = stripGeneratedBlocks(onDisk);
+  if (raw.trim() === '') return null;
 
   // TRUNCATION: a very long document is cut rather than skipped. Intent
   // statements cluster near the top of a README — the overview, not the API

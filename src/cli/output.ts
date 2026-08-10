@@ -39,6 +39,7 @@ export function formatHelp(binaryName: string): string {
     '  -h, --help       Show this help',
     '      --version    Show the version',
     '      --history=N  Snapshot the last N commits and chart drift over them',
+    '      --export     Write AGENTS.md and blueprint.html into the repository',
     '      --mcp        Serve architecture context to a coding agent over MCP',
     '                   (stdio, read-only, no port opened)',
     '',

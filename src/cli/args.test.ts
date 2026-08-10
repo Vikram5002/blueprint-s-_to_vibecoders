@@ -22,6 +22,7 @@ describe('parseArguments', () => {
       // commit, so an ordinary run must never pay for it by accident.
       history: null,
       mcp: false,
+      exportFiles: false,
       help: false,
       version: false,
     });

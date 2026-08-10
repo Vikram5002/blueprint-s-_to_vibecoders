@@ -36,6 +36,15 @@ export interface CliOptions {
    * stderr, which MCP clients ignore.
    */
   readonly mcp: boolean;
+  /**
+   * Write AGENTS.md and blueprint.html into the analysed repository.
+   *
+   * Opt-in, because it writes files into someone else's working tree. The
+   * AGENTS.md block is spliced between markers so it never clobbers notes the
+   * developer wrote around it, but a tool that silently edits a tracked file
+   * on every run would still be a bad neighbour.
+   */
+  readonly exportFiles: boolean;
   readonly help: boolean;
   readonly version: boolean;
 }
@@ -59,6 +68,7 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
         'no-serve': { type: 'boolean', default: false },
         history: { type: 'string' },
         mcp: { type: 'boolean', default: false },
+        export: { type: 'boolean', default: false },
         help: { type: 'boolean', short: 'h', default: false },
         version: { type: 'boolean', default: false },
       },
@@ -88,6 +98,7 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
     serve: parsed.values['no-serve'] !== true && !json && !mcp,
     history: parseHistory(parsed.values['history']),
     mcp,
+    exportFiles: parsed.values.export === true,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
   });
