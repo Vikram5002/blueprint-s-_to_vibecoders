@@ -16,13 +16,15 @@ three reference repositories.
 **Phase 2 (Weeks 5-7): complete.** Clustering, LLM labelling with user corrections,
 and intent extraction — the STATED half of the data model.
 
-**Week 8: violation detection.** Comparing STATED constraints against the DERIVED
-graph. This is the first stage where the two halves meet.
+**Weeks 8-11: complete.** Violation detection, versioning and drift, the violation UI,
+and the agent-facing surfaces — a read-only MCP server (`--mcp`) whose `check_import`
+answers "am I allowed to import this?" *before* the line is written, plus regenerated
+`AGENTS.md` and a self-contained HTML report (`--export`).
 
 See `docs/PHASE-1-SPEC.md` for the full tracker, week by week.
 See `docs/ARCHITECTURE.md` for the data model and full pipeline.
 Per-stage detail: `CLUSTERING.md`, `LABELLING.md`, `CORRECTIONS.md`, `PROVIDERS.md`,
-`INTENT.md`.
+`INTENT.md`, `VIOLATIONS.md`, `DRIFT.md`, `MCP.md`.
 
 ---
 

@@ -320,7 +320,55 @@ See the Week 10 section of `docs/VIOLATIONS.md`.
 - [x] Precision/recall confirmed stable across two independent runs (100% / 75%)
 - [x] Uncheckable count found unstable (61 -> 76) and requalified as a range
 
-### Week 11 — MCP server and static export — **in progress**
+### Week 11 — MCP server and static export — **complete**
+
+See `docs/MCP.md`.
+
+- [x] **MCP server, read-only, over stdio.** Hand-rolled JSON-RPC 2.0 rather than
+      `@modelcontextprotocol/sdk`, per CLAUDE.md's dependency rule and the
+      precedent of the hand-rolled Gemini adapter and `.env` reader.
+- [x] **`check_import(from, to)`** — the tool the week hangs on. Re-expresses the
+      four detectors against a *hypothetical* edge, because `detectViolations`
+      answers "what does this repo already break" and for an unwritten import
+      that is always none. Pinned to the detector by agreement tests.
+- [x] **`get_architecture(level)`, `get_violations(severity?)`, `get_constraints()`.**
+- [x] **Provenance on every response** (rule 2) and evidence on every edge
+      (rule 3), both across the tool boundary.
+- [x] **"Cannot determine" rather than a guess** — on an unresolved path, an
+      unevaluable rule, or any document that went unread.
+- [x] **No new network exposure.** stdio opens no port at all. Enforced by
+      `architecture.test.ts`, which also asserts no store or filesystem writer is
+      reachable from `src/mcp` — so write access requires deleting a test.
+- [x] **`AGENTS.md` export**, human-readable and machine-parseable from one file
+      (prose document, tagged JSON block inside it), spliced between markers so
+      hand-written notes survive regeneration.
+- [x] **Self-contained `blueprint.html`**, opens from `file://` with no server,
+      no external requests of any kind, visible timestamp and commit hash.
+- [x] **Acceptance: a real client exchange**, on this repository and on a
+      constructed breach repository — reported in `docs/MCP.md`, including the
+      two bugs it found.
+- [ ] **Reference-repo QA (`requests`, `zod`, `pyright`) not re-run.** Not present
+      on this machine; re-cloning and re-analysing each is bounded by the daily
+      model quota. Scale was exercised on this repository instead (208 files, 25
+      modules, 452 edges — the same order as `zod`). Carried forward.
+- [ ] **No packaged MCP host attached.** The recorded exchanges came from a
+      scripted client speaking the same wire protocol, which proves the framing
+      and payloads but not discovery inside a shipped host. Carried forward.
+
+**Two correctness bugs found by acceptance, both fixed:**
+
+1. **An unread document read as an absent rule.** With the model quota
+   exhausted, `check_import` answered *allowed* for `parser/ -> llm/` — a rule
+   this project states in capital letters — because the document stating it was
+   never read. Third instance of the unmeasured-zero family, after the
+   truncation bug and the drift bug, and the most dangerous: this answer is
+   acted on before code is written. Also fixed one layer down in
+   `buildIntentResponse`, which the Week 10 UI reads.
+2. **A systematic false positive.** Path-pattern rules were compared at module
+   granularity, so on a repository small enough to cluster into one module every
+   rule forbade every import. The detector never had this because it crosses
+   file sets; the agreement tests missed it because their fixtures had one file
+   per module.
 
 ---
 
