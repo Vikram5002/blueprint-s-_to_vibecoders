@@ -1,12 +1,12 @@
 {
   "measuredOn": "2026-08-12",
   "method": "Pre-flight estimate only: the pipeline run with useModel:false, which performs the full deterministic half (walk, parse, resolve, cluster, discover documents) and makes zero API calls. One model call is made per module (labelling) and one per document (intent extraction).",
-  "note": "Measured on the first 8 repositories in target order. Costs are dominated by module count, which is labelling; documents are what actually yield constraints.",
+  "note": "The first 10 repositories in target order. Cost is dominated by module count, which is labelling; documents are what actually yield constraints. rollup/rollup discovered 0 documents, so its 1,219 calls could not have produced a single constraint.",
   "totals": {
-    "repos": 9,
-    "calls": 4667,
-    "modules": 4641,
-    "documents": 26
+    "repos": 10,
+    "calls": 4925,
+    "modules": 4896,
+    "documents": 29
   },
   "repos": [
     {
@@ -44,6 +44,12 @@
       "estimatedCalls": 160,
       "modules": 156,
       "documents": 4
+    },
+    {
+      "repo": "sst/sst",
+      "estimatedCalls": 258,
+      "modules": 255,
+      "documents": 3
     },
     {
       "repo": "prisma/prisma",
