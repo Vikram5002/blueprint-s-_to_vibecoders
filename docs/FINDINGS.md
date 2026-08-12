@@ -282,31 +282,13 @@ Regex-sourced roles now resolve at **99.9% (2,564/2,566)**, reported separately
 from prose-sourced roles, which resolve at 4/12 — the two fail for unrelated
 reasons and a blended rate hides both.
 
-### Six violations appeared, were hand-verified, and were all false
+### Six violations appeared, and every one was false
 
-The first run after the resolver fix reported six violations. Every one was
-checked against the actual source and config, and **all six were artifacts of
-the runner, not findings**:
-
-| Rule | Repo | Why it was false |
-|---|---|---|
-| 3 × cross-plane/domain rules | prisma | Evidence files were all under `/test/`, which prisma's `options.exclude` filters. dependency-cruiser never scans them. |
-| `src-to-other-sub-paths-with-subpath-imports-only` | sverweij | Real rule is `to: { path: '^src/', pathNot: '$1' }` — "may import src, but not itself". The mapper dropped `pathNot`, turning it into "no src subfolder may import src", which fired on 226 files of legal code. |
-| `no-inter-module-test` | sverweij | Same shape: `pathNot: ['utl', '$1.+[.]json$']` dropped. |
-| `no-dep-on-test` | sverweij | Evidence file `tools/regenerate-main-fixtures.utl.mjs` contains "fixtures", which that config's `exclude` filters. |
-
-Two defects, both now fixed: the mapper silently dropped exclusion sides
-(`pathNot`, `dependencyTypesNot`) when a path was also present, and the runner
-ignored the config's own `exclude`/`includeOnly` scan filters. Rules carrying a
-`$1` backreference or an inexpressible exception set are now refused at mapping
-time — `capture-group-backreference` (7 rules) and `exclusion-not-expressible`
-(6 rules) — rather than bound approximately.
-
-**This is the reason the acceptance asked for hand-verification.** Six
-plausible violations, each with a rule name, a severity and a real file:line,
-survived every automated check in the pipeline. Nothing short of opening the
-config and the source would have caught them, and reporting them would have
-been this project's first and most consequential false claim.
+Reported in full as **Finding 7**, because the lesson generalises well beyond
+this corpus. In short: the first run after the resolver fix produced six
+violations with rule names, severities and real `file:line` evidence, and all
+six were artifacts of incomplete rule transcription. Two mapper defects were
+fixed as a result.
 
 ### The result: machine-checkable intent is respected where it exists
 
@@ -329,6 +311,77 @@ the 204 uncheckable statements against 1 checkable — are where architecture an
 code are free to diverge, and are precisely the ones no CI tool can check
 today.
 
+## Finding 7 — Evidence completeness is not evidence correctness
+
+The corpus B run reported **six violations**. Each carried a named rule, a
+severity, and a real file and line number in a real repository. Each survived
+every automated check in the pipeline: schema validation, subject resolution,
+the evidence requirement of rule 3, and the detector's own agreement tests.
+
+**All six were false.** They were found to be false only by opening the
+original config file and the cited source line by hand.
+
+| Rule | Repository | Why it was false |
+|---|---|---|
+| 3 x cross-plane / cross-domain rules | `prisma/prisma` | Every cited file was under `/test/`, which prisma's `options.exclude` filters. dependency-cruiser never scans those files, so no rule of prisma's could be broken there. |
+| `src-to-other-sub-paths-with-subpath-imports-only` | `sverweij/dependency-cruiser` | The real rule is `to: { path: '^src/', pathNot: '$1' }` - "may import src, but not its own subtree". The mapper kept `path` and dropped `pathNot`, turning it into "no src subfolder may import src", which fired on **226 files of entirely legal code**. |
+| `no-inter-module-test` | `sverweij/dependency-cruiser` | Same shape: `pathNot: ['utl', '$1.+[.]json$']` dropped. |
+| `no-dep-on-test` | `sverweij/dependency-cruiser` | The cited file, `tools/regenerate-main-fixtures.utl.mjs`, matches that config's own `exclude: ["mocks", "fixtures", ...]`. The tool never scans it. |
+
+Two defects produced all six: the mapper silently discarded the *exception*
+side of a rule (`pathNot`, `dependencyTypesNot`) whenever a positive path was
+also present, and the runner ignored the config's own `exclude` / `includeOnly`
+scan filters. Both are fixed; rules whose exception set cannot be expressed in
+the four relations are now refused at mapping time rather than approximated.
+
+### The claim
+
+**Evidence completeness is not evidence correctness.**
+
+This project has argued since Week 3 that a finding must point at a file and a
+line - rule 3 - and that an edge without evidence is an invented edge. That
+remains right, and it is not sufficient. A violation can carry a real rule
+name, a real file, a real line and a real import statement, and still be false,
+because **the rule was transcribed incompletely**. Every artefact was genuine;
+the transcription of the constraint was not.
+
+The failure is invisible to every check the pipeline can perform on itself,
+because each individual part is correct: the file exists, the import exists,
+the rule exists, the rule's name is real. Only a comparison against the
+*original* statement of intent - the config as its authors wrote it - reveals
+that the rule being checked is not the rule that was stated.
+
+### Why this is on-thesis, not an implementation note
+
+The paper asks whether a tool can check code against stated intent. Here the
+tool misread the intent it was checking, in a way that produced confident,
+well-evidenced, entirely wrong output.
+
+That generalises past this implementation. Any system that reads a rule from
+one formalism and evaluates it in another - a linter config into a graph query,
+prose into a constraint, a policy document into a check - introduces a
+**transcription step**, and that step is unverified by construction: the
+evaluator can only see the rule it was given, never the rule that was meant.
+The richer the source formalism, the more of it is silently dropped.
+
+Every rule this project mis-transcribed was mis-transcribed by *losing an
+exception* - `pathNot`, `dependencyTypesNot`, `exclude` - and dropping an
+exception always widens a rule, which always produces false positives rather
+than false negatives. The error had a systematic direction, which is worse than
+a random one: it is the direction that manufactures findings.
+
+The practical consequence for anyone building such a tool: **the transcription
+must be validated against the source formalism independently of the
+evaluation**, and a rule whose semantics cannot be fully represented must be
+refused rather than approximated. Approximation is indistinguishable from
+correctness right up until someone reads the original.
+
+A secondary consequence for this project's own methodology: the first six
+candidate violations it ever produced were false, which is the strongest
+available argument for the hand-verification requirement that caught them. Had
+they been reported, they would have been the project's first and most
+consequential false claim.
+
 ## Limitations
 
 Stated plainly, because a findings index that only lists successes is not
@@ -348,14 +401,27 @@ Measured across all four reference repositories (`docs/VIOLATIONS.md` →
 
 Every violation this project has ever demonstrated — the injected breach in
 its own copy, the constructed breach repository in `docs/MCP.md` — was
-manufactured for the purpose. Three of the four real repositories state zero
-constraints expressible in the four checkable relations at all (Finding 1
-again, from the supply side); the fourth (blueprint) states three and
-satisfies all three. **The violation detector's precision and recall on real
-architectural breaches remain unmeasured**, because no real architectural
-breach matching a stated, checkable rule has yet been found in the wild to
-measure against. This is the single largest open evidence gap in the
-project.
+manufactured for the purpose.
+
+**Corpus B changed the status of this limitation from open to explained.**
+Across five repositories shipping enforced architecture configs, 1,282 of
+1,289 constraints were checked and **zero** violations survived
+hand-verification (Findings 6 and 7). That is now a measured zero rather than
+an absence of measurement, and it has a straightforward explanation: where
+rules are machine-checkable and enforced in CI, CI enforces them.
+
+What remains genuinely unmeasured is narrower, and should be stated that way:
+**the detector's precision and recall on real architectural breaches**. No
+true positive from the wild has ever been observed, so the false-positive rate
+is known only from the six candidates of Finding 7 — all false, all traced to
+transcription rather than detection — and the false-negative rate is not known
+at all. A population where violations are common enough to measure against
+would have to be one where rules are stated but *not* enforced, which is
+precisely the population of corpus A, where almost nothing is checkable.
+
+That tension — violations are measurable only where enforcement is absent, and
+rules are checkable only where enforcement is present — is the central
+empirical difficulty this project has surfaced, and it is not resolved.
 
 ### Small-repo clustering granularity widens rules to everything
 
