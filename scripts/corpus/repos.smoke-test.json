@@ -1,0 +1,7 @@
+{
+  "method": "smoke-test only, not part of the real corpus",
+  "repos": [
+    { "repo": "encode/starlette", "url": "https://github.com/encode/starlette.git", "lang": "python", "size": "small", "criteria": [4], "rationale": "smoke test" },
+    { "repo": "honojs/hono", "url": "https://github.com/honojs/hono.git", "lang": "typescript", "size": "small", "criteria": [4], "rationale": "smoke test" }
+  ]
+}

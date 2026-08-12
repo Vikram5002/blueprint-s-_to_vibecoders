@@ -105,6 +105,90 @@ describe('modules', () => {
     expect(entry?.description).toContain(`${RENAME_OVERLAP_THRESHOLD * 100}%`);
   });
 
+  /**
+   * Real data, not a hand-built boundary case. `docs/DRIFT.md` says the
+   * threshold is "almost never exercised in the range where it actually
+   * decides something", and names this project's own history as the one
+   * exception. Frozen from the real snapshot pair 2df9a06 -> c93a763 (commit
+   * `feat(store,conformance): snapshots and semantic diff`), found by walking
+   * every adjacent pair across this repository's 84-commit history and
+   * filtering for `module-restructured`.
+   *
+   * Overlap is 17/30 = 0.5667, which rounds to the "57%" the tool reports and
+   * sits 3 points under RENAME_OVERLAP_THRESHOLD (0.6) — genuinely close,
+   * not padded. A second 57% case exists at ea2a30b -> f10be44
+   * (module-005, src/graph/*), so "the only boundary case" in the prose
+   * should read as "the only *kind* of boundary case observed", not literally
+   * one instance; this fixture pins the more central of the two.
+   */
+  it('classifies this repository\'s own 57% case as a restructure, from real snapshot data', () => {
+    const before = [
+      mod('module-005', 'src/', [
+        'src/conformance/graph-adapter.ts',
+        'src/conformance/severity.ts',
+        'src/conformance/violations-eval.test.ts',
+        'src/conformance/violations.test.ts',
+        'src/conformance/violations.ts',
+        'src/graph/aggregate.ts',
+        'src/graph/cluster-corrections.test.ts',
+        'src/graph/cluster.ts',
+        'src/graph/corrections.test.ts',
+        'src/graph/corrections.ts',
+        'src/graph/layout.test.ts',
+        'src/graph/layout.ts',
+        'src/graph/louvain.ts',
+        'src/graph/partition.test.ts',
+        'src/graph/partition.ts',
+        'src/graph/rng.ts',
+        'src/pipeline/conformance.ts',
+        'src/pipeline/run.ts',
+        'src/server/api.ts',
+        'src/server/context.ts',
+        'src/server/corrections-api.ts',
+        'src/server/intent-api.ts',
+        'src/server/server.test.ts',
+        'src/server/server.ts',
+        'src/store/corrections-store.test.ts',
+        'src/store/corrections-store.ts',
+        'src/store/database.ts',
+        'src/types/corrections.ts',
+        'src/types/modules.ts',
+        'src/types/violations.ts',
+      ]),
+    ];
+    // The real survivor module (module-006 in the actual `to` snapshot, renumbered
+    // here since only the two modules under test need to exist) — 17 files, 17
+    // of them shared with `before`.
+    const after = [
+      mod('module-006', 'src/', [
+        'src/graph/cluster-corrections.test.ts',
+        'src/graph/corrections.test.ts',
+        'src/graph/corrections.ts',
+        'src/graph/layout.test.ts',
+        'src/graph/layout.ts',
+        'src/graph/partition.test.ts',
+        'src/graph/partition.ts',
+        'src/pipeline/run.ts',
+        'src/server/api.ts',
+        'src/server/context.ts',
+        'src/server/corrections-api.ts',
+        'src/server/intent-api.ts',
+        'src/server/server.ts',
+        'src/store/corrections-store.test.ts',
+        'src/store/corrections-store.ts',
+        'src/store/database.ts',
+        'src/types/corrections.ts',
+      ]),
+    ];
+
+    const entry = diffSnapshots(snapshot({ modules: before }), snapshot({ modules: after })).entries.find(
+      (candidate) => candidate.kind === 'module-restructured',
+    );
+    expect(entry).toBeDefined();
+    expect(entry?.kind).toBe('module-restructured');
+    expect(entry?.description).toContain('57%');
+  });
+
   it('reports a module that vanished entirely as removed', () => {
     const diff = diffSnapshots(
       snapshot({ modules: [mod('m1', 'Gone', ['a.ts'])] }),

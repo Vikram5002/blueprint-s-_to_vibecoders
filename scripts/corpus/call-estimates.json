@@ -1,0 +1,67 @@
+{
+  "measuredOn": "2026-08-12",
+  "method": "Pre-flight estimate only: the pipeline run with useModel:false, which performs the full deterministic half (walk, parse, resolve, cluster, discover documents) and makes zero API calls. One model call is made per module (labelling) and one per document (intent extraction).",
+  "note": "Measured on the first 8 repositories in target order. Costs are dominated by module count, which is labelling; documents are what actually yield constraints.",
+  "totals": {
+    "repos": 9,
+    "calls": 4667,
+    "modules": 4641,
+    "documents": 26
+  },
+  "repos": [
+    {
+      "repo": "crewAIInc/crewAI",
+      "estimatedCalls": 30,
+      "modules": 28,
+      "documents": 2
+    },
+    {
+      "repo": "openai/codex",
+      "estimatedCalls": 42,
+      "modules": 40,
+      "documents": 2
+    },
+    {
+      "repo": "remix-run/remix",
+      "estimatedCalls": 65,
+      "modules": 61,
+      "documents": 4
+    },
+    {
+      "repo": "BuilderIO/qwik",
+      "estimatedCalls": 95,
+      "modules": 91,
+      "documents": 4
+    },
+    {
+      "repo": "gradio-app/gradio",
+      "estimatedCalls": 104,
+      "modules": 101,
+      "documents": 3
+    },
+    {
+      "repo": "pnpm/pnpm",
+      "estimatedCalls": 160,
+      "modules": 156,
+      "documents": 4
+    },
+    {
+      "repo": "prisma/prisma",
+      "estimatedCalls": 517,
+      "modules": 512,
+      "documents": 5
+    },
+    {
+      "repo": "rollup/rollup",
+      "estimatedCalls": 1219,
+      "modules": 1219,
+      "documents": 0
+    },
+    {
+      "repo": "denoland/deno",
+      "estimatedCalls": 2435,
+      "modules": 2433,
+      "documents": 2
+    }
+  ]
+}

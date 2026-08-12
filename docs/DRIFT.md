@@ -138,9 +138,11 @@ identical clusterings, so overlaps land at 1.0 or near 0 and almost nothing sits
 near the boundary. The threshold is a safeguard for the rare genuine reshuffle,
 not a dial deciding most outcomes.
 
-It is not idle, though. This repository's own history contains a real borderline
-case at **57%** — a module that genuinely stopped being one unit, correctly
-reported as `module-restructured` rather than as a rename.
+It is not idle, though. This repository's own history contains real borderline
+cases at **57%** — modules that genuinely stopped being one unit, correctly
+reported as `module-restructured` rather than as a rename. Two such cases turned
+up across the full 84-commit history (see "Deferred items" below); one is now a
+regression fixture.
 
 Pairing is greedy on best overlap rather than optimal assignment. With the
 measured stability the two agree in every real case, and greedy is inspectable
@@ -328,10 +330,14 @@ history where a commit does break a rule: 0.0 → 150.0 with the cause named.
 
 ## Deferred items
 
-Recorded, not acted on. Both are small; both are worth doing properly rather
-than in passing.
+Recorded, not acted on when originally written. One is now done; the other
+still is not.
 
 ### 1. Preserve the zod circular-import diff as a first-class validation case
+
+**Still open.** Recorded in `docs/FINDINGS.md` as its own evidence entry, but
+the terminal output has not been captured verbatim and the shas are not yet
+pinned to a re-runnable script.
 
 The strongest evidence this project has produced is the diff of zod's
 `fix(v4): break circular import between classic schemas and iso (#5275)`:
@@ -361,24 +367,23 @@ same diff), and give it a named section — "Real-world validation" — that a
 reader can find without reading the whole document. Pin the commit shas so the
 case can be re-run.
 
-### 2. A fixture test for the 57% borderline restructure
+### 2. A fixture test for the 57% borderline restructure — **done, Week 12**
 
-`RENAME_OVERLAP_THRESHOLD` is 0.6, and this repository's own history contains
-the only genuine boundary case observed anywhere: a module that scored **57%**
-overlap and was correctly reported as `module-restructured` rather than as a
-rename.
+`RENAME_OVERLAP_THRESHOLD` is 0.6. Walking all 84 adjacent snapshot pairs of
+this repository's own history (not just the ones known about when this was
+first written) found the threshold decided the outcome **twice**, not once:
+`ea2a30b -> f10be44` and `2df9a06 -> c93a763`, both landing at 57%. "The only
+genuine boundary case observed anywhere" undersold it slightly — it should
+have read "the only *kind* of boundary case", since there were two instances
+of it.
 
-That matters because adjacent clusterings are otherwise identical — overlaps
-land at 1.0 or near 0, so **the threshold is almost never exercised in the range
-where it actually decides something**. Unit tests cover the boundary with
-hand-built module sets, which is worth having but is again the author checking
-their own arithmetic.
-
-**To do:** freeze that commit pair's two snapshots as a fixture and assert the
-57% case classifies as a restructure. Cheap, and it converts the one real
-boundary observation into a regression test before the history grows past it.
-
-Neither blocks Week 10.
+`src/conformance/diff.test.ts` now freezes the more central of the two
+(`2df9a06 -> c93a763`, `feat(store,conformance): snapshots and semantic
+diff`) as a dedicated test: the real 30-file and 17-file module membership
+lists, asserting `module-restructured` and the `57%` wording. Converts the
+real boundary observation into a regression test rather than only unit tests
+against hand-built module sets, which — however useful — were the author
+checking their own arithmetic.
 
 ---
 

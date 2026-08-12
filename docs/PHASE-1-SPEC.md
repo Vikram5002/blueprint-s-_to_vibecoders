@@ -355,9 +355,17 @@ See `docs/MCP.md`.
       references.
 - [x] **A real MCP host attached** — the official MCP Inspector v2.1.0, not the
       scripted client. Discovery plus a real `check_import` returning `forbidden`
-      with the sentence and its location. `requests` and `pyright` were not
-      re-checked (quota, not obstacle); Claude Code's CLI is not on PATH in this
-      environment, so the Inspector stood in as the independent host.
+      with the sentence and its location, on zod and a constructed breach repo.
+      Claude Code's CLI is not on PATH in this environment, so the Inspector
+      stood in as the independent host.
+- [ ] **`requests`/`pyright` through the Inspector specifically.** Retried Week
+      12: the Inspector's `--cli` mode hung indefinitely against both, no
+      diagnosable output — a technical obstacle, not just quota. Re-checked at
+      the scripted-client tier instead (`scripts/mcp-check.mjs`): `check_import`
+      on both correctly returned `cannot-determine`, not a false `allowed`,
+      under today's real quota-exhausted state. See `docs/MCP.md` → "Still not
+      verified". Left unticked because the Inspector-host and successful-
+      extraction cases are still open, not because nothing was tried.
 
 **A third bug, found by the real host:** the server analysed the whole repository
 before answering `initialize`, and a real host times the connection out at 15s.

@@ -312,9 +312,31 @@ have changed, and it would have spent a fresh API call. Same 0 constraints, same
 
 ## Still not verified
 
-- **`requests` and `pyright` were not re-checked.** Only zod was, being closest
-  in scale to this project and the one with independent ground truth to check
-  against. The remaining two are a quota cost, not a technical obstacle.
+- **`requests` and `pyright` re-checked, but only at the scripted-client tier,
+  not through the Inspector.** Retried in Week 12: `npx
+  @modelcontextprotocol/inspector --cli` hung indefinitely against both repos
+  with no diagnosable output (not a quota message, not a timeout, not an error
+  — the process simply never returned; two `node` processes remained resident,
+  one holding ~2GB, which was not investigated further). That is a genuine
+  technical obstacle on top of the quota one the previous pass named, and it
+  is now recorded as such rather than re-asserted as "quota, not obstacle".
+  Fell back to `scripts/mcp-check.mjs`, a minimal spawned-process JSON-RPC
+  client — the same tier as "the scripted client used earlier" this document
+  already distinguishes from the Inspector. With today's daily quota already
+  exhausted on all three Gemini models, `check_import` on both repos returned
+  the correct **`cannot-determine`**, not a false `allowed`:
+  - `requests` (6 modules, 37 files — matches `docs/LABELLING.md` exactly):
+    *"the rules are incomplete: 1 document(s) could not be read... this is
+    'we did not finish reading', not 'this repository states nothing'."*
+  - `pyright` (46 modules, 1,933 files): same wording, *"2 document(s) could
+    not be read"*.
+
+  This confirms the Week 11 bug #1 fix generalises to both reference repos
+  under real quota-exhausted conditions — new coverage that did not exist
+  before. What remains genuinely unverified is `check_import` against
+  **successfully extracted** constraints on `requests`/`pyright` (quota
+  still would not permit it today) and an **independently-authored host**
+  attached to either (the Inspector hang blocks that specifically).
 - **The Haiku/Sonnet label comparison remains unrun** (no `ANTHROPIC_API_KEY`),
   as since Week 5.
 - **Claude Code was not the host.** Its CLI is not on PATH in this environment
