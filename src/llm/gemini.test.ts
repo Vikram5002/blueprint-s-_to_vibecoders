@@ -5,6 +5,7 @@ import {
   createGeminiProvider,
   DEFAULT_GEMINI_MODEL,
   MAX_ATTEMPTS,
+  REQUEST_TIMEOUT_MS,
   MAX_BACKOFF_MS,
   readGeminiApiKey,
   redact,
@@ -429,6 +430,70 @@ describe('rate limits are retried, never swallowed', () => {
     expect(backoffFor(50, null)).toBe(MAX_BACKOFF_MS);
     expect(backoffFor(1, 10_000)).toBe(10_000);
     expect(backoffFor(1, 999_999)).toBe(MAX_BACKOFF_MS);
+  });
+});
+
+describe('a stalled connection cannot wedge the run', () => {
+  /**
+   * Node's fetch has no default timeout. Without one, a connection that stalls
+   * without closing blocks forever, and because the pipeline awaits each call
+   * in turn, one stalled request wedges the whole run silently — no error, no
+   * log line, no CPU.
+   *
+   * This happened: the first corpus collection run hung on prisma/prisma for
+   * over twenty minutes at 0.016s of CPU per minute. The Bluesminds adapter
+   * had a timeout from the start; this one, the default, did not.
+   */
+  it('sends an abort signal with every request', async () => {
+    let seen;
+    const fetchImpl = (async (_url, init) => {
+      seen = init;
+      return new Response(
+        JSON.stringify({
+          candidates: [{ content: { parts: [{ text: '{"label":"x"}' }] }, finishReason: 'STOP' }],
+          usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5 },
+        }),
+        { status: 200 },
+      );
+    });
+
+    await createGeminiProvider({ apiKey: 'k', fetchImpl }).complete({
+      system: 's',
+      user: 'u',
+      maxOutputTokens: 64,
+    });
+
+    expect(seen?.signal).toBeDefined();
+    expect(seen?.signal.aborted).toBe(false);
+  });
+
+  it('treats a timeout as retryable rather than fatal', async () => {
+    // AbortSignal.timeout rejects the fetch; the existing catch turns that
+    // into `unavailable`, which the retry loop already backs off and retries.
+    let calls = 0;
+    const fetchImpl = (async () => {
+      calls += 1;
+      throw Object.assign(new Error('The operation was aborted due to timeout'), {
+        name: 'TimeoutError',
+      });
+    });
+
+    const result = await createGeminiProvider({
+      apiKey: 'k',
+      fetchImpl,
+      sleep: async () => undefined,
+    }).complete({ system: 's', user: 'u', maxOutputTokens: 64 });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.kind).toBe('unavailable');
+    // Retried, not abandoned on the first stall.
+    expect(calls).toBe(MAX_ATTEMPTS);
+  });
+
+  it('bounds the timeout well above a normal response', () => {
+    // Only fires on a dead connection: flash answers in 1-3s, and the slowest
+    // observed anywhere in this project was ~16s.
+    expect(REQUEST_TIMEOUT_MS).toBeGreaterThanOrEqual(60_000);
   });
 });
 

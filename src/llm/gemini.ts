@@ -65,6 +65,27 @@ const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
  */
 const THINKING_HEADROOM_TOKENS = 8_192;
 
+/**
+ * Wall-clock ceiling on a single request.
+ *
+ * Node's `fetch` has **no default timeout**, so a connection that stalls
+ * without closing blocks forever — and because the pipeline awaits each call
+ * in turn, one stalled request wedges the entire run with no error, no log
+ * line and no CPU use.
+ *
+ * That is not hypothetical: it hung the first corpus collection run on
+ * prisma/prisma for over twenty minutes at 0.016s of CPU per minute, which is
+ * what a process blocked on a socket looks like. The Bluesminds adapter was
+ * given a timeout for exactly this reason when it was written; this adapter,
+ * which is the default and the one collection actually uses, never had one.
+ *
+ * 120s is far above a normal flash response (1-3s) and above the slowest
+ * observed (~16s), so it only fires on a genuinely dead connection. A timeout
+ * surfaces as a network error, which the retry loop below already treats as
+ * retryable — so a transient stall costs one backoff, not the run.
+ */
+export const REQUEST_TIMEOUT_MS = 120_000;
+
 /** Attempts per request, including the first. */
 export const MAX_ATTEMPTS = 5;
 /** First backoff step; doubles each retry unless the server names a delay. */
@@ -211,6 +232,7 @@ export function createGeminiProvider(options: GeminiOptions): CompletionProvider
               'content-type': 'application/json',
             },
             body: JSON.stringify(buildRequestBody(request, { withThinkingConfig: thinkingConfigSupported })),
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
           });
         } catch (cause) {
           lastFailure = {

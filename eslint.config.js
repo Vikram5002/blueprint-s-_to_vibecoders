@@ -8,6 +8,12 @@ export const config = tseslint.config(
     ignores: [
       'dist/**',
       'node_modules/**',
+      // Working directory: the database, caches, and — during a corpus run —
+      // full clones of other people's repositories. Linting those reports
+      // thousands of errors in code this project does not own, and turns
+      // `npm run lint` into a coin flip depending on whether collection is
+      // running.
+      '.vibe/**',
       'ui/**',
       'coverage/**',
       'src/parser/fixtures/**',
