@@ -30,6 +30,10 @@ import { createSnapshotStore } from '../store/snapshots.js';
 import { startServer, type RunningServer } from '../server/server.js';
 import { serveMcp } from '../mcp/server.js';
 import { writeExports, currentCommit } from '../export/write.js';
+import { writeFile } from 'node:fs/promises';
+import { posix } from 'node:path';
+import { renderBlueprintSpec, blueprintConstraintsJson } from '../blueprint/spec.js';
+import type { CompileBlueprintResult } from '../blueprint/dsl.js';
 
 export interface CliIo {
   readonly writeOut: (line: string) => void;
@@ -78,6 +82,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
 
   const run = await runPipeline({
     root: options.targetPath,
+    ...(options.blueprintFile === null ? {} : { blueprintFile: options.blueprintFile }),
     ...(showProgress
       ? {
           onProgress: (progress) =>
@@ -97,8 +102,20 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     return EXIT_FAILURE;
   }
 
-  const { analysis, labels, correctionOutcomes, intent, conformance, db, store } = run.value;
+  const { analysis, labels, correctionOutcomes, intent, conformance, db, store, blueprintCompile } = run.value;
   const { walk: result, ingest: summary, parse, parseSummary, graph, clustering } = analysis;
+
+  if (blueprintCompile !== null) {
+    const written = await writeBlueprintOutputs(result.root, blueprintCompile);
+    for (const file of written) io.writeErr(`  wrote ${file.path} (${file.bytes} bytes)`);
+    io.writeErr(
+      `  Blueprint: ${blueprintCompile.constraints.length} constraint(s) compiled, ` +
+        `${blueprintCompile.rejected.length} line(s) rejected`,
+    );
+    for (const rejection of blueprintCompile.rejected) {
+      io.writeErr(`    line ${rejection.line} (${rejection.reason}): ${rejection.text}`);
+    }
+  }
 
   if (options.json) {
     io.writeOut(
@@ -197,6 +214,35 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
   return EXIT_OK;
 }
 
+interface WrittenFile {
+  readonly path: string;
+  readonly bytes: number;
+}
+
+/**
+ * Part B: the two agent-consumable outputs from one compiled blueprint,
+ * written into `.vibe/` alongside the database rather than into the
+ * repository proper — unlike `--export`'s AGENTS.md/blueprint.html, these are
+ * not meant to be committed, they are regenerated from the DSL file on every
+ * `--blueprint` run.
+ */
+async function writeBlueprintOutputs(root: string, compiled: CompileBlueprintResult): Promise<WrittenFile[]> {
+  const dir = posix.join(root.replace(/\\/g, '/'), '.vibe');
+  const specPath = posix.join(dir, 'blueprint-spec.md');
+  const jsonPath = posix.join(dir, 'blueprint-constraints.json');
+
+  const spec = renderBlueprintSpec(compiled.constraints, compiled.rejected);
+  const json = blueprintConstraintsJson(compiled.constraints);
+
+  await writeFile(specPath, spec, 'utf8');
+  await writeFile(jsonPath, json, 'utf8');
+
+  return [
+    { path: specPath, bytes: Buffer.byteLength(spec, 'utf8') },
+    { path: jsonPath, bytes: Buffer.byteLength(json, 'utf8') },
+  ];
+}
+
 /**
  * Holds the process open until Ctrl+C, then closes the listener so the port is
  * released rather than left to the OS on exit.
@@ -225,7 +271,7 @@ async function waitForShutdown(server: RunningServer, io: CliIo): Promise<void> 
  * the server, and formats nothing.
  */
 async function runMcp(
-  options: { readonly targetPath: string; readonly exportFiles: boolean },
+  options: { readonly targetPath: string; readonly exportFiles: boolean; readonly blueprintFile: string | null },
   io: CliIo,
   version: string,
 ): Promise<number> {
@@ -238,10 +284,19 @@ async function runMcp(
    * handshake, which is what a host is timing.
    */
   const analysis = (async () => {
-    const run = await runPipeline({ root: options.targetPath });
+    const run = await runPipeline({
+      root: options.targetPath,
+      ...(options.blueprintFile === null ? {} : { blueprintFile: options.blueprintFile }),
+    });
     if (!run.ok) throw new Error(run.error.message);
 
-    const { analysis: parsed, labels, correctionOutcomes, intent, conformance, db, store } = run.value;
+    const { analysis: parsed, labels, correctionOutcomes, intent, conformance, db, store, blueprintCompile } =
+      run.value;
+
+    if (blueprintCompile !== null) {
+      const written = await writeBlueprintOutputs(parsed.walk.root, blueprintCompile);
+      for (const file of written) io.writeErr(`  wrote ${file.path} (${file.bytes} bytes)`);
+    }
 
     const context = {
       root: parsed.walk.root,

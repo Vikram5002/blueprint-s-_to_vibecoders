@@ -15,7 +15,7 @@ import { posix } from 'node:path';
 
 export type BlueprintDatabase = Database.Database;
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export function databasePathFor(root: string): string {
   return posix.join(root.replace(/\\/g, '/'), '.vibe', 'blueprint.db');
@@ -101,6 +101,19 @@ function migrate(db: BlueprintDatabase): void {
     -- History is always read in commit-date order.
     CREATE INDEX IF NOT EXISTS snapshots_by_date
       ON snapshots (committed_at, commit_sha);
+
+    -- v2 -> v3 adds the authored blueprint. One row per compiled Constraint,
+    -- content-derived id (same hash as dsl.ts's constraintId), so re-authoring
+    -- the same rule text is a no-op rather than an accumulating duplicate. The
+    -- whole set is replaced together on each --blueprint run (see
+    -- blueprint-store.ts's replace()) because a blueprint is authored as one
+    -- file, not accreted line by line across sessions -- a line deleted from
+    -- the file must disappear from the store, not linger as a stale rule.
+    CREATE TABLE IF NOT EXISTS blueprint_constraints (
+      id          TEXT PRIMARY KEY,
+      body        TEXT NOT NULL,
+      created_at  TEXT NOT NULL
+    );
   `);
 
   db.pragma(`user_version = ${SCHEMA_VERSION}`);

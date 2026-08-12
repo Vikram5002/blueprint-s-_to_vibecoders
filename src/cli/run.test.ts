@@ -93,6 +93,75 @@ describe('runCli', () => {
     expect(existsSync(missing)).toBe(false);
   });
 
+  describe('--blueprint (Type-1 authoring)', () => {
+    it('compiles an authored rule, reports a violation for it, and writes the spec/JSON outputs', async () => {
+      const root = await makeRepo({
+        'api/a.ts': "import { b } from '../db/b';\nexport const a = b;\n",
+        'db/b.ts': 'export const b = 1;\n',
+      });
+      const blueprintPath = join(root, 'blueprint.txt');
+      await writeFile(blueprintPath, 'api must not import db\n', 'utf8');
+
+      const { io, out } = captureIo();
+      const code = await runCli([root, '--json', `--blueprint=${blueprintPath}`], io, '0.1.0');
+
+      expect(code).toBe(EXIT_OK);
+      const payload = JSON.parse(out.join('\n')) as {
+        intent: { constraints: { source: { type: string } }[] };
+        conformance: { violations: { constraint: { relation: string; source: { type: string } } }[] };
+      };
+
+      const authored = payload.intent.constraints.filter((c) => c.source.type === 'user-authored');
+      expect(authored).toHaveLength(1);
+
+      const authoredViolations = payload.conformance.violations.filter(
+        (v) => v.constraint.source.type === 'user-authored',
+      );
+      expect(authoredViolations).toHaveLength(1);
+      expect(authoredViolations[0]?.constraint.relation).toBe('must-not-import');
+
+      expect(existsSync(join(root, '.vibe', 'blueprint-spec.md'))).toBe(true);
+      expect(existsSync(join(root, '.vibe', 'blueprint-constraints.json'))).toBe(true);
+    });
+
+    it('persists the authored constraint into a later run that omits --blueprint', async () => {
+      const root = await makeRepo({
+        'api/a.ts': "import { b } from '../db/b';\nexport const a = b;\n",
+        'db/b.ts': 'export const b = 1;\n',
+      });
+      const blueprintPath = join(root, 'blueprint.txt');
+      await writeFile(blueprintPath, 'api must not import db\n', 'utf8');
+
+      const first = captureIo();
+      await runCli([root, '--json', `--blueprint=${blueprintPath}`], first.io, '0.1.0');
+
+      // A later run — no --blueprint flag at all — must still see the rule
+      // that was authored and stored in the previous run. This is the
+      // verification loop from Part D: author once, then every subsequent
+      // run (including an agent's) checks against it automatically.
+      const second = captureIo();
+      const code = await runCli([root, '--json'], second.io, '0.1.0');
+
+      expect(code).toBe(EXIT_OK);
+      const payload = JSON.parse(second.out.join('\n')) as {
+        intent: { constraints: { source: { type: string } }[] };
+      };
+      expect(payload.intent.constraints.some((c) => c.source.type === 'user-authored')).toBe(true);
+    });
+
+    it('reports a line that failed to compile without crashing the run', async () => {
+      const root = await makeRepo({ 'a.ts': '' });
+      const blueprintPath = join(root, 'blueprint.txt');
+      await writeFile(blueprintPath, 'this is not a valid rule\n', 'utf8');
+
+      const { io, err } = captureIo();
+      const code = await runCli([root, '--no-serve', `--blueprint=${blueprintPath}`], io, '0.1.0');
+
+      expect(code).toBe(EXIT_OK);
+      expect(err.join('\n')).toContain('1 line(s) rejected');
+    });
+  });
+
   it('prints help and the version without scanning', async () => {
     const help = captureIo();
     expect(await runCli(['--help'], help.io, '0.1.0')).toBe(EXIT_OK);

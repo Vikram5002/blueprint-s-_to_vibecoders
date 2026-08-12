@@ -10,17 +10,19 @@ describe('detectLanguage', () => {
     expect(detectLanguage('a.mjs')).toBe('javascript');
     expect(detectLanguage('a.cjs')).toBe('javascript');
     expect(detectLanguage('a.py')).toBe('python');
+    expect(detectLanguage('a.php')).toBe('php');
   });
 
   it('exposes exactly the spec extension list', () => {
     expect([...SUPPORTED_EXTENSIONS].sort()).toEqual(
-      ['.cjs', '.js', '.jsx', '.mjs', '.py', '.ts', '.tsx'].sort(),
+      ['.cjs', '.js', '.jsx', '.mjs', '.php', '.py', '.ts', '.tsx'].sort(),
     );
   });
 
   it('is case-insensitive', () => {
     expect(detectLanguage('Component.TSX')).toBe('typescript');
     expect(detectLanguage('SCRIPT.PY')).toBe('python');
+    expect(detectLanguage('INDEX.PHP')).toBe('php');
   });
 
   it('returns null for unsupported and extensionless files', () => {

@@ -10,13 +10,16 @@
  * data that is kept entirely separate from the graph. Week 8 compares the two;
  * this week they only ever sit side by side.
  */
-import { stat } from 'node:fs/promises';
+import { stat, readFile } from 'node:fs/promises';
 import { analyseRepository, type Analysis, type AnalysisFailure, type AnalysisProgress } from './analyse.js';
 import { labelRepository } from './label-repository.js';
-import { extractIntent, type IntentRunResult } from './intent.js';
+import { extractIntent, candidatesFrom, type IntentRunResult } from './intent.js';
 import { checkConformance } from './conformance.js';
 import { openDatabase, databasePathFor, type BlueprintDatabase } from '../store/database.js';
 import { createCorrectionsStore, type CorrectionsStore } from '../store/corrections-store.js';
+import { createBlueprintStore } from '../store/blueprint-store.js';
+import { mergeAuthoredConstraints } from '../blueprint/merge.js';
+import { compileBlueprint, type CompileBlueprintResult } from '../blueprint/dsl.js';
 import { err, ok, type Result } from '../types/result.js';
 import type { LabelSet } from '../types/labels.js';
 import type { Correction, CorrectionOutcome } from '../types/corrections.js';
@@ -46,6 +49,17 @@ export interface RunOptions {
   readonly onProgress?: (progress: AnalysisProgress) => void;
   readonly onLabelProgress?: (done: number, total: number, moduleId: string) => void;
   readonly onIntentProgress?: (done: number, total: number, location: string) => void;
+  /**
+   * Path to a blueprint DSL file to (re-)compile and persist this run.
+   *
+   * Authoring is deliberately a side effect of an ordinary run rather than a
+   * separate command: compiling needs the same resolved modules extraction
+   * uses, and persisting immediately means the very next run — including an
+   * MCP session with no `--blueprint` flag at all — sees the authored rules
+   * without the user having to re-supply the file. Omit to leave whatever was
+   * last saved untouched.
+   */
+  readonly blueprintFile?: string;
 }
 
 export interface RunResult {
@@ -60,6 +74,8 @@ export interface RunResult {
   /** Open handle, so a server can accept corrections during the session. */
   readonly db: BlueprintDatabase;
   readonly store: CorrectionsStore;
+  /** Present only when `blueprintFile` was given — this run's compile output. */
+  readonly blueprintCompile: CompileBlueprintResult | null;
 }
 
 export async function runPipeline(options: RunOptions): Promise<Result<RunResult, AnalysisFailure>> {
@@ -111,7 +127,7 @@ export async function runPipeline(options: RunOptions): Promise<Result<RunResult
     ...(options.onLabelProgress === undefined ? {} : { onProgress: options.onLabelProgress }),
   });
 
-  const intent = await extractIntent({
+  const extracted = await extractIntent({
     root: options.root,
     clustering: analysed.value.clustering,
     labels,
@@ -119,6 +135,30 @@ export async function runPipeline(options: RunOptions): Promise<Result<RunResult
     ...(options.env === undefined ? {} : { env: options.env }),
     ...(options.onIntentProgress === undefined ? {} : { onProgress: options.onIntentProgress }),
   });
+
+  // Type-1: constraints a person authored directly, persisted from the last
+  // `--blueprint` run. Merged here — the one point where "authored" and
+  // "extracted" stop being two systems — so everything downstream
+  // (conformance, MCP's get_constraints/check_import, the UI) sees one
+  // constraint set and cannot tell the two apart except by source.type.
+  const blueprintStore = createBlueprintStore(db);
+  let blueprintCompile: CompileBlueprintResult | null = null;
+
+  if (options.blueprintFile !== undefined) {
+    const text = await readFile(options.blueprintFile, 'utf8');
+    const directories = [...new Set(analysed.value.clustering.modules.flatMap((m) => m.directories))].sort();
+    blueprintCompile = compileBlueprint({
+      text,
+      location: options.blueprintFile,
+      modules: candidatesFrom(analysed.value.clustering, labels),
+      directories,
+    });
+    // Replaces the whole stored blueprint: a rule deleted from the file must
+    // disappear from what an agent sees next, not linger as a stale entry.
+    blueprintStore.replace(blueprintCompile.constraints);
+  }
+
+  const intent = mergeAuthoredConstraints(extracted, blueprintStore.list());
 
   // Last, and reads only what the earlier stages produced. Comparing the two
   // halves cannot change either of them.
@@ -141,5 +181,6 @@ export async function runPipeline(options: RunOptions): Promise<Result<RunResult
     conformance,
     db,
     store,
+    blueprintCompile,
   });
 }

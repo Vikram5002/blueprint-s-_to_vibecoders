@@ -1,0 +1,13 @@
+{
+  "name": "fixture/php-psr4-split-prefix",
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/App"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "App\\": "test/App/"
+    }
+  }
+}

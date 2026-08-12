@@ -25,6 +25,17 @@ describe('parseArguments', () => {
       exportFiles: false,
       help: false,
       version: false,
+      blueprintFile: null,
+    });
+  });
+
+  describe('--blueprint', () => {
+    it('parses a path', () => {
+      expect(parse(['--blueprint=blueprint.txt']).blueprintFile).toBe('blueprint.txt');
+    });
+
+    it('is null when omitted', () => {
+      expect(parse([]).blueprintFile).toBeNull();
     });
   });
 

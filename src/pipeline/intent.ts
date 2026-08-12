@@ -176,7 +176,7 @@ function withLineNumber(constraint: Constraint, documents: ReadonlyMap<string, I
   return constraint;
 }
 
-function candidatesFrom(clustering: ClusteringResult, labels: LabelSet): ResolutionCandidate[] {
+export function candidatesFrom(clustering: ClusteringResult, labels: LabelSet): ResolutionCandidate[] {
   return clustering.modules.map((module) => ({
     moduleId: module.id,
     label: labels.labels.get(module.id)?.label ?? module.label,
@@ -221,7 +221,7 @@ function emptySummary(documents: number, degraded: boolean): ExtractionSummary {
   };
 }
 
-function summarise(
+export function summarise(
   documents: number,
   architecturalStatements: number,
   constraints: readonly Constraint[],

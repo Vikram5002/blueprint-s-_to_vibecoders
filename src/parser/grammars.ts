@@ -13,15 +13,22 @@ import { fileURLToPath } from 'node:url';
 import { Language, Parser } from 'web-tree-sitter';
 import { err, ok, type Result } from '../types/result.js';
 
-export type GrammarKey = 'typescript' | 'tsx' | 'javascript' | 'python';
+export type GrammarKey = 'typescript' | 'tsx' | 'javascript' | 'python' | 'php';
 
-export const GRAMMAR_KEYS: readonly GrammarKey[] = ['typescript', 'tsx', 'javascript', 'python'];
+export const GRAMMAR_KEYS: readonly GrammarKey[] = [
+  'typescript',
+  'tsx',
+  'javascript',
+  'python',
+  'php',
+];
 
 const GRAMMAR_FILENAMES: Readonly<Record<GrammarKey, string>> = {
   typescript: 'tree-sitter-typescript.wasm',
   tsx: 'tree-sitter-tsx.wasm',
   javascript: 'tree-sitter-javascript.wasm',
   python: 'tree-sitter-python.wasm',
+  php: 'tree-sitter-php.wasm',
 };
 
 /**
@@ -37,6 +44,7 @@ const EXTENSION_TO_GRAMMAR: ReadonlyMap<string, GrammarKey> = new Map([
   ['.mjs', 'javascript'],
   ['.cjs', 'javascript'],
   ['.py', 'python'],
+  ['.php', 'php'],
 ]);
 
 export interface GrammarLoadError {

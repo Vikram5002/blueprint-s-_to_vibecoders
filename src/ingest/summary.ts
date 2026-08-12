@@ -23,7 +23,7 @@ export interface IngestSummary {
 }
 
 export function summariseWalk(result: WalkResult): IngestSummary {
-  const byLanguage: Record<Language, number> = { typescript: 0, javascript: 0, python: 0 };
+  const byLanguage: Record<Language, number> = { typescript: 0, javascript: 0, python: 0, php: 0 };
   let totalBytes = 0;
 
   for (const file of result.files) {

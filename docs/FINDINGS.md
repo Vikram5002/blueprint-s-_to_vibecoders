@@ -12,6 +12,13 @@ measured in the source document named beside it. If this file and its source
 ever disagree, the source is correct and this file is stale — fix this file,
 not the claim.
 
+**PHP support postdates every finding below.** Both corpora (A and B) were
+collected and measured on TypeScript, JavaScript and Python repositories only.
+PHP support was added afterward (see `docs/PHASE-1-SPEC.md`, "PHP support")
+and neither corpus was re-run — no finding, number or ratio in this file
+reflects PHP in any way. A future corpus run that includes PHP repositories
+would be a new measurement, not a re-derivation of the numbers here.
+
 ---
 
 ## Finding 1 — Documentation describes architecture roughly 20× more often than it constrains it

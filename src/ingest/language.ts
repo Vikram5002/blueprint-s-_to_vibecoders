@@ -1,13 +1,19 @@
 /**
  * Language detection by file extension.
  *
- * CLAUDE.md: do not add languages beyond TypeScript, JavaScript and Python.
- * The extension list is exactly the one in docs/PHASE-1-SPEC.md, Week 1.
+ * CLAUDE.md: do not add languages beyond TypeScript, JavaScript, Python and PHP.
+ * PHP was added after Week 1; the extension list otherwise follows
+ * docs/PHASE-1-SPEC.md, Week 1.
  */
 
-export type Language = 'typescript' | 'javascript' | 'python';
+export type Language = 'typescript' | 'javascript' | 'python' | 'php';
 
-export const SUPPORTED_LANGUAGES: readonly Language[] = ['typescript', 'javascript', 'python'];
+export const SUPPORTED_LANGUAGES: readonly Language[] = [
+  'typescript',
+  'javascript',
+  'python',
+  'php',
+];
 
 const EXTENSION_TO_LANGUAGE = new Map<string, Language>([
   ['.ts', 'typescript'],
@@ -17,6 +23,7 @@ const EXTENSION_TO_LANGUAGE = new Map<string, Language>([
   ['.mjs', 'javascript'],
   ['.cjs', 'javascript'],
   ['.py', 'python'],
+  ['.php', 'php'],
 ]);
 
 export const SUPPORTED_EXTENSIONS: readonly string[] = [...EXTENSION_TO_LANGUAGE.keys()];

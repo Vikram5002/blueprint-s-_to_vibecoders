@@ -21,6 +21,7 @@ const LANGUAGE_LABELS: Readonly<Record<Language, string>> = {
   typescript: 'TypeScript',
   javascript: 'JavaScript',
   python: 'Python',
+  php: 'PHP',
 };
 
 export function formatHelp(binaryName: string): string {
@@ -43,6 +44,10 @@ export function formatHelp(binaryName: string): string {
     '      --export     Write AGENTS.md and blueprint.html into the repository',
     '      --mcp        Serve architecture context to a coding agent over MCP',
     '                   (stdio, read-only, no port opened)',
+    '      --blueprint=FILE',
+    '                   Compile a blueprint DSL file (Type-1 authoring) and',
+    '                   persist it; merged into every run, including --mcp,',
+    '                   until authored again',
     '',
     'Phase 1: ingest and parse. This tool measures. It never generates code.',
   ].join('\n');

@@ -395,6 +395,85 @@ does not read itself back in.
 
 ---
 
+## PHP support (added 2026-08-12, after both reference corpora)
+
+**Deliverable:** PHP joins TypeScript, JavaScript and Python as a supported language,
+following the same three-stage discipline as Week 2/3: grammar → extractor → resolver,
+tests before the resolver.
+
+This lands after corpus A and corpus B were both collected and measured (see
+`docs/FINDINGS.md`); neither corpus was re-run, so no finding in that document changes.
+It is a straightforward scope expansion, not a revision of prior measurements.
+
+- [x] **Grammar.** `@vscode/tree-sitter-wasm` does not ship PHP, so
+      `tree-sitter-php.wasm` is vendored from `@repomix/tree-sitter-wasms` 0.1.17
+      instead — a maintained fork of `tree-sitter-wasms`. The direct `tree-sitter-wasms`
+      package was tried first and, per the existing note in `grammars/README.md`, fails
+      to load against `web-tree-sitter` 0.26 for every grammar tried, PHP included. The
+      `@repomix` fork was verified independently before being trusted: `Language.load`
+      succeeds and reports **ABI version 15** (matching the other four grammars), and a
+      real `<?php … ?>` parse was inspected by hand to confirm the expected node shapes
+      (`namespace_use_declaration`, `require_once_expression`, etc.) before any extractor
+      code was written against them. `src/parser/grammars.test.ts` now loads all five
+      grammars on every test run.
+- [x] **Extractor** (`src/parser/extract-php.ts`): `use` declarations (plain, aliased,
+      `use function`, `use const`, grouped `use A\{B, C as D}`), and
+      `require`/`require_once`/`include`/`include_once`. A require/include is only
+      extracted when it resolves to a literal string — `__DIR__ . '/x.php'` and
+      `dirname(__FILE__) . '/x.php'` have their non-literal prefix stripped, leaving the
+      literal suffix as the specifier; a wholly dynamic target (`require $path`, string
+      interpolation) has no evidence to build a DERIVED edge from and is skipped, same
+      reasoning as Python's requirement of a real dotted name. `namespace` declarations
+      are walked over without producing a record — PSR-4 resolution needs only the FQCN
+      being imported plus composer.json's prefix map, never the importing file's own
+      declared namespace. 19 extractor tests.
+- [x] **Resolver** (`src/graph/resolve-php.ts`): two independent paths, matching the two
+      import kinds.
+  - `php-use` (a FQCN) resolves through composer.json's `autoload["psr-4"]` and
+    `autoload-dev["psr-4"]` prefix maps — a pure string/path computation, not a directory
+    scan, since PSR-4 is a convention rather than something to discover. A FQCN matching
+    no registered prefix is EXTERNAL (`php-composer-package`) — a vendor package or a PHP
+    core class. A FQCN matching a prefix but pointing at no file is UNRESOLVED
+    (`php-namespace-target-missing`), never EXTERNAL, same anti-pattern-avoidance as
+    Python's `looksInternal` check.
+  - `php-require` (a literal path) resolves relative to the importing file's own
+    directory, same as a TS relative import. Anything under `vendor/` is EXTERNAL
+    (`php-composer-package`) regardless of whether the file is present, since vendor
+    dependency internals are out of scope the same way `node_modules/` internals are.
+  - **A real defect surfaced during acceptance measurement, not during fixture testing:**
+    `nikic/PHP-Parser`'s own `composer.json` registers the *same* PSR-4 prefix
+    (`PhpParser\`) under both `autoload` (`lib/PhpParser`) and `autoload-dev`
+    (`test/PhpParser/`). The first implementation kept these as two independent
+    candidate entries and gave up after the first one failed, so every test-namespace
+    class resolved to UNRESOLVED. Fixed by merging entries that share a prefix into one,
+    trying every registered directory before giving up — regression-tested by
+    `php-psr4-split-prefix` in `resolve-php.test.ts`, which reproduces the shape without
+    depending on the real repo being present. This is the PHP equivalent of the zod
+    `alias-target-missing` story in Week 3: the acceptance run against a real repo, not
+    the fixtures, is what found it.
+  - 4 fixture repos (`php-psr4`, `php-psr4-split-prefix`, `php-relative-require`,
+    `php-vendor`), 15 resolver tests.
+
+**Acceptance:** resolution rate above 95% on at least two real PHP repos, same threshold
+as Week 3.
+
+**Acceptance met.**
+
+| Repo | Files | Nodes / edges | Imports | Unresolved | Rate |
+|---|---|---|---|---|---|
+| `Seldaek/monolog` | 217 | 217 / 401 | 588 | 0 | **100.0%** |
+| `nikic/PHP-Parser` | 341 | 341 / 752 | 779 | 3 | **99.6%** |
+
+The 3 remaining unresolved imports were inspected. None is a resolver defect: all three
+are in `tools/fuzzing/generateCorpus.php`, `require $testDir . '/…'` where `$testDir` is
+a runtime variable with no statically-knowable value. The extractor correctly extracts
+only the literal `/…` suffix (there is no other literal information available), the
+resolver correctly cannot find a file at that guessed path relative to the importing
+file, and the import is honestly reported UNRESOLVED rather than silently guessed at —
+exactly the behaviour the Week 3 EXTERNAL/UNRESOLVED discipline exists to produce.
+
+---
+
 ## Suggested build order within each week
 
 Build the deterministic core first and the UI last. The UI is the most tempting thing to

@@ -27,7 +27,11 @@ export type ImportKind =
   /** Python `import x` / `import x.y as z` */
   | 'python-import'
   /** Python `from x import y`, including relative forms */
-  | 'python-from';
+  | 'python-from'
+  /** PHP `use App\Models\User;`, including function/const/grouped/aliased forms */
+  | 'php-use'
+  /** PHP `require`/`require_once`/`include`/`include_once` */
+  | 'php-require';
 
 export interface ImportedName {
   /** The name as exported by the target module. `default` for a default import. */

@@ -21,10 +21,18 @@ and the agent-facing surfaces — a read-only MCP server (`--mcp`) whose `check_
 answers "am I allowed to import this?" *before* the line is written, plus regenerated
 `AGENTS.md` and a self-contained HTML report (`--export`).
 
+**Type-1 (Blueprint-first authoring): complete for constraint-based authoring
+(Part A.1).** `--blueprint=<file>` compiles a small DSL ("domain must not import
+infra") into the same `Constraint` shape extraction produces, persists it, and merges
+it into every run — CLI, JSON, MCP — so `check_import` can answer against a rule a
+person wrote before any code violating it exists. Start-from-current authoring and the
+visual editor (Parts A.2/A.3) are not built; see `docs/BLUEPRINT.md`. PHP joined
+TS/JS/Python as a supported language after both reference corpora were collected.
+
 See `docs/PHASE-1-SPEC.md` for the full tracker, week by week.
 See `docs/ARCHITECTURE.md` for the data model and full pipeline.
 Per-stage detail: `CLUSTERING.md`, `LABELLING.md`, `CORRECTIONS.md`, `PROVIDERS.md`,
-`INTENT.md`, `VIOLATIONS.md`, `DRIFT.md`, `MCP.md`.
+`INTENT.md`, `VIOLATIONS.md`, `DRIFT.md`, `MCP.md`, `BLUEPRINT.md`.
 See `docs/PAPER-OUTLINE.md` for the section structure, which numbers are citable
 as-is, and what remains unmeasured.
 See `docs/FINDINGS.md` for the consolidated, numbered evidence index — the
@@ -119,8 +127,10 @@ node dist/cli.js .   # Run against current directory
 ## What NOT to do
 
 - **Do not add code generation.** Not now, not later. This tool reads and measures only.
-- **Do not add languages beyond TypeScript, JavaScript and Python.** Language sprawl is the
-  main way a solo project fails to ship.
+- **Language support is TypeScript, JavaScript, Python, and PHP.** PHP was added after both
+  reference corpora were collected (see docs/FINDINGS.md). Adding further languages beyond
+  these four remains out of scope — language sprawl is the main way a solo project fails to
+  ship.
 - **Do not send file contents to the LLM in bulk.** Send the *graph*. A 100k-file repo has
   ~200 modules; send 200 labelled nodes. Code snippets go only for the single cluster being
   labelled.

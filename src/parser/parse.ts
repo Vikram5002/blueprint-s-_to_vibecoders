@@ -14,11 +14,28 @@ import { err, ok, type Result } from '../types/result.js';
 import { detectLanguage } from '../ingest/language.js';
 import { extractTypeScriptSymbols } from './extract-ts.js';
 import { extractPythonSymbols } from './extract-python.js';
+import { extractPhpSymbols } from './extract-php.js';
 import { grammarKeyForPath, loadGrammar, type GrammarKey, type GrammarLoadError } from './grammars.js';
 import type { ParseFailure, ParsedFile } from '../types/symbols.js';
+import type { ExtractedSymbols } from './extract-ts.js';
+import type { Node } from 'web-tree-sitter';
 
 /** Grammars with a working extractor. */
-export const PARSEABLE_GRAMMARS: readonly GrammarKey[] = ['typescript', 'tsx', 'javascript', 'python'];
+export const PARSEABLE_GRAMMARS: readonly GrammarKey[] = [
+  'typescript',
+  'tsx',
+  'javascript',
+  'python',
+  'php',
+];
+
+const EXTRACTORS: Readonly<Record<GrammarKey, (root: Node, filePath: string) => ExtractedSymbols>> = {
+  typescript: extractTypeScriptSymbols,
+  tsx: extractTypeScriptSymbols,
+  javascript: extractTypeScriptSymbols,
+  python: extractPythonSymbols,
+  php: extractPhpSymbols,
+};
 
 export interface ParseInput {
   /** Repo-relative path, forward slashes. Used as evidence, and to pick a grammar. */
@@ -64,7 +81,7 @@ function parseWith(parsers: Map<GrammarKey, Parser>, input: ParseInput): Result<
   const parser = key === null ? undefined : parsers.get(key);
   const language = detectLanguage(input.path);
 
-  if (parser === undefined || language === null) {
+  if (parser === undefined || language === null || key === null) {
     return err({
       path: input.path,
       reason: 'unsupported-extension',
@@ -79,7 +96,7 @@ function parseWith(parsers: Map<GrammarKey, Parser>, input: ParseInput): Result<
     }
 
     try {
-      const extract = key === 'python' ? extractPythonSymbols : extractTypeScriptSymbols;
+      const extract = EXTRACTORS[key];
       const { imports, exports } = extract(tree.rootNode, input.path);
       return ok({
         path: input.path,

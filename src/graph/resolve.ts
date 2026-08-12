@@ -14,6 +14,7 @@ import { loadTsconfig, EMPTY_TSCONFIG, type TsconfigPaths } from './tsconfig.js'
 import { discoverWorkspaces } from './workspaces.js';
 import { resolveTypeScriptImport } from './resolve-ts.js';
 import { buildPythonContext, resolvePythonImport } from './resolve-python.js';
+import { buildPhpContext, resolvePhpImport } from './resolve-php.js';
 import type { ParsedFile } from '../types/symbols.js';
 import type {
   ExternalReason,
@@ -39,15 +40,18 @@ export async function resolveRepository(options: ResolveRepositoryOptions): Prom
   const tsconfigFor = await createTsconfigLookup(options.root, options.files);
 
   const python = buildPythonContext(index);
+  const php = await buildPhpContext(options.root, index);
 
   const imports: ResolvedImport[] = [];
   for (const file of options.files) {
     for (const record of file.imports) {
-      imports.push(
-        file.language === 'python'
-          ? resolvePythonImport(record, python)
-          : resolveTypeScriptImport(record, { index, workspaces, tsconfigFor, root: options.root }),
-      );
+      if (file.language === 'python') {
+        imports.push(resolvePythonImport(record, python));
+      } else if (file.language === 'php') {
+        imports.push(resolvePhpImport(record, php));
+      } else {
+        imports.push(resolveTypeScriptImport(record, { index, workspaces, tsconfigFor, root: options.root }));
+      }
     }
   }
 

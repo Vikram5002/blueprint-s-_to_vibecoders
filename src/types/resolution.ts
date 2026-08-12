@@ -21,7 +21,9 @@ export type ExternalReason =
   /** A Python top-level module that is not stdlib and not in the repo. */
   | 'python-site-packages'
   /** `node:fs` and friends. */
-  | 'node-builtin';
+  | 'node-builtin'
+  /** A PHP FQCN matching no registered PSR-4 prefix, or a require path under `vendor/`. */
+  | 'php-composer-package';
 
 export type UnresolvedReason =
   /** Relative path that pointed at no file on disk. */
@@ -33,7 +35,11 @@ export type UnresolvedReason =
   /** A Python module that looks internal but no matching file was found. */
   | 'python-module-missing'
   /** Resolved to a file the walker never saw (ignored, or an unsupported type). */
-  | 'target-not-in-repo';
+  | 'target-not-in-repo'
+  /** A PHP `use` FQCN matched a PSR-4 prefix but no file exists at the mapped path. */
+  | 'php-namespace-target-missing'
+  /** A PHP `require`/`include` literal path pointed at no file on disk. */
+  | 'php-require-target-missing';
 
 export interface ResolvedImport {
   /** The import this outcome belongs to. */

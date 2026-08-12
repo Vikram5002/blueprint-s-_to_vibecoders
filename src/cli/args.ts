@@ -47,6 +47,13 @@ export interface CliOptions {
   readonly exportFiles: boolean;
   readonly help: boolean;
   readonly version: boolean;
+  /**
+   * Path to a blueprint DSL file to compile and persist this run (Type-1
+   * authoring). Compiled constraints are stored and merged into every
+   * subsequent run — including `--mcp` sessions started without this flag —
+   * until authored again or the store is cleared. Null when omitted.
+   */
+  readonly blueprintFile: string | null;
 }
 
 export interface ArgError {
@@ -69,6 +76,7 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
         history: { type: 'string' },
         mcp: { type: 'boolean', default: false },
         export: { type: 'boolean', default: false },
+        blueprint: { type: 'string' },
         help: { type: 'boolean', short: 'h', default: false },
         version: { type: 'boolean', default: false },
       },
@@ -101,6 +109,7 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
     exportFiles: parsed.values.export === true,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
+    blueprintFile: typeof parsed.values.blueprint === 'string' ? parsed.values.blueprint : null,
   });
 }
 
