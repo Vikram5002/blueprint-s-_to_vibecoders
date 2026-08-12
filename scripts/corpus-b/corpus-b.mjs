@@ -12,7 +12,7 @@ import { join } from 'node:path';
 
 const dist = new URL('file:///D:/project%20blue%20print/dist/');
 const { runPipeline } = await import(new URL('pipeline/run.js', dist).href);
-const { resolveSubject } = await import(new URL('conformance/resolve-subject.js', dist).href);
+const { resolveSubject, resolveRegexSubject, summariseSubjects } = await import(new URL('conformance/resolve-subject.js', dist).href);
 const { detectViolations } = await import(new URL('conformance/violations.js', dist).href);
 const { fileEdgesFrom, unresolvedByFile } = await import(new URL('conformance/graph-adapter.js', dist).href);
 
@@ -38,14 +38,24 @@ function toConstraint(rule, index, repo, configPath) {
 }
 
 /** dependency-cruiser paths are regexes; turn the common shapes into a prefix. */
+/**
+ * Config paths are regexes and are passed through as regexes.
+ *
+ * The first version reduced them to a path prefix and bound 2 of 1,300
+ * constraints — a config regex is seldom a prefix, and `^(packages/[^/]+)/src/`
+ * has no usable one at all. `resolveRegexSubject` matches the pattern against
+ * real file paths instead.
+ *
+ * This now only filters out the placeholder strings the mapper emits for rules
+ * with no concrete source or target side.
+ */
 function toPhrase(pattern) {
-  if (!pattern || pattern === '(any module)' || pattern === '(whole repo)') return null;
-  const first = String(pattern).split('|')[0];
-  const cleaned = first
-    .replace(/^\(?\^/, '').replace(/\$\)?$/, '').replace(/[()]/g, '')
-    .replace(/\[.\]/g, '.').replace(new RegExp(String.fromCharCode(92,92), 'g'), '').replace(/\.*$/, '').trim();
-  return cleaned.length >= 2 ? cleaned.replace(new RegExp('/+$'), '') : null;
+  if (!pattern) return null;
+  const placeholder = ['(any module)', '(whole repo)', '(anything else)', '(each other)'];
+  if (placeholder.includes(String(pattern))) return null;
+  return String(pattern);
 }
+
 
 const results = [];
 mkdirSync(SCRATCH, { recursive: true });
@@ -100,7 +110,42 @@ for (const entry of MAPPING) {
     files: m.files, directories: m.directories,
   }));
   const allDirectories = [...new Set(value.analysis.clustering.modules.flatMap((m) => m.directories))];
-  const resolve = (phrase) => resolveSubject(phrase, { candidates, directories: allDirectories });
+  /**
+   * The config's own scan filters, applied before anything is resolved.
+   *
+   * dependency-cruiser never sees a file its `exclude` matches, so a violation
+   * found in one is a file the tool would not have looked at. Ignoring this
+   * produced all three prisma "violations" — every one in a `/test/` path that
+   * prisma's config excludes — and the sverweij one, in a file whose name
+   * contains "fixtures". Hand-verifying them is what surfaced it.
+   */
+  const scan = entry.scan ?? {};
+  const toRe = (v) => (v == null ? [] : (Array.isArray(v) ? v : [v]).map((x) => new RegExp(x)));
+  const excludes = toRe(scan.exclude);
+  const includeOnly = toRe(scan.includeOnly);
+  const inScope = (f) =>
+    (includeOnly.length === 0 || includeOnly.some((re) => re.test(f))) &&
+    !excludes.some((re) => re.test(f));
+
+  const allFiles = [...value.analysis.clustering.modules.flatMap((m) => m.files)].sort();
+  const files = allFiles.filter(inScope);
+  const excluded = allFiles.length - files.length;
+  if (excluded > 0) console.log(`  config scan filters exclude ${excluded} of ${allFiles.length} files`);
+  const moduleByFile = new Map();
+  for (const m of value.analysis.clustering.modules) {
+    for (const f of m.files) if (inScope(f)) moduleByFile.set(f, m.id);
+  }
+
+  /**
+   * Anything carrying regex syntax goes to the regex resolver; the rest is
+   * treated as prose. The two are summarised separately because they fail for
+   * unrelated reasons.
+   */
+  const REGEXY = new RegExp('[' + '^$()[]*+?|' .split('').map((c) => '\\' + c).join('') + ']');
+  const resolve = (phrase) =>
+    REGEXY.test(phrase)
+      ? resolveRegexSubject(phrase, { files, moduleByFile })
+      : resolveSubject(phrase, { candidates, directories: allDirectories });
 
   const constraints = [];
   let unresolvedRoles = 0;
@@ -119,10 +164,11 @@ for (const entry of MAPPING) {
     });
   }
 
+  // Edges are filtered to the config's scan scope for the same reason.
   const conformance = detectViolations({
     constraints,
     clustering: value.analysis.clustering,
-    fileEdges: fileEdgesFrom(value.analysis.graph),
+    fileEdges: fileEdgesFrom(value.analysis.graph).filter((e) => inScope(e.from) && inScope(e.to)),
     unresolvedByFile: unresolvedByFile(value.analysis.graph),
   });
 
@@ -130,6 +176,9 @@ for (const entry of MAPPING) {
     repo: entry.repo, tool: entry.tool, configPath: hit.path,
     rulesTotal: entry.total, rulesMapped: mapped.length,
     constraintsBuilt: constraints.length, unresolvedRoles,
+    resolution: summariseSubjects(
+      constraints.flatMap((c) => [c.subject, c.object, c.via].filter((x) => x != null)),
+    ),
     modules: value.analysis.clustering.modules.length,
     files: value.analysis.parse.files.length,
     checked: conformance.summary.checked,

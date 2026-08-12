@@ -258,25 +258,76 @@ expresses orphan detection, dependency *kinds* (core/dev/peer), license
 metadata, reachability and resolution health. Those are real and useful and are
 simply not statements an import graph can decide about two named parts.
 
-### Mapping is not the bottleneck. Binding is.
+### Mapping was not the bottleneck. Binding was, and it is now fixed.
 
-1,300 constraints were built from these configs and run against the derived
-graph. **Two were checkable. 1,298 were not**, across 2,585 unresolved roles.
-Zero violations were found — and that zero means nothing, because 99.8% of the
-constraints never reached the graph.
+The first pass built 1,300 constraints and could check **2**. The cause was
+that config rules address modules by regular expression — `(^src/cli/)`,
+`^packages/1-framework/` — while subject resolution only understood prose
+phrases and path prefixes, and reducing a regex to a prefix binds almost
+nothing (`^(packages/[^/]+)/src/` has no usable prefix at all).
 
-The cause is a gap this project had not previously hit: **config rules address
-modules by regular expression** (`(^src/cli/)`, `^packages/1-framework/`),
-while subject resolution was built for *prose phrases* ("the parser layer").
-The conversion used here strips regex syntax to a path prefix, and it mostly
-fails to bind. That is a limitation of the resolver, not of the repositories.
+`REGEX_PATTERN` was added as a first-class resolution mode, matching patterns
+against the real file paths in the derived graph rather than against a reduced
+prefix. Re-running corpus B unchanged:
 
-**So corpus B does not resolve the zero-violation question.** It converts it
-into a sharper, more tractable one: the constraint model is expressive enough
-(57-98% of real rules map), and the remaining work is a path-pattern resolver
-that binds a regex to a set of modules the way `PATH_PATTERN` already binds a
-directory. Until that exists, this corpus cannot say whether these repositories
-comply with their own rules.
+| | Before | After |
+|---|---:|---:|
+| Constraints built | 1,300 | 1,289 |
+| **Checkable** | **2** | **1,282** |
+| Unchecked | 1,298 | 7 |
+| Unresolved roles | 2,585 | 9 |
+| Violations | 0 | **0** |
+
+Regex-sourced roles now resolve at **99.9% (2,564/2,566)**, reported separately
+from prose-sourced roles, which resolve at 4/12 — the two fail for unrelated
+reasons and a blended rate hides both.
+
+### Six violations appeared, were hand-verified, and were all false
+
+The first run after the resolver fix reported six violations. Every one was
+checked against the actual source and config, and **all six were artifacts of
+the runner, not findings**:
+
+| Rule | Repo | Why it was false |
+|---|---|---|
+| 3 × cross-plane/domain rules | prisma | Evidence files were all under `/test/`, which prisma's `options.exclude` filters. dependency-cruiser never scans them. |
+| `src-to-other-sub-paths-with-subpath-imports-only` | sverweij | Real rule is `to: { path: '^src/', pathNot: '$1' }` — "may import src, but not itself". The mapper dropped `pathNot`, turning it into "no src subfolder may import src", which fired on 226 files of legal code. |
+| `no-inter-module-test` | sverweij | Same shape: `pathNot: ['utl', '$1.+[.]json$']` dropped. |
+| `no-dep-on-test` | sverweij | Evidence file `tools/regenerate-main-fixtures.utl.mjs` contains "fixtures", which that config's `exclude` filters. |
+
+Two defects, both now fixed: the mapper silently dropped exclusion sides
+(`pathNot`, `dependencyTypesNot`) when a path was also present, and the runner
+ignored the config's own `exclude`/`includeOnly` scan filters. Rules carrying a
+`$1` backreference or an inexpressible exception set are now refused at mapping
+time — `capture-group-backreference` (7 rules) and `exclusion-not-expressible`
+(6 rules) — rather than bound approximately.
+
+**This is the reason the acceptance asked for hand-verification.** Six
+plausible violations, each with a rule name, a severity and a real file:line,
+survived every automated check in the pipeline. Nothing short of opening the
+config and the source would have caught them, and reporting them would have
+been this project's first and most consequential false claim.
+
+### The result: machine-checkable intent is respected where it exists
+
+With 1,282 of 1,289 constraints checked and every candidate violation
+eliminated on inspection, **zero violations is now a measured result rather
+than an absence of measurement**. Across five repositories that ship enforced
+architecture configs — prisma, redwood, dependency-cruiser, import-linter and
+wemake-python-styleguide — the code complies with the rules those configs
+state.
+
+That is the honest answer to the question Week 8 opened, and it is a negative
+one: **where rules are machine-checkable and enforced in CI, they hold.** CI
+does its job. The zero-violation limitation is not resolved by finding a
+violation; it is explained. Violations are rare in this population *because
+enforcement works*, which also means this population is the wrong place to look
+for drift.
+
+The complement is Finding 1 and corpus A: the rules that are *not* enforced —
+the 204 uncheckable statements against 1 checkable — are where architecture and
+code are free to diverge, and are precisely the ones no CI tool can check
+today.
 
 ## Limitations
 

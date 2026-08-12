@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { resolveSubject, summariseSubjects, type ResolutionCandidate } from './resolve-subject.js';
+import { resolveSubject, summariseSubjects, type ResolutionCandidate,
+  resolveRegexSubject,
+} from './resolve-subject.js';
 
 const candidates: ResolutionCandidate[] = [
   { moduleId: 'm-parser', label: 'Source Parsing', directories: ['src/parser'], fileCount: 12 },
@@ -172,5 +174,123 @@ describe('summary', () => {
 
   it('reports 100% when there is nothing to resolve', () => {
     expect(summariseSubjects([]).resolutionRate).toBe(100);
+  });
+});
+
+describe('regex subjects bind to real files, not to a prefix', () => {
+  /**
+   * Corpus B is why this exists. Machine-checkable configs address modules by
+   * regular expression, and the first attempt reduced each pattern to a path
+   * prefix before resolving. That bound 2 of 1,300 constraints — a config
+   * regex is seldom a prefix, and `^(packages/[^/]+)/src/` has no usable one
+   * at all.
+   */
+  const FILES = [
+    'packages/client/src/index.ts',
+    'packages/client/src/query.ts',
+    'packages/engine/src/run.ts',
+    'src/cli/main.ts',
+    'src/cli/args.ts',
+    'src/report/html.ts',
+  ];
+  const moduleByFile = new Map<string, string>([
+    ['packages/client/src/index.ts', 'm-client'],
+    ['packages/client/src/query.ts', 'm-client'],
+    ['packages/engine/src/run.ts', 'm-engine'],
+    ['src/cli/main.ts', 'm-cli'],
+    ['src/cli/args.ts', 'm-cli'],
+    ['src/report/html.ts', 'm-report'],
+  ]);
+  const opts = { files: FILES, moduleByFile };
+
+  it('binds a dependency-cruiser style anchored pattern', () => {
+    const r = resolveRegexSubject('(^src/cli/)', opts);
+    expect(r.status).toBe('REGEX_PATTERN');
+    expect(r.target).toBe('(^src/cli/)');
+    expect(r.alternatives).toEqual(['m-cli']);
+    expect(r.origin).toBe('regex');
+  });
+
+  it('binds a pattern with a character class that no prefix could express', () => {
+    const r = resolveRegexSubject('^packages/[^/]+/src/', opts);
+    expect(r.status).toBe('REGEX_PATTERN');
+    // Both packages, which is exactly what the pattern says.
+    expect(r.alternatives).toEqual(['m-client', 'm-engine']);
+  });
+
+  it('reports UNRESOLVED — never an empty set — when nothing matches', () => {
+    /**
+     * The unmeasured-zero family (Finding 2) at its most dangerous. An empty
+     * subject makes its constraint vacuously true, because no edge can leave
+     * nothing — so a rule that failed to bind would be reported as a rule that
+     * held, and the conformance report would claim compliance it never
+     * measured.
+     */
+    const r = resolveRegexSubject('^does-not-exist/', opts);
+    expect(r.status).toBe('UNRESOLVED');
+    expect(r.reason).toBe('pattern-matched-nothing');
+    expect(r.target).toBeNull();
+  });
+
+  it('refuses a capture-group backreference rather than binding it literally', () => {
+    // `$1` means "each package independently" — N rules wearing one rule's
+    // clothes. A single constraint cannot say that, and binding `$1` as a
+    // literal path would quietly produce a rule about a path that does not
+    // exist.
+    const r = resolveRegexSubject('$1', opts);
+    expect(r.status).toBe('UNRESOLVED');
+    expect(r.reason).toBe('capture-group-backreference');
+  });
+
+  it('refuses a pattern the engine will not compile', () => {
+    const r = resolveRegexSubject('^packages/([a-z', opts);
+    expect(r.status).toBe('UNRESOLVED');
+    expect(r.reason).toBe('pattern-invalid');
+  });
+
+  it('is deterministic across runs and independent of file order', () => {
+    const forward = resolveRegexSubject('^packages/', opts);
+    const reversed = resolveRegexSubject('^packages/', {
+      files: [...FILES].reverse(),
+      moduleByFile,
+    });
+    expect(JSON.stringify(forward)).toBe(JSON.stringify(reversed));
+  });
+});
+
+describe('resolution is reported separately by origin', () => {
+  // A prose phrase and a config regex fail for unrelated reasons — one is a
+  // naming problem, the other a pattern-matching one — so a single blended
+  // rate hides both.
+  function subject(status: 'MODULE' | 'REGEX_PATTERN' | 'UNRESOLVED', origin?: 'prose' | 'regex') {
+    return {
+      phrase: 'x',
+      status,
+      target: status === 'UNRESOLVED' ? null : 'x',
+      reason: status === 'UNRESOLVED' ? ('no-candidate' as const) : null,
+      similarity: 1,
+      alternatives: [],
+      ...(origin === undefined ? {} : { origin }),
+    };
+  }
+
+  it('counts prose and regex roles in their own buckets', () => {
+    const summary = summariseSubjects([
+      subject('MODULE', 'prose'),
+      subject('UNRESOLVED', 'prose'),
+      subject('REGEX_PATTERN', 'regex'),
+      subject('REGEX_PATTERN', 'regex'),
+      subject('UNRESOLVED', 'regex'),
+    ]);
+
+    expect(summary.byOrigin.prose).toEqual({ total: 2, resolved: 1 });
+    expect(summary.byOrigin.regex).toEqual({ total: 3, resolved: 2 });
+    expect(summary.regexPattern).toBe(2);
+  });
+
+  it('treats a role with no origin as prose, which is where they all came from before', () => {
+    const summary = summariseSubjects([subject('MODULE')]);
+    expect(summary.byOrigin.prose.total).toBe(1);
+    expect(summary.byOrigin.regex.total).toBe(0);
   });
 });

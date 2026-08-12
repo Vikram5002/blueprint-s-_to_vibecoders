@@ -21,7 +21,14 @@ const UNMAPPABLE = {
   'license-or-metadata': 'about package metadata, not structure',
   'reachability': 'asks whether a path exists at all, not whether one is forbidden',
   'unknown-shape': 'rule shape not recognised by this mapper',
+  'capture-group-backreference': 'uses $1 to mean "each package independently"; one constraint cannot say that',
+  'exclusion-not-expressible': 'the rule forbids a set MINUS an exception set; our relations have no exception side',
 };
+
+/** `$1`-style backreference anywhere in a rule makes it per-capture, not global. */
+function hasBackreference(rule) {
+  return JSON.stringify(rule).includes('$1') || /\$\d/.test(JSON.stringify(rule));
+}
 
 // ---------- dependency-cruiser ----------
 
@@ -29,11 +36,47 @@ async function parseDependencyCruiser(file) {
   const mod = await import(pathToFileURL(file).href);
   const config = mod.default ?? mod;
   const rules = [...(config.forbidden ?? []), ...(config.required ?? [])];
+  /**
+   * The scan filters, carried alongside the rules.
+   *
+   * dependency-cruiser never sees a file that `exclude` matches, so a
+   * violation reported in one is a file the tool would not have looked at.
+   * All three prisma "violations" were in `/test/`, which its config excludes.
+   */
+  parseDependencyCruiser.lastOptions = {
+    exclude: config.options?.exclude?.path ?? config.options?.exclude ?? null,
+    includeOnly: config.options?.includeOnly?.path ?? config.options?.includeOnly ?? null,
+  };
 
   return rules.map((rule) => {
     const from = rule.from ?? {};
     const to = rule.to ?? {};
     const name = rule.name ?? '(unnamed)';
+
+    /**
+     * Refused before anything else, and this is the important guard.
+     *
+     * `src-to-other-sub-paths-with-subpath-imports-only` is
+     * `from: '(^src/[^/]+/)', to: { path: '^src/', pathNot: '$1' }` — "each
+     * subfolder may import src, but not itself". Read without the pathNot it
+     * becomes "no src subfolder may import src", which fires on 226 files of
+     * perfectly legal code. That false positive was produced, hand-verified
+     * and traced back to here.
+     */
+    if (hasBackreference(rule)) {
+      return { name, mapped: false, reason: 'capture-group-backreference' };
+    }
+    /**
+     * A forbidden set with an exception set is not one of our four relations.
+     * Dropping the exception widens the rule silently, which is the same
+     * failure in a milder form.
+     */
+    if (to.path && to.pathNot) {
+      return { name, mapped: false, reason: 'exclusion-not-expressible' };
+    }
+    if (to.dependencyTypesNot && (to.path || to.pathNot)) {
+      return { name, mapped: false, reason: 'exclusion-not-expressible' };
+    }
 
     if (to.circular === true) {
       return { name, mapped: true, relation: 'must-not-cycle', subject: from.path ?? '(whole repo)', object: null };
@@ -163,6 +206,7 @@ for (const file of readdirSync(DIR)) {
   report.push({
     repo, tool: isDepCruise ? 'dependency-cruiser' : 'import-linter',
     total: rules.length, mapped: mapped.length, unmapped: unmapped.length, rules,
+    scan: isDepCruise ? (parseDependencyCruiser.lastOptions ?? null) : null,
   });
   console.log(`\n=== ${repo} (${isDepCruise ? 'dependency-cruiser' : 'import-linter'}) ===`);
   console.log(`  ${mapped.length}/${rules.length} rules map to our relations`);

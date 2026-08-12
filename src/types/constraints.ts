@@ -113,6 +113,16 @@ export type SubjectResolutionStatus =
   | 'MODULE'
   /** Mapped to a path glob — narrower than a module, still checkable. */
   | 'PATH_PATTERN'
+  /**
+   * Mapped to a regular expression, matched against real file paths.
+   *
+   * Machine-checkable configs address modules this way — `(^src/cli/)`,
+   * `^packages/1-framework/`. Unlike a glob, the pattern is applied to the
+   * actual paths in the derived graph rather than reduced to a prefix first:
+   * corpus B showed prefix reduction binds almost nothing (2 of 1,300
+   * constraints), because a config regex is rarely a prefix.
+   */
+  | 'REGEX_PATTERN'
   /** Could not be mapped. The constraint is kept but cannot be evaluated. */
   | 'UNRESOLVED';
 
@@ -126,14 +136,33 @@ export type SubjectUnresolvedReason =
   /** Names a layer the repository has no equivalent of ("the service tier"). */
   | 'no-such-layer'
   /** Refers to something outside the repository ("the payments API"). */
-  | 'external-subject';
+  | 'external-subject'
+  /** A regular expression that is valid but matches no file in this repository. */
+  | 'pattern-matched-nothing'
+  /** A regular expression the engine would not compile. */
+  | 'pattern-invalid'
+  /**
+   * The rule uses a capture-group backreference (`$1`) to mean "each package
+   * independently", which one constraint cannot express. Refused rather than
+   * bound as if the backreference were literal — see docs/VIOLATIONS.md.
+   */
+  | 'capture-group-backreference';
 
 export interface ResolvedSubject {
   /** The noun phrase exactly as it appeared in the prose. */
   readonly phrase: string;
   readonly status: SubjectResolutionStatus;
-  /** Module id for MODULE, glob for PATH_PATTERN, null for UNRESOLVED. */
+  /**
+   * Module id for MODULE, glob for PATH_PATTERN, the source pattern for
+   * REGEX_PATTERN, null for UNRESOLVED.
+   */
   readonly target: string | null;
+  /**
+   * Where the phrase came from, so regex-sourced roles can be reported apart
+   * from prose-sourced ones. They fail for different reasons and mixing their
+   * rates hides both.
+   */
+  readonly origin?: 'prose' | 'regex';
   readonly reason: SubjectUnresolvedReason | null;
   /** 0-1 similarity of the winning candidate. 0 when nothing matched. */
   readonly similarity: number;
@@ -179,7 +208,13 @@ export interface SubjectResolutionSummary {
   readonly total: number;
   readonly module: number;
   readonly pathPattern: number;
+  readonly regexPattern: number;
   readonly unresolved: number;
+  /** Resolution split by where the role came from; see ResolvedSubject.origin. */
+  readonly byOrigin: {
+    readonly prose: { readonly total: number; readonly resolved: number };
+    readonly regex: { readonly total: number; readonly resolved: number };
+  };
   /** Percentage resolved. 100 when there is nothing to resolve. */
   readonly resolutionRate: number;
   readonly byReason: Readonly<Record<SubjectUnresolvedReason, number>>;

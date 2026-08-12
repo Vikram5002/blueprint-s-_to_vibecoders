@@ -397,6 +397,25 @@ function filesFor(subject: ResolvedSubject, index: Index): Set<string> {
   if (subject.status === 'MODULE' && subject.target !== null) {
     return new Set(index.filesByModule.get(subject.target) ?? []);
   }
+  /**
+   * A config regex is re-applied to the real file list here, rather than
+   * having been reduced to a prefix at resolution time. `resolveRegexSubject`
+   * proved the pattern matches something; this is what it matches.
+   */
+  if (subject.status === 'REGEX_PATTERN' && subject.target !== null) {
+    let expression: RegExp;
+    try {
+      expression = new RegExp(subject.target);
+    } catch {
+      return new Set();
+    }
+    const files = new Set<string>();
+    for (const file of index.moduleByFile.keys()) {
+      if (expression.test(file)) files.add(file);
+    }
+    return files;
+  }
+
   if (subject.status === 'PATH_PATTERN' && subject.target !== null) {
     const prefix = subject.target.replace(/\/?\*\*?$/, '').replace(/\*/g, '');
     const files = new Set<string>();

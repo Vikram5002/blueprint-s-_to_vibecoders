@@ -287,15 +287,34 @@ export function summariseSubjects(subjects: readonly ResolvedSubject[]): Subject
     'low-similarity': 0,
     'no-such-layer': 0,
     'external-subject': 0,
+    'pattern-matched-nothing': 0,
+    'pattern-invalid': 0,
+    'capture-group-backreference': 0,
   };
 
   let module = 0;
   let pathPattern = 0;
+  let regexPattern = 0;
   let unresolved = 0;
+  /**
+   * Split by origin, because a prose phrase and a config regex fail for
+   * unrelated reasons — one is a naming problem, the other a pattern-matching
+   * one — and a single blended rate hides both.
+   */
+  const byOrigin = {
+    prose: { total: 0, resolved: 0 },
+    regex: { total: 0, resolved: 0 },
+  };
 
   for (const subject of subjects) {
+    const resolved = subject.status !== 'UNRESOLVED';
+    const bucket = subject.origin === 'regex' ? byOrigin.regex : byOrigin.prose;
+    bucket.total += 1;
+    if (resolved) bucket.resolved += 1;
+
     if (subject.status === 'MODULE') module += 1;
     else if (subject.status === 'PATH_PATTERN') pathPattern += 1;
+    else if (subject.status === 'REGEX_PATTERN') regexPattern += 1;
     else {
       unresolved += 1;
       if (subject.reason !== null) byReason[subject.reason] += 1;
@@ -307,8 +326,120 @@ export function summariseSubjects(subjects: readonly ResolvedSubject[]): Subject
     total,
     module,
     pathPattern,
+    regexPattern,
     unresolved,
+    byOrigin,
     resolutionRate: total === 0 ? 100 : ((total - unresolved) / total) * 100,
     byReason,
+  };
+}
+
+// ---------------------------------------------------------------- regex mode
+
+/**
+ * `$1`-style backreference, as dependency-cruiser uses it.
+ *
+ * A rule like `from: '^(packages/[^/]+)/src/'`, `to: { pathNot: '$1' }` means
+ * "each package may import only itself" — one rule standing for N independent
+ * rules, one per package. A single Constraint cannot say that: its subject and
+ * object are fixed sets, and binding `$1` as a literal would silently produce
+ * a rule about a path that does not exist.
+ *
+ * So these are refused. Expanding them into one constraint per capture value
+ * is the correct semantics and is deliberately left undone rather than
+ * approximated — see docs/VIOLATIONS.md.
+ */
+const BACKREFERENCE = /\$\d/;
+
+export interface RegexResolveOptions {
+  /** Every file path in the derived graph, repo-relative, posix separators. */
+  readonly files: readonly string[];
+  /** File path -> module id, so matched files can be reported as modules. */
+  readonly moduleByFile: ReadonlyMap<string, string>;
+}
+
+/**
+ * Binds a config regular expression to the modules it actually covers.
+ *
+ * Matched against real file paths rather than reduced to a prefix first.
+ * Corpus B established why: prefix reduction bound 2 of 1,300 constraints,
+ * because a config regex is seldom a prefix — `^(packages/[^/]+)/src/` has no
+ * usable prefix at all.
+ *
+ * Deterministic by construction: the pattern is applied to a sorted file list
+ * and the resulting module ids are sorted, so the same graph and pattern give
+ * the same set on every run.
+ */
+export function resolveRegexSubject(
+  pattern: string,
+  options: RegexResolveOptions,
+): ResolvedSubject {
+  const base: Omit<ResolvedSubject, 'status' | 'target' | 'reason' | 'similarity' | 'alternatives'> = {
+    phrase: pattern,
+    origin: 'regex',
+  };
+
+  if (BACKREFERENCE.test(pattern)) {
+    return {
+      ...base,
+      status: 'UNRESOLVED',
+      target: null,
+      reason: 'capture-group-backreference',
+      similarity: 0,
+      alternatives: [],
+    };
+  }
+
+  let expression: RegExp;
+  try {
+    expression = new RegExp(pattern);
+  } catch {
+    return {
+      ...base,
+      status: 'UNRESOLVED',
+      target: null,
+      reason: 'pattern-invalid',
+      similarity: 0,
+      alternatives: [],
+    };
+  }
+
+  const matchedModules = new Set<string>();
+  let matchedFiles = 0;
+  for (const file of options.files) {
+    if (!expression.test(file)) continue;
+    matchedFiles += 1;
+    const moduleId = options.moduleByFile.get(file);
+    if (moduleId !== undefined) matchedModules.add(moduleId);
+  }
+
+  /**
+   * Zero matches is UNRESOLVED, never an empty set.
+   *
+   * An empty subject makes its constraint vacuously true — no edge can cross
+   * out of nothing — so a rule that failed to bind would be reported as a rule
+   * that held. That is the unmeasured-zero family (Finding 2) in the place it
+   * would do most damage: a conformance report claiming compliance it never
+   * measured.
+   */
+  if (matchedFiles === 0) {
+    return {
+      ...base,
+      status: 'UNRESOLVED',
+      target: null,
+      reason: 'pattern-matched-nothing',
+      similarity: 0,
+      alternatives: [],
+    };
+  }
+
+  return {
+    ...base,
+    status: 'REGEX_PATTERN',
+    // The pattern itself is the target: it is what `filesFor` re-applies.
+    target: pattern,
+    reason: null,
+    similarity: 1,
+    alternatives: [...matchedModules].sort().slice(0, 4),
   };
 }

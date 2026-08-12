@@ -4,14 +4,42 @@
     "tool": "dependency-cruiser",
     "configPath": "dependency-cruiser.config.mjs",
     "rulesTotal": 1282,
-    "rulesMapped": 1282,
-    "constraintsBuilt": 1282,
-    "unresolvedRoles": 2562,
+    "rulesMapped": 1281,
+    "constraintsBuilt": 1281,
+    "unresolvedRoles": 1,
+    "resolution": {
+      "total": 2562,
+      "module": 0,
+      "pathPattern": 0,
+      "regexPattern": 2561,
+      "unresolved": 1,
+      "byOrigin": {
+        "prose": {
+          "total": 0,
+          "resolved": 0
+        },
+        "regex": {
+          "total": 2562,
+          "resolved": 2561
+        }
+      },
+      "resolutionRate": 99.96096799375488,
+      "byReason": {
+        "no-candidate": 0,
+        "ambiguous": 0,
+        "low-similarity": 0,
+        "no-such-layer": 0,
+        "external-subject": 0,
+        "pattern-matched-nothing": 1,
+        "pattern-invalid": 0,
+        "capture-group-backreference": 0
+      }
+    },
     "modules": 511,
-    "files": 4282,
-    "checked": 1,
-    "unchecked": 1281,
-    "satisfied": 1,
+    "files": 4295,
+    "checked": 1280,
+    "unchecked": 1,
+    "satisfied": 1280,
     "violated": 0,
     "violations": 0,
     "bySeverity": {
@@ -29,6 +57,34 @@
     "rulesMapped": 3,
     "constraintsBuilt": 0,
     "unresolvedRoles": 0,
+    "resolution": {
+      "total": 0,
+      "module": 0,
+      "pathPattern": 0,
+      "regexPattern": 0,
+      "unresolved": 0,
+      "byOrigin": {
+        "prose": {
+          "total": 0,
+          "resolved": 0
+        },
+        "regex": {
+          "total": 0,
+          "resolved": 0
+        }
+      },
+      "resolutionRate": 100,
+      "byReason": {
+        "no-candidate": 0,
+        "ambiguous": 0,
+        "low-similarity": 0,
+        "no-such-layer": 0,
+        "external-subject": 0,
+        "pattern-matched-nothing": 0,
+        "pattern-invalid": 0,
+        "capture-group-backreference": 0
+      }
+    },
     "modules": 322,
     "files": 2294,
     "checked": 0,
@@ -51,6 +107,34 @@
     "rulesMapped": 2,
     "constraintsBuilt": 2,
     "unresolvedRoles": 3,
+    "resolution": {
+      "total": 4,
+      "module": 0,
+      "pathPattern": 0,
+      "regexPattern": 0,
+      "unresolved": 4,
+      "byOrigin": {
+        "prose": {
+          "total": 4,
+          "resolved": 0
+        },
+        "regex": {
+          "total": 0,
+          "resolved": 0
+        }
+      },
+      "resolutionRate": 0,
+      "byReason": {
+        "no-candidate": 1,
+        "ambiguous": 3,
+        "low-similarity": 0,
+        "no-such-layer": 0,
+        "external-subject": 0,
+        "pattern-matched-nothing": 0,
+        "pattern-invalid": 0,
+        "capture-group-backreference": 0
+      }
+    },
     "modules": 24,
     "files": 135,
     "checked": 0,
@@ -70,14 +154,42 @@
     "tool": "dependency-cruiser",
     "configPath": ".dependency-cruiser.mjs",
     "rulesTotal": 30,
-    "rulesMapped": 17,
-    "constraintsBuilt": 10,
-    "unresolvedRoles": 12,
+    "rulesMapped": 8,
+    "constraintsBuilt": 2,
+    "unresolvedRoles": 1,
+    "resolution": {
+      "total": 4,
+      "module": 0,
+      "pathPattern": 0,
+      "regexPattern": 3,
+      "unresolved": 1,
+      "byOrigin": {
+        "prose": {
+          "total": 0,
+          "resolved": 0
+        },
+        "regex": {
+          "total": 4,
+          "resolved": 3
+        }
+      },
+      "resolutionRate": 75,
+      "byReason": {
+        "no-candidate": 0,
+        "ambiguous": 0,
+        "low-similarity": 0,
+        "no-such-layer": 0,
+        "external-subject": 0,
+        "pattern-matched-nothing": 1,
+        "pattern-invalid": 0,
+        "capture-group-backreference": 0
+      }
+    },
     "modules": 261,
     "files": 1106,
-    "checked": 0,
-    "unchecked": 10,
-    "satisfied": 0,
+    "checked": 1,
+    "unchecked": 1,
+    "satisfied": 1,
     "violated": 0,
     "violations": 0,
     "bySeverity": {
@@ -93,12 +205,40 @@
     "configPath": ".importlinter",
     "rulesTotal": 6,
     "rulesMapped": 6,
-    "constraintsBuilt": 6,
-    "unresolvedRoles": 8,
+    "constraintsBuilt": 4,
+    "unresolvedRoles": 4,
+    "resolution": {
+      "total": 8,
+      "module": 4,
+      "pathPattern": 0,
+      "regexPattern": 0,
+      "unresolved": 4,
+      "byOrigin": {
+        "prose": {
+          "total": 8,
+          "resolved": 4
+        },
+        "regex": {
+          "total": 0,
+          "resolved": 0
+        }
+      },
+      "resolutionRate": 50,
+      "byReason": {
+        "no-candidate": 3,
+        "ambiguous": 0,
+        "low-similarity": 1,
+        "no-such-layer": 0,
+        "external-subject": 0,
+        "pattern-matched-nothing": 0,
+        "pattern-invalid": 0,
+        "capture-group-backreference": 0
+      }
+    },
     "modules": 18,
     "files": 409,
     "checked": 1,
-    "unchecked": 5,
+    "unchecked": 3,
     "satisfied": 1,
     "violated": 0,
     "violations": 0,

@@ -5,14 +5,15 @@
     "total": 0,
     "mapped": 0,
     "unmapped": 0,
-    "rules": []
+    "rules": [],
+    "scan": null
   },
   {
     "repo": "prisma/prisma",
     "tool": "dependency-cruiser",
     "total": 1282,
-    "mapped": 1282,
-    "unmapped": 0,
+    "mapped": 1281,
+    "unmapped": 1,
     "rules": [
       {
         "name": "upward-framework-foundation-shared-to-core",
@@ -8983,12 +8984,27 @@
       },
       {
         "name": "cli-commands-no-runtime-migration-tools",
-        "mapped": true,
-        "relation": "must-not-import",
-        "subject": "^packages/1-framework/3-tooling/cli/src/commands/",
-        "object": "^packages/1-framework/3-tooling/migration/"
+        "mapped": false,
+        "reason": "exclusion-not-expressible"
       }
-    ]
+    ],
+    "scan": {
+      "exclude": [
+        "node_modules",
+        "\\.test\\.",
+        "\\.spec\\.",
+        "/test/",
+        "\\.config\\.",
+        "vitest\\.config",
+        "tsdown\\.config",
+        "\\.d\\.ts$",
+        "dist",
+        "coverage",
+        "^packages/document/",
+        "^test/"
+      ],
+      "includeOnly": "^packages/"
+    }
   },
   {
     "repo": "redwoodjs/redwood",
@@ -9058,7 +9074,11 @@
         "mapped": false,
         "reason": "dependency-type"
       }
-    ]
+    ],
+    "scan": {
+      "exclude": null,
+      "includeOnly": null
+    }
   },
   {
     "repo": "seddonym/import-linter",
@@ -9092,14 +9112,15 @@
         "subject": "importlinter",
         "object": null
       }
-    ]
+    ],
+    "scan": null
   },
   {
     "repo": "sverweij/dependency-cruiser",
     "tool": "dependency-cruiser",
     "total": 30,
-    "mapped": 17,
-    "unmapped": 13,
+    "mapped": 8,
+    "unmapped": 22,
     "rules": [
       {
         "name": "no-deprecated-core",
@@ -9120,27 +9141,18 @@
       },
       {
         "name": "cli-to-main-only",
-        "mapped": true,
-        "relation": "may-only-import-via",
-        "subject": "(^src/cli/)",
-        "object": "(anything else)",
-        "via": "^src/(main|utl|config-utl)/ | ^src/report/dot-webpage/wrap-in-html[.]mjs$ | $1 | ^src/meta[.]cjs$ | ^src/environment[.]mjs$ | ^src/extract/transpile/meta[.]mjs$"
+        "mapped": false,
+        "reason": "capture-group-backreference"
       },
       {
         "name": "report-stays-in-report",
-        "mapped": true,
-        "relation": "may-only-import-via",
-        "subject": "(^src/report/)",
-        "object": "(anything else)",
-        "via": "$1 | ^src/meta[.]cjs$ | ^src/graph-utl | ^src/utl"
+        "mapped": false,
+        "reason": "capture-group-backreference"
       },
       {
         "name": "extract-to-utl-only",
-        "mapped": true,
-        "relation": "may-only-import-via",
-        "subject": "(^src/extract/)",
-        "object": "(anything else)",
-        "via": "$1 | ^src/meta[.]cjs$ | ^src/graph-utl | ^src/utl"
+        "mapped": false,
+        "reason": "capture-group-backreference"
       },
       {
         "name": "not-to-json",
@@ -9151,11 +9163,8 @@
       },
       {
         "name": "bin-to-cli-only",
-        "mapped": true,
-        "relation": "may-only-import-via",
-        "subject": "(^bin/)",
-        "object": "(anything else)",
-        "via": "^src/cli | ^src/meta[.]cjs$"
+        "mapped": false,
+        "reason": "exclusion-not-expressible"
       },
       {
         "name": "restrict-fs-access",
@@ -9166,10 +9175,8 @@
       },
       {
         "name": "no-inter-module-test",
-        "mapped": true,
-        "relation": "must-not-import",
-        "subject": "(^test/[^\\/]+/)[^\\.]+[.]spec[.]m?js",
-        "object": "^test/[^\\/]+/.+"
+        "mapped": false,
+        "reason": "capture-group-backreference"
       },
       {
         "name": "prefer-lodash-individuals",
@@ -9227,31 +9234,27 @@
       {
         "name": "not-unreachable-from-cli",
         "mapped": false,
-        "reason": "reachability"
+        "reason": "exclusion-not-expressible"
       },
       {
         "name": "test-to-src-with-subpaths-only",
-        "mapped": true,
-        "relation": "must-not-import",
-        "subject": "(any module)",
-        "object": "^src/"
+        "mapped": false,
+        "reason": "exclusion-not-expressible"
       },
       {
         "name": "src-to-other-sub-paths-with-subpath-imports-only",
-        "mapped": true,
-        "relation": "must-not-import",
-        "subject": "(^src/[^/]+/)",
-        "object": "^src/"
+        "mapped": false,
+        "reason": "capture-group-backreference"
       },
       {
         "name": "not-unreachable-from-test",
         "mapped": false,
-        "reason": "reachability"
+        "reason": "exclusion-not-expressible"
       },
       {
         "name": "not-reachable-from-folder-index",
         "mapped": false,
-        "reason": "reachability"
+        "reason": "capture-group-backreference"
       },
       {
         "name": "utl-module-not-shared-enough",
@@ -9265,10 +9268,8 @@
       },
       {
         "name": "only-type-only-to-dts",
-        "mapped": true,
-        "relation": "must-not-import",
-        "subject": "(any module)",
-        "object": "[.]d[.][cm]?ts$"
+        "mapped": false,
+        "reason": "exclusion-not-expressible"
       },
       {
         "name": "no-tsconfig-basedir-use",
@@ -9285,13 +9286,19 @@
       },
       {
         "name": "not-outside",
-        "mapped": true,
-        "relation": "may-only-import-via",
-        "subject": "^src/([^/]+/).+",
-        "object": "(anything else)",
-        "via": "^src/$1 | ^src/(?:utl|graph-utl)/ | ^src/meta[.]cjs$"
+        "mapped": false,
+        "reason": "capture-group-backreference"
       }
-    ]
+    ],
+    "scan": {
+      "exclude": [
+        "mocks",
+        "fixtures",
+        "test/integration",
+        "src/report/dot-webpage/svg-in-html-snippets/script[.]cjs"
+      ],
+      "includeOnly": null
+    }
   },
   {
     "repo": "wemake-services/wemake-python-styleguide",
@@ -9359,6 +9366,7 @@
         "subject": "wemake_python_styleguide",
         "object": "tests"
       }
-    ]
+    ],
+    "scan": null
   }
 ]
