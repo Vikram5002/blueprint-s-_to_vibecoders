@@ -253,13 +253,27 @@ import `src/llm/`") still match. What is lost is matching a phrase against a
 semantic name a model invented, and nothing observed has needed that.
 
 **This is n=9 across two repositories, which is not proof.** The corpus records
-the `MODULE`/`PATH_PATTERN` split per repository, so the assumption is
-falsifiable by the corpus itself: **any corpus repository that resolves a role
-via `MODULE` is evidence that mechanical labelling cost a constraint**, and the
-fix is to re-run that repository — a handful of documents, not a day of quota —
-with labelling on and diff the resolved set. If the corpus reports zero `MODULE`
-resolutions across 25 repositories, the assumption is confirmed at n≈25 rather
-than assumed.
+the `MODULE`/`PATH_PATTERN`/`UNRESOLVED` split per repository so the assumption
+can be checked against real data rather than carried.
+
+**What the signal actually is, stated precisely.** A role resolving via
+`MODULE` is *not* evidence against the decision — it means the phrase matched a
+module name, and under mechanical labelling that name is the path prefix, so
+the match succeeded on exactly the information mechanical labels preserve.
+`BuilderIO/qwik` did this on the first day of collection: one role resolved via
+`MODULE` with mechanical labels in place.
+
+The signal to watch is an **`UNRESOLVED` role in a repository that produced
+constraints** — a phrase that matched nothing, which a model-invented semantic
+name might have matched. qwik has one of those too (1 constraint, 1 resolved
+via `MODULE`, 1 `UNRESOLVED`), which makes it the first concrete test case.
+
+Confirming or refuting it means re-running that one repository with labelling
+on and diffing the resolved set. That is not free — qwik is 91 modules, roughly
+four days of the currently observed quota — so it is a deliberate spend to
+decide on, not something to fold into collection. What the corpus gives cheaply
+is the *count* of such cases: if `UNRESOLVED` roles are rare across 25
+repositories, the exposure is bounded and quantified rather than unknown.
 
 **Finding 1 is unaffected either way.** Its ratio counts *statements returned
 by extraction* — checkable constraints against architectural-but-uncheckable
