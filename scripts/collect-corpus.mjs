@@ -78,13 +78,15 @@ const maxCallsArg = args.find((a) => a.startsWith('--max-calls='));
  * having done so. A corpus of 25 finished repositories is worth more than six
  * finished and one monster half-done.
  *
- * 35 is chosen against the measured daily ceiling: roughly 20 requests per
- * model per day across a three-model ring is about 60 calls, so a repository
- * needing more than 35 cannot finish alongside anything else and will starve
- * the rest of the day. pyright (46 modules + 2 documents) is the shape this
- * excludes; zod (19 + 5) passes comfortably.
+ * Now counts *documents*, not modules, because labelling is off for corpus
+ * runs. Measured document counts across the first ten corpus repositories were
+ * 0-5, so 25 is far above anything observed and exists to catch a pathological
+ * repository — a docs site with hundreds of markdown files — rather than to
+ * ration normal ones. Against the measured ceiling of roughly 60 calls a day,
+ * a repository needing more than 25 would still be a bad trade against the
+ * two or three it would displace.
  */
-const MAX_CALLS_PER_REPO = maxCallsArg ? Number(maxCallsArg.slice('--max-calls='.length)) : 35;
+const MAX_CALLS_PER_REPO = maxCallsArg ? Number(maxCallsArg.slice('--max-calls='.length)) : 25;
 const targetArg = args.find((a) => a.startsWith('--target='));
 const corpusArg = args.find((a) => a.startsWith('--corpus='));
 const CORPUS_PATH = corpusArg ? corpusArg.slice('--corpus='.length) : join('scripts', 'corpus', 'repos.json');
@@ -245,7 +247,15 @@ async function estimateCalls(targetDir) {
 
   const modules = run.analysis.clustering.modules.length;
   const documents = run.intent.summary.documents;
-  return { ok: true, modules, documents, calls: modules + documents };
+  /**
+   * The budget counts documents, not modules.
+   *
+   * Labelling is off for corpus runs, so a repository's cost is one call per
+   * discovered document. Module count is still recorded because it is what
+   * made the old arithmetic impossible — deno at 2,433 modules — and keeping
+   * it visible is what lets that claim be re-checked rather than believed.
+   */
+  return { ok: true, modules, documents, calls: documents };
 }
 
 /**
@@ -256,7 +266,15 @@ async function estimateCalls(targetDir) {
 async function analyseClone(targetDir, model) {
   const env = { ...process.env, VIBE_LLM_PROVIDER: 'gemini', VIBE_LLM_MODEL: model };
   const startedAt = Date.now();
-  const result = await runPipeline({ root: targetDir, useModel: true, env });
+  /**
+   * `mechanicalLabels` — labelling off, extraction on.
+   *
+   * Across the first ten corpus repositories, labelling was 4,896 of 4,925
+   * model calls (99.4%) against 29 for documents. The study measures
+   * constraints and violations; names are not part of any of it. See
+   * docs/FINDINGS.md for the methodology note and the residual risk.
+   */
+  const result = await runPipeline({ root: targetDir, useModel: true, mechanicalLabels: true, env });
   const durationMs = Date.now() - startedAt;
 
   // The pipeline opens .vibe/blueprint.db inside targetDir; on Windows an open
@@ -299,6 +317,20 @@ async function analyseClone(targetDir, model) {
       incompleteDocuments: run.intent.summary.incompleteDocuments,
       cacheHits: run.intent.usage.cacheHits,
       cacheMisses: run.intent.usage.cacheMisses,
+      /**
+       * How each constraint role resolved: by module name, or by path.
+       *
+       * This is the falsifier for the mechanical-labels decision (see
+       * docs/FINDINGS.md). Labelling is off for corpus runs, which can only
+       * cost a constraint if a role would have resolved via MODULE — matching
+       * a prose phrase against a model-invented name. Every role observed so
+       * far resolved via PATH_PATTERN, which mechanical labels do not affect.
+       *
+       * Recorded per repository so a single MODULE resolution anywhere in the
+       * corpus surfaces as evidence against the assumption, rather than the
+       * assumption being carried unchecked into the paper.
+       */
+      subjects: run.intent.summary.subjects,
     },
     conformance: {
       constraintsChecked: violations.checked,
@@ -325,18 +357,24 @@ mkdirSync(SCRATCH, { recursive: true });
  * `--retry-oversized` alongside a larger `--max-calls`.
  */
 const RETRY_OVERSIZED = args.includes('--retry-oversized');
-const TERMINAL = RETRY_OVERSIZED ? ['done'] : ['done', 'skipped-oversized'];
+const TERMINAL = RETRY_OVERSIZED
+  ? ['done', 'skipped-no-documents']
+  : ['done', 'skipped-oversized', 'skipped-no-documents'];
 
 const allPending = CORPUS.filter((entry) => !TERMINAL.includes(state.repos[entry.repo]?.status));
 const doneCount = CORPUS.filter((entry) => state.repos[entry.repo]?.status === 'done').length;
 const skippedCount = CORPUS.filter(
   (entry) => state.repos[entry.repo]?.status === 'skipped-oversized',
 ).length;
+const noDocsCount = CORPUS.filter(
+  (entry) => state.repos[entry.repo]?.status === 'skipped-no-documents',
+).length;
 const pending = allPending.slice(0, LIMIT);
 
 console.log(`\n  corpus       ${CORPUS.length} repositories`);
 console.log(`  done         ${doneCount}`);
-console.log(`  oversized    ${skippedCount} (skipped, budget ${MAX_CALLS_PER_REPO} calls/repo)`);
+console.log(`  oversized    ${skippedCount} (skipped, budget ${MAX_CALLS_PER_REPO} document-calls/repo)`);
+console.log(`  no documents ${noDocsCount} (skipped, nothing for extraction to read)`);
 console.log(`  pending      ${allPending.length} (${pending.length} this run)`);
 console.log(`  model ring   ${MODEL_RING.join(' -> ')} (starting at ${MODEL_RING[state.ringIndex % MODEL_RING.length]})\n`);
 
@@ -361,6 +399,33 @@ for (const [index, entry] of pending.entries()) {
 
     if (!estimate.ok) {
       outcome = { status: 'analysis-failed', reason: estimate.reason };
+      removeDir(targetDir);
+    } else if (estimate.documents === 0) {
+      /**
+       * No documents, no possible constraint.
+       *
+       * Extraction reads prose; a repository with no README, AGENTS.md,
+       * CLAUDE.md or ADR has nothing for it to read, so the run is
+       * structurally incapable of producing a constraint however much quota
+       * it is given. rollup/rollup is the case that made this obvious: 1,219
+       * modules and zero documents, which under the old design would have
+       * spent roughly twenty days of quota to arrive at a guaranteed zero.
+       *
+       * Recorded as its own status rather than folded into 'done' with zero
+       * constraints. "Nothing was stated" and "there was nothing to read" are
+       * different findings, and the corpus denominator depends on telling
+       * them apart.
+       */
+      console.log(`    skipped-no-documents: ${estimate.modules} modules, 0 documents — cannot yield a constraint`);
+      outcome = {
+        status: 'skipped-no-documents',
+        harnessVersion: HARNESS_VERSION,
+        modules: estimate.modules,
+        documents: 0,
+        reason:
+          'no README, AGENTS.md, CLAUDE.md or ADR found, so intent extraction has nothing to read ' +
+          'and no constraint is reachable from this repository',
+      };
       removeDir(targetDir);
     } else if (estimate.calls > MAX_CALLS_PER_REPO) {
       console.log(
@@ -447,8 +512,8 @@ for (const [index, entry] of pending.entries()) {
 const doneEntries = Object.values(state.repos).filter((r) => r.status === 'done');
 // Counted from final state, not the pre-run tally — repositories skipped
 // during this very run must count too, or "remaining" overstates the backlog.
-const skippedFinal = CORPUS.filter(
-  (entry) => state.repos[entry.repo]?.status === 'skipped-oversized',
+const skippedFinal = CORPUS.filter((entry) =>
+  ['skipped-oversized', 'skipped-no-documents'].includes(state.repos[entry.repo]?.status),
 ).length;
 const remaining = CORPUS.length - doneEntries.length - skippedFinal;
 const elapsedMs = Date.now() - runStartedAt;
@@ -463,6 +528,13 @@ const oversized = Object.entries(state.repos).filter(([, r]) => r.status === 'sk
 
 console.log(`  done          ${doneEntries.length} / ${CORPUS.length}`);
 console.log(`  remaining     ${remaining}`);
+const noDocs = Object.entries(state.repos).filter(([, r]) => r.status === 'skipped-no-documents');
+if (noDocs.length > 0) {
+  console.log(`  no documents  ${noDocs.length} skipped — no prose for extraction to read:`);
+  for (const [name, r] of noDocs) {
+    console.log(`                ${name} (${r.modules} modules, 0 documents)`);
+  }
+}
 if (oversized.length > 0) {
   /**
    * Reported as its own line, never folded into "done" or "remaining".

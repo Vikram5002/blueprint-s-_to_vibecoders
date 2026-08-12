@@ -212,3 +212,64 @@ describe('untrusted model output', () => {
     expect(set.labels.size).toBe(analysis.clustering.modules.length);
   });
 });
+
+describe('mechanical labels for corpus runs', () => {
+  /**
+   * Corpus collection runs with `mechanicalLabels: true`. Across the first ten
+   * corpus repositories, labelling was 4,896 of 4,925 model calls (99.4%)
+   * against 29 for documents, and the study measures constraints, not names.
+   *
+   * The property under test is narrow and important: the option must suppress
+   * *labelling* only. Intent extraction is a separate model user, and a change
+   * that quietly disabled both would produce a corpus of zero constraints that
+   * looked like a finding about repositories.
+   */
+  it('produces mechanical labels for every module', async () => {
+    // Omitting the labeller is the mechanical path — the same one the no-key
+    // case has always used, reused rather than reinvented for the corpus.
+    const labels = await labelModules(analysis.clustering);
+
+    expect(labels.summary.llmLabelled).toBe(0);
+    expect(labels.summary.degraded).toBe(true);
+    for (const label of labels.labels.values()) {
+      expect(label.source).toBe('mechanical');
+      // The mechanical name is always kept, so nothing is nameless.
+      expect(label.label).toBe(label.mechanicalLabel);
+    }
+  });
+
+  it('never calls the labeller when the model is off', async () => {
+    let called = 0;
+    const counting: ModuleLabeller = {
+      label: async (requests) => {
+        called += 1;
+        return fakeLabeller().label(requests);
+      },
+    };
+
+    await labelModules(analysis.clustering);
+    expect(called).toBe(0);
+    // Sanity: the counting labeller does count when it is actually supplied.
+    await labelModules(analysis.clustering, { labeller: counting });
+    expect(called).toBe(1);
+  });
+
+  it('still yields usable subject-resolution candidates', async () => {
+    /**
+     * The reason this is safe to do, stated as a test.
+     *
+     * `resolve-subject.ts` matches a prose phrase against a module's label
+     * *and* its directories. With mechanical labels the label is the shared
+     * path prefix, so directory-shaped phrases — which is how every constraint
+     * observed so far resolves — still match. What is lost is matching a
+     * phrase against a semantic name a model invented.
+     */
+    const labels = await labelModules(analysis.clustering);
+
+    for (const module of analysis.clustering.modules) {
+      const label = labels.labels.get(module.id);
+      expect(label).toBeDefined();
+      expect(label?.label.length ?? 0).toBeGreaterThan(0);
+    }
+  });
+});

@@ -1,5 +1,5 @@
 {
-  "method": "Candidates drawn from widely-used TS/JS/Python OSS projects, then checked by fetching https://raw.githubusercontent.com/<repo>/<main|master>/<file> for AGENTS.md, CLAUDE.md, .dependency-cruiser.{js,cjs,json}, dependency-cruiser.config.mjs and .importlinter on 2026-08-09. Root-level, two-branch check only — a config nested inside a monorepo package (common for dependency-cruiser and import-linter) will not be found by this method, so criterion 2 hits are undercounted, not overcounted. Criterion 3 (documented self-violation) is not pre-filterable this way; it is recorded during collection instead, from what the run actually finds.",
+  "method": "Candidates drawn from widely-used TS/JS/Python OSS projects, then checked by fetching https://raw.githubusercontent.com/<repo>/<main|master>/<file> for AGENTS.md, CLAUDE.md, .dependency-cruiser.{js,cjs,json}, dependency-cruiser.config.mjs and .importlinter on 2026-08-09. Root-level, two-branch check only \u2014 a config nested inside a monorepo package (common for dependency-cruiser and import-linter) will not be found by this method, so criterion 2 hits are undercounted, not overcounted. Criterion 3 (documented self-violation) is not pre-filterable this way; it is recorded during collection instead, from what the run actually finds.",
   "criteria": {
     "1": "AGENTS.md or CLAUDE.md present at repo root (main or master)",
     "2": "dependency-cruiser or import-linter config present at repo root",
@@ -11,13 +11,15 @@
     "changedOn": "2026-08-12",
     "reason": "Week 12 of 15, and day 1 of collection completed 0 repositories. The target was cut from 50 to 25 and the list reordered so that if the schedule slips again we lose the least informative repositories rather than a random slice.",
     "tiers": {
-      "0": "criterion 1 AND 2 — an agent file plus a machine-checkable dependency-rule config. Strongest prior for a checkable constraint.",
-      "1": "criterion 1 — AGENTS.md or CLAUDE.md at root. This is the yield signal: a repository that writes rules for its agents is the kind that states architectural rules at all.",
-      "2": "criterion 4 only — language/size filler, no agent file. Least likely to state a checkable rule; entirely below the target line."
+      "0": "criterion 1 AND 2 \u2014 an agent file plus a machine-checkable dependency-rule config. Strongest prior for a checkable constraint.",
+      "1": "criterion 1 \u2014 AGENTS.md or CLAUDE.md at root. This is the yield signal: a repository that writes rules for its agents is the kind that states architectural rules at all.",
+      "2": "criterion 4 only \u2014 language/size filler, no agent file. Least likely to state a checkable rule; entirely below the target line."
     },
     "withinTier": "ascending size (small, medium, large), then repo name. Size is a cost signal, not a yield signal: ordering cheap-first maximises how many repositories finish before quota runs out, and the per-repo call budget means the largest are the ones most likely to be skipped as oversized anyway.",
-    "targetNote": "The first 25 entries are the corpus. Entries 26-50 are retained as documented overflow, not deleted — they are what gets picked up if collection runs ahead of schedule, and keeping them makes the cut reversible.",
-    "cutFromTarget": "Six criterion-1 repositories fall below the line (payloadcms/payload, storybookjs/storybook, strapi/strapi, sveltejs/svelte, webpack/webpack, withastro/astro). They are separated from the ones above it only by size and then alphabetical order, which is arbitrary among equals — recorded here so the arbitrariness is visible rather than implied to be principled."
+    "targetNote": "The first 25 entries are the corpus. Entries 26-50 are retained as documented overflow, not deleted \u2014 they are what gets picked up if collection runs ahead of schedule, and keeping them makes the cut reversible.",
+    "cutFromTarget": "Six criterion-1 repositories fall below the line (payloadcms/payload, storybookjs/storybook, strapi/strapi, sveltejs/svelte, webpack/webpack, withastro/astro). They are separated from the ones above it only by size and then alphabetical order, which is arbitrary among equals \u2014 recorded here so the arbitrariness is visible rather than implied to be principled.",
+    "revisedOn": "2026-08-12",
+    "revision": "Target held at 25. The 205-day projection that forced the cut was caused by labelling (4,896 of 4,925 calls across the first ten repositories); with labelling off for corpus runs the same 25 repositories cost roughly 73 document-calls, about 1.2 days. The ordering still stands on its own merits \u2014 criterion-1 repositories first \u2014 so if collection runs ahead of schedule the overflow entries 26-50 are picked up in the same yield order."
   },
   "repos": [
     {
@@ -33,7 +35,7 @@
         2,
         4
       ],
-      "rationale": "Only candidate found matching both criterion 1 (AGENTS.md + CLAUDE.md) and criterion 2 (dependency-cruiser.config.mjs at root) — highest priority in the corpus."
+      "rationale": "Only candidate found matching both criterion 1 (AGENTS.md + CLAUDE.md) and criterion 2 (dependency-cruiser.config.mjs at root) \u2014 highest priority in the corpus."
     },
     {
       "rank": 2,
@@ -103,7 +105,7 @@
         1,
         4
       ],
-      "rationale": "AGENTS.md at root — the format's origin project."
+      "rationale": "AGENTS.md at root \u2014 the format's origin project."
     },
     {
       "rank": 7,
@@ -285,7 +287,7 @@
         1,
         4
       ],
-      "rationale": "Both files at root — largest Python repo with agent instructions found."
+      "rationale": "Both files at root \u2014 largest Python repo with agent instructions found."
     },
     {
       "rank": 20,

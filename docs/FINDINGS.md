@@ -208,6 +208,83 @@ repositories** (few files → few or one cluster → coarse granularity). No
 repository below a certain size has a lower bound established for how small
 is too small.
 
+### Corpus results carry mechanical labels, not model labels
+
+**Methodology note for the corpus (from 2026-08-12).**
+
+Corpus collection runs with labelling **off** and intent extraction **on**
+(`mechanicalLabels: true`). Every module in a corpus result is named by its
+shared path prefix, not by a model.
+
+**Why.** Measured across the first ten corpus repositories, before any quota
+was spent: **4,896 of 4,925 model calls (99.4%) were labelling**, one per
+module, against **29 for documents**. `denoland/deno` alone is 2,433 modules.
+At the measured free-tier ceiling of roughly 60 calls a day, labelling the
+25-repository corpus projected to about **205 days**; the documents alone come
+to about **1.2 days**. The study measures constraints, violations and drift.
+None of those is a name.
+
+**What this does not affect.** Clustering, module identity, edges, evidence,
+violation detection and drift are all untouched — module ids are content-derived
+and nothing downstream keys off a label. Week 5 pins that, and
+`label.test.ts` asserts the clustering is byte-identical with labelling on and
+off.
+
+**What it could affect, stated honestly.** Labels are *not* inert everywhere.
+`conformance/resolve-subject.ts` tokenises a module's label when scoring a
+prose phrase against a module, and `pipeline/intent.ts` feeds it the model
+label when one exists. So mechanical labelling can in principle change which
+constraints resolve, and therefore which are checked.
+
+**Why it is expected not to, and how that is checked.** Subject resolution has
+two paths: a phrase can match a module by *name* (`MODULE`) or by *path*
+(`PATH_PATTERN`). Every constraint role resolved so far took the path route:
+
+| Source | Roles resolved | via `MODULE` | via `PATH_PATTERN` |
+|---|---:|---:|---:|
+| blueprint's own `CLAUDE.md` | 3 | 0 | 3 |
+| constructed breach repository | 6 | 0 | 6 |
+| **total** | **9** | **0** | **9** |
+
+Path matching uses a module's *directories*, which mechanical labelling does
+not change — and the mechanical label **is** the shared path prefix, so the
+directory-shaped phrases that real documents use ("`src/parser/` must not
+import `src/llm/`") still match. What is lost is matching a phrase against a
+semantic name a model invented, and nothing observed has needed that.
+
+**This is n=9 across two repositories, which is not proof.** The corpus records
+the `MODULE`/`PATH_PATTERN` split per repository, so the assumption is
+falsifiable by the corpus itself: **any corpus repository that resolves a role
+via `MODULE` is evidence that mechanical labelling cost a constraint**, and the
+fix is to re-run that repository — a handful of documents, not a day of quota —
+with labelling on and diff the resolved set. If the corpus reports zero `MODULE`
+resolutions across 25 repositories, the assumption is confirmed at n≈25 rather
+than assumed.
+
+**Finding 1 is unaffected either way.** Its ratio counts *statements returned
+by extraction* — checkable constraints against architectural-but-uncheckable
+ones — and that classification happens inside the extractor, before any subject
+is resolved against any module. Labels enter afterwards, when a resolved
+constraint is matched to the graph. A statement counted as uncheckable is
+counted there whether the module it might have referred to is called
+`Validation Framework` or `packages/zod/src/`.
+
+### Repositories with no documents are skipped, not counted as zero
+
+A repository with no README, AGENTS.md, CLAUDE.md or ADR has nothing for
+extraction to read, so it cannot produce a constraint however much quota it is
+given. These are checkpointed as `skipped-no-documents` with their module count
+and are **excluded from the corpus denominator**.
+
+`rollup/rollup` is the case that forced this: 1,219 modules and **zero**
+documents. Under the previous design it would have spent roughly twenty days of
+quota to arrive at a guaranteed zero.
+
+Folding these into "analysed, no constraints found" would be the
+unmeasured-zero mistake of Finding 2 in a new place — "nothing was stated" and
+"there was nothing to read" are different claims, and only the first is a
+finding about how developers document architecture.
+
 ### Gateway-routed requests cannot be attributed to a specific model version
 
 (`docs/PROVIDERS.md` → "Provenance: what a gateway result can and cannot

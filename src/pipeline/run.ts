@@ -25,6 +25,23 @@ import type { ConformanceResult } from '../types/violations.js';
 export interface RunOptions {
   readonly root: string;
   readonly useModel?: boolean;
+  /**
+   * Skip model labelling while still extracting intent.
+   *
+   * Corpus collection sets this. Labelling costs one call per module and
+   * extraction one per document, and across the first ten corpus repositories
+   * that was 4,896 calls against 29 — 99.4% of the quota spent on names, for a
+   * study that measures constraints and violations.
+   *
+   * Not a free choice, and deliberately named `mechanicalLabels` rather than
+   * anything implying labels do not matter. They are cosmetic to *clustering*
+   * — Week 5 pins that — but `conformance/resolve-subject.ts` tokenises a
+   * module's label when matching a prose phrase to a module, so this can in
+   * principle change which constraints resolve. See docs/FINDINGS.md for the
+   * evidence that it does not in practice, and the check that would catch it
+   * if it ever did.
+   */
+  readonly mechanicalLabels?: boolean;
   readonly env?: NodeJS.ProcessEnv;
   readonly onProgress?: (progress: AnalysisProgress) => void;
   readonly onLabelProgress?: (done: number, total: number, moduleId: string) => void;
@@ -83,7 +100,13 @@ export async function runPipeline(options: RunOptions): Promise<Result<RunResult
     clustering: analysed.value.clustering,
     files: analysed.value.parse.files,
     corrections: userLabels,
-    ...(options.useModel === undefined ? {} : { useModel: options.useModel }),
+    // `mechanicalLabels` forces the no-model path for labelling only; intent
+    // extraction below still runs against the model.
+    ...(options.mechanicalLabels === true
+      ? { useModel: false }
+      : options.useModel === undefined
+        ? {}
+        : { useModel: options.useModel }),
     ...(options.env === undefined ? {} : { env: options.env }),
     ...(options.onLabelProgress === undefined ? {} : { onProgress: options.onLabelProgress }),
   });
