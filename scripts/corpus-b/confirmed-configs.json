@@ -1,0 +1,47 @@
+[
+  {
+    "repo": "prisma/prisma",
+    "lang": "typescript",
+    "tool": "dependency-cruiser",
+    "confirmedBy": "filename",
+    "branch": "main",
+    "path": "dependency-cruiser.config.mjs",
+    "bytes": 11583
+  },
+  {
+    "repo": "sverweij/dependency-cruiser",
+    "lang": "typescript",
+    "tool": "dependency-cruiser",
+    "confirmedBy": "filename",
+    "branch": "main",
+    "path": ".dependency-cruiser.mjs",
+    "bytes": 23102
+  },
+  {
+    "repo": "seddonym/import-linter",
+    "lang": "python",
+    "tool": "import-linter",
+    "confirmedBy": "filename",
+    "branch": "main",
+    "path": ".importlinter",
+    "bytes": 373
+  },
+  {
+    "repo": "wemake-services/wemake-python-styleguide",
+    "lang": "python",
+    "tool": "import-linter",
+    "confirmedBy": "filename",
+    "branch": "master",
+    "path": ".importlinter",
+    "bytes": 2400
+  },
+  {
+    "repo": "redwoodjs/redwood",
+    "lang": "typescript",
+    "tool": "dependency-cruiser",
+    "confirmedBy": "filename",
+    "branch": "main",
+    "path": ".dependency-cruiser.mjs",
+    "bytes": 17398
+  }
+]

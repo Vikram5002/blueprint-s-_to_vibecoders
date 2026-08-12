@@ -164,6 +164,120 @@ items" → item 1.
 
 ---
 
+## Finding 5 — Partial artifacts from interrupted runs produce confident wrong numbers
+
+Twice now, an interrupted run has left behind a *plausible* artifact that was
+then measured and recorded as fact. Neither looked like an error; both produced
+a specific number that was wrong in the direction of the thing being argued.
+
+**Week 9 — the short clone.** Two clones of `angular/angular` silently lost
+roughly 10,000 files to Windows path-length limits. The walker reported a file
+count, the parse reported a rate, and the 5,000-file/60s performance claim was
+nearly recorded against a repository that was two-thirds missing. Fixed by
+`core.longpaths`; caught only because the file count was compared against
+`git ls-files`.
+
+**Week 12 — the rollup fragment.** A pre-flight estimation pass recorded
+`rollup/rollup` as 1,219 modules with **zero documents**, and that row was
+written into `call-estimates.json`, cited in a commit message, and used to
+justify the `skipped-no-documents` guard as preventing "~20 days of quota for a
+structurally impossible result". The repository has **3,810 modules and 4
+documents**. The estimator process had been killed mid-repository and the
+partially-cloned working copy was measured as though complete.
+
+**What makes this class dangerous.** A crashed run announces itself. A run
+killed between steps leaves a directory that parses cleanly, produces a
+coherent module graph, and yields a number with no marker of incompleteness.
+In both cases the wrong number was *smaller* than the truth and therefore
+supported the argument being made, which is the worst possible direction for a
+measurement error to fall.
+
+**The rule.** Verify completeness before recording, and prefer a completed run
+over an estimate wherever one exists:
+
+- A clone is not complete because the directory exists. Compare against an
+  independent count (`git ls-files`) when the number matters.
+- An artifact produced by a process that was interrupted — killed, timed out,
+  cancelled — is discarded, not measured.
+- Where a pre-flight estimate and a completed run disagree, the run wins and
+  the estimate file is regenerated from it. `call-estimates.json` now carries
+  its provenance for exactly this reason.
+
+Both errors were caught by cross-checking one measurement against another
+rather than by any guard in the code, which is the honest characterisation:
+this is a discipline, not a feature.
+
+## Finding 6 — Machine-checkable architecture configs are rare, and mapping them is not the hard part
+
+**Corpus B (2026-08-12).** Corpus A showed that prose states almost nothing
+checkable (204 uncheckable to 1 checkable across 25 repositories). Corpus B
+asked the opposite question: what happens where rules *are* machine-checkable
+and enforced in CI?
+
+### They are rare
+
+211 candidate repositories were probed by real HTTP fetch for
+`dependency-cruiser`, `import-linter` and `eslint-plugin-boundaries` configs.
+**Five were confirmed** (2.4%), and two of those are the tools' own repositories:
+
+| Repository | Tool | Config |
+|---|---|---|
+| `prisma/prisma` | dependency-cruiser | `dependency-cruiser.config.mjs` (generated from `architecture.config.json`) |
+| `redwoodjs/redwood` | dependency-cruiser | `.dependency-cruiser.mjs` |
+| `sverweij/dependency-cruiser` | dependency-cruiser | `.dependency-cruiser.mjs` |
+| `seddonym/import-linter` | import-linter | `.importlinter` |
+| `wemake-services/wemake-python-styleguide` | import-linter | `.importlinter` |
+
+This is a **lower bound**, and the method's limits are the reason: GitHub code
+search needs a token this project does not have, so candidates were assembled
+by hand and only *verified* by fetch; and the check is root-only, so configs
+nested inside monorepo packages — common for both tools — are missed. ArchUnit
+was excluded because it is Java, which this tool does not parse.
+
+### The rules map well — the coverage number depends on which repositories you count
+
+| Repository | Tool | Rules | Mapped | |
+|---|---|---:|---:|---:|
+| `seddonym/import-linter` | import-linter | 2 | 2 | 100% |
+| `wemake-services/wemake-python-styleguide` | import-linter | 6 | 6 | 100% |
+| `sverweij/dependency-cruiser` | dependency-cruiser | 30 | 17 | 57% |
+| `redwoodjs/redwood` | dependency-cruiser | 11 | 3 | 27% |
+| `prisma/prisma` | dependency-cruiser | 1,282 | 1,282 | 100% |
+
+**57% (28/49) across the hand-written configs.** Prisma's config is *generated*
+from a declarative `architecture.config.json` and emits 1,282 pairwise rules;
+including it gives 98.4%, which measures one repository's code generator rather
+than how architecture rules are written. Both numbers are reported for that
+reason.
+
+The split by tool is the interesting part: **import-linter maps at 100%,
+dependency-cruiser at roughly half.** import-linter's contract types —
+`layers`, `forbidden`, `independence`, `acyclic` — are dependency rules between
+named parts, which is exactly the four-relation model. dependency-cruiser also
+expresses orphan detection, dependency *kinds* (core/dev/peer), license
+metadata, reachability and resolution health. Those are real and useful and are
+simply not statements an import graph can decide about two named parts.
+
+### Mapping is not the bottleneck. Binding is.
+
+1,300 constraints were built from these configs and run against the derived
+graph. **Two were checkable. 1,298 were not**, across 2,585 unresolved roles.
+Zero violations were found — and that zero means nothing, because 99.8% of the
+constraints never reached the graph.
+
+The cause is a gap this project had not previously hit: **config rules address
+modules by regular expression** (`(^src/cli/)`, `^packages/1-framework/`),
+while subject resolution was built for *prose phrases* ("the parser layer").
+The conversion used here strips regex syntax to a path prefix, and it mostly
+fails to bind. That is a limitation of the resolver, not of the repositories.
+
+**So corpus B does not resolve the zero-violation question.** It converts it
+into a sharper, more tractable one: the constraint model is expressive enough
+(57-98% of real rules map), and the remaining work is a path-pattern resolver
+that binds a regex to a set of modules the way `PATH_PATTERN` already binds a
+directory. Until that exists, this corpus cannot say whether these repositories
+comply with their own rules.
+
 ## Limitations
 
 Stated plainly, because a findings index that only lists successes is not

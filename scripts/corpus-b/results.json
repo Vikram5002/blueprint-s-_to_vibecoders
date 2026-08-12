@@ -1,0 +1,112 @@
+[
+  {
+    "repo": "prisma/prisma",
+    "tool": "dependency-cruiser",
+    "configPath": "dependency-cruiser.config.mjs",
+    "rulesTotal": 1282,
+    "rulesMapped": 1282,
+    "constraintsBuilt": 1282,
+    "unresolvedRoles": 2562,
+    "modules": 511,
+    "files": 4282,
+    "checked": 1,
+    "unchecked": 1281,
+    "satisfied": 1,
+    "violated": 0,
+    "violations": 0,
+    "bySeverity": {
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "examples": []
+  },
+  {
+    "repo": "redwoodjs/redwood",
+    "tool": "dependency-cruiser",
+    "configPath": ".dependency-cruiser.mjs",
+    "rulesTotal": 11,
+    "rulesMapped": 3,
+    "constraintsBuilt": 0,
+    "unresolvedRoles": 0,
+    "modules": 322,
+    "files": 2294,
+    "checked": 0,
+    "unchecked": 0,
+    "satisfied": 0,
+    "violated": 0,
+    "violations": 0,
+    "bySeverity": {
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "examples": []
+  },
+  {
+    "repo": "seddonym/import-linter",
+    "tool": "import-linter",
+    "configPath": ".importlinter",
+    "rulesTotal": 2,
+    "rulesMapped": 2,
+    "constraintsBuilt": 2,
+    "unresolvedRoles": 3,
+    "modules": 24,
+    "files": 135,
+    "checked": 0,
+    "unchecked": 2,
+    "satisfied": 0,
+    "violated": 0,
+    "violations": 0,
+    "bySeverity": {
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "examples": []
+  },
+  {
+    "repo": "sverweij/dependency-cruiser",
+    "tool": "dependency-cruiser",
+    "configPath": ".dependency-cruiser.mjs",
+    "rulesTotal": 30,
+    "rulesMapped": 17,
+    "constraintsBuilt": 10,
+    "unresolvedRoles": 12,
+    "modules": 261,
+    "files": 1106,
+    "checked": 0,
+    "unchecked": 10,
+    "satisfied": 0,
+    "violated": 0,
+    "violations": 0,
+    "bySeverity": {
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "examples": []
+  },
+  {
+    "repo": "wemake-services/wemake-python-styleguide",
+    "tool": "import-linter",
+    "configPath": ".importlinter",
+    "rulesTotal": 6,
+    "rulesMapped": 6,
+    "constraintsBuilt": 6,
+    "unresolvedRoles": 8,
+    "modules": 18,
+    "files": 409,
+    "checked": 1,
+    "unchecked": 5,
+    "satisfied": 1,
+    "violated": 0,
+    "violations": 0,
+    "bySeverity": {
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "examples": []
+  }
+]

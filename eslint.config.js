@@ -115,6 +115,11 @@ export const config = tseslint.config(
         URL: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
+        // Corpus tooling verifies repositories over real HTTP. Rule 6 (no
+        // network outside llm/) governs the shipped tool in src/; these are
+        // research scripts that are not part of the distributed package.
+        fetch: 'readonly',
+        AbortSignal: 'readonly',
       },
     },
   },
