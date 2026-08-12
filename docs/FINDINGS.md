@@ -216,13 +216,13 @@ Corpus collection runs with labelling **off** and intent extraction **on**
 (`mechanicalLabels: true`). Every module in a corpus result is named by its
 shared path prefix, not by a model.
 
-**Why.** Measured across the first ten corpus repositories, before any quota
-was spent: **4,896 of 4,925 model calls (99.4%) were labelling**, one per
-module, against **29 for documents**. `denoland/deno` alone is 2,433 modules.
-At the measured free-tier ceiling of roughly 60 calls a day, labelling the
-25-repository corpus projected to about **205 days**; the documents alone come
-to about **1.2 days**. The study measures constraints, violations and drift.
-None of those is a name.
+**Why.** Measured across the completed 25-repository corpus: **11,819 modules
+against 84 documents**. With labelling on the corpus would have cost **11,903
+model calls**; with it off it cost **84** — labelling is **99.3%** of the
+spend. `denoland/deno` alone is 2,433 modules and `microsoft/TypeScript` 1,496.
+Against the observed free-tier ceiling, labelling the corpus was a multi-month
+proposition; without it the whole corpus completed in **83 minutes**. The study
+measures constraints, violations and drift. None of those is a name.
 
 **What this does not affect.** Clustering, module identity, edges, evidence,
 violation detection and drift are all untouched — module ids are content-derived
@@ -290,9 +290,21 @@ extraction to read, so it cannot produce a constraint however much quota it is
 given. These are checkpointed as `skipped-no-documents` with their module count
 and are **excluded from the corpus denominator**.
 
-`rollup/rollup` is the case that forced this: 1,219 modules and **zero**
-documents. Under the previous design it would have spent roughly twenty days of
-quota to arrive at a guaranteed zero.
+**Correction (2026-08-12).** This guard was justified by a measurement that
+turned out to be wrong. `rollup/rollup` was recorded as 1,219 modules with
+**zero** documents during a pre-flight estimation pass, and cited as proof that
+a repository could spend ~20 days of quota on a structurally impossible result.
+The completed corpus run shows rollup has **3,810 modules and 4 documents**.
+The earlier row came from a partially-cloned working copy, captured because the
+estimator process was killed mid-repository — an artifact of the measurement,
+not a property of the repository.
+
+The guard is kept anyway: it costs nothing (the document count is already
+computed by a pass that makes no API calls), and a repository with no prose is
+a real category even if this corpus contains none. But it has **never fired**.
+Across all 25 corpus repositories every one had at least 2 documents, so the
+`skipped-no-documents` count in the day-1 results is zero and no repository has
+been excluded from the denominator on these grounds.
 
 Folding these into "analysed, no constraints found" would be the
 unmeasured-zero mistake of Finding 2 in a new place — "nothing was stated" and

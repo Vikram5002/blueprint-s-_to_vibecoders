@@ -1,73 +1,189 @@
 {
   "measuredOn": "2026-08-12",
-  "method": "Pre-flight estimate only: the pipeline run with useModel:false, which performs the full deterministic half (walk, parse, resolve, cluster, discover documents) and makes zero API calls. One model call is made per module (labelling) and one per document (intent extraction).",
-  "note": "The first 10 repositories in target order. Cost is dominated by module count, which is labelling; documents are what actually yield constraints. rollup/rollup discovered 0 documents, so its 1,219 calls could not have produced a single constraint.",
+  "source": "Actual completed corpus run, not pre-flight estimates. Supersedes the earlier estimate file, which was built from a separate estimation pass and contained one corrupt row (rollup/rollup, captured from a partially-cloned repository after the estimator process was killed mid-repo: it recorded 1,219 modules and 0 documents where the real figures are 3,810 and 4).",
+  "note": "callsWithLabelling is what the run would have cost with model labelling on; callsDocumentsOnly is what it actually cost with mechanicalLabels. The gap is the whole reason labelling is off for corpus runs.",
   "totals": {
-    "repos": 10,
-    "calls": 4925,
-    "modules": 4896,
-    "documents": 29
+    "repos": 25,
+    "modules": 11819,
+    "documents": 84,
+    "callsWithLabelling": 11903,
+    "callsDocumentsOnly": 84
   },
   "repos": [
     {
-      "repo": "crewAIInc/crewAI",
-      "estimatedCalls": 30,
-      "modules": 28,
-      "documents": 2
-    },
-    {
-      "repo": "openai/codex",
-      "estimatedCalls": 42,
-      "modules": 40,
-      "documents": 2
-    },
-    {
-      "repo": "remix-run/remix",
-      "estimatedCalls": 65,
-      "modules": 61,
-      "documents": 4
-    },
-    {
-      "repo": "BuilderIO/qwik",
-      "estimatedCalls": 95,
-      "modules": 91,
-      "documents": 4
-    },
-    {
-      "repo": "gradio-app/gradio",
-      "estimatedCalls": 104,
-      "modules": 101,
-      "documents": 3
-    },
-    {
-      "repo": "pnpm/pnpm",
-      "estimatedCalls": 160,
-      "modules": 156,
-      "documents": 4
-    },
-    {
-      "repo": "sst/sst",
-      "estimatedCalls": 258,
-      "modules": 255,
-      "documents": 3
-    },
-    {
-      "repo": "prisma/prisma",
-      "estimatedCalls": 517,
-      "modules": 512,
-      "documents": 5
-    },
-    {
       "repo": "rollup/rollup",
-      "estimatedCalls": 1219,
-      "modules": 1219,
-      "documents": 0
+      "modules": 3810,
+      "documents": 4,
+      "callsWithLabelling": 3814,
+      "callsDocumentsOnly": 4
     },
     {
       "repo": "denoland/deno",
-      "estimatedCalls": 2435,
       "modules": 2433,
-      "documents": 2
+      "documents": 2,
+      "callsWithLabelling": 2435,
+      "callsDocumentsOnly": 2
+    },
+    {
+      "repo": "microsoft/TypeScript",
+      "modules": 1496,
+      "documents": 4,
+      "callsWithLabelling": 1500,
+      "callsDocumentsOnly": 4
+    },
+    {
+      "repo": "oven-sh/bun",
+      "modules": 549,
+      "documents": 4,
+      "callsWithLabelling": 553,
+      "callsDocumentsOnly": 4
+    },
+    {
+      "repo": "prisma/prisma",
+      "modules": 512,
+      "documents": 5,
+      "callsWithLabelling": 517,
+      "callsDocumentsOnly": 5
+    },
+    {
+      "repo": "jestjs/jest",
+      "modules": 442,
+      "documents": 3,
+      "callsWithLabelling": 445,
+      "callsDocumentsOnly": 3
+    },
+    {
+      "repo": "cloudflare/workers-sdk",
+      "modules": 410,
+      "documents": 4,
+      "callsWithLabelling": 414,
+      "callsDocumentsOnly": 4
+    },
+    {
+      "repo": "microsoft/vscode",
+      "modules": 263,
+      "documents": 3,
+      "callsWithLabelling": 266,
+      "callsDocumentsOnly": 3
+    },
+    {
+      "repo": "sst/sst",
+      "modules": 255,
+      "documents": 3,
+      "callsWithLabelling": 258,
+      "callsDocumentsOnly": 3
+    },
+    {
+      "repo": "home-assistant/core",
+      "modules": 248,
+      "documents": 4,
+      "callsWithLabelling": 252,
+      "callsDocumentsOnly": 4
+    },
+    {
+      "repo": "angular/angular",
+      "modules": 201,
+      "documents": 3,
+      "callsWithLabelling": 204,
+      "callsDocumentsOnly": 3
+    },
+    {
+      "repo": "getsentry/sentry",
+      "modules": 192,
+      "documents": 3,
+      "callsWithLabelling": 195,
+      "callsDocumentsOnly": 3
+    },
+    {
+      "repo": "facebook/react",
+      "modules": 164,
+      "documents": 3,
+      "callsWithLabelling": 167,
+      "callsDocumentsOnly": 3
+    },
+    {
+      "repo": "pnpm/pnpm",
+      "modules": 157,
+      "documents": 4,
+      "callsWithLabelling": 161,
+      "callsDocumentsOnly": 4
+    },
+    {
+      "repo": "vitest-dev/vitest",
+      "modules": 132,
+      "documents": 4,
+      "callsWithLabelling": 136,
+      "callsDocumentsOnly": 4
+    },
+    {
+      "repo": "gradio-app/gradio",
+      "modules": 101,
+      "documents": 3,
+      "callsWithLabelling": 104,
+      "callsDocumentsOnly": 3
+    },
+    {
+      "repo": "BuilderIO/qwik",
+      "modules": 91,
+      "documents": 4,
+      "callsWithLabelling": 95,
+      "callsDocumentsOnly": 4
+    },
+    {
+      "repo": "langchain-ai/langchain",
+      "modules": 92,
+      "documents": 3,
+      "callsWithLabelling": 95,
+      "callsDocumentsOnly": 3
+    },
+    {
+      "repo": "directus/directus",
+      "modules": 68,
+      "documents": 3,
+      "callsWithLabelling": 71,
+      "callsDocumentsOnly": 3
+    },
+    {
+      "repo": "remix-run/remix",
+      "modules": 61,
+      "documents": 4,
+      "callsWithLabelling": 65,
+      "callsDocumentsOnly": 4
+    },
+    {
+      "repo": "openai/codex",
+      "modules": 40,
+      "documents": 2,
+      "callsWithLabelling": 42,
+      "callsDocumentsOnly": 2
+    },
+    {
+      "repo": "huggingface/transformers",
+      "modules": 30,
+      "documents": 4,
+      "callsWithLabelling": 34,
+      "callsDocumentsOnly": 4
+    },
+    {
+      "repo": "crewAIInc/crewAI",
+      "modules": 28,
+      "documents": 2,
+      "callsWithLabelling": 30,
+      "callsDocumentsOnly": 2
+    },
+    {
+      "repo": "appwrite/appwrite",
+      "modules": 24,
+      "documents": 4,
+      "callsWithLabelling": 28,
+      "callsDocumentsOnly": 4
+    },
+    {
+      "repo": "pandas-dev/pandas",
+      "modules": 20,
+      "documents": 2,
+      "callsWithLabelling": 22,
+      "callsDocumentsOnly": 2
     }
   ]
 }
