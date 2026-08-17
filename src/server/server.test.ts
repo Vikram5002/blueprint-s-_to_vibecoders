@@ -9,6 +9,7 @@ import { clusterRepository } from '../graph/cluster.js';
 import { labelModules } from '../pipeline/label.js';
 import { openDatabase, type BlueprintDatabase } from '../store/database.js';
 import { createCorrectionsStore } from '../store/corrections-store.js';
+import { createBlueprintStore } from '../store/blueprint-store.js';
 
 const openDatabases: BlueprintDatabase[] = [];
 import { encodeEdgeId } from '../graph/aggregate.js';
@@ -63,6 +64,7 @@ async function analyse(root: string): Promise<AnalysisContext> {
     conformance: detectViolations({ constraints: [], clustering, fileEdges: [] }),
     store: createCorrectionsStore(db),
     db,
+    blueprintStore: createBlueprintStore(db),
   };
 }
 
@@ -95,6 +97,22 @@ function emptyIntentSummary(): AnalysisContext['intent']['summary'] {
 
 async function get(path: string): Promise<{ status: number; body: unknown }> {
   const response = await fetch(`${server.url}${path}`);
+  const text = await response.text();
+  let body: unknown = text;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    /* non-JSON response, keep the text */
+  }
+  return { status: response.status, body };
+}
+
+async function post(path: string, payload: unknown): Promise<{ status: number; body: unknown }> {
+  const response = await fetch(`${server.url}${path}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
   const text = await response.text();
   let body: unknown = text;
   try {
@@ -417,6 +435,85 @@ describe('GET /api/module-edge — evidence at module level', () => {
 
   it('404s on an unknown module edge', async () => {
     expect((await get('/api/module-edge/module-999->module-998')).status).toBe(404);
+  });
+});
+
+describe('Type-1 authoring routes (Parts A.2/A.3)', () => {
+  it('GET /api/blueprint starts empty', async () => {
+    // Runs before any save in this describe block touches the shared server's
+    // store — the very first request against a freshly analysed context.
+    const { status, body } = await get('/api/blueprint');
+    expect(status).toBe(200);
+    expect((body as { constraints: unknown[] }).constraints).toEqual([]);
+  });
+
+  it('GET /api/blueprint/seeds proposes candidates without persisting them', async () => {
+    const { status, body } = await get('/api/blueprint/seeds');
+    expect(status).toBe(200);
+    const seeds = body as { candidates: { id: string; source: { type: string } }[] };
+
+    // ts-monorepo has real one-directional package coupling, so this fixture
+    // should propose at least one candidate.
+    expect(seeds.candidates.length).toBeGreaterThan(0);
+    for (const candidate of seeds.candidates) {
+      expect(candidate.source.type).toBe('seeded-from-derived');
+    }
+
+    // Listing must not be the same as accepting.
+    const after = await get('/api/blueprint');
+    expect((after.body as { constraints: unknown[] }).constraints).toEqual([]);
+  });
+
+  it('POST /api/blueprint/compile previews without persisting', async () => {
+    const { status, body } = await post('/api/blueprint/compile', { dsl: '# a comment only' });
+    expect(status).toBe(200);
+    expect((body as { constraints: unknown[] }).constraints).toEqual([]);
+
+    const { status: badStatus } = await post('/api/blueprint/compile', {});
+    expect(badStatus).toBe(400);
+  });
+
+  it('POST /api/blueprint/save persists, and a later save replaces rather than accumulates', async () => {
+    const modules = (await get('/api/modules')).body as { nodes: { id: string; label: string }[] };
+    const [first, second] = modules.nodes;
+    if (first === undefined || second === undefined) {
+      throw new Error('fixture needs at least two modules for this case');
+    }
+
+    const firstSave = await post('/api/blueprint/save', { dsl: `${first.label} must not cycle` });
+    expect(firstSave.status).toBe(201);
+    expect(((await get('/api/blueprint')).body as { constraints: unknown[] }).constraints).toHaveLength(1);
+
+    const secondSave = await post('/api/blueprint/save', { dsl: `${second.label} must not cycle` });
+    expect(secondSave.status).toBe(201);
+    const after = (await get('/api/blueprint')).body as { constraints: { rawText: string }[] };
+    expect(after.constraints).toHaveLength(1);
+    expect(after.constraints[0]?.rawText).toBe(`${second.label} must not cycle`);
+  });
+
+  it('POST /api/blueprint/accept-seeds: an unaccepted seed never reaches the store, an accepted one does', async () => {
+    // Reset to a known-empty state; save replaces the whole store.
+    await post('/api/blueprint/save', { dsl: '' });
+
+    const seeds = (await get('/api/blueprint/seeds')).body as { candidates: { id: string }[] };
+    if (seeds.candidates.length === 0) {
+      // Nothing to accept on this fixture shape; the empty-store assertion
+      // above still holds and is the meaningful half of this case.
+      expect(((await get('/api/blueprint')).body as { constraints: unknown[] }).constraints).toEqual([]);
+      return;
+    }
+
+    const bogus = await post('/api/blueprint/accept-seeds', { ids: ['not-a-real-seed-id'] });
+    expect(bogus.status).toBe(201);
+    expect(((await get('/api/blueprint')).body as { constraints: unknown[] }).constraints).toEqual([]);
+
+    const seedId = seeds.candidates[0]?.id;
+    const accepted = await post('/api/blueprint/accept-seeds', { ids: [seedId] });
+    expect(accepted.status).toBe(201);
+
+    const stored = (await get('/api/blueprint')).body as { constraints: { id: string; source: { type: string } }[] };
+    expect(stored.constraints.some((c) => c.id === seedId)).toBe(true);
+    expect(stored.constraints.every((c) => c.source.type === 'seeded-from-derived')).toBe(true);
   });
 });
 

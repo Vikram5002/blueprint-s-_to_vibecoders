@@ -21,13 +21,18 @@ and the agent-facing surfaces — a read-only MCP server (`--mcp`) whose `check_
 answers "am I allowed to import this?" *before* the line is written, plus regenerated
 `AGENTS.md` and a self-contained HTML report (`--export`).
 
-**Type-1 (Blueprint-first authoring): complete for constraint-based authoring
-(Part A.1).** `--blueprint=<file>` compiles a small DSL ("domain must not import
-infra") into the same `Constraint` shape extraction produces, persists it, and merges
-it into every run — CLI, JSON, MCP — so `check_import` can answer against a rule a
-person wrote before any code violating it exists. Start-from-current authoring and the
-visual editor (Parts A.2/A.3) are not built; see `docs/BLUEPRINT.md`. PHP joined
-TS/JS/Python as a supported language after both reference corpora were collected.
+**Type-1 (Blueprint-first authoring): complete, all three authoring modes.**
+`--blueprint=<file>` compiles a small DSL ("domain must not import infra") into
+the same `Constraint` shape extraction produces, persists it, and merges it into
+every run — CLI, JSON, MCP — so `check_import` can answer against a rule a
+person wrote before any code violating it exists (Part A.1). Start-from-current
+(Part A.2) proposes candidate rules from the module boundaries that already
+hold, requiring explicit accept before any candidate is checked. The visual
+editor (Part A.3) is a "Blueprint" tab in the UI — drag-and-drop nodes and
+edges that compile through the identical DSL compiler, live preview, provenance
+kept visually distinct on the shared canvas. Buildable scope for Type-1 is now
+complete per its own brief; see `docs/BLUEPRINT.md`. PHP joined TS/JS/Python as
+a supported language after both reference corpora were collected.
 
 See `docs/PHASE-1-SPEC.md` for the full tracker, week by week.
 See `docs/ARCHITECTURE.md` for the data model and full pipeline.

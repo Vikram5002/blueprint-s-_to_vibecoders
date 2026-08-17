@@ -33,6 +33,7 @@ import { writeExports, currentCommit } from '../export/write.js';
 import { writeFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 import { renderBlueprintSpec, blueprintConstraintsJson } from '../blueprint/spec.js';
+import { createBlueprintStore } from '../store/blueprint-store.js';
 import type { CompileBlueprintResult } from '../blueprint/dsl.js';
 
 export interface CliIo {
@@ -149,6 +150,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     conformance,
     store,
     db,
+    blueprintStore: createBlueprintStore(db),
   };
 
   /**
@@ -311,6 +313,7 @@ async function runMcp(
       conformance,
       store,
       db,
+      blueprintStore: createBlueprintStore(db),
     };
 
     if (options.exportFiles) {

@@ -16,6 +16,11 @@ import type {
   DiffResponse,
   ViolationsResponse,
   SnapshotResponse,
+  BlueprintResponse,
+  SeedsResponse,
+  BlueprintGraph,
+  CompileBlueprintResponse,
+  SaveBlueprintResponse,
 } from './api-types';
 
 async function getJson<T>(path: string): Promise<T> {
@@ -120,6 +125,57 @@ export async function fetchDiff(from: string, to: string): Promise<DiffResponse>
     `/api/diff?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
   );
   return (await response.json()) as DiffResponse;
+}
+
+// --- Type-1 authoring (Parts A.1/A.2/A.3) ---
+
+export function fetchBlueprint(): Promise<BlueprintResponse> {
+  return getJson<BlueprintResponse>('/api/blueprint');
+}
+
+export function fetchBlueprintSeeds(): Promise<SeedsResponse> {
+  return getJson<SeedsResponse>('/api/blueprint/seeds');
+}
+
+async function postJson<T>(path: string, payload: unknown): Promise<T> {
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const detail = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(detail?.error ?? `${path} failed: ${response.status}`);
+  }
+  return (await response.json()) as T;
+}
+
+/** Never persists — Part A.3's live DSL preview calls this on every edit. */
+export function compileBlueprintDsl(dsl: string): Promise<CompileBlueprintResponse> {
+  return postJson<CompileBlueprintResponse>('/api/blueprint/compile', { dsl });
+}
+
+/**
+ * Same preview endpoint, fed a visual graph instead of typed text — the
+ * server turns it into the identical DSL text before compiling. There is no
+ * separate "compile a graph" code path on either side of this call.
+ */
+export function compileBlueprintGraph(graph: BlueprintGraph): Promise<CompileBlueprintResponse> {
+  return postJson<CompileBlueprintResponse>('/api/blueprint/compile', { graph });
+}
+
+/** Replaces the entire stored blueprint — same semantics as `--blueprint=<file>`. */
+export function saveBlueprintDsl(dsl: string): Promise<SaveBlueprintResponse> {
+  return postJson<SaveBlueprintResponse>('/api/blueprint/save', { dsl });
+}
+
+export function saveBlueprintGraph(graph: BlueprintGraph): Promise<SaveBlueprintResponse> {
+  return postJson<SaveBlueprintResponse>('/api/blueprint/save', { graph });
+}
+
+/** Accepting is the only way a seeded candidate ever reaches the store. */
+export function acceptBlueprintSeeds(ids: string[]): Promise<{ accepted: unknown[] }> {
+  return postJson<{ accepted: unknown[] }>('/api/blueprint/accept-seeds', { ids });
 }
 
 /**

@@ -44,6 +44,15 @@ const SOURCE_WEIGHT: Readonly<Record<ConstraintSourceType, number>> = {
   readme: 0.8,
   'commit-msg': 0.7,
   'chat-log': 0.6,
+  /**
+   * Below every prose source, deliberately. A seeded rule is observation
+   * dressed as a claim until a person accepts it — see constraints.ts's
+   * ConstraintSourceType comment. Weighted low enough that an unexamined
+   * seed sits near CONFIDENCE_THRESHOLD rather than sailing over it, so a
+   * user reviewing candidates sees the same "recorded, but weak" signal a
+   * hedged sentence would produce.
+   */
+  'seeded-from-derived': 0.5,
 };
 
 /**

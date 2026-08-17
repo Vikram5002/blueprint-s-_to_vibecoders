@@ -20,6 +20,7 @@ import { ViolationsPanel } from './ViolationsPanel';
 import { TimelinePanel } from './TimelinePanel';
 import { GraphCanvas } from './GraphCanvas';
 import { ModuleCanvas } from './ModuleCanvas';
+import { BlueprintCanvas } from './BlueprintCanvas';
 import { EvidencePanel } from './EvidencePanel';
 import { NodePanel } from './NodePanel';
 import { ModulePanel } from './ModulePanel';
@@ -44,8 +45,10 @@ const FILE_LEVEL_WARNING_THRESHOLD = 800;
  * Grouping mode. Directories stay the default: it is the view that always
  * matches what the developer sees on disk, so it is the honest starting point.
  * Modules are the derived opinion, offered alongside rather than in place of it.
+ * Blueprint is Type-1's authoring surface — a proposal a person edits, never
+ * a third kind of derived data.
  */
-type Grouping = 'directory' | 'module';
+type Grouping = 'directory' | 'module' | 'blueprint';
 
 export function App(): JSX.Element {
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
@@ -222,6 +225,17 @@ export function App(): JSX.Element {
           >
             Modules
           </button>
+          <button
+            type="button"
+            data-active={grouping === 'blueprint'}
+            onClick={() => {
+              setGrouping('blueprint');
+              clearSelection();
+            }}
+            title="Author STATED rules — a proposal, never applied to the graph itself"
+          >
+            Blueprint
+          </button>
         </div>
 
         {grouping === 'directory' && (
@@ -241,6 +255,10 @@ export function App(): JSX.Element {
         )}
       </header>
 
+      {grouping === 'blueprint' ? (
+        <BlueprintCanvas />
+      ) : (
+      <>
       <div className="canvas">
         {grouping === 'module' ? (
           modules === null ? (
@@ -357,6 +375,8 @@ export function App(): JSX.Element {
           </button>
         )}
       </aside>
+      </>
+      )}
     </div>
   );
 }

@@ -176,8 +176,14 @@ export function compileBlueprint(options: CompileBlueprintOptions): CompileBluep
   };
 }
 
-/** Same construction as `compile.ts`'s `constraintId`, so ids stay comparable across sources. */
-function constraintId(
+/**
+ * Same construction as `compile.ts`'s `constraintId`, so ids stay comparable
+ * across sources. Exported for `seed.ts`, which builds `Constraint` objects
+ * directly (from module pairs, not DSL lines) but must produce ids the same
+ * way — a seeded rule that a user later re-types verbatim in the DSL should
+ * collide on id, not silently duplicate.
+ */
+export function constraintId(
   relation: ConstraintRelation,
   subject: string,
   object: string,

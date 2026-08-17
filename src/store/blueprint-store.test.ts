@@ -60,4 +60,26 @@ describe('createBlueprintStore', () => {
     store.replace([constraint('c9'), constraint('c1'), constraint('c5')]);
     expect(store.list().map((c) => c.id)).toEqual(['c1', 'c5', 'c9']);
   });
+
+  describe('append', () => {
+    it('adds to an empty store', () => {
+      const store = createBlueprintStore(openDatabase(':memory:'));
+      store.append([constraint('c1')]);
+      expect(store.list().map((c) => c.id)).toEqual(['c1']);
+    });
+
+    it('adds alongside what is already there, unlike replace', () => {
+      const store = createBlueprintStore(openDatabase(':memory:'));
+      store.replace([constraint('c1')]);
+      store.append([constraint('c2')]);
+      expect(store.list().map((c) => c.id)).toEqual(['c1', 'c2']);
+    });
+
+    it('leaves an existing id untouched rather than duplicating or overwriting', () => {
+      const store = createBlueprintStore(openDatabase(':memory:'));
+      store.replace([constraint('c1')]);
+      store.append([constraint('c1')]);
+      expect(store.list()).toHaveLength(1);
+    });
+  });
 });

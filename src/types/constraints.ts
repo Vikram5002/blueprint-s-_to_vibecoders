@@ -77,7 +77,17 @@ export type ConstraintSourceType =
   | 'readme'
   | 'adr'
   | 'commit-msg'
-  | 'user-authored';
+  | 'user-authored'
+  /**
+   * Proposed from the CURRENT derived graph (Part A.2, "start from current"),
+   * then explicitly accepted by a user before it exists as a constraint at
+   * all. Distinct from 'user-authored' so the paper can tell "written from
+   * scratch" apart from "adopted from what already holds" — the latter is
+   * the more subtle unmeasured-zero risk: a rule that merely restates
+   * observed structure would make conformance trivially true if it were ever
+   * auto-accepted. It never is; see src/blueprint/seed.ts.
+   */
+  | 'seeded-from-derived';
 
 /**
  * Rule 3 applied to STATED data.

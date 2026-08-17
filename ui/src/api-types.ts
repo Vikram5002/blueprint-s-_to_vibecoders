@@ -392,3 +392,58 @@ export interface SnapshotBody {
 }
 
 export type SnapshotResponse = { ok: true; snapshot: SnapshotBody } | { ok: false; reason: string };
+
+/**
+ * Type-1 authoring (Parts A.1/A.2/A.3). Every constraint returned here is
+ * STATED, same as `ConstraintResponse` above — `source.type` distinguishes
+ * `'user-authored'` (typed or dragged) from `'seeded-from-derived'`
+ * (proposed from the graph, not yet or already accepted). Nothing here is
+ * ever `'DERIVED'`; see rule 2.
+ */
+export interface BlueprintResponse {
+  constraints: ConstraintResponse[];
+}
+
+export interface SeedsResponse {
+  candidates: ConstraintResponse[];
+}
+
+export type BlueprintRelation = 'must-not-import' | 'may-only-import-via' | 'must-be-layer-above';
+
+export interface BlueprintGraphNode {
+  id: string;
+  phrase: string;
+  mustNotCycle?: boolean;
+}
+
+export interface BlueprintGraphEdge {
+  id: string;
+  from: string;
+  to: string;
+  relation: BlueprintRelation;
+  via?: string;
+}
+
+export interface BlueprintGraph {
+  nodes: BlueprintGraphNode[];
+  edges: BlueprintGraphEdge[];
+}
+
+export interface BlueprintRejection {
+  line: number;
+  text: string;
+  reason: string;
+}
+
+export interface CompileBlueprintResponse {
+  dsl: string;
+  constraints: ConstraintResponse[];
+  rejected: BlueprintRejection[];
+}
+
+export interface SaveBlueprintResponse {
+  ok: true;
+  dsl: string;
+  constraints: ConstraintResponse[];
+  rejected: BlueprintRejection[];
+}

@@ -11,6 +11,7 @@ import type { ClusteringResult } from '../types/modules.js';
 import type { LabelSet } from '../types/labels.js';
 import type { CorrectionOutcome } from '../types/corrections.js';
 import type { CorrectionsStore } from '../store/corrections-store.js';
+import type { BlueprintStore } from '../store/blueprint-store.js';
 import type { IntentRunResult } from '../pipeline/intent.js';
 import type { ConformanceResult } from '../types/violations.js';
 import type { BlueprintDatabase } from '../store/database.js';
@@ -30,6 +31,14 @@ export interface AnalysisContext {
   readonly correctionOutcomes: readonly CorrectionOutcome[];
   /** Open store, so corrections can be made while the server is up. */
   readonly store: CorrectionsStore;
+  /**
+   * Open store for the authored blueprint (Type-1, Part A.2/A.3). Reading it
+   * is how `/api/blueprint/*` reflects what `--blueprint` last compiled;
+   * writing to it is the *only* effect the visual editor or the seed-accept
+   * endpoint has — never the graph, never `intent`, never `conformance`,
+   * which all reflect the run that already finished.
+   */
+  readonly blueprintStore: BlueprintStore;
   /**
    * Open handle, so the history routes can read snapshots the CLI recorded.
    * They never write: a snapshot costs a worktree and a full re-analysis, and

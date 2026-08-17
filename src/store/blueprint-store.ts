@@ -20,6 +20,15 @@ export interface BlueprintStore {
   list(): Constraint[];
   /** Replaces the entire stored blueprint with `constraints` in one transaction. */
   replace(constraints: readonly Constraint[]): void;
+  /**
+   * Adds `constraints` to whatever is already stored, keyed by id — a
+   * constraint with an id already present is left untouched rather than
+   * duplicated or overwritten. Used only by the seed-acceptance endpoint
+   * (Part A.2): accepting a candidate augments the blueprint a user is
+   * building, it does not restart it the way a `--blueprint` file re-author
+   * does.
+   */
+  append(constraints: readonly Constraint[]): void;
   clear(): void;
 }
 
@@ -39,6 +48,20 @@ export function createBlueprintStore(db: BlueprintDatabase): BlueprintStore {
 
       db.transaction(() => {
         deleteAll.run();
+        for (const constraint of constraints) {
+          insert.run({ id: constraint.id, body: JSON.stringify(constraint), createdAt });
+        }
+      })();
+    },
+
+    append: (constraints) => {
+      const createdAt = new Date().toISOString();
+      const insert = db.prepare(
+        `INSERT INTO blueprint_constraints (id, body, created_at) VALUES (@id, @body, @createdAt)
+         ON CONFLICT(id) DO NOTHING`,
+      );
+
+      db.transaction(() => {
         for (const constraint of constraints) {
           insert.run({ id: constraint.id, body: JSON.stringify(constraint), createdAt });
         }

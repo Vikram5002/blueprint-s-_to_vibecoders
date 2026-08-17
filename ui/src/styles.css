@@ -824,3 +824,64 @@ body {
   border-color: var(--bad);
   box-shadow: 0 0 0 2px rgba(226, 102, 111, 0.45);
 }
+
+/* --- Type-1 visual editor (Part A.3) ---
+ *
+ * The one canvas in this app where nodes are draggable and edges are drawn
+ * by hand, so it is also the one canvas that needs working connection
+ * handles — the global `.react-flow__handle` rule earlier in this file
+ * hides them everywhere else because every other canvas is read-only.
+ * Scoped to this wrapper only.
+ */
+.blueprint-canvas-wrapper .react-flow__handle {
+  pointer-events: auto !important;
+  opacity: 1;
+  width: 9px;
+  height: 9px;
+  min-width: 9px;
+  min-height: 9px;
+  background: var(--stated);
+  border: 1px solid #241a38;
+}
+
+.blueprint-canvas-wrapper .react-flow__handle:hover {
+  background: #d6bbff;
+}
+
+/* DERIVED and STATED nodes share one component, styled apart by
+ * data-provenance — the same discipline as .node[data-label-source]. */
+.node.blueprint-node[data-provenance='DERIVED'] {
+  background: #191d27;
+  border-color: #35405a;
+  cursor: default;
+}
+
+.node.blueprint-node[data-provenance='STATED'] {
+  background: #241a38;
+  border-color: var(--stated);
+}
+
+.node.blueprint-node .blueprint-phrase-input {
+  background: var(--code);
+  color: var(--text);
+  border: 1px solid var(--stated);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 12px;
+  width: 100%;
+  margin-bottom: 4px;
+  font-family: inherit;
+}
+
+.node.blueprint-node .mustnotcycle {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.node.blueprint-node .mustnotcycle input:disabled {
+  cursor: not-allowed;
+}

@@ -8,6 +8,18 @@ every time it appears.
 Companion to `docs/FINDINGS.md`, which holds the findings themselves and the
 raw-data pointers. Nothing here introduces a number that is not already there.
 
+**Type-1 (Blueprint-first authoring, see `docs/BLUEPRINT.md`) landed after
+both corpora and after this outline was first written.** It changes nothing
+about Corpus A or Corpus B — neither was re-run, and every citable number
+above still stands exactly as measured. It adds a second contribution,
+described in its own subsection below rather than folded into the negative
+result, because it is a different kind of claim: not a measurement of how
+much intent escapes checking, but a demonstration that the fraction which
+*is* checkable can be authored directly rather than only extracted. PHP
+joined TS/JS/Python as a supported language in the same period, after both
+corpora were collected — see `docs/FINDINGS.md`'s scope note. No corpus
+result involves PHP.
+
 ---
 
 ## The thesis, in one sentence
@@ -15,7 +27,10 @@ raw-data pointers. Nothing here introduces a number that is not already there.
 Developers state architectural intent in prose far more often than in any form
 a tool can check, and the small fraction that *is* checkable is already
 enforced — so the gap between stated and actual architecture lives precisely
-where no existing tool can see it.
+where no existing tool can see it. Type-1 adds a second sentence, not a
+replacement: **the remedy the finding implies — author intent in a checkable
+form instead of only extracting it from prose — is not speculative. The
+mechanism exists, and it is the same mechanism the measurement used.**
 
 Everything below either supports that, qualifies it, or marks where it is
 unsupported.
@@ -90,11 +105,50 @@ raises.
 The pincer: rules are checkable only where they are already enforced;
 violations are findable only where they are not. Findings 6 and 7.
 
+**This is where Type-1 belongs, as the discussion's second half rather than a
+new results section — it has no corpus, so it cannot sit beside 6.** The
+pincer, restated with its remedy: intent is only ever checkable if it is
+authored in one of the four relations, and prose extraction (Finding 1) shows
+that path is rare — 3 checkable statements against 61–76 uncheckable ones,
+even in documents written specifically to instruct an AI agent. Type-1 is the
+demonstration that the alternative — write the checkable form directly — costs
+one line of DSL per rule and reaches the same conformance engine, the same
+MCP surface, the same `check_import` a coding agent already calls before
+writing a line. `src/blueprint/acceptance.test.ts` is the evidence for "the
+same engine": one rule compiled by hand, the same rule compiled from
+extraction, run through the identical `detectViolations` call, same violation
+shape out. `src/blueprint/check-import-demo.test.ts` is the evidence for "the
+same payoff": a hand-authored rule returning `"forbidden"` from `check_import`
+before the violating code exists, pinned as a re-runnable case rather than a
+transcript — see `docs/BLUEPRINT.md`'s named validation case for the full
+worked example.
+
+**State the limit as plainly as the finding itself.** Type-1 has no corpus
+behind it — no study of whether real developers author rules this way, at
+what rate, or with what accuracy — and no user study of whether an agent's
+behaviour actually changes when `check_import` says "forbidden" versus when
+it says nothing. It is a demonstrated mechanism: the plumbing exists, is
+tested, and is the same plumbing the paper's measurement already trusted. It
+is not a validated intervention, and the paper must not claim the second
+thing while showing evidence only for the first. The honest sentence is
+close to: *"the checkable path exists and costs little; whether developers
+would take it is unmeasured."*
+
 ### 8. Threats to validity
 
-Section 9 below, promoted into the paper.
+Section 9 below, promoted into the paper. Add Type-1's limit from §7 here
+explicitly rather than trusting it survives from the discussion alone: no
+corpus, no user study, a demonstrated mechanism only.
 
 ### 9. Conclusion and future work
+
+Type-1's corpus and user study are exactly the future work this section
+should name — not as a vague "more work is needed" but as the two specific
+studies the mechanism is now built to support: (a) does a population of real
+`--blueprint` files, wherever they eventually come from, resemble the four
+relations at any real rate; (b) does an agent's behaviour differ, holding
+everything else constant, when `check_import` is wired into its loop versus
+not.
 
 ---
 
@@ -109,6 +163,7 @@ Section 9 below, promoted into the paper.
 | **5** — partial artifacts produce confident wrong numbers | Measurement hygiene; twice produced a wrong number that favoured the argument. | 3, 8 |
 | **6** — machine-checkable configs are rare and already respected | The other half of the pincer. Explains the zero-violation result rather than excusing it. | 6, 7 |
 | **7** — evidence completeness ≠ evidence correctness | A tool that checks stated intent can misread the intent it checks. Directly on-thesis. | 5, 7, 8 |
+| **Type-1** — authored and extracted constraints share one engine, demonstrated | The pincer's remedy is mechanically available, not just implied. No corpus; a demonstrated mechanism, not a validated intervention — say so every time it is cited. | 7, 8, 9 |
 
 ---
 
@@ -279,6 +334,28 @@ No user study. Claims about the tool being *useful* — that a wrong-but-close
 diagram is worth arguing with, that `check_import` changes what an agent
 writes — are design rationale, not findings, and should be labelled as such.
 
+### 7. Whether anyone would author a blueprint, and whether it would change what an agent writes
+
+Type-1's specific version of item 6, kept separate because it is a narrower
+and more answerable question once the mechanism exists. Two things are
+demonstrated and one is not:
+
+- **Demonstrated:** the mechanism runs end to end —
+  `src/blueprint/acceptance.test.ts` for "same engine as extraction",
+  `src/blueprint/check-import-demo.test.ts` for "an agent gets `forbidden`
+  before writing the line" — both pinned, re-runnable, against real pipeline
+  runs, not mocked.
+- **Not measured:** whether developers, given the DSL, would author rules at
+  any meaningful rate; whether the rules they write would resemble the four
+  relations or mostly fall outside them the way prose does (Finding 1's
+  finding could recur here); and whether an agent wired to `check_import`
+  actually writes different code than one that is not, holding the model and
+  task constant.
+
+None of this is answerable from the current corpora — both predate Type-1 by
+construction — and answering it needs new data collection, not a re-analysis
+of Corpus A or B.
+
 ---
 
 ## One structural suggestion
@@ -295,3 +372,20 @@ That is supported end to end by Findings 1, 6 and 7, it is a genuinely useful
 negative result, and it survives the caveats above intact. It also positions
 the uncheckable-statement counter — currently a diagnostic — as the paper's
 main measuring instrument, which is what the data says it is.
+
+**This remains the paper's spine. Type-1 is a second, smaller sentence
+appended to it, not a replacement:**
+
+> **The same measurement that shows the checkable fraction is small also
+> shows a path to make it larger — authoring intent directly in a checkable
+> form — and that path is not hypothetical: it runs through the identical
+> conformance engine the measurement itself used, verified by test, not by
+> a slide.**
+
+Two things keep this sentence honest. First, it is additive: nothing about
+it weakens or re-derives Findings 1, 6 or 7, and neither corpus changes.
+Second, it is scoped to what was actually built and tested — a mechanism —
+and does not borrow the word "solution" or "fix" for something with no
+corpus and no user study behind it. The paper gets to end on a demonstrated
+path forward rather than only a diagnosis, without overselling how far down
+that path anyone has actually walked.

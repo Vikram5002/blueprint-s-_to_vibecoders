@@ -32,6 +32,7 @@
     "src/**/*.test.ts",
     "src/parser/fixtures/**",
     "src/graph/fixtures/**",
+    "src/blueprint/fixtures/**",
     "node_modules",
     "dist",
     "ui"

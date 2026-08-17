@@ -21,6 +21,13 @@ import {
   buildSummaryResponse,
 } from './api.js';
 import { buildCorrectionsResponse, parseCorrectionRequest } from './corrections-api.js';
+import {
+  buildBlueprintResponse,
+  buildSeedsResponse,
+  acceptSeeds,
+  compileRequest,
+  saveRequest,
+} from './blueprint-api.js';
 import { buildIntentResponse } from './intent-api.js';
 import { buildDiffResponse, buildDriftHistoryResponse } from './history-api.js';
 import { buildViolationsResponse, buildSnapshotResponse } from './violations-api.js';
@@ -138,6 +145,38 @@ export function createApp(context: AnalysisContext): Hono {
     const id = decodeIdFromPath(c.req.path, '/api/module/');
     const payload = buildModuleDetailResponse(context, id);
     return payload === null ? c.json({ error: `unknown module: ${id}` }, 404) : c.json(payload);
+  });
+
+  app.get('/api/blueprint', (c) => c.json(buildBlueprintResponse(context)));
+
+  app.get('/api/blueprint/seeds', (c) => c.json(buildSeedsResponse(context)));
+
+  app.post('/api/blueprint/accept-seeds', async (c) => {
+    const body: unknown = await c.req.json().catch(() => null);
+    const result = acceptSeeds(context, body);
+    return result.ok ? c.json({ accepted: result.accepted }, 201) : c.json({ error: result.message }, 400);
+  });
+
+  // Preview only — never touches the store. Part A.3's live DSL panel calls
+  // this on every edit; Part A.2/A.1 tooling can call it to validate a draft
+  // before deciding to save.
+  app.post('/api/blueprint/compile', async (c) => {
+    const body: unknown = await c.req.json().catch(() => null);
+    const result = compileRequest(context, body);
+    if (!result.ok) {
+      return c.json({ error: result.message }, 400);
+    }
+    return c.json({
+      dsl: result.dsl,
+      constraints: result.compiled.constraints,
+      rejected: result.compiled.rejected,
+    });
+  });
+
+  app.post('/api/blueprint/save', async (c) => {
+    const body: unknown = await c.req.json().catch(() => null);
+    const result = saveRequest(context, body);
+    return result.ok ? c.json(result, 201) : c.json({ error: result.message }, 400);
   });
 
   app.get('*', async (c) => {
