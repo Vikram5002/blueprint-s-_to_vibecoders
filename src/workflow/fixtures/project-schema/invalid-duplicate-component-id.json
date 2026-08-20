@@ -1,0 +1,42 @@
+{
+  "sessionId": "session-invalid-001",
+  "title": "Deliberately Invalid Fixture",
+  "originalPrompt": "Used only to exercise validateProjectSchema's rejection path.",
+  "domains": {
+    "frontend": {
+      "components": [
+        { "id": "dupe-id-000000000", "name": "Page A", "purpose": "First component using this id." }
+      ],
+      "dependsOn": ["backend"]
+    },
+    "backend": {
+      "components": [
+        { "id": "dupe-id-000000000", "name": "Page B", "purpose": "Second component reusing the same id, which must be rejected." }
+      ],
+      "dependsOn": ["not-a-real-domain"]
+    },
+    "database": {
+      "components": [],
+      "dependsOn": []
+    },
+    "security": {
+      "components": [],
+      "dependsOn": []
+    }
+  },
+  "constraints": [
+    {
+      "id": "bad-constraint-0001",
+      "relation": "must-teleport-through",
+      "subject": { "phrase": "x", "status": "UNRESOLVED", "target": null, "reason": "no-candidate", "similarity": 0, "alternatives": [] },
+      "object": { "phrase": "y", "status": "UNRESOLVED", "target": null, "reason": "no-candidate", "similarity": 0, "alternatives": [] },
+      "via": null,
+      "source": { "type": "chat-log", "location": "session:invalid-001", "line": null, "timestamp": null },
+      "confidence": 0.5,
+      "lowConfidence": true,
+      "rawText": "Not a real relation.",
+      "provenance": "DERIVED"
+    }
+  ],
+  "provenance": "STATED"
+}

@@ -1,0 +1,65 @@
+{
+  "sessionId": "session-habit-tracker-003",
+  "title": "Solo Habit Tracker",
+  "originalPrompt": "A tiny single-user app to track daily habits and streaks. No sign-in needed, it's just for me on my own machine.",
+  "domains": {
+    "frontend": {
+      "components": [
+        { "id": "4eaab65587bfae06", "name": "Habit Tracker Widget", "purpose": "Shows a single habit and its current streak." }
+      ],
+      "dependsOn": ["backend"]
+    },
+    "backend": {
+      "components": [
+        { "id": "2952166a658b525e", "name": "Habits API", "purpose": "CRUD endpoints for habits and daily check-ins." }
+      ],
+      "dependsOn": ["database"]
+    },
+    "database": {
+      "components": [
+        { "id": "b5d4d8555cc235a4", "name": "habits table", "purpose": "Stores habit name, owner_id, and streak count." }
+      ],
+      "dependsOn": []
+    },
+    "security": {
+      "components": [],
+      "dependsOn": []
+    }
+  },
+  "constraints": [
+    {
+      "id": "0d12ad6ca9a91440",
+      "relation": "must-not-import",
+      "subject": {
+        "phrase": "the frontend",
+        "status": "UNRESOLVED",
+        "target": null,
+        "origin": "prose",
+        "reason": "no-candidate",
+        "similarity": 0,
+        "alternatives": []
+      },
+      "object": {
+        "phrase": "the database",
+        "status": "UNRESOLVED",
+        "target": null,
+        "origin": "prose",
+        "reason": "no-candidate",
+        "similarity": 0,
+        "alternatives": []
+      },
+      "via": null,
+      "source": {
+        "type": "chat-log",
+        "location": "session:habit-tracker-003",
+        "line": null,
+        "timestamp": "2026-08-20T09:10:00.000Z"
+      },
+      "confidence": 0.8,
+      "lowConfidence": false,
+      "rawText": "Only the backend may query the database; the UI must go through the API.",
+      "provenance": "STATED"
+    }
+  ],
+  "provenance": "STATED"
+}

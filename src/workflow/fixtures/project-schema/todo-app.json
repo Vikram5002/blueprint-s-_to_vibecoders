@@ -1,0 +1,70 @@
+{
+  "sessionId": "session-todo-app-001",
+  "title": "Simple Todo App",
+  "originalPrompt": "Build a todo app where I can sign in, add tasks, and mark them done.",
+  "domains": {
+    "frontend": {
+      "components": [
+        { "id": "f87168afb4ce4322", "name": "Todo List Page", "purpose": "Displays the user's todo items and lets them mark items complete." },
+        { "id": "b60363a30a02207a", "name": "Login Page", "purpose": "Collects email and password and starts a session." }
+      ],
+      "dependsOn": ["backend"]
+    },
+    "backend": {
+      "components": [
+        { "id": "6cc5700eb5c73c7b", "name": "Todo API", "purpose": "CRUD endpoints for todo items, scoped to the authenticated user." },
+        { "id": "193a09bf6256e1ef", "name": "Auth Service", "purpose": "Issues and verifies session tokens on login." }
+      ],
+      "dependsOn": ["database", "security"]
+    },
+    "database": {
+      "components": [
+        { "id": "6e8f055f4152e93e", "name": "todos table", "purpose": "Stores todo items with owner_id, text, and completed flag." },
+        { "id": "6614cbb715dc20eb", "name": "users table", "purpose": "Stores user email and hashed password." }
+      ],
+      "dependsOn": []
+    },
+    "security": {
+      "components": [
+        { "id": "4b9b16fc0f8fecd3", "name": "Session Middleware", "purpose": "Rejects API requests without a valid session token." }
+      ],
+      "dependsOn": []
+    }
+  },
+  "constraints": [
+    {
+      "id": "44551c3ac125548c",
+      "relation": "must-not-import",
+      "subject": {
+        "phrase": "the frontend",
+        "status": "UNRESOLVED",
+        "target": null,
+        "origin": "prose",
+        "reason": "no-candidate",
+        "similarity": 0,
+        "alternatives": []
+      },
+      "object": {
+        "phrase": "the database",
+        "status": "UNRESOLVED",
+        "target": null,
+        "origin": "prose",
+        "reason": "no-candidate",
+        "similarity": 0,
+        "alternatives": []
+      },
+      "via": null,
+      "source": {
+        "type": "chat-log",
+        "location": "session:todo-app-001",
+        "line": null,
+        "timestamp": "2026-08-20T09:00:00.000Z"
+      },
+      "confidence": 0.9,
+      "lowConfidence": false,
+      "rawText": "The frontend must never talk to the database directly.",
+      "provenance": "STATED"
+    }
+  ],
+  "provenance": "STATED"
+}

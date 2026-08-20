@@ -1,0 +1,70 @@
+{
+  "sessionId": "session-blog-with-auth-002",
+  "title": "Blog With Author Accounts",
+  "originalPrompt": "I want a blog where registered authors can write and publish posts, and only the author who wrote a post can edit it.",
+  "domains": {
+    "frontend": {
+      "components": [
+        { "id": "2b1d0d9b74db3556", "name": "Post Feed", "purpose": "Shows recent blog posts in reverse chronological order." },
+        { "id": "87e4ffea5b1fef24", "name": "Post Editor", "purpose": "Rich text editor for drafting and publishing a post." }
+      ],
+      "dependsOn": ["backend"]
+    },
+    "backend": {
+      "components": [
+        { "id": "19f0916079bbf19c", "name": "Posts API", "purpose": "CRUD endpoints for blog posts, publish/unpublish." },
+        { "id": "193a09bf6256e1ef", "name": "Auth Service", "purpose": "Issues and verifies session tokens on login." }
+      ],
+      "dependsOn": ["database", "security"]
+    },
+    "database": {
+      "components": [
+        { "id": "128c4e70e336cc77", "name": "posts table", "purpose": "Stores post title, body, author_id, and published flag." },
+        { "id": "6614cbb715dc20eb", "name": "users table", "purpose": "Stores user email and hashed password." }
+      ],
+      "dependsOn": []
+    },
+    "security": {
+      "components": [
+        { "id": "669cad640c4ad05e", "name": "Author Ownership Check", "purpose": "Rejects edits to a post from any user other than its author." }
+      ],
+      "dependsOn": []
+    }
+  },
+  "constraints": [
+    {
+      "id": "af8929478e0d3e29",
+      "relation": "must-be-layer-above",
+      "subject": {
+        "phrase": "the backend",
+        "status": "UNRESOLVED",
+        "target": null,
+        "origin": "prose",
+        "reason": "no-candidate",
+        "similarity": 0,
+        "alternatives": []
+      },
+      "object": {
+        "phrase": "the database",
+        "status": "UNRESOLVED",
+        "target": null,
+        "origin": "prose",
+        "reason": "no-candidate",
+        "similarity": 0,
+        "alternatives": []
+      },
+      "via": null,
+      "source": {
+        "type": "chat-log",
+        "location": "session:blog-with-auth-002",
+        "line": null,
+        "timestamp": "2026-08-20T09:05:00.000Z"
+      },
+      "confidence": 0.85,
+      "lowConfidence": false,
+      "rawText": "The backend sits above the database and is the only layer that queries it.",
+      "provenance": "STATED"
+    }
+  ],
+  "provenance": "STATED"
+}
