@@ -42,5 +42,9 @@
     "vitest": "^2.1.4"
   },
   "license": "MIT",
-  "private": true
+  "private": true,
+  "allowScripts": {
+    "better-sqlite3@13.0.3": true,
+    "esbuild@0.21.5": true
+  }
 }
