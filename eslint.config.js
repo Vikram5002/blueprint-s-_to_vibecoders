@@ -107,7 +107,7 @@ export const config = tseslint.config(
   {
     // Plain Node build scripts: no TypeScript, so no-undef is live and needs
     // the runtime globals declared.
-    files: ['scripts/**/*.mjs'],
+    files: ['scripts/**/*.mjs', 'training/**/*.mjs'],
     languageOptions: {
       globals: {
         console: 'readonly',
