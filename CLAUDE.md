@@ -119,6 +119,25 @@ These are the constraints this project would enforce on itself. Do not violate t
 
 ## Commands
 
+**Setup requires TWO install commands, not one.** This is a single-package repo, not an
+npm workspace — `ui/` has its own `package.json` and lockfile, entirely separate from the
+root. `npm install` at the repo root only installs `src/`'s dependencies; it does **not**
+touch `ui/node_modules`.
+
+```bash
+npm install                 # root - installs src/ dependencies
+npm --prefix ui install     # ui/ - installs the UI's own dependencies (or: cd ui && npm install)
+```
+
+Skipping the second command fails silently — no error at install time. The failure shows
+up the first time you run `npm run dev` inside `ui/`, which crashes immediately with:
+
+```
+Failed to load PostCSS config: ... Cannot find module 'tailwindcss'
+```
+
+If you hit that exact error, this is the cause: run `npm --prefix ui install` and retry.
+
 ```bash
 npm run dev          # Watch mode
 npm run build        # Compile TS + build UI
