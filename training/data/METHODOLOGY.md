@@ -226,11 +226,13 @@ originally-imagined prompts. Two reasons:
    with more information, not a default assumption that 80 is still coming
    next.
 
-**`real-project` collection has started: 12 of the revised 40-50 target**,
-in `training/data/real-project/real-project.jsonl`, sourced from
-awesome-selfhosted (see "Source 2: real-project" above for the full process
-and an honesty note about verification depth). Zero validation failures,
-zero near-duplicates against the full corpus.
+**`real-project` collection is at 25 of the revised 40-50 target**, in
+`training/data/real-project/real-project.jsonl`, across two checkpointed
+batches (12, then +13 to 25), sourced from awesome-selfhosted (see "Source 2:
+real-project" above for the full process and an honesty note about
+verification depth — `verifiedDomains` is still empty for all 25; every pair
+so far has been converted from README prose only). Zero validation failures,
+zero near-duplicates against the full corpus across both batches.
 
 `synthetic` collection has not started, and should not until a first
 fine-tune exists to generate from — see [[project_loq_no_7b_model]] for the
