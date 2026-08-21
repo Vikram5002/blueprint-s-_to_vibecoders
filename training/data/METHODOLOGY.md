@@ -171,15 +171,48 @@ library, CLI tool, or dev-tooling package with no domain-mappable structure.
    pair already covers is exactly what the dedup check exists to catch.
 6. `sourceUrl` recorded for every pair, no exceptions.
 
-**Honesty note on the first batch:** the 12 pairs in
-`training/data/real-project/real-project.jsonl` were converted from README
-text only — no pair has anything in `verifiedDomains` yet, because no repo's
-actual file structure or package manifest was opened to confirm a claim.
-That's a real, lower-rigor starting point, recorded accurately rather than
-inflated. A later batch could spend the extra effort to verify a subset
-against real code; until then, every domain claim in this file is prose-only
-and `inferredDomains` should be read as the more load-bearing field of the
-two.
+**Verification spot-check (5 of the first 25 pairs):** to confirm
+`verifiedDomains` is a field that actually earns its complexity rather than
+a schema nobody uses, 5 pairs with real inference gaps were checked against
+their actual repos (`pyproject.toml`/`package.json`, real folder structure —
+not README prose) before the second real-project batch: Paperless-ngx,
+Immich, Memos, Twenty CRM, Medusa. Result: **opening the real repo changed
+the domain conclusion for 2 of 5, not 0.**
+
+- **Memos and Twenty CRM had their `security` domain wrongly left empty.**
+  Both READMEs said nothing about authentication, so `security` was recorded
+  as empty-with-`inferredDomains`. Their real repos tell a different story:
+  Memos has a dedicated `server/auth/` module with real token issuance and
+  validation; Twenty CRM's `package.json` shows a full auth stack (JWT,
+  Passport, Google/Microsoft OAuth, SAML, bcrypt). Both pairs were corrected
+  to include real security components, moved from `inferredDomains` to
+  `verifiedDomains`.
+- **Paperless-ngx's security domain was undersold, not absent.** The README
+  made it sound like basic login only ("stores data unencrypted, run on a
+  trusted network"); `pyproject.toml` shows `django-allauth[mfa,socialaccount]`
+  — real MFA and social-login support the README's own overview didn't
+  mention. Corrected to add that component alongside the original.
+- **Immich confirmed cleanly** — `package.json` matched what the README
+  already claimed (NestJS, PostgreSQL, JWT/bcrypt alongside the stated
+  OAuth), no correction needed, moved backend/database/security to
+  `verifiedDomains`.
+- **Medusa confirmed the inference was correct, not wrong.** The repo
+  genuinely contains no storefront/frontend package — `frontend` stays in
+  `inferredDomains` as "built separately, external to this repo," which is
+  exactly what the original pair already said. `backend`/`database` moved to
+  `verifiedDomains` (PostgreSQL confirmed via `@medusajs/*-postgres`
+  packages).
+
+**What this says about the two-tier system:** a 2-in-5 correction rate on a
+small, non-random spot-check isn't a rigorous error rate, but it's not
+nothing either — both corrections were in the same direction (a README's
+silence on security was read as "probably absent" when the real answer was
+"present but undocumented in the overview"), which is exactly the failure
+mode `inferredDomains` exists to flag rather than silently trust. README-only
+would have shipped both wrong. The remaining 20 of 25 pairs in this file
+still have empty `verifiedDomains` — this was a proof the field and process
+work end to end, not a full audit, and that distinction stays visible in the
+data rather than getting smoothed over.
 
 **Target: 40-50, not the original 120.** Each `real-project` pair costs
 roughly 3-5x a `hand-written` pair — finding a genuine candidate, reading and
