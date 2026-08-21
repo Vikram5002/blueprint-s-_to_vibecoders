@@ -14,6 +14,7 @@
  */
 
 import { type Result, ok, err } from '../types/result.js';
+import { DOMAIN_NAMES, type DomainName } from '../types/project-schema.js';
 import { validateProjectSchema, type ProjectSchemaRejection } from './validate-project-schema.js';
 
 export const DATASET_SOURCES = ['hand-written', 'real-project', 'synthetic'] as const;
@@ -24,6 +25,24 @@ export interface DatasetPair {
   readonly schema: unknown;
   readonly source: DatasetSource;
   readonly sourceUrl?: string;
+  /**
+   * Domains whose presence/absence was NOT explicitly stated in the source
+   * material and had to be inferred from indirect signals (a tech-stack
+   * mention, "most apps like this have one", etc.). Only meaningful for
+   * `real-project` and `synthetic` pairs — a `hand-written` pair has no
+   * source material to infer from in the first place, so this stays absent
+   * for that source. See training/data/METHODOLOGY.md's Source 2 section.
+   */
+  readonly inferredDomains?: readonly DomainName[];
+  /**
+   * Domains actually checked against the real source repository (file
+   * structure, package manifest, etc.), not just claimed from README prose.
+   * Mirrors this project's own DERIVED/STATED discipline (Constraint's
+   * provenance) applied to dataset curation: a domain claim nobody checked
+   * against real code is a weaker claim, and that difference should be
+   * queryable later, not silently lost.
+   */
+  readonly verifiedDomains?: readonly DomainName[];
 }
 
 export type DatasetPairRejection =
@@ -31,10 +50,31 @@ export type DatasetPairRejection =
   | { readonly path: string; readonly reason: 'missing-or-wrong-type'; readonly expected: string }
   | { readonly path: string; readonly reason: 'empty-string' }
   | { readonly path: string; readonly reason: 'invalid-source'; readonly value: unknown }
-  | { readonly path: string; readonly reason: 'invalid-schema'; readonly errors: readonly ProjectSchemaRejection[] };
+  | { readonly path: string; readonly reason: 'invalid-schema'; readonly errors: readonly ProjectSchemaRejection[] }
+  | { readonly path: string; readonly reason: 'unknown-domain-name'; readonly value: unknown };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Validates an optional array-of-DomainName field: absent is fine, present must be a real DomainName array. */
+function validateOptionalDomainNameArray(
+  candidate: unknown,
+  path: string,
+): readonly DatasetPairRejection[] {
+  if (candidate === undefined) {
+    return [];
+  }
+  if (!Array.isArray(candidate)) {
+    return [{ path, reason: 'missing-or-wrong-type', expected: 'array of DomainName' }];
+  }
+  const rejections: DatasetPairRejection[] = [];
+  candidate.forEach((value, index) => {
+    if (!(DOMAIN_NAMES as readonly unknown[]).includes(value)) {
+      rejections.push({ path: `${path}[${index}]`, reason: 'unknown-domain-name', value });
+    }
+  });
+  return rejections;
 }
 
 /**
@@ -63,6 +103,9 @@ export function validateDatasetPair(candidate: unknown): Result<DatasetPair, rea
   if ('sourceUrl' in candidate && candidate['sourceUrl'] !== undefined && typeof candidate['sourceUrl'] !== 'string') {
     rejections.push({ path: '$.sourceUrl', reason: 'missing-or-wrong-type', expected: 'string' });
   }
+
+  rejections.push(...validateOptionalDomainNameArray(candidate['inferredDomains'], '$.inferredDomains'));
+  rejections.push(...validateOptionalDomainNameArray(candidate['verifiedDomains'], '$.verifiedDomains'));
 
   const schemaResult = validateProjectSchema(candidate['schema']);
   if (!schemaResult.ok) {

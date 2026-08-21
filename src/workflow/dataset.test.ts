@@ -60,6 +60,57 @@ describe('validateDatasetPair', () => {
       expect(schemaRejection?.reason).toBe('invalid-schema');
     }
   });
+
+  it('accepts a real-project pair with inferredDomains and verifiedDomains set', () => {
+    const result = validateDatasetPair({
+      prompt: 'A self-hosted document archiving tool.',
+      schema: loadFixture('todo-app.json'),
+      source: 'real-project',
+      sourceUrl: 'https://github.com/example/example',
+      inferredDomains: ['security'],
+      verifiedDomains: ['backend', 'database'],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it('accepts a hand-written pair with inferredDomains/verifiedDomains absent', () => {
+    const result = validateDatasetPair({
+      prompt: 'A todo app.',
+      schema: loadFixture('todo-app.json'),
+      source: 'hand-written',
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it('rejects an inferredDomains entry that is not a real domain name', () => {
+    const result = validateDatasetPair({
+      prompt: 'A todo app.',
+      schema: loadFixture('todo-app.json'),
+      source: 'real-project',
+      inferredDomains: ['mobile'],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(
+        result.error.some((r) => r.path === '$.inferredDomains[0]' && r.reason === 'unknown-domain-name'),
+      ).toBe(true);
+    }
+  });
+
+  it('rejects verifiedDomains when it is not an array', () => {
+    const result = validateDatasetPair({
+      prompt: 'A todo app.',
+      schema: loadFixture('todo-app.json'),
+      source: 'real-project',
+      verifiedDomains: 'backend',
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.some((r) => r.path === '$.verifiedDomains' && r.reason === 'missing-or-wrong-type')).toBe(
+        true,
+      );
+    }
+  });
 });
 
 describe('normalizePrompt', () => {
