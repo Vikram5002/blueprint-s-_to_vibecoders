@@ -259,13 +259,20 @@ originally-imagined prompts. Two reasons:
    with more information, not a default assumption that 80 is still coming
    next.
 
-**`real-project` collection is at 25 of the revised 40-50 target**, in
-`training/data/real-project/real-project.jsonl`, across two checkpointed
-batches (12, then +13 to 25), sourced from awesome-selfhosted (see "Source 2:
-real-project" above for the full process and an honesty note about
-verification depth — `verifiedDomains` is still empty for all 25; every pair
-so far has been converted from README prose only). Zero validation failures,
-zero near-duplicates against the full corpus across both batches.
+**`real-project` collection has reached the 40-50 target: 44 pairs**, in
+`training/data/real-project/real-project.jsonl`, across three checkpointed
+batches (12, then +13 to 25, then +19 to 44), sourced from awesome-selfhosted
+(see "Source 2: real-project" above for the full sourcing/conversion process).
+Zero validation failures, zero near-duplicates against the full corpus across
+all three batches.
+
+**Verification depth:** 5 of the 44 pairs have populated `verifiedDomains`
+(checked against real repo contents, not just README prose) — see the
+verification spot-check above, which found and corrected 2 wrong domain
+claims out of those 5. The other 39 remain README-prose-only, honestly
+recorded as such via `inferredDomains` rather than implied to carry more
+rigor than they do. Verifying a larger fraction is future work, not
+something this dataset's first pass claims to have done.
 
 `synthetic` collection has not started, and should not until a first
 fine-tune exists to generate from — see [[project_loq_no_7b_model]] for the
