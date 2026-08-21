@@ -28,11 +28,11 @@ One JSONL file per source, one JSON object per line:
 
 | Source | What it is | Target count |
 |---|---|---|
-| `hand-written` | Written by a person, one at a time, deliberately covering a spread of prompt styles (well-specified, ambiguous, terse, unusual architecture) | **80** |
+| `hand-written` | Written by a person, one at a time, deliberately covering a spread of prompt styles (well-specified, ambiguous, terse, unusual architecture) | **47 (paused — see "Current state")** |
 | `real-project` | Descriptions drawn from real repositories/issues, schema constructed to match what was actually built | **120** |
 | `synthetic` | Model-generated prompt/schema pairs, produced once a first fine-tune exists to bootstrap from | **300** |
 
-Total target: **500 pairs**.
+Original total target: **500 pairs** (80+120+300) — approximate now that the hand-written count is open-ended rather than fixed at 80; see "Current state".
 
 ## The hard rule: validation draws from `hand-written` only
 
@@ -107,14 +107,38 @@ many similar prompts by hand.
 
 ## Current state
 
-12 `hand-written` pairs exist in `training/data/gold/gold.jsonl`, written as
-a proof of the format (see the commit that introduces this file for the
-count and a rejection report — all 12 passed on generation). This is a
-deliberate checkpoint, not the finished 80: writing all 80 in one sitting
-risks the same repetitive-phrasing problem the dedup check exists to catch,
-so the remaining ~68 are written in later sessions, checked against
-`validate-dataset.mjs` incrementally rather than as one large unreviewed
-batch.
+**Hand-writing is paused at 47 `hand-written` pairs.** They were written
+across three checkpointed batches (12, then +18 to 30, then +17 to 47),
+each validated inline against the real `validateProjectSchema` during
+generation and checked for near-duplicates against the full accumulated
+set before being written to `training/data/gold/gold.jsonl` — zero
+validation failures and zero near-duplicates across all three batches.
+
+**This is a deliberate stop, not an interruption.** The original plan
+target of 80 `hand-written` pairs was a placeholder set before any pairs
+existed. At 47, dataset work shifts to `real-project` (Source 2: pairs
+drawn from real repositories' READMEs and proposals, schema constructed to
+match what was actually built) rather than continuing to hand-write more
+originally-imagined prompts. Two reasons:
+
+1. **Diminishing returns on invented prompts.** Past a few dozen
+   hand-written pairs, a person inventing more prompts from imagination
+   starts drawing on the same mental categories already covered (education,
+   e-commerce, healthcare, logistics, and so on — see the batch commits for
+   the full spread) rather than surfacing genuinely new structure.
+   `real-project` pairs are grounded in what someone actually built, which
+   is a different and complementary source of variety, not more of the
+   same kind.
+2. **The right final size for the validation split is a question for later,
+   not a number to hit now.** 80 was a guess made before any pairs existed
+   to calibrate against. The actual right size for `gold/` — enough to
+   detect a real regression, not so much that hand-writing more of it
+   crowds out collecting `real-project` and `synthetic` — is a decision to
+   make once there is a first fine-tune run to evaluate against, not before.
+   **This document intentionally does not commit to a new number here.**
+   If hand-writing resumes later, that will be a deliberate decision made
+   with more information, not a default assumption that 80 is still coming
+   next.
 
 `real-project` and `synthetic` collection has not started. `synthetic`
 specifically should not start until a first fine-tune exists to generate
