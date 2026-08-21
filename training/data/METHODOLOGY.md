@@ -23,13 +23,18 @@ One JSONL file per source, one JSON object per line:
   always set explicitly when the pair is written.
 - `sourceUrl` — optional. Set for `real-project` pairs (link to the repository
   or issue the description was drawn from); omitted for the other two sources.
+- `inferredDomains` / `verifiedDomains` — optional arrays of domain names
+  (`frontend`/`backend`/`database`/`security`). Only meaningful for
+  `real-project` and `synthetic` pairs; see "Source 2: real-project" below
+  for what they mean and why they're separate fields on `DatasetPair`
+  rather than on `ProjectSchema` itself.
 
 ## Three sources, and why they are not interchangeable
 
 | Source | What it is | Target count |
 |---|---|---|
 | `hand-written` | Written by a person, one at a time, deliberately covering a spread of prompt styles (well-specified, ambiguous, terse, unusual architecture) | **47 (paused — see "Current state")** |
-| `real-project` | Descriptions drawn from real repositories/issues, schema constructed to match what was actually built | **120** |
+| `real-project` | Descriptions drawn from real repositories/issues, schema constructed to match what was actually built | **40-50 (revised down from 120 — see "Source 2: real-project")** |
 | `synthetic` | Model-generated prompt/schema pairs, produced once a first fine-tune exists to bootstrap from | **300** |
 
 Original total target: **500 pairs** (80+120+300) — approximate now that the hand-written count is open-ended rather than fixed at 80; see "Current state".
@@ -105,6 +110,87 @@ words). It exists so the dataset's effective size — how much distinct signal
 copy-paste-and-tweak authoring, which is the natural failure mode of writing
 many similar prompts by hand.
 
+## Source 2: real-project
+
+**Where candidates come from:**
+
+- **Primary: [awesome-selfhosted/awesome-selfhosted](https://github.com/awesome-selfhosted/awesome-selfhosted).**
+  A categorized list of real, deployed open-source applications (Analytics,
+  Booking and Scheduling, CRM, Document Management, and dozens more), each
+  entry linking to the project's actual repository. The category headings
+  double as a domain-spread checklist, the same way batch commits tracked
+  spread for `hand-written`.
+- **Secondary: GitHub topic pages** (`github.com/topics/<keyword>`, sorted by
+  stars) — used to target a specific domain directly when awesome-selfhosted's
+  categories run thin for something.
+- **Explicitly not used:** generic GitHub "trending" (too noisy — mixes
+  libraries, dotfiles, and tutorials with actual applications) and Devpost
+  (its pages are JS-rendered client-side; couldn't verify its structure via
+  fetch, so it's not something to build a sourcing plan around).
+
+**Selection filter**, applied before converting anything: a real public repo
+exists, the README has a genuine descriptive section (not just badges/install
+steps/license text), and it describes an end-user *application* — not a
+library, CLI tool, or dev-tooling package with no domain-mappable structure.
+
+**Conversion process:**
+
+1. Read only the descriptive portion of the README (About/Overview/Features).
+2. Write `prompt` as an **original paraphrase**, in the same "asking for
+   this" register as `hand-written` prompts — never copied README text. This
+   is both a style-consistency choice and a copyright one: reproducing more
+   than a short quote of someone else's writing isn't something to do even
+   inside a training-data file.
+3. Map to the four domains using an explicit rule, not impression:
+   - `frontend`: a UI, dashboard, or app is explicitly described
+   - `backend`: an API/server is explicitly described, or a specific backend
+     framework/language is named in the stated tech stack
+   - `database`: a specific storage technology is named, or persistence is
+     explicitly described
+   - `security`: **only** populated when the README explicitly states an
+     auth, permissions, or compliance concern — never inferred just because
+     "most real apps have login"
+4. Record what had to be guessed. `DatasetPair.inferredDomains` lists every
+   domain whose presence *or* absence wasn't explicitly stated in the source
+   and had to be inferred (a tech-stack mention implying a database that's
+   never named, a README that says nothing about auth so `security` was left
+   empty as a judgment call rather than a confirmed fact). `DatasetPair.verifiedDomains`
+   lists domains actually checked against the real repository (file
+   structure, package manifest) rather than taken from README prose alone.
+   Both fields live on `DatasetPair`, not on `ProjectSchema` — dataset
+   curation confidence has nothing to do with the app-builder pipeline
+   `ProjectSchema` actually feeds, and blurring the two would be exactly the
+   kind of provenance-mixing rule 2 in the main `CLAUDE.md` forbids in the
+   core data model. The pair-level design deliberately mirrors that same
+   DERIVED/STATED discipline: a domain claim nobody checked against real code
+   is a weaker claim, and the weakness should be queryable later, not lost.
+5. Validate exactly like every other batch: inline against the real
+   `validateProjectSchema` during generation, and check near-duplicates
+   against the **full combined corpus** (`hand-written` + `real-project`
+   together) — a real-project pair converging on a concept a hand-written
+   pair already covers is exactly what the dedup check exists to catch.
+6. `sourceUrl` recorded for every pair, no exceptions.
+
+**Honesty note on the first batch:** the 12 pairs in
+`training/data/real-project/real-project.jsonl` were converted from README
+text only — no pair has anything in `verifiedDomains` yet, because no repo's
+actual file structure or package manifest was opened to confirm a claim.
+That's a real, lower-rigor starting point, recorded accurately rather than
+inflated. A later batch could spend the extra effort to verify a subset
+against real code; until then, every domain claim in this file is prose-only
+and `inferredDomains` should be read as the more load-bearing field of the
+two.
+
+**Target: 40-50, not the original 120.** Each `real-project` pair costs
+roughly 3-5x a `hand-written` pair — finding a genuine candidate, reading and
+understanding someone else's messy README, resolving domain ambiguity
+against the rule above, writing an original paraphrase — so 120 at that
+ratio is equivalent effort to 360-600 hand-written-equivalent pairs, not
+realistic at the cadence this dataset has actually been built at. 40-50 keeps
+`real-project` roughly matched to `hand-written`'s final size (47) rather
+than one source dominating the corpus, collected in the same 10-15-pair
+checkpointed batches as `hand-written` was.
+
 ## Current state
 
 **Hand-writing is paused at 47 `hand-written` pairs.** They were written
@@ -140,8 +226,14 @@ originally-imagined prompts. Two reasons:
    with more information, not a default assumption that 80 is still coming
    next.
 
-`real-project` and `synthetic` collection has not started. `synthetic`
-specifically should not start until a first fine-tune exists to generate
-from — see [[project_loq_no_7b_model]] for the machine constraint that
-applies once that fine-tuning work begins in earnest (LOQ rehearses on the
-0.5B model only; the real training run happens on the borrowed desktop).
+**`real-project` collection has started: 12 of the revised 40-50 target**,
+in `training/data/real-project/real-project.jsonl`, sourced from
+awesome-selfhosted (see "Source 2: real-project" above for the full process
+and an honesty note about verification depth). Zero validation failures,
+zero near-duplicates against the full corpus.
+
+`synthetic` collection has not started, and should not until a first
+fine-tune exists to generate from — see [[project_loq_no_7b_model]] for the
+machine constraint that applies once that fine-tuning work begins in earnest
+(LOQ rehearses on the 0.5B model only; the real training run happens on the
+borrowed desktop).

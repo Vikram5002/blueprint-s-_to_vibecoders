@@ -31,7 +31,10 @@ const thresholdArg = args.find((a) => a.startsWith('--dup-threshold='));
 const DUP_THRESHOLD = thresholdArg ? Number(thresholdArg.slice('--dup-threshold='.length)) : 0.8;
 const explicitFiles = args.filter((a) => !a.startsWith('--'));
 
-const DEFAULT_FILES = [join(repoRoot, 'training', 'data', 'gold', 'gold.jsonl')];
+const DEFAULT_FILES = [
+  join(repoRoot, 'training', 'data', 'gold', 'gold.jsonl'),
+  join(repoRoot, 'training', 'data', 'real-project', 'real-project.jsonl'),
+];
 
 const files = (explicitFiles.length > 0 ? explicitFiles : DEFAULT_FILES).filter((path) => {
   if (!existsSync(path)) {
