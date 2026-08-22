@@ -111,8 +111,47 @@ different structure. provenance is always the literal "STATED".
 }
 ```
 
+## Known correctness bug to port forward: `apply_chat_template` return type
+
+**Any script that tokenizes these examples must not assume
+`tokenizer.apply_chat_template(...)` returns a plain list of token ids.**
+On the transformers version installed on LOQ (`training-env`), it returns a
+`BatchEncoding`-like dict object instead — calling `len()` on that counts
+dict keys (2: `input_ids`, `attention_mask`), not tokens, and calling
+`.clone()` on it fails outright since only tensors have `.clone()`. This
+was a real bug caught by the small-scale format proof, not a hypothetical:
+the first proof run silently reported token counts of `2` for every
+example before the loop failed on `.clone()`.
+
+**The fix, to port into whatever script becomes the real training entry
+point** (this proof script will very likely be rewritten before the actual
+desktop run, and this fix needs to survive that rewrite):
+
+```python
+def render_ids(messages):
+    """apply_chat_template's return type varies by transformers version - can
+    be a plain list[int], a Tensor, or a BatchEncoding-like dict. Normalize
+    to a plain list of ints regardless."""
+    result = tokenizer.apply_chat_template(messages, tokenize=True)
+    if hasattr(result, "input_ids"):
+        return list(result.input_ids)
+    if isinstance(result, dict) or hasattr(result, "keys"):
+        return list(result["input_ids"])
+    return list(result)
+```
+
+Don't trust a single local proof run's silence as proof this is fixed
+everywhere either — the transformers version on the borrowed desktop may
+differ from LOQ's, and could hit a different branch of this same variance.
+Re-verify token counts look sane (hundreds, not single digits) the first
+time this runs in a new environment, not just once here.
+
 ## Status
 
-This document records the format decision. Nothing has been implemented yet:
-no training-example generator script exists, and the earlier desktop proof
-run's placeholder format is still in place there until this is acted on.
+Format decided and proven at small scale (8 examples, LOQ, 0.5B, 4-bit LoRA
+— see the session that produced this document for the token-count and VRAM
+numbers). The full 91-pair dataset has been reformatted into
+`training/formatted/dataset.jsonl` using this format; see that commit for
+full-scale tokenization sanity numbers. No training has been run on the
+full reformatted set — that's the borrowed desktop's job with the real 7B
+model, not LOQ's, per [[project_loq_no_7b_model]].

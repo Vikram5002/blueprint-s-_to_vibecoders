@@ -1,0 +1,457 @@
+[
+  {
+    "index": 0,
+    "sourceSessionId": "session-gold-001",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 1,
+    "sourceSessionId": "session-gold-002",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 2,
+    "sourceSessionId": "session-gold-003",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 3,
+    "sourceSessionId": "session-gold-004",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 4,
+    "sourceSessionId": "session-gold-005",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 5,
+    "sourceSessionId": "session-gold-006",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 6,
+    "sourceSessionId": "session-gold-007",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 7,
+    "sourceSessionId": "session-gold-008",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 8,
+    "sourceSessionId": "session-gold-009",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 9,
+    "sourceSessionId": "session-gold-010",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 10,
+    "sourceSessionId": "session-gold-011",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 11,
+    "sourceSessionId": "session-gold-012",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 12,
+    "sourceSessionId": "session-gold-013",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 13,
+    "sourceSessionId": "session-gold-014",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 14,
+    "sourceSessionId": "session-gold-015",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 15,
+    "sourceSessionId": "session-gold-016",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 16,
+    "sourceSessionId": "session-gold-017",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 17,
+    "sourceSessionId": "session-gold-018",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 18,
+    "sourceSessionId": "session-gold-019",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 19,
+    "sourceSessionId": "session-gold-020",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 20,
+    "sourceSessionId": "session-gold-021",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 21,
+    "sourceSessionId": "session-gold-022",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 22,
+    "sourceSessionId": "session-gold-023",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 23,
+    "sourceSessionId": "session-gold-024",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 24,
+    "sourceSessionId": "session-gold-025",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 25,
+    "sourceSessionId": "session-gold-026",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 26,
+    "sourceSessionId": "session-gold-027",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 27,
+    "sourceSessionId": "session-gold-028",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 28,
+    "sourceSessionId": "session-gold-029",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 29,
+    "sourceSessionId": "session-gold-030",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 30,
+    "sourceSessionId": "session-gold-031",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 31,
+    "sourceSessionId": "session-gold-032",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 32,
+    "sourceSessionId": "session-gold-033",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 33,
+    "sourceSessionId": "session-gold-034",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 34,
+    "sourceSessionId": "session-gold-035",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 35,
+    "sourceSessionId": "session-gold-036",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 36,
+    "sourceSessionId": "session-gold-037",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 37,
+    "sourceSessionId": "session-gold-038",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 38,
+    "sourceSessionId": "session-gold-039",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 39,
+    "sourceSessionId": "session-gold-040",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 40,
+    "sourceSessionId": "session-gold-041",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 41,
+    "sourceSessionId": "session-gold-042",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 42,
+    "sourceSessionId": "session-gold-043",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 43,
+    "sourceSessionId": "session-gold-044",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 44,
+    "sourceSessionId": "session-gold-045",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 45,
+    "sourceSessionId": "session-gold-046",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 46,
+    "sourceSessionId": "session-gold-047",
+    "sourceType": "hand-written"
+  },
+  {
+    "index": 47,
+    "sourceSessionId": "session-real-001",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 48,
+    "sourceSessionId": "session-real-002",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 49,
+    "sourceSessionId": "session-real-003",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 50,
+    "sourceSessionId": "session-real-004",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 51,
+    "sourceSessionId": "session-real-005",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 52,
+    "sourceSessionId": "session-real-006",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 53,
+    "sourceSessionId": "session-real-007",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 54,
+    "sourceSessionId": "session-real-008",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 55,
+    "sourceSessionId": "session-real-009",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 56,
+    "sourceSessionId": "session-real-010",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 57,
+    "sourceSessionId": "session-real-011",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 58,
+    "sourceSessionId": "session-real-012",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 59,
+    "sourceSessionId": "session-real-013",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 60,
+    "sourceSessionId": "session-real-014",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 61,
+    "sourceSessionId": "session-real-015",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 62,
+    "sourceSessionId": "session-real-016",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 63,
+    "sourceSessionId": "session-real-017",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 64,
+    "sourceSessionId": "session-real-018",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 65,
+    "sourceSessionId": "session-real-019",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 66,
+    "sourceSessionId": "session-real-020",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 67,
+    "sourceSessionId": "session-real-021",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 68,
+    "sourceSessionId": "session-real-022",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 69,
+    "sourceSessionId": "session-real-023",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 70,
+    "sourceSessionId": "session-real-024",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 71,
+    "sourceSessionId": "session-real-025",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 72,
+    "sourceSessionId": "session-real-026",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 73,
+    "sourceSessionId": "session-real-027",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 74,
+    "sourceSessionId": "session-real-028",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 75,
+    "sourceSessionId": "session-real-029",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 76,
+    "sourceSessionId": "session-real-030",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 77,
+    "sourceSessionId": "session-real-031",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 78,
+    "sourceSessionId": "session-real-032",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 79,
+    "sourceSessionId": "session-real-033",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 80,
+    "sourceSessionId": "session-real-034",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 81,
+    "sourceSessionId": "session-real-035",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 82,
+    "sourceSessionId": "session-real-036",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 83,
+    "sourceSessionId": "session-real-037",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 84,
+    "sourceSessionId": "session-real-038",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 85,
+    "sourceSessionId": "session-real-039",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 86,
+    "sourceSessionId": "session-real-040",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 87,
+    "sourceSessionId": "session-real-041",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 88,
+    "sourceSessionId": "session-real-042",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 89,
+    "sourceSessionId": "session-real-043",
+    "sourceType": "real-project"
+  },
+  {
+    "index": 90,
+    "sourceSessionId": "session-real-044",
+    "sourceType": "real-project"
+  }
+]
