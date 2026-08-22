@@ -7,6 +7,12 @@ splits, the validation rule, and the reasoning behind them are exactly what a
 much later reader (or a future session doing synthetic generation) needs and
 cannot recover from the data alone.
 
+This document covers **sourcing and curating** the dataset. For how a
+curated pair becomes an actual training example (the system/user/assistant
+format, and why it matches this repo's real `CompletionProvider` calling
+convention rather than being decided in isolation), see
+[`training/TRAINING-FORMAT.md`](../TRAINING-FORMAT.md).
+
 ## Storage format
 
 One JSONL file per source, one JSON object per line:
