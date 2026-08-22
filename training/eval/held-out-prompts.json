@@ -1,0 +1,12 @@
+[
+  "A journaling app where I write a daily entry and tag my mood, and can look back at trends in how I've been feeling over time.",
+  "A peer-to-peer tool lending app for a neighbourhood - I list tools I own, neighbours request to borrow them, and I approve or decline each request.",
+  "A dice roller for tabletop games.",
+  "Something for tracking stuff.",
+  "A fully offline note-taking app with no server or account at all - notes stay on my device, and I sync between my own devices only by manually exporting and importing a file.",
+  "A whistleblower tip submission portal where submissions are completely anonymous - the system must never store or log the submitter's IP address, account, or any identifying information.",
+  "A scheduling app for our church community: members RSVP to events, volunteers sign up for setup and cleanup shifts on each event, and admins get reminder emails sent automatically 24 hours before an event starts.",
+  "A citizen science app where volunteers log wildlife sightings with a photo and location, and researchers review and verify or reject each submission.",
+  "A carbon footprint tracker: I log my transport, food, and energy use, it estimates emissions from what I logged, and shows how my footprint trends over time.",
+  "A local business directory where owners claim and update their own listing, and customers can leave reviews on it."
+]
