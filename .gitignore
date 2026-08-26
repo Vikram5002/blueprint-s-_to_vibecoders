@@ -5,6 +5,8 @@ build/
 src/server/static/
 coverage/
 .vibe/
+ui/test-results/
+ui/playwright-report/
 *.tsbuildinfo
 .DS_Store
 .env
