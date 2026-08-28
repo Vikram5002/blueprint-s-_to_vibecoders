@@ -41,9 +41,9 @@ export const config = tseslint.config(
   },
   {
     // Same carve-out this file takes for itself (see the bottom of this
-    // file): Vite requires its config's default export, same as the root
-    // eslint.config.js requires ESLint's.
-    files: ['vite.config.ts'],
+    // file): Vite, Vitest and Playwright all require their config's default
+    // export, same as ESLint requires its own.
+    files: ['vite.config.ts', 'vitest.config.ts', 'playwright.config.ts'],
     rules: {
       'no-restricted-syntax': 'off',
     },

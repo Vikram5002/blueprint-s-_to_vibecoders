@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { ConversationPane } from './ConversationPane';
 import { PromptBar } from './PromptBar';
 import { LayoutDemo } from './LayoutDemo';
+import { VerificationDemo } from './VerificationDemo';
 
 /**
  * The three-region shell: collapsible sidebar, conversation pane, prompt bar.
@@ -11,18 +12,27 @@ import { LayoutDemo } from './LayoutDemo';
  * refuses to shrink below its content's natural width, which is exactly what
  * breaks a three-region layout at 768px.
  *
- * The "Layout Demo" button is a temporary entry point into Module C
- * (layout selection UI, mock data) — disconnected new UI, not part of the
- * shell's real flow yet.
+ * The "Layout Demo" and "Verification Demo" buttons are temporary entry
+ * points into disconnected mock-data UI (Module C's layout selection, and
+ * the three-outcome verification result display respectively) — neither is
+ * part of the shell's real flow yet.
  */
 export function WorkspaceShell(): JSX.Element {
   const [showLayoutDemo, setShowLayoutDemo] = useState(false);
+  const [showVerificationDemo, setShowVerificationDemo] = useState(false);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-900 text-slate-100">
       <Sidebar />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="flex flex-shrink-0 justify-end border-b border-slate-800 px-3 py-1.5">
+        <div className="flex flex-shrink-0 justify-end gap-2 border-b border-slate-800 px-3 py-1.5">
+          <button
+            type="button"
+            onClick={() => setShowVerificationDemo(true)}
+            className="rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+          >
+            Verification Demo (mock data)
+          </button>
           <button
             type="button"
             onClick={() => setShowLayoutDemo(true)}
@@ -35,6 +45,7 @@ export function WorkspaceShell(): JSX.Element {
         <PromptBar />
       </div>
       {showLayoutDemo && <LayoutDemo onClose={() => setShowLayoutDemo(false)} />}
+      {showVerificationDemo && <VerificationDemo onClose={() => setShowVerificationDemo(false)} />}
     </div>
   );
 }
