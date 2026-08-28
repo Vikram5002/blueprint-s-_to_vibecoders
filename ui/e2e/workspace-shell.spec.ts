@@ -82,6 +82,120 @@ test.describe('sidebar collapse / expand', () => {
   });
 });
 
+test.describe('tab navigation', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test('starts on Conversation and moves between all four sections with zero console errors', async ({
+    page,
+  }) => {
+    const consoleErrors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+
+    await page.goto('/workspace.html');
+
+    const conversationTab = page.getByRole('tab', { name: 'Conversation' });
+    const layoutTab = page.getByRole('tab', { name: 'Layout (mock)' });
+    const verificationTab = page.getByRole('tab', { name: 'Verification (mock)' });
+    const workflowTab = page.getByRole('tab', { name: 'Workflow graph (mock)' });
+
+    await expect(conversationTab).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByText('No messages yet. The conversation will appear here.')).toBeVisible();
+
+    await layoutTab.click();
+    await expect(layoutTab).toHaveAttribute('aria-selected', 'true');
+    await expect(conversationTab).toHaveAttribute('aria-selected', 'false');
+    await expect(page.getByText('Mock data — these presets are hard-coded')).toBeVisible();
+
+    await verificationTab.click();
+    await expect(verificationTab).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByText('No backend exists yet. Every scenario below')).toBeVisible();
+
+    await workflowTab.click();
+    await expect(workflowTab).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('button', { name: 'Small project' })).toBeVisible();
+
+    await conversationTab.click();
+    await expect(conversationTab).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByPlaceholder('Message...')).toBeVisible();
+
+    expect(consoleErrors).toEqual([]);
+  });
+});
+
+test.describe('verification display — three outcomes', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test('each scenario renders its own visually distinct, unambiguous outcome', async ({ page }) => {
+    await page.goto('/workspace.html');
+    await page.getByRole('tab', { name: 'Verification (mock)' }).click();
+
+    await page.getByRole('button', { name: 'Verified' }).click();
+    await expect(page.locator('[data-outcome="verified"]')).toBeVisible();
+    await expect(page.locator('[data-outcome="verified"]').getByText('Verified')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Violation detected' }).click();
+    await expect(page.locator('[data-outcome="violated"]')).toBeVisible();
+    await expect(page.getByText('Violation Detected')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Unverifiable — no rules stated' }).click();
+    await expect(page.locator('[data-outcome="unverifiable"]')).toBeVisible();
+    await expect(page.getByText('This code was not verified against anything.')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Unverifiable — rules unresolved' }).click();
+    await expect(page.locator('[data-outcome="unverifiable"]')).toBeVisible();
+
+    // Only one outcome renders at a time — never two outcome containers, and
+    // never "verified" alongside anything unverifiable.
+    await expect(page.locator('[data-outcome]')).toHaveCount(1);
+  });
+});
+
+test.describe('workflow graph — fit-to-view', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test('renders the four domain nodes and responds to the fit-to-view control', async ({ page }) => {
+    await page.goto('/workspace.html');
+    await page.getByRole('tab', { name: 'Workflow graph (mock)' }).click();
+
+    await expect(page.getByText('Frontend')).toBeVisible();
+    await expect(page.getByText('Backend')).toBeVisible();
+    await expect(page.getByText('Database')).toBeVisible();
+    await expect(page.getByText('Security')).toBeVisible();
+
+    const viewport = page.locator('.react-flow__viewport');
+    const before = await viewport.getAttribute('style');
+
+    await page.locator('.react-flow__controls-zoomin').click();
+    await page.locator('.react-flow__controls-zoomin').click();
+    const zoomed = await viewport.getAttribute('style');
+    expect(zoomed).not.toBe(before);
+
+    await page.locator('.react-flow__controls-fitview').click();
+    await expect
+      .poll(async () => viewport.getAttribute('style'))
+      .not.toBe(zoomed);
+  });
+});
+
+test.describe('no horizontal overflow at 768px', () => {
+  test.use({ viewport: { width: 768, height: 1024 } });
+
+  for (const tab of ['Conversation', 'Layout (mock)', 'Verification (mock)', 'Workflow graph (mock)']) {
+    test(`"${tab}" tab has no horizontal overflow`, async ({ page }) => {
+      await page.goto('/workspace.html');
+      await page.getByRole('tab', { name: tab }).click();
+
+      const { scrollWidth, innerWidth } = await page.evaluate(() => ({
+        scrollWidth: document.body.scrollWidth,
+        innerWidth: window.innerWidth,
+      }));
+      expect(scrollWidth).toBe(innerWidth);
+    });
+  }
+});
+
 test.describe('prompt bar', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 

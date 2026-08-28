@@ -30,35 +30,19 @@ function mockFor(scenario: Scenario) {
   }
 }
 
-interface VerificationDemoProps {
-  readonly onClose: () => void;
-}
-
 /**
- * Demo entry point for the verification result display — disconnected from
- * the rest of the shell, reachable only from the temporary "Verification
- * Demo" button in WorkspaceShell, same pattern as LayoutDemo. No backend: a
- * scenario switcher over four hand-built mocks (verification-mocks.ts) that
- * cover all three outcomes plus both zero-violation cases.
+ * The verification result display, reached via the "Verification" tab in
+ * WorkspaceShell. No backend: a scenario switcher over four hand-built mocks
+ * (verification-mocks.ts) that cover all three outcomes plus both
+ * zero-violation cases.
  */
-export function VerificationDemo({ onClose }: VerificationDemoProps): JSX.Element {
+export function VerificationDemo(): JSX.Element {
   const [scenario, setScenario] = useState<Scenario>('verified');
   const mock = mockFor(scenario);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/80 p-6">
-      <div className="w-full max-w-3xl rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-100">Verification result (mock data)</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-sm text-slate-400 hover:text-slate-100"
-          >
-            Close
-          </button>
-        </div>
-
+    <div className="min-h-0 flex-1 overflow-y-auto p-6">
+      <div className="mx-auto max-w-3xl">
         <div className="mb-4 rounded border border-amber-700/50 bg-amber-950/20 p-2 text-xs text-amber-300">
           No backend exists yet. Every scenario below is hand-built mock data against the real{' '}
           <code>ConformanceResult</code> shape (src/types/violations.ts) — nothing here was actually

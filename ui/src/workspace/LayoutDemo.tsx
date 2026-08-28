@@ -5,29 +5,17 @@ import type { LayoutSchema } from './layout-types';
 
 type View = { readonly mode: 'presets' } | { readonly mode: 'custom' } | { readonly mode: 'selected'; readonly schema: LayoutSchema };
 
-interface LayoutDemoProps {
-  readonly onClose: () => void;
-}
-
 /**
- * Module C demo entry point — disconnected from the rest of the shell for
- * now, reachable only from the temporary "Layout Demo" button in
+ * Module C — layout selection, reached via the "Layout" tab in
  * WorkspaceShell. Everything here is mock data pending the real
  * orchestrator (see LayoutPresetPanel's own banner).
  */
-export function LayoutDemo({ onClose }: LayoutDemoProps): JSX.Element {
+export function LayoutDemo(): JSX.Element {
   const [view, setView] = useState<View>({ mode: 'presets' });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/80 p-6">
-      <div className="w-full max-w-5xl rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-100">Layout selection (mock data)</h2>
-          <button type="button" onClick={onClose} className="text-sm text-slate-400 hover:text-slate-100">
-            Close
-          </button>
-        </div>
-
+    <div className="min-h-0 flex-1 overflow-y-auto p-6">
+      <div className="mx-auto max-w-5xl">
         {view.mode === 'presets' && (
           <LayoutPresetPanel
             onSelectPreset={(schema) => setView({ mode: 'selected', schema })}

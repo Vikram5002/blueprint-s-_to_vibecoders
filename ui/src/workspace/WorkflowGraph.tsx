@@ -199,7 +199,7 @@ function EdgeInspection({ edge }: { edge: WorkflowEdge }): JSX.Element {
       ) : (
         <div className="rounded border border-violet-700/50 bg-violet-950/20 p-2">
           <div className="mb-1 flex items-center gap-2">
-            <span className="rounded border border-violet-500 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-violet-300">
+            <span className="rounded border border-violet-500 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-300">
               Stated
             </span>
             <span className="text-[10px] text-slate-500">
