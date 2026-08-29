@@ -148,6 +148,13 @@ export type SubjectResolutionStatus =
   /** Could not be mapped. The constraint is kept but cannot be evaluated. */
   | 'UNRESOLVED';
 
+export const SUBJECT_RESOLUTION_STATUSES: readonly SubjectResolutionStatus[] = [
+  'MODULE',
+  'PATH_PATTERN',
+  'REGEX_PATTERN',
+  'UNRESOLVED',
+];
+
 export type SubjectUnresolvedReason =
   /** The phrase matched nothing in the repository at all. */
   | 'no-candidate'
@@ -169,6 +176,17 @@ export type SubjectUnresolvedReason =
    * bound as if the backreference were literal — see docs/VIOLATIONS.md.
    */
   | 'capture-group-backreference';
+
+export const SUBJECT_UNRESOLVED_REASONS: readonly SubjectUnresolvedReason[] = [
+  'no-candidate',
+  'ambiguous',
+  'low-similarity',
+  'no-such-layer',
+  'external-subject',
+  'pattern-matched-nothing',
+  'pattern-invalid',
+  'capture-group-backreference',
+];
 
 export interface ResolvedSubject {
   /** The noun phrase exactly as it appeared in the prose. */
