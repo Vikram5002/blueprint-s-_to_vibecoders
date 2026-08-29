@@ -187,22 +187,34 @@ function domainSpecSchema() {
  * staying names rather than Constraints until real modules exist. So every
  * subject/object/via a freshly generated ProjectSchema can produce is
  * necessarily UNRESOLVED/no-candidate/prose, the exact shape observed in
- * real held-out generations (training/held-out-outputs-configC.json). Asking
- * the model for anything else would be asking it to fabricate a resolution
- * it has no basis for.
+ * real held-out generations (training/held-out-outputs-configC.json).
+ *
+ * `status`, `origin`, `target`, and `reason` are deliberately NOT
+ * requested here. The general pattern, confirmed by repeated live calls:
+ * Gemini does not reliably echo a fixed-value enum field back correctly,
+ * no matter which field it is. status/origin failed 3/3 live attempts;
+ * once those were stopped being asked for, target/reason failed on the
+ * very next attempt instead. None of the four is ever genuine model
+ * judgment in the first place (each has exactly one correct answer,
+ * always the same one, regardless of what the constraint says) — the fix
+ * is to stop asking the model for any of them and set them
+ * programmatically after parsing instead, see fillFixedConstraintFields
+ * below. `similarity` reaches the same fixed value (0) through
+ * `minimum`/`maximum` rather than `enum` and has never failed a live
+ * call — left as a request-side constraint, not moved into the
+ * programmatic fill, since min/max appears to be a construct Gemini
+ * actually handles correctly where bare `enum` is not. `alternatives` is
+ * still requested as an always-empty array: genuinely different from an
+ * enum-locked scalar, and per instruction not folded into this fix.
  */
 const UNRESOLVED_PROSE_SUBJECT_SCHEMA = {
   type: 'object',
   properties: {
     phrase: { type: 'string' },
-    status: { const: 'UNRESOLVED' },
-    target: { const: null },
-    origin: { const: 'prose' },
-    reason: { const: 'no-candidate' },
-    similarity: { const: 0 },
-    alternatives: { type: 'array', maxItems: 0 },
+    similarity: { type: 'number', minimum: 0, maximum: 0 },
+    alternatives: { type: 'array', items: { type: 'string' }, maxItems: 0 },
   },
-  required: ['phrase', 'status', 'target', 'origin', 'reason', 'similarity', 'alternatives'],
+  required: ['phrase', 'similarity', 'alternatives'],
   additionalProperties: false,
 } as const;
 
@@ -213,7 +225,19 @@ const CONSTRAINT_SCHEMA = {
     relation: { type: 'string', enum: [...CONSTRAINT_RELATIONS] },
     subject: UNRESOLVED_PROSE_SUBJECT_SCHEMA,
     object: UNRESOLVED_PROSE_SUBJECT_SCHEMA,
-    via: { anyOf: [UNRESOLVED_PROSE_SUBJECT_SCHEMA, { const: null }] },
+    via: { anyOf: [UNRESOLVED_PROSE_SUBJECT_SCHEMA, { enum: [null] }] },
+    // line and timestamp are not requested here, for the same reason
+    // subject/object/via's status and origin are not (see
+    // UNRESOLVED_PROSE_SUBJECT_SCHEMA's docstring above). Neither is
+    // genuine model output for a schema generated from a bare prompt:
+    // line has no natural value (a one-paragraph prompt has no lines to
+    // reference — every real chat-log-sourced fixture in this codebase
+    // already carries line: null), and the model has no way to know the
+    // real wall-clock time of its own inference. Both are set by
+    // fillFixedConstraintFields after parsing instead. type and location
+    // ARE still requested: which kind of source this is, and where
+    // within it, is a judgement call the model has to make, not a fixed
+    // constant.
     source: {
       type: 'object',
       properties: {
@@ -222,18 +246,20 @@ const CONSTRAINT_SCHEMA = {
           enum: ['chat-log', 'agents-md', 'readme', 'adr', 'commit-msg', 'user-authored', 'seeded-from-derived'],
         },
         location: { type: 'string' },
-        line: { anyOf: [{ type: 'number' }, { const: null }] },
-        timestamp: { anyOf: [{ type: 'string' }, { const: null }] },
       },
-      required: ['type', 'location', 'line', 'timestamp'],
+      required: ['type', 'location'],
       additionalProperties: false,
     },
     confidence: { type: 'number', minimum: 0, maximum: 1 },
     lowConfidence: { type: 'boolean' },
     rawText: { type: 'string' },
-    provenance: { const: 'STATED' },
+    // provenance not requested - see UNRESOLVED_PROSE_SUBJECT_SCHEMA's
+    // docstring. A Constraint's provenance is always 'STATED', never
+    // DERIVED (project-schema.ts: "no code path that sets this to
+    // DERIVED"), so this is the same class of enum-locked single value
+    // as status/origin/target/reason. Set by fillFixedConstraintFields.
   },
-  required: ['id', 'relation', 'subject', 'object', 'via', 'source', 'confidence', 'lowConfidence', 'rawText', 'provenance'],
+  required: ['id', 'relation', 'subject', 'object', 'via', 'source', 'confidence', 'lowConfidence', 'rawText'],
   additionalProperties: false,
 } as const;
 
@@ -255,9 +281,12 @@ export const PROJECT_SCHEMA_JSON_SCHEMA = {
       additionalProperties: false,
     },
     constraints: { type: 'array', items: CONSTRAINT_SCHEMA },
-    provenance: { const: 'STATED' },
+    // provenance not requested - a ProjectSchema is always 'STATED' per
+    // its own type ("no code path can produce the other value"). Same
+    // enum-locked-single-value class handled programmatically throughout
+    // this file; set on the top-level object in fillFixedConstraintFields.
   },
-  required: ['sessionId', 'title', 'originalPrompt', 'domains', 'constraints', 'provenance'],
+  required: ['sessionId', 'title', 'originalPrompt', 'domains', 'constraints'],
   additionalProperties: false,
 } as const;
 
@@ -298,7 +327,7 @@ export function createProjectSchemaGenerator(options: CreateProjectSchemaGenerat
         // same way a bad model answer would, not bypass the gate that exists
         // specifically to keep an invalid ProjectSchema from ever being
         // returned.
-        return finalize(cached.description ?? '');
+        return finalize(cached.description ?? '', null);
       }
 
       const completion = await options.provider.complete({
@@ -321,7 +350,7 @@ export function createProjectSchemaGenerator(options: CreateProjectSchemaGenerat
         return err({ reason: 'provider-error', message: completion.error.message });
       }
 
-      const result = finalize(completion.value.text);
+      const result = finalize(completion.value.text, new Date().toISOString());
       if (result.ok) {
         // Only a validated answer is cached. Caching a rejected one would
         // make a bad answer sticky forever — every future call with the same
@@ -341,7 +370,15 @@ export function createProjectSchemaGenerator(options: CreateProjectSchemaGenerat
   };
 }
 
-function finalize(text: string): Result<ProjectSchema, GenerateFailure> {
+/**
+ * `generatedAt` is null on the cache-hit re-validate path (see the two
+ * call sites) and a real ISO timestamp on a fresh completion, captured
+ * once before the result is ever cached. Passing null on cache hit is
+ * what keeps repeated calls with the same prompt byte-identical -
+ * fillFixedConstraintFields leaves an already-embedded timestamp alone
+ * rather than overwriting it with "now" on every re-validation.
+ */
+function finalize(text: string, generatedAt: string | null): Result<ProjectSchema, GenerateFailure> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -349,7 +386,8 @@ function finalize(text: string): Result<ProjectSchema, GenerateFailure> {
     return err({ reason: 'unparseable-json', message: `response was not valid JSON: ${String(cause)}` });
   }
 
-  const validated = validateProjectSchema(rewriteComponentIds(parsed));
+  const withFixedFields = fillFixedConstraintFields(rewriteComponentIds(parsed), generatedAt);
+  const validated = validateProjectSchema(withFixedFields);
   if (!validated.ok) {
     return err({
       reason: 'schema-violation',
@@ -395,4 +433,100 @@ function rewriteOneComponentId(domainName: DomainName, component: unknown): unkn
   const c = component as Record<string, unknown>;
   if (typeof c['name'] !== 'string' || typeof c['purpose'] !== 'string') return component;
   return { ...c, id: componentId(domainName, c['name'], c['purpose']) };
+}
+
+/**
+ * Overwrites every enum-locked single-value field this schema would
+ * otherwise ask the model to echo back, discarding whatever the model
+ * produced there: status/origin/target/reason on every constraint's
+ * subject/object/non-null via, provenance on every constraint and on
+ * the top-level schema, and line/(when generatedAt is real) timestamp
+ * on every constraint's source.
+ *
+ * None of these are genuine model judgment for a schema generated from
+ * a bare prompt with no code to resolve against - each has exactly one
+ * correct answer, always the same one, regardless of what the
+ * constraint says. Confirmed by two rounds of live Gemini calls: the
+ * general pattern is that Gemini does not reliably echo a fixed-value
+ * enum field back correctly, not a defect specific to any one field.
+ * status/origin failed 3/3 live attempts; once removed from the request
+ * schema, target/reason failed on the very next attempt instead.
+ * Removing every field of this shape from the request schema and
+ * setting them all here is the fix, rather than continuing to
+ * whack-a-mole one field at a time.
+ *
+ * - status is always 'UNRESOLVED', origin is always 'prose' - see
+ *   UNRESOLVED_PROSE_SUBJECT_SCHEMA's docstring.
+ * - target is always null and reason is always 'no-candidate' - same
+ *   docstring; there is no code yet to resolve a subject against, so
+ *   nothing can ever be a real target and there is no reason to report
+ *   other than "no-candidate".
+ * - provenance is always the literal 'STATED', on every Constraint and
+ *   on the ProjectSchema itself - see project-schema.ts and
+ *   constraints.ts, both documented as having no code path that ever
+ *   produces the other value.
+ * - source.line is always null: a one-paragraph prompt has no line to
+ *   reference, the same way every real chat-log-sourced fixture in this
+ *   codebase already carries line: null for exactly this reason.
+ * - source.timestamp is the moment this schema was generated - real,
+ *   knowable information the calling code has and the model does not
+ *   (it has no access to the actual wall-clock time of its own
+ *   inference). Only overwritten when generatedAt is a real timestamp;
+ *   left untouched (null argument) on the cache-hit re-validate path, so
+ *   a cached answer's already-embedded generation timestamp is never
+ *   replaced with the time of a later, unrelated cache hit - see
+ *   finalize()'s own doc comment for why that distinction is load-
+ *   bearing for this module's determinism guarantee.
+ *
+ * `similarity` and `alternatives` are deliberately NOT touched here:
+ * similarity reaches its fixed value (0) through minimum/maximum in the
+ * request schema rather than enum, and has never failed a live call -
+ * left as a request-side constraint. alternatives is real (if always
+ * empty at generation time) array content, out of scope per instruction.
+ *
+ * Defensive about shape, like rewriteComponentIds: this runs on an
+ * unknown value before validateProjectSchema, so anything that doesn't
+ * look like a well-formed constraint/subject/source is left untouched
+ * and reported by the real validator instead of guessed at here.
+ */
+function fillFixedConstraintFields(candidate: unknown, generatedAt: string | null): unknown {
+  if (typeof candidate !== 'object' || candidate === null) return candidate;
+  const obj = candidate as Record<string, unknown>;
+  const next: Record<string, unknown> = { ...obj, provenance: 'STATED' };
+
+  const constraints = obj['constraints'];
+  if (Array.isArray(constraints)) {
+    next['constraints'] = constraints.map((constraint) => fillOneConstraintFixedFields(constraint, generatedAt));
+  }
+
+  return next;
+}
+
+function fillOneConstraintFixedFields(constraint: unknown, generatedAt: string | null): unknown {
+  if (typeof constraint !== 'object' || constraint === null) return constraint;
+  const c = constraint as Record<string, unknown>;
+  const next: Record<string, unknown> = { ...c, provenance: 'STATED' };
+
+  for (const role of ['subject', 'object', 'via'] as const) {
+    const roleValue = c[role];
+    if (typeof roleValue !== 'object' || roleValue === null) continue;
+    next[role] = {
+      ...(roleValue as Record<string, unknown>),
+      status: 'UNRESOLVED',
+      target: null,
+      origin: 'prose',
+      reason: 'no-candidate',
+    };
+  }
+
+  const source = c['source'];
+  if (typeof source === 'object' && source !== null) {
+    const sourceObj = source as Record<string, unknown>;
+    next['source'] =
+      generatedAt === null
+        ? { ...sourceObj, line: null }
+        : { ...sourceObj, line: null, timestamp: generatedAt };
+  }
+
+  return next;
 }
