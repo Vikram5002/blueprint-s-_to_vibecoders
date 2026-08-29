@@ -12,12 +12,15 @@ missing system turn.
 
 ## Why this format, not another one
 
-This wasn't decided in isolation. There is no orchestrator built yet (checked:
-zero references to "orchestrator" anywhere in this repo), but there **is** an
-existing, real, already-tested calling convention every LLM call in this
-codebase already uses — `src/llm/provider.ts`'s `CompletionProvider` interface,
-with two live call sites (`label-modules.ts`, `extract-intent.ts`). The
-training format is chosen to match that convention, not to invent a new one:
+This wasn't decided in isolation. At the time this document was first
+written there was no orchestrator yet. One now exists —
+`src/workflow/generate-project-schema.ts` — built after this document and
+following the convention below exactly. There **is**, and was even before
+the orchestrator existed, an existing, real, already-tested calling
+convention every LLM call in this codebase already uses —
+`src/llm/provider.ts`'s `CompletionProvider` interface, with two live call
+sites (`label-modules.ts`, `extract-intent.ts`). The training format is
+chosen to match that convention, not to invent a new one:
 
 - `CompletionRequest` is always `{system, user, schema, ...}` — a system/user
   split, never a single blob. Both existing call sites use it this way.
@@ -35,12 +38,18 @@ training format is chosen to match that convention, not to invent a new one:
   existing pattern for cluster labelling.
 
 **Recommendation for how the fine-tuned model gets served in production:**
-through this same `CompletionProvider` interface — a new local-inference
-adapter implementing it, alongside the existing Anthropic/Gemini ones — with
+through this same `CompletionProvider` interface — a local-inference adapter
+implementing it, alongside the existing Anthropic/Gemini ones — with
 `request.schema` a JSON Schema translated from `ProjectSchema` (the same
 relationship `LABEL_SCHEMA` already has to its output shape in
-`src/llm/schemas.ts`). That adapter does not exist yet; this document records
-the calling convention it needs to match when it's built.
+`src/llm/schemas.ts`). That adapter now exists — `src/llm/local.ts`, serving
+the baseline checkpoint via `local_inference_server.py` — and was verified
+interface-compliant and functionally reachable (see
+`LOCAL-PROVIDER-REPORT.md`). **Open item, not done:** its output has never
+been run through the real `validateProjectSchema`, at any point — the
+report's own functional test only checked "valid JSON," and nothing since
+has closed that gap. This document still records the calling convention the
+adapter needs to match; that part is confirmed correct, not just planned.
 
 ## Does the user turn need prompt.ts's "data, not instruction" defense?
 
