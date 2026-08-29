@@ -53,6 +53,15 @@ const SOURCE_WEIGHT: Readonly<Record<ConstraintSourceType, number>> = {
    * hedged sentence would produce.
    */
   'seeded-from-derived': 0.5,
+  /**
+   * Never actually looked up: compile-constraints.ts sets confidence: 1
+   * directly for every workflow-edge constraint rather than routing through
+   * scoreConfidence, since a domain-dependency fact carries none of the
+   * prose-provenance uncertainty this table exists to weigh. Present only
+   * because ConstraintSourceType is a closed union and this Record must
+   * stay exhaustive - 1 is the honest answer if it were ever consulted.
+   */
+  'workflow-edge': 1,
 };
 
 /**

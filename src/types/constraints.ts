@@ -87,7 +87,19 @@ export type ConstraintSourceType =
    * observed structure would make conformance trivially true if it were ever
    * auto-accepted. It never is; see src/blueprint/seed.ts.
    */
-  | 'seeded-from-derived';
+  | 'seeded-from-derived'
+  /**
+   * Derived from a ProjectSchema's DomainSpec.dependsOn edges by
+   * compile-constraints.ts, not extracted from any prose. Closed-world:
+   * every ordered domain pair produces a constraint, whether or not
+   * dependsOn names it, so the source records which schema-level edge
+   * (or absent edge) a permission or prohibition came from. Distinct
+   * from 'seeded-from-derived' - that source names an edge accepted from
+   * this project's own DERIVED import graph; this one names an edge
+   * declared in a ProjectSchema describing a project that has no code,
+   * and therefore no derived graph, yet.
+   */
+  | 'workflow-edge';
 
 /**
  * Rule 3 applied to STATED data.
