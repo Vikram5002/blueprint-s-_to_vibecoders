@@ -170,3 +170,106 @@ describe('compileConstraintsForDomains (invariant)', () => {
     expect(compileConstraintsForDomains([], () => emptyDomainSpec())).toEqual({ prohibitions: [], permissions: [] });
   });
 });
+
+describe('malformed dependsOn / domain-name inputs (bypass the type system deliberately)', () => {
+  it('silently ignores a dependsOn entry naming a domain absent from the domains list', () => {
+    // Case 1: Frontend.dependsOn names 'Payments', which is not one of the
+    // schema's declared domains. The DomainName type disallows this at
+    // compile time - this cast simulates a value that reached the compiler
+    // anyway (a validation gap upstream, a hand-built DomainSpec, etc.),
+    // which is exactly the trust boundary this test is probing.
+    const domains = [...DOMAIN_NAMES];
+    const specs: Record<string, DomainSpec> = {
+      frontend: { components: [], dependsOn: ['Payments'] as unknown as readonly DomainName[] },
+      backend: emptyDomainSpec(),
+      database: emptyDomainSpec(),
+      security: emptyDomainSpec(),
+    };
+
+    const result = compileConstraintsForDomains(domains, (d) => specs[d]!);
+
+    // Actual current behavior: the bogus entry has no effect whatsoever.
+    // dependsOn.includes(objectDomain) only ever tests objectDomain values
+    // drawn from the real `domains` list, so 'Payments' is never compared
+    // against anything and never appears anywhere in the output - not as
+    // an error, not as a Constraint, not as a WorkflowPermission. Total
+    // record count is unaffected (still the full 12), and frontend->backend
+    // is correctly compiled as a prohibition, since the real 'backend'
+    // string was never actually present in frontend's dependsOn.
+    expect(result.prohibitions.length + result.permissions.length).toBe(TOTAL_ORDERED_PAIRS);
+    const mentionsPayments = [...result.prohibitions, ...result.permissions].some((record) =>
+      JSON.stringify(record).includes('Payments'),
+    );
+    expect(mentionsPayments).toBe(false);
+    expect(
+      result.prohibitions.some((c) => c.subject.phrase === 'frontend' && c.object.phrase === 'backend'),
+    ).toBe(true);
+  });
+
+  it('silently no-ops a domain naming itself in its own dependsOn', () => {
+    // Case 2: frontend lists itself, alongside a real dependency on backend.
+    const schema = schemaWithDependsOn({
+      frontend: ['frontend', 'backend'],
+      backend: [],
+      database: [],
+      security: [],
+    });
+
+    const result = compileDomainConstraints(schema);
+
+    // Actual current behavior: the loop's own
+    // `if (subjectDomain === objectDomain) continue;` guard skips every
+    // self-pair before dependsOn is ever consulted for it. A self-reference
+    // therefore produces neither a permission nor a prohibition for
+    // frontend->frontend - that pair is simply never visited, so the
+    // self-reference has zero observable effect. Total count is still the
+    // full 12 (self-pairs were never part of that count to begin with),
+    // and the real frontend->backend permission still compiles correctly.
+    expect(result.prohibitions.length + result.permissions.length).toBe(TOTAL_ORDERED_PAIRS);
+    const selfPairAsProhibition = result.prohibitions.find(
+      (c) => c.subject.phrase === 'frontend' && c.object.phrase === 'frontend',
+    );
+    const selfPairAsPermission = result.permissions.find(
+      (p) => p.subjectDomain === 'frontend' && p.objectDomain === 'frontend',
+    );
+    expect(selfPairAsProhibition).toBeUndefined();
+    expect(selfPairAsPermission).toBeUndefined();
+    expect(
+      result.permissions.some((p) => p.subjectDomain === 'frontend' && p.objectDomain === 'backend'),
+    ).toBe(true);
+  });
+
+  it('treats domain names differing only in case as two unrelated domains, not two names for one', () => {
+    // Case 3: 'database' and 'Database' both present in the same domains
+    // list. The real ProjectSchema.domains object cannot express this (it
+    // is a fixed-shape object with exactly the four canonical lowercase
+    // keys) - this is tested at the compileConstraintsForDomains level,
+    // which accepts an arbitrary domain list and is exactly where a
+    // case-variant string could still reach the compiler from a source
+    // other than the real ProjectSchema type.
+    const domains = ['frontend', 'database', 'Database'] as unknown as readonly DomainName[];
+    const specs: Record<string, DomainSpec> = {
+      frontend: { components: [], dependsOn: ['database'] as unknown as readonly DomainName[] },
+      database: emptyDomainSpec(),
+      Database: { components: [], dependsOn: ['frontend'] as unknown as readonly DomainName[] },
+    };
+
+    const result = compileConstraintsForDomains(domains, (d) => specs[d]!);
+
+    // Actual current behavior: 3 domains in the list, 3*2 = 6 ordered
+    // pairs, all 6 compiled. 'database' and 'Database' are compared with
+    // plain JS string equality (Array.prototype.includes), which is
+    // case-sensitive, so they are never recognized as the same domain -
+    // both survive as fully independent identities, and the pair between
+    // them (database->Database and Database->database) is compiled like
+    // any other unrelated domain pair rather than being rejected,
+    // collapsed, or flagged as a likely duplicate.
+    expect(result.prohibitions.length + result.permissions.length).toBe(6);
+    const phrasesInvolvingCapitalizedVariant = result.prohibitions
+      .filter((c) => c.subject.phrase === 'Database' || c.object.phrase === 'Database')
+      .map((c) => `${c.subject.phrase}->${c.object.phrase}`);
+    expect(phrasesInvolvingCapitalizedVariant).toEqual(
+      expect.arrayContaining(['database->Database', 'Database->database']),
+    );
+  });
+});
