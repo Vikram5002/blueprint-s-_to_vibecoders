@@ -189,32 +189,34 @@ function domainSpecSchema() {
  * necessarily UNRESOLVED/no-candidate/prose, the exact shape observed in
  * real held-out generations (training/held-out-outputs-configC.json).
  *
- * `status`, `origin`, `target`, and `reason` are deliberately NOT
- * requested here. The general pattern, confirmed by repeated live calls:
- * Gemini does not reliably echo a fixed-value enum field back correctly,
- * no matter which field it is. status/origin failed 3/3 live attempts;
- * once those were stopped being asked for, target/reason failed on the
- * very next attempt instead. None of the four is ever genuine model
- * judgment in the first place (each has exactly one correct answer,
- * always the same one, regardless of what the constraint says) — the fix
- * is to stop asking the model for any of them and set them
- * programmatically after parsing instead, see fillFixedConstraintFields
- * below. `similarity` reaches the same fixed value (0) through
- * `minimum`/`maximum` rather than `enum` and has never failed a live
- * call — left as a request-side constraint, not moved into the
- * programmatic fill, since min/max appears to be a construct Gemini
- * actually handles correctly where bare `enum` is not. `alternatives` is
- * still requested as an always-empty array: genuinely different from an
- * enum-locked scalar, and per instruction not folded into this fix.
+ * `phrase` is the only field requested here. Every other ResolvedSubject
+ * field — status, origin, target, reason, similarity, alternatives — is
+ * set programmatically after parsing instead, see
+ * fillFixedConstraintFields below. All six are always exactly one value
+ * at generation time (there is no code to resolve against, so nothing
+ * can ever be ambiguous or partially matched), and repeated live calls
+ * confirmed Gemini does not reliably produce a fixed-value field on
+ * request, whichever field it is: status/origin failed 3/3 attempts;
+ * once removed, target/reason failed the next attempt; with those four
+ * also removed, `via` specifically then started coming back missing
+ * phrase/similarity/alternatives altogether — not wrong values this
+ * time, the fields absent, on every constraint-bearing generation
+ * tried. similarity/alternatives were left as request-side constraints
+ * in an earlier pass on the theory that minimum/maximum/maxItems is a
+ * construct Gemini handles better than bare enum, and on the reasoning
+ * that alternatives is "real content" — the via failures show the
+ * REAL problem is the number of required fields in a nested anyOf
+ * branch, not the mechanism used to constrain each one, and disprove
+ * the "real content" framing: alternatives can never be non-empty at
+ * generation time either, same as target/reason. Reducing the required
+ * set to just phrase removes that pressure entirely.
  */
 const UNRESOLVED_PROSE_SUBJECT_SCHEMA = {
   type: 'object',
   properties: {
     phrase: { type: 'string' },
-    similarity: { type: 'number', minimum: 0, maximum: 0 },
-    alternatives: { type: 'array', items: { type: 'string' }, maxItems: 0 },
   },
-  required: ['phrase', 'similarity', 'alternatives'],
+  required: ['phrase'],
   additionalProperties: false,
 } as const;
 
@@ -477,12 +479,26 @@ function rewriteOneComponentId(domainName: DomainName, component: unknown): unkn
  *   replaced with the time of a later, unrelated cache hit - see
  *   finalize()'s own doc comment for why that distinction is load-
  *   bearing for this module's determinism guarantee.
+ * - similarity is always 0 and alternatives is always [] on
+ *   subject/object/via: no candidates were ever compared (there is no
+ *   code to resolve against), so there is nothing to score and nothing
+ *   to list as a runner-up. Folded in here rather than left as a
+ *   request-side constraint after live evidence showed asking Gemini
+ *   for them anyway was part of the problem, not a harmless extra ask
+ *   — see this file's UNRESOLVED_PROSE_SUBJECT_SCHEMA docstring.
  *
- * `similarity` and `alternatives` are deliberately NOT touched here:
- * similarity reaches its fixed value (0) through minimum/maximum in the
- * request schema rather than enum, and has never failed a live call -
- * left as a request-side constraint. alternatives is real (if always
- * empty at generation time) array content, out of scope per instruction.
+ * `via` gets one further step beyond subject/object: if, after every
+ * fixed field above is filled in, `phrase` still is not a usable
+ * string, the whole role is replaced with `null` rather than kept as a
+ * ResolvedSubject with no real content. This is not inventing a value —
+ * `via: null` is already the type's own documented "no via" state
+ * (`ResolvedSubject | null`, "Only meaningful for may-only-import-via.
+ * Null otherwise."), and it is what Gemini's answer means in practice
+ * when it returns an object with none of the one field it was actually
+ * asked to generate: a via nobody actually produced. subject/object get
+ * no equivalent fallback — both are required, non-nullable content with
+ * no "empty but valid" state, so a missing phrase there stays a real
+ * validateProjectSchema rejection instead of being silently discarded.
  *
  * Defensive about shape, like rewriteComponentIds: this runs on an
  * unknown value before validateProjectSchema, so anything that doesn't
@@ -508,15 +524,7 @@ function fillOneConstraintFixedFields(constraint: unknown, generatedAt: string |
   const next: Record<string, unknown> = { ...c, provenance: 'STATED' };
 
   for (const role of ['subject', 'object', 'via'] as const) {
-    const roleValue = c[role];
-    if (typeof roleValue !== 'object' || roleValue === null) continue;
-    next[role] = {
-      ...(roleValue as Record<string, unknown>),
-      status: 'UNRESOLVED',
-      target: null,
-      origin: 'prose',
-      reason: 'no-candidate',
-    };
+    next[role] = fillResolvedSubjectFixedFields(c[role], role === 'via');
   }
 
   const source = c['source'];
@@ -529,4 +537,27 @@ function fillOneConstraintFixedFields(constraint: unknown, generatedAt: string |
   }
 
   return next;
+}
+
+function fillResolvedSubjectFixedFields(roleValue: unknown, canFallBackToNull: boolean): unknown {
+  if (typeof roleValue !== 'object' || roleValue === null) return roleValue;
+  const filled: Record<string, unknown> = {
+    ...(roleValue as Record<string, unknown>),
+    status: 'UNRESOLVED',
+    target: null,
+    origin: 'prose',
+    reason: 'no-candidate',
+    similarity: 0,
+    alternatives: [],
+  };
+
+  if (canFallBackToNull && !isNonEmptyString(filled['phrase'])) {
+    return null;
+  }
+
+  return filled;
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
 }

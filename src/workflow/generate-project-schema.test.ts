@@ -252,26 +252,28 @@ describe('createProjectSchemaGenerator', () => {
     expect(callCount).toBe(2);
   });
 
-  it('the request schema no longer asks the model for any enum-locked single-value field', () => {
+  it('the request schema only asks the model for phrase - every other ResolvedSubject field is fixed at generation time', () => {
     const asText = JSON.stringify(PROJECT_SCHEMA_JSON_SCHEMA);
-    // All seven are set programmatically now (see fillFixedConstraintFields).
+    // All of these are set programmatically now (see fillFixedConstraintFields).
     // status/origin failed 3/3 real Gemini attempts; target/reason failed
-    // the very next attempt once status/origin stopped being asked for -
-    // the general pattern is Gemini does not reliably echo a fixed-value
-    // enum field back correctly, so none of them are requested any more.
+    // the next attempt once status/origin stopped being asked for; with
+    // those four also gone, via started coming back missing
+    // phrase/similarity/alternatives altogether on every constraint-bearing
+    // live call tried. similarity/alternatives are always exactly 0/[] at
+    // generation time regardless (no code exists yet to compare candidates
+    // against), so they joined the programmatic fill too - the request
+    // schema now asks ResolvedSubject for nothing but phrase.
     expect(asText).not.toContain('"status"');
     expect(asText).not.toContain('"origin"');
     expect(asText).not.toContain('"target"');
     expect(asText).not.toContain('"reason"');
+    expect(asText).not.toContain('"similarity"');
+    expect(asText).not.toContain('"alternatives"');
     expect(asText).not.toContain('"line"');
     expect(asText).not.toContain('"timestamp"');
     expect(asText).not.toContain('"provenance"');
-    // What still genuinely varies is still requested: similarity (via
-    // minimum/maximum, not enum - has never failed a live call),
-    // alternatives (real array content), and relation/source.type/location
-    // (real per-constraint judgement calls).
-    expect(asText).toContain('"similarity"');
-    expect(asText).toContain('"alternatives"');
+    // What still genuinely varies per constraint is still requested.
+    expect(asText).toContain('"phrase"');
     expect(asText).toContain('"relation"');
     expect(asText).toContain('"type"');
     expect(asText).toContain('"location"');
@@ -441,6 +443,133 @@ describe('createProjectSchemaGenerator', () => {
     if (first.ok && second.ok) {
       expect(JSON.stringify(second.value)).toBe(JSON.stringify(first.value));
       expect(second.value.constraints[0]!.source.timestamp).toBe(first.value.constraints[0]!.source.timestamp);
+    }
+  });
+
+  it('falls back via to null when the model returns a via missing phrase (the real Gemini failure mode)', async () => {
+    // Exactly what a real Gemini call returned for via on every
+    // constraint-bearing generation tried before this fix: an object
+    // with none of the one field it was actually asked for.
+    const withBrokenVia = {
+      sessionId: 'session-test-005',
+      title: 'Carpool Coordinator',
+      originalPrompt: 'irrelevant for this fixture',
+      domains: {
+        frontend: { components: [], dependsOn: [] },
+        backend: { components: [], dependsOn: [] },
+        database: { components: [], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [
+        {
+          id: 'constraint-1',
+          relation: 'may-only-import-via',
+          subject: { phrase: 'frontend' },
+          object: { phrase: 'database' },
+          via: {},
+          source: { type: 'user-authored', location: 'prompt' },
+          confidence: 1,
+          lowConfidence: false,
+          rawText: 'Frontend must reach the database only through the backend.',
+          provenance: 'STATED',
+        },
+      ],
+      provenance: 'STATED',
+    };
+    const provider = stubProvider(() => okResult(JSON.stringify(withBrokenVia)));
+    const generator = createProjectSchemaGenerator({ provider, cache: memoryCache() });
+
+    const result = await generator.generate('A carpool coordinator app for organizing shared rides');
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.constraints[0]!.via).toBeNull();
+      // subject/object are unaffected - both had a real phrase and pass through.
+      expect(result.value.constraints[0]!.subject.status).toBe('UNRESOLVED');
+      expect(result.value.constraints[0]!.subject.similarity).toBe(0);
+      expect(result.value.constraints[0]!.subject.alternatives).toEqual([]);
+    }
+  });
+
+  it('keeps a well-formed via (real phrase present) rather than nulling it out', async () => {
+    const withGoodVia = {
+      sessionId: 'session-test-006',
+      title: 'Carpool Coordinator',
+      originalPrompt: 'irrelevant for this fixture',
+      domains: {
+        frontend: { components: [], dependsOn: [] },
+        backend: { components: [], dependsOn: [] },
+        database: { components: [], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [
+        {
+          id: 'constraint-1',
+          relation: 'may-only-import-via',
+          subject: { phrase: 'frontend' },
+          object: { phrase: 'database' },
+          via: { phrase: 'backend' },
+          source: { type: 'user-authored', location: 'prompt' },
+          confidence: 1,
+          lowConfidence: false,
+          rawText: 'Frontend must reach the database only through the backend.',
+          provenance: 'STATED',
+        },
+      ],
+      provenance: 'STATED',
+    };
+    const provider = stubProvider(() => okResult(JSON.stringify(withGoodVia)));
+    const generator = createProjectSchemaGenerator({ provider, cache: memoryCache() });
+
+    const result = await generator.generate('A carpool coordinator app for organizing shared rides');
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const via = result.value.constraints[0]!.via;
+      expect(via).not.toBeNull();
+      expect(via?.phrase).toBe('backend');
+      expect(via?.status).toBe('UNRESOLVED');
+      expect(via?.similarity).toBe(0);
+      expect(via?.alternatives).toEqual([]);
+    }
+  });
+
+  it('a subject/object missing phrase is still rejected, not silently defaulted the way via is', async () => {
+    const withBrokenSubject = {
+      sessionId: 'session-test-007',
+      title: 'Carpool Coordinator',
+      originalPrompt: 'irrelevant for this fixture',
+      domains: {
+        frontend: { components: [], dependsOn: [] },
+        backend: { components: [], dependsOn: [] },
+        database: { components: [], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [
+        {
+          id: 'constraint-1',
+          relation: 'must-not-import',
+          subject: {},
+          object: { phrase: 'database' },
+          via: null,
+          source: { type: 'user-authored', location: 'prompt' },
+          confidence: 1,
+          lowConfidence: false,
+          rawText: 'Frontend must not import the database.',
+          provenance: 'STATED',
+        },
+      ],
+      provenance: 'STATED',
+    };
+    const provider = stubProvider(() => okResult(JSON.stringify(withBrokenSubject)));
+    const generator = createProjectSchemaGenerator({ provider, cache: memoryCache() });
+
+    const result = await generator.generate('A carpool coordinator app for organizing shared rides');
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.reason).toBe('schema-violation');
+      expect(result.error.rejections.some((r) => r.path === '$.constraints[0].subject.phrase')).toBe(true);
     }
   });
 });
