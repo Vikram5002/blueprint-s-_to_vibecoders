@@ -42,7 +42,8 @@ export type ConstraintSourceType =
   | 'adr'
   | 'commit-msg'
   | 'user-authored'
-  | 'seeded-from-derived';
+  | 'seeded-from-derived'
+  | 'workflow-edge';
 
 export interface ConstraintSource {
   readonly type: ConstraintSourceType;
@@ -57,6 +58,7 @@ export interface ResolvedSubject {
   readonly phrase: string;
   readonly status: SubjectResolutionStatus;
   readonly target: string | null;
+  readonly origin?: 'prose' | 'regex';
   readonly reason: string | null;
   readonly similarity: number;
   readonly alternatives: readonly string[];
