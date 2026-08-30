@@ -1,13 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { compileConstraintsForDomains, compileDomainConstraints } from './compile-constraints.js';
-import { DOMAIN_NAMES, type DomainName, type DomainSpec, type ProjectSchema } from '../types/project-schema.js';
+import { validateProjectSchema } from './validate-project-schema.js';
+import {
+  DOMAIN_NAMES,
+  type DomainName,
+  type DomainSpec,
+  type ProjectSchema,
+  type ValidatedProjectSchema,
+} from '../types/project-schema.js';
 
 function emptyDomainSpec(dependsOn: readonly DomainName[] = []): DomainSpec {
   return { components: [], dependsOn };
 }
 
-function schemaWithDependsOn(dependsOn: Readonly<Record<DomainName, readonly DomainName[]>>): ProjectSchema {
-  return {
+function schemaWithDependsOn(
+  dependsOn: Readonly<Record<DomainName, readonly DomainName[]>>,
+): ValidatedProjectSchema {
+  return asValidated({
     sessionId: 'session-test',
     title: 'Test Schema',
     originalPrompt: 'irrelevant for this fixture',
@@ -19,7 +28,23 @@ function schemaWithDependsOn(dependsOn: Readonly<Record<DomainName, readonly Dom
     },
     constraints: [],
     provenance: 'STATED',
-  };
+  });
+}
+
+/**
+ * The only legitimate way to produce a ValidatedProjectSchema - running a
+ * candidate through the real validateProjectSchema, same as any real
+ * caller would. Throws on failure rather than returning something
+ * type-cast past the brand: a test fixture that fails real validation is
+ * a mistake in the fixture, and should fail loudly at the point it was
+ * built, not silently downstream where the reason is less obvious.
+ */
+function asValidated(candidate: ProjectSchema): ValidatedProjectSchema {
+  const result = validateProjectSchema(candidate);
+  if (!result.ok) {
+    throw new Error(`test fixture failed real validateProjectSchema: ${JSON.stringify(result.error)}`);
+  }
+  return result.value;
 }
 
 // 4 domains, 4*3 = 12 ordered pairs of distinct domains, always.
@@ -74,7 +99,7 @@ describe('compileDomainConstraints', () => {
     // "single-domain" here means only one domain has any components/dependsOn
     // worth naming - all four domain keys still structurally exist, per
     // ProjectSchema's own fixed type, so absence is still not skipped.
-    const schema: ProjectSchema = {
+    const schema: ValidatedProjectSchema = asValidated({
       sessionId: 'session-test',
       title: 'Frontend-only prototype',
       originalPrompt: 'irrelevant for this fixture',
@@ -86,7 +111,7 @@ describe('compileDomainConstraints', () => {
       },
       constraints: [],
       provenance: 'STATED',
-    };
+    });
 
     const result = compileDomainConstraints(schema);
 
@@ -208,23 +233,33 @@ describe('malformed dependsOn / domain-name inputs (bypass the type system delib
 
   it('silently no-ops a domain naming itself in its own dependsOn', () => {
     // Case 2: frontend lists itself, alongside a real dependency on backend.
-    const schema = schemaWithDependsOn({
-      frontend: ['frontend', 'backend'],
-      backend: [],
-      database: [],
-      security: [],
-    });
+    // Uses compileConstraintsForDomains directly, like cases 1 and 3 here -
+    // a self-referential dependsOn is exactly what the real
+    // validateProjectSchema now rejects (a check added specifically to
+    // catch this), so this shape can no longer reach compileDomainConstraints
+    // as a ValidatedProjectSchema. The only way to still exercise this path
+    // is the same deliberate type-system bypass its siblings already use -
+    // no cast needed here specifically, since 'frontend' is a real DomainName
+    // value, just an invalid *place* to put it.
+    const domains = [...DOMAIN_NAMES];
+    const specs: Record<string, DomainSpec> = {
+      frontend: { components: [], dependsOn: ['frontend', 'backend'] },
+      backend: emptyDomainSpec(),
+      database: emptyDomainSpec(),
+      security: emptyDomainSpec(),
+    };
 
-    const result = compileDomainConstraints(schema);
+    const result = compileConstraintsForDomains(domains, (d) => specs[d]!);
 
-    // Actual current behavior: the loop's own
-    // `if (subjectDomain === objectDomain) continue;` guard skips every
-    // self-pair before dependsOn is ever consulted for it. A self-reference
-    // therefore produces neither a permission nor a prohibition for
-    // frontend->frontend - that pair is simply never visited, so the
-    // self-reference has zero observable effect. Total count is still the
-    // full 12 (self-pairs were never part of that count to begin with),
-    // and the real frontend->backend permission still compiles correctly.
+    // Actual current behavior, unchanged from before this had to move here:
+    // the loop's own `if (subjectDomain === objectDomain) continue;` guard
+    // skips every self-pair before dependsOn is ever consulted for it. A
+    // self-reference therefore produces neither a permission nor a
+    // prohibition for frontend->frontend - that pair is simply never
+    // visited, so the self-reference has zero observable effect. Total
+    // count is still the full 12 (self-pairs were never part of that count
+    // to begin with), and the real frontend->backend permission still
+    // compiles correctly.
     expect(result.prohibitions.length + result.permissions.length).toBe(TOTAL_ORDERED_PAIRS);
     const selfPairAsProhibition = result.prohibitions.find(
       (c) => c.subject.phrase === 'frontend' && c.object.phrase === 'frontend',
