@@ -39,7 +39,7 @@
 import type { CompletionProvider } from '../llm/provider.js';
 import { cacheKey, type LabelCache } from '../llm/cache.js';
 import { type Result, ok, err } from '../types/result.js';
-import { DOMAIN_NAMES, type DomainName, type ProjectSchema, componentId } from '../types/project-schema.js';
+import { DOMAIN_NAMES, type DomainName, type ValidatedProjectSchema, componentId } from '../types/project-schema.js';
 import { CONSTRAINT_RELATIONS } from '../types/constraints.js';
 import { validateProjectSchema, type ProjectSchemaRejection } from './validate-project-schema.js';
 
@@ -303,7 +303,7 @@ export type GenerateFailure =
   | { readonly reason: 'schema-violation'; readonly message: string; readonly rejections: readonly ProjectSchemaRejection[] };
 
 export interface ProjectSchemaGenerator {
-  generate(prompt: string): Promise<Result<ProjectSchema, GenerateFailure>>;
+  generate(prompt: string): Promise<Result<ValidatedProjectSchema, GenerateFailure>>;
 }
 
 export interface CreateProjectSchemaGeneratorOptions {
@@ -327,7 +327,7 @@ export interface CreateProjectSchemaGeneratorOptions {
 
 export function createProjectSchemaGenerator(options: CreateProjectSchemaGeneratorOptions): ProjectSchemaGenerator {
   return {
-    generate: async (prompt: string): Promise<Result<ProjectSchema, GenerateFailure>> => {
+    generate: async (prompt: string): Promise<Result<ValidatedProjectSchema, GenerateFailure>> => {
       const key = cacheKey({
         model: options.provider.model,
         system: PROJECT_SCHEMA_SYSTEM_PROMPT,
@@ -398,7 +398,7 @@ function finalize(
   text: string,
   generatedAt: string | null,
   onViaFallback?: () => void,
-): Result<ProjectSchema, GenerateFailure> {
+): Result<ValidatedProjectSchema, GenerateFailure> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);

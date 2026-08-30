@@ -75,6 +75,29 @@ export interface ProjectSchema {
 }
 
 /**
+ * A ProjectSchema that has actually passed validateProjectSchema.
+ *
+ * TypeScript checks shape, never provenance - a plain `ProjectSchema` is
+ * satisfied by any object with the right fields, hand-built or not.
+ * compileDomainConstraints only behaves correctly on a schema that already
+ * passed validateProjectSchema (its own tests prove what happens
+ * otherwise: nonexistent domains silently ignored, self-references
+ * silently no-op'd, case-variant domain names compiled as unrelated
+ * ones). Before this brand, nothing enforced that precondition beyond
+ * caller discipline.
+ *
+ * The `__validated` property never exists on any real object - `results`
+ * is a `unique symbol` nobody outside this file can reference, so no
+ * object literal can ever structurally satisfy this type by accident.
+ * The only way to produce a `ValidatedProjectSchema` is
+ * validateProjectSchema's own `ok` branch (validate-project-schema.ts),
+ * which is the whole point: the brand is a compile-time promise that
+ * only that one code path can make.
+ */
+declare const validated: unique symbol;
+export type ValidatedProjectSchema = ProjectSchema & { readonly [validated]: true };
+
+/**
  * Content-derived, mirroring constraintId in src/conformance/compile.ts: the
  * same component (domain, name, purpose) always gets the same id, so two
  * generations of the same prompt produce comparable schemas rather than ones

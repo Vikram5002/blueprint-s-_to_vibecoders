@@ -22,7 +22,7 @@ import {
   SUBJECT_RESOLUTION_STATUSES,
   SUBJECT_UNRESOLVED_REASONS,
 } from '../types/constraints.js';
-import { DOMAIN_NAMES, type DomainName, type ProjectSchema } from '../types/project-schema.js';
+import { DOMAIN_NAMES, type DomainName, type ValidatedProjectSchema } from '../types/project-schema.js';
 
 export type ProjectSchemaRejection =
   | { readonly path: string; readonly reason: 'not-an-object' }
@@ -275,7 +275,7 @@ function validateConstraint(candidate: unknown, path: string): readonly ProjectS
  * everything wrong with a rejected pair in one report, not one error at a
  * time across repeated runs.
  */
-export function validateProjectSchema(candidate: unknown): Result<ProjectSchema, readonly ProjectSchemaRejection[]> {
+export function validateProjectSchema(candidate: unknown): Result<ValidatedProjectSchema, readonly ProjectSchemaRejection[]> {
   const rejections: ProjectSchemaRejection[] = [];
 
   if (!isRecord(candidate)) {
@@ -327,5 +327,8 @@ export function validateProjectSchema(candidate: unknown): Result<ProjectSchema,
     return err(rejections);
   }
 
-  return ok(candidate as unknown as ProjectSchema);
+  // The cast target is the brand itself now, not a plain ProjectSchema -
+  // see ValidatedProjectSchema's own doc comment in project-schema.ts for
+  // why this is the one place in the whole codebase allowed to produce it.
+  return ok(candidate as unknown as ValidatedProjectSchema);
 }
