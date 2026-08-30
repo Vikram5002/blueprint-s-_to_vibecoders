@@ -15,6 +15,14 @@
  *    on every run, which meant a claimed result couldn't be verified
  *    after the fact once a later run replaced it - this fixes that.)
  *
+ * Each log entry also carries `viaFallbackFired: boolean` - set via
+ * generate-project-schema.ts's onViaFallback callback, observed at the
+ * exact point the via-null-fallback decision is made, not inferred from
+ * the final schema afterward. A logged `via: null` was otherwise
+ * structurally indistinguishable from "the model correctly said there
+ * was no via" - both produce the same final value, so this is the only
+ * way to actually answer "did the fallback ever fire on real output."
+ *
  * Usage:
  *   node scripts/pipe-schema-to-compiler.mjs "<prompt>"
  *
@@ -51,7 +59,18 @@ if (provider === null) {
 console.log(`--- step 1: generating with ${choice.provider} (${provider.model}) ---`);
 
 const cache = await loadLabelCache(process.cwd());
-const generator = createProjectSchemaGenerator({ provider, cache });
+
+// Reset per call; fillResolvedSubjectFixedFields calls this synchronously,
+// during generate(), whenever it discards a via - regardless of whether
+// the schema ends up passing validateProjectSchema overall.
+let viaFallbackFired = false;
+const generator = createProjectSchemaGenerator({
+  provider,
+  cache,
+  onViaFallback: () => {
+    viaFallbackFired = true;
+  },
+});
 
 const genResult = await generator.generate(prompt);
 await cache.flush();
@@ -60,13 +79,21 @@ if (!genResult.ok) {
   console.error('generation failed:', genResult.error.reason, genResult.error.message);
   const rejections = genResult.error.reason === 'schema-violation' ? genResult.error.rejections : [];
   for (const r of rejections) console.error(' ', r.path, r.reason);
-  appendLog({ prompt, outcome: 'generation-failed', reason: genResult.error.reason, message: genResult.error.message, rejections });
+  appendLog({
+    prompt,
+    outcome: 'generation-failed',
+    reason: genResult.error.reason,
+    message: genResult.error.message,
+    rejections,
+    viaFallbackFired,
+  });
   process.exit(1);
 }
 
 const schema = genResult.value;
 console.log('generation succeeded.');
 console.log('sessionId:', schema.sessionId);
+console.log('viaFallbackFired:', viaFallbackFired);
 console.log('domain keys:', Object.keys(schema.domains));
 for (const [name, spec] of Object.entries(schema.domains)) {
   console.log(`  ${name}.dependsOn =`, JSON.stringify(spec.dependsOn));
@@ -89,7 +116,7 @@ try {
 
 if (compileError) {
   console.error('compileDomainConstraints THREW:', compileError.message);
-  appendLog({ prompt, outcome: 'compiler-threw', schema, error: compileError.message });
+  appendLog({ prompt, outcome: 'compiler-threw', schema, error: compileError.message, viaFallbackFired });
   process.exit(1);
 }
 
@@ -102,6 +129,6 @@ console.log();
 console.log('--- step 3: full compiled output ---');
 console.log(JSON.stringify(compiled, null, 2));
 
-appendLog({ prompt, outcome: 'ok', schema, compiled });
+appendLog({ prompt, outcome: 'ok', schema, compiled, viaFallbackFired });
 console.log();
 console.log(`Appended to ${LOG_PATH}`);

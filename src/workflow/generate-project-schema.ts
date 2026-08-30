@@ -309,6 +309,20 @@ export interface ProjectSchemaGenerator {
 export interface CreateProjectSchemaGeneratorOptions {
   readonly provider: CompletionProvider;
   readonly cache: LabelCache;
+  /**
+   * Called exactly when fillResolvedSubjectFixedFields decides to discard a
+   * via for a missing/invalid phrase - once per firing, synchronously,
+   * before generate() resolves. Optional and side-channel only: omitting
+   * it changes nothing about generate()'s behavior or return shape.
+   *
+   * Exists because a logged `via: null` is otherwise structurally
+   * indistinguishable from "the model correctly said there was no via" -
+   * both produce the same final value. This is the one place that
+   * actually knows which one happened, so a caller that needs to tell
+   * them apart (scripts/pipe-schema-to-compiler.mjs) has to observe it
+   * here, not infer it from the result afterward.
+   */
+  readonly onViaFallback?: () => void;
 }
 
 export function createProjectSchemaGenerator(options: CreateProjectSchemaGeneratorOptions): ProjectSchemaGenerator {
@@ -329,7 +343,7 @@ export function createProjectSchemaGenerator(options: CreateProjectSchemaGenerat
         // same way a bad model answer would, not bypass the gate that exists
         // specifically to keep an invalid ProjectSchema from ever being
         // returned.
-        return finalize(cached.description ?? '', null);
+        return finalize(cached.description ?? '', null, options.onViaFallback);
       }
 
       const completion = await options.provider.complete({
@@ -352,7 +366,7 @@ export function createProjectSchemaGenerator(options: CreateProjectSchemaGenerat
         return err({ reason: 'provider-error', message: completion.error.message });
       }
 
-      const result = finalize(completion.value.text, new Date().toISOString());
+      const result = finalize(completion.value.text, new Date().toISOString(), options.onViaFallback);
       if (result.ok) {
         // Only a validated answer is cached. Caching a rejected one would
         // make a bad answer sticky forever — every future call with the same
@@ -380,7 +394,11 @@ export function createProjectSchemaGenerator(options: CreateProjectSchemaGenerat
  * fillFixedConstraintFields leaves an already-embedded timestamp alone
  * rather than overwriting it with "now" on every re-validation.
  */
-function finalize(text: string, generatedAt: string | null): Result<ProjectSchema, GenerateFailure> {
+function finalize(
+  text: string,
+  generatedAt: string | null,
+  onViaFallback?: () => void,
+): Result<ProjectSchema, GenerateFailure> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -388,7 +406,7 @@ function finalize(text: string, generatedAt: string | null): Result<ProjectSchem
     return err({ reason: 'unparseable-json', message: `response was not valid JSON: ${String(cause)}` });
   }
 
-  const withFixedFields = fillFixedConstraintFields(rewriteComponentIds(parsed), generatedAt);
+  const withFixedFields = fillFixedConstraintFields(rewriteComponentIds(parsed), generatedAt, onViaFallback);
   const validated = validateProjectSchema(withFixedFields);
   if (!validated.ok) {
     return err({
@@ -505,26 +523,36 @@ function rewriteOneComponentId(domainName: DomainName, component: unknown): unkn
  * look like a well-formed constraint/subject/source is left untouched
  * and reported by the real validator instead of guessed at here.
  */
-function fillFixedConstraintFields(candidate: unknown, generatedAt: string | null): unknown {
+function fillFixedConstraintFields(
+  candidate: unknown,
+  generatedAt: string | null,
+  onViaFallback?: () => void,
+): unknown {
   if (typeof candidate !== 'object' || candidate === null) return candidate;
   const obj = candidate as Record<string, unknown>;
   const next: Record<string, unknown> = { ...obj, provenance: 'STATED' };
 
   const constraints = obj['constraints'];
   if (Array.isArray(constraints)) {
-    next['constraints'] = constraints.map((constraint) => fillOneConstraintFixedFields(constraint, generatedAt));
+    next['constraints'] = constraints.map((constraint) =>
+      fillOneConstraintFixedFields(constraint, generatedAt, onViaFallback),
+    );
   }
 
   return next;
 }
 
-function fillOneConstraintFixedFields(constraint: unknown, generatedAt: string | null): unknown {
+function fillOneConstraintFixedFields(
+  constraint: unknown,
+  generatedAt: string | null,
+  onViaFallback?: () => void,
+): unknown {
   if (typeof constraint !== 'object' || constraint === null) return constraint;
   const c = constraint as Record<string, unknown>;
   const next: Record<string, unknown> = { ...c, provenance: 'STATED' };
 
   for (const role of ['subject', 'object', 'via'] as const) {
-    next[role] = fillResolvedSubjectFixedFields(c[role], role === 'via');
+    next[role] = fillResolvedSubjectFixedFields(c[role], role === 'via', role === 'via' ? onViaFallback : undefined);
   }
 
   const source = c['source'];
@@ -539,7 +567,11 @@ function fillOneConstraintFixedFields(constraint: unknown, generatedAt: string |
   return next;
 }
 
-function fillResolvedSubjectFixedFields(roleValue: unknown, canFallBackToNull: boolean): unknown {
+function fillResolvedSubjectFixedFields(
+  roleValue: unknown,
+  canFallBackToNull: boolean,
+  onFallback?: () => void,
+): unknown {
   if (typeof roleValue !== 'object' || roleValue === null) return roleValue;
   const filled: Record<string, unknown> = {
     ...(roleValue as Record<string, unknown>),
@@ -552,6 +584,10 @@ function fillResolvedSubjectFixedFields(roleValue: unknown, canFallBackToNull: b
   };
 
   if (canFallBackToNull && !isNonEmptyString(filled['phrase'])) {
+    // The exact point the via-null-fallback decision is made - see
+    // CreateProjectSchemaGeneratorOptions.onViaFallback's own doc comment
+    // for why this needs to be observed here rather than inferred later.
+    onFallback?.();
     return null;
   }
 
