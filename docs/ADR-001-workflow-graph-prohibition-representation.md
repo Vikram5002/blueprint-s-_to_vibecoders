@@ -1,7 +1,13 @@
 # ADR-001: How the workflow graph represents compiled prohibitions
 
-**Status:** Proposed. This is a decision document, not an implementation —
-see the closing note. No code changes accompany this ADR.
+**Status:** Accepted (2026-08-30) — Option C. Prohibitions stay off the
+drawn edge set; permitted edges keep rendering exactly as they do today.
+A domain node gains a click/hover affordance in the existing side panel
+showing what that domain is forbidden from depending on, reusing the
+panel infrastructure already built for edge inspection rather than a
+new drawn-edge visual language. No implementation has shipped yet as of
+this decision being recorded — see the recommendation section below for
+the reasoning this accepted.
 
 **Context date:** 2026-08-30. No prior ADRs exist in this repository
 (checked `docs/` and the whole tree before writing this); this file uses

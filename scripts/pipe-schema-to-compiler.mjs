@@ -23,6 +23,13 @@
  * was no via" - both produce the same final value, so this is the only
  * way to actually answer "did the fallback ever fire on real output."
  *
+ * Entries that produced a schema (`ok` and `compiler-threw`) also carry
+ * `constraintRelations`: one { id, relation, viaIsNull } record per
+ * constraint. via is only ever meaningful for `may-only-import-via` -
+ * this lets that specific relation be counted and cross-referenced
+ * against via directly from the log, rather than re-deriving it by
+ * re-reading the nested schema.constraints array by hand each time.
+ *
  * Usage:
  *   node scripts/pipe-schema-to-compiler.mjs "<prompt>"
  *
@@ -35,6 +42,17 @@ import { chooseProvider, createProvider } from '../dist/llm/select-provider.js';
 import { loadLabelCache } from '../dist/llm/cache.js';
 import { createProjectSchemaGenerator } from '../dist/workflow/generate-project-schema.js';
 import { compileDomainConstraints } from '../dist/workflow/compile-constraints.js';
+
+/**
+ * One { id, relation, viaIsNull } record per constraint - diagnostic-only,
+ * reads only fields already on the returned schema, no production code
+ * involved. may-only-import-via is the sole relation where a non-null via
+ * is ever expected, so this is what makes "how many may-only-import-via
+ * constraints actually got a via" directly countable from the log.
+ */
+function summarizeConstraintRelations(schema) {
+  return schema.constraints.map((c) => ({ id: c.id, relation: c.relation, viaIsNull: c.via === null }));
+}
 
 loadEnvFile(process.cwd());
 
@@ -116,7 +134,14 @@ try {
 
 if (compileError) {
   console.error('compileDomainConstraints THREW:', compileError.message);
-  appendLog({ prompt, outcome: 'compiler-threw', schema, error: compileError.message, viaFallbackFired });
+  appendLog({
+    prompt,
+    outcome: 'compiler-threw',
+    schema,
+    error: compileError.message,
+    viaFallbackFired,
+    constraintRelations: summarizeConstraintRelations(schema),
+  });
   process.exit(1);
 }
 
@@ -129,6 +154,13 @@ console.log();
 console.log('--- step 3: full compiled output ---');
 console.log(JSON.stringify(compiled, null, 2));
 
-appendLog({ prompt, outcome: 'ok', schema, compiled, viaFallbackFired });
+appendLog({
+  prompt,
+  outcome: 'ok',
+  schema,
+  compiled,
+  viaFallbackFired,
+  constraintRelations: summarizeConstraintRelations(schema),
+});
 console.log();
 console.log(`Appended to ${LOG_PATH}`);
