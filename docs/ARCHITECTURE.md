@@ -67,21 +67,36 @@ interface Evidence {
   snippet: string;               // the actual import/call line
 }
 
+interface ResolvedSubject {
+  phrase: string;                 // the noun phrase exactly as it appeared in the prose
+  status: 'MODULE' | 'PATH_PATTERN' | 'REGEX_PATTERN' | 'UNRESOLVED';
+  target: string | null;          // module id, glob, or source pattern; null for UNRESOLVED
+  origin?: 'prose' | 'regex';     // where the phrase came from
+  reason: string | null;          // one of SubjectUnresolvedReason's values; see src/types/constraints.ts
+  similarity: number;             // 0-1; 0 when nothing matched
+  alternatives: readonly string[];
+}
+
 interface Constraint {
   id: string;
-  subject: string;               // module pattern, e.g. "domain/**"
   relation: 'must-not-import' | 'may-only-import-via' | 'must-not-cycle'
           | 'must-be-layer-above';
-  object: string;                // module pattern
+  subject: ResolvedSubject;
+  object: ResolvedSubject;
+  via: ResolvedSubject | null;   // only meaningful for may-only-import-via; null otherwise
   source: ConstraintSource;
   confidence: number;            // 0-1; extraction certainty
-  rawText: string;               // the original sentence it came from
+  lowConfidence: boolean;        // below CONFIDENCE_THRESHOLD; recorded and flagged, never dropped
+  rawText: string;               // the original sentence it came from, verbatim
+  provenance: 'STATED';          // always STATED; no code path produces DERIVED here
 }
 
 interface ConstraintSource {
-  type: 'chat-log' | 'agents-md' | 'readme' | 'adr' | 'commit-msg' | 'user-authored';
+  type: 'chat-log' | 'agents-md' | 'readme' | 'adr' | 'commit-msg' | 'user-authored'
+      | 'seeded-from-derived' | 'workflow-edge';
   location: string;              // file path or message id
-  timestamp?: string;
+  line: number | null;           // 1-indexed; null where the source has no lines
+  timestamp: string | null;      // ISO 8601; null for plain files
 }
 
 interface Violation {
@@ -174,9 +189,12 @@ tool feel useless.
 
 ## LLM usage rules
 
-- **Only two call sites exist:** cluster labelling (Stage 3) and intent extraction (Stage 4).
-- Both must degrade gracefully. If no API key is configured, the tool still runs and shows
-  the derived graph with generic cluster names (`module-1`, `module-2`). This is important:
-  the deterministic half must be independently useful.
+- **Three call sites exist:** cluster labelling (Stage 3), intent extraction (Stage 4), and
+  ProjectSchema generation (`src/workflow/generate-project-schema.ts`, prompt -> ProjectSchema).
+  ProjectSchema generation has no production call site yet (see `docs/ADR-001-*.md`), so the
+  degradation rule below is stated as verified for the first two only.
+- Labelling and intent extraction must degrade gracefully. If no API key is configured, the
+  tool still runs and shows the derived graph with generic cluster names (`module-1`,
+  `module-2`). This is important: the deterministic half must be independently useful.
 - Cache all responses keyed by input hash. Re-runs on an unchanged repo should cost nothing.
 - Every LLM-derived field is marked in the UI with a distinct visual treatment.

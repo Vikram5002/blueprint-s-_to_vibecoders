@@ -71,11 +71,15 @@ src/
   pipeline/     Stage orchestration: runs the deterministic half, then the LLM
   llm/          Provider adapters, prompt templates (labelling + intent)
   conformance/  Constraint model, intent extraction, violation detection
+  blueprint/    Type-1 blueprint-first authoring: DSL compiler, seeding, visual-editor support
+  workflow/     Layer 2: prompt -> ProjectSchema generation, domain-dependency constraint compiler
   store/        SQLite schema, snapshots, migrations
   server/       Local HTTP + JSON API for the UI
+  mcp/          Read-only MCP server (check_import, get_architecture, get_violations, get_constraints)
+  export/       AGENTS.md and self-contained blueprint.html export
   types/        Shared type definitions
 ui/             React app (separate package, built into src/server/static)
-docs/           ARCHITECTURE.md, PHASE-1-SPEC.md
+docs/           ARCHITECTURE.md, PHASE-1-SPEC.md, and topic-specific docs per stage — see the index above
 ```
 
 ---
