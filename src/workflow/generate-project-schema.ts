@@ -40,14 +40,21 @@
  * third time here rather than inventing a fourth id scheme — see
  * `generatedConstraintId` below.
  *
- * `sessionId` is intentionally left as the model returns it, not overridden
- * the same way. The same held-out eval showed the model frequently echoes a
- * memorized training-time session id (e.g. "session-gold-021") rather than
- * minting a new one — a real, currently-undiagnosed model-quality issue, not
- * something this module silently papers over. A caller that persists a
- * generated schema should mint its own id before storing it.
+ * `sessionId` was left as the model returned it for a while, deliberately,
+ * pending diagnosis — that diagnosis is done. A 2026-08-31 desktop session
+ * confirmed the memorized-training-id leak on 5/5 real generations
+ * (session-gold-021, session-gold-031, session-real-023 — always a training
+ * id, never fresh, regardless of prompt). Fixed the same way source.timestamp
+ * already was: `fillFixedConstraintFields`'s existing `generatedAt`-gated
+ * branch now also stamps a fresh `sessionId` via `randomUUID()` on a real
+ * generation, left untouched on the cache-hit re-validate path — not the
+ * `componentId()` content-derived pattern used for ids above, deliberately.
+ * A session is an event, not content: two independent generations of the
+ * same prompt are still two separate sessions and should not collapse to
+ * the same id just because the prompt matched, the way two components with
+ * identical domain/name/purpose genuinely are the same component.
  */
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { CompletionProvider } from '../llm/provider.js';
 import { cacheKey, type LabelCache } from '../llm/cache.js';
 import { type Result, ok, err } from '../types/result.js';
@@ -473,8 +480,21 @@ function rewriteOneComponentId(domainName: DomainName, component: unknown): unkn
  * otherwise ask the model to echo back, discarding whatever the model
  * produced there: status/origin/target/reason on every constraint's
  * subject/object/non-null via, provenance on every constraint and on
- * the top-level schema, and line/(when generatedAt is real) timestamp
- * on every constraint's source.
+ * the top-level schema, line/(when generatedAt is real) timestamp on
+ * every constraint's source, and (when generatedAt is real) the
+ * top-level sessionId.
+ *
+ * sessionId is not enum-locked like the others - it belongs here anyway
+ * because the same underlying problem applies: the model has no way to
+ * mint a genuinely fresh id for a session it has no knowledge of outside
+ * training, and reliably echoes a memorized training-time id instead
+ * (session-gold-021 and others - see this file's top docstring). Stamped
+ * with randomUUID(), not derived from prompt content the way componentId()
+ * and generatedConstraintId() are - a session is an event, not content,
+ * so determinism-by-content would be the wrong property here. Gated on
+ * generatedAt for the same reason source.timestamp already is: left
+ * untouched on a cache-hit re-validate path, so a cached answer's id
+ * does not change on every replay.
  *
  * None of these are genuine model judgment for a schema generated from
  * a bare prompt with no code to resolve against - each has exactly one
@@ -543,7 +563,11 @@ function fillFixedConstraintFields(
 ): unknown {
   if (typeof candidate !== 'object' || candidate === null) return candidate;
   const obj = candidate as Record<string, unknown>;
-  const next: Record<string, unknown> = { ...obj, provenance: 'STATED' };
+  const next: Record<string, unknown> = {
+    ...obj,
+    provenance: 'STATED',
+    ...(generatedAt === null ? {} : { sessionId: randomUUID() }),
+  };
 
   const constraints = obj['constraints'];
   if (Array.isArray(constraints)) {

@@ -260,6 +260,46 @@ describe('createProjectSchemaGenerator', () => {
     }
   });
 
+  const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  it('stamps a fresh randomUUID sessionId on a real generation, discarding a training-id-shaped value from the model', async () => {
+    // VALID_SCHEMA_NO_CONSTRAINTS's own sessionId ('session-test-001') is
+    // exactly the shape a real generation actually returns - session-gold-021,
+    // session-gold-031, session-real-023 - confirmed on 5/5 real local-model
+    // calls across two 2026-08-31 desktop sessions, never a fresh id.
+    const provider = stubProvider(() => okResult(JSON.stringify(VALID_SCHEMA_NO_CONSTRAINTS)));
+    const generator = createProjectSchemaGenerator({ provider, cache: memoryCache() });
+
+    const result = await generator.generate('Build a task management app for small teams.');
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.sessionId).not.toBe('session-test-001');
+      expect(result.value.sessionId).toMatch(UUID_SHAPE);
+    }
+  });
+
+  it('leaves a cache-hit revalidation sessionId untouched - the same determinism-under-caching property already tested for timestamp', async () => {
+    const provider = stubProvider(() => okResult(JSON.stringify(VALID_SCHEMA_NO_CONSTRAINTS)));
+    const cache = memoryCache();
+    const generator = createProjectSchemaGenerator({ provider, cache });
+    const prompt = 'Build a task management app for small teams.';
+
+    const first = await generator.generate(prompt);
+    const second = await generator.generate(prompt);
+
+    // Only one real provider call - the second run was served from cache.
+    expect(provider.calls).toHaveLength(1);
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    if (first.ok && second.ok) {
+      expect(first.value.sessionId).toMatch(UUID_SHAPE);
+      // Not re-stamped on the cache-hit path - same id both times, the same
+      // way source.timestamp does not drift to "now" on re-validation.
+      expect(second.value.sessionId).toBe(first.value.sessionId);
+    }
+  });
+
   it('rejects and does not cache an answer that fails validateProjectSchema', async () => {
     // Not provenance: 'DERIVED' - fillFixedConstraintFields now force-sets
     // provenance to 'STATED' on every candidate before validation runs, so
