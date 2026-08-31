@@ -29,6 +29,17 @@
  * them here makes the contract project-schema.ts already promises actually
  * hold, regardless of what the model produced.
  *
+ * Constraint ids get the same treatment, for the same reason, discovered
+ * later: the local checkpoint's empty-constraints problem meant no real
+ * constraint existed to expose this until a 2026-08-31 desktop session's
+ * schema-injection fix finally produced one — id "c966666666666666", the
+ * identical repeated-digit decoding artifact componentId() was already
+ * built to correct, just never observed on a constraint before. Same
+ * content-derivation scheme `constraintId` (src/conformance/compile.ts) and
+ * `compiledConstraintId` (compile-constraints.ts) already use, applied a
+ * third time here rather than inventing a fourth id scheme — see
+ * `generatedConstraintId` below.
+ *
  * `sessionId` is intentionally left as the model returns it, not overridden
  * the same way. The same held-out eval showed the model frequently echoes a
  * memorized training-time session id (e.g. "session-gold-021") rather than
@@ -36,6 +47,7 @@
  * something this module silently papers over. A caller that persists a
  * generated schema should mint its own id before storing it.
  */
+import { createHash } from 'node:crypto';
 import type { CompletionProvider } from '../llm/provider.js';
 import { cacheKey, type LabelCache } from '../llm/cache.js';
 import { type Result, ok, err } from '../types/result.js';
@@ -407,7 +419,8 @@ function finalize(
   }
 
   const withFixedFields = fillFixedConstraintFields(rewriteComponentIds(parsed), generatedAt, onViaFallback);
-  const validated = validateProjectSchema(withFixedFields);
+  const withConstraintIds = rewriteConstraintIds(withFixedFields);
+  const validated = validateProjectSchema(withConstraintIds);
   if (!validated.ok) {
     return err({
       reason: 'schema-violation',
@@ -592,6 +605,117 @@ function fillResolvedSubjectFixedFields(
   }
 
   return filled;
+}
+
+/**
+ * Recomputes every constraint's id via generatedConstraintId(...), discarding
+ * whatever id the model produced — the same pattern as rewriteComponentIds
+ * above, for the same reason: a fine-tuned model does not reliably follow
+ * project-schema.ts's content-derived-id contract on its own, and a real
+ * generation exposed this on a constraint for the first time on 2026-08-31
+ * (id "c966666666666666", the identical repeated-digit artifact already
+ * documented for component ids — see this file's top docstring).
+ *
+ * Runs LAST, after fillFixedConstraintFields, deliberately — not merged into
+ * the same pass as rewriteComponentIds up front. generatedConstraintId's
+ * inputs include source.line, and fillFixedConstraintFields is what
+ * guarantees source.line is the real, normalized value (always null for a
+ * bare-prompt generation) rather than whatever raw, possibly-absent value
+ * the model happened to produce. Computing the id before that normalization
+ * would hash an intermediate value nothing else in the codebase ever
+ * computes an id from — compile.ts's constraintId and compile-constraints.ts's
+ * compiledConstraintId both run only on a fully-formed Constraint. Running
+ * last here matches that: by this point subject.phrase/object.phrase/rawText/
+ * source.location/source.line are all in their final form, so the id is
+ * stable across two generations of the same prompt the same way component
+ * ids already are — confirmed directly: source.timestamp (not part of the id
+ * formula) is the only field observed to differ between two real, independent
+ * generations of the same prompt.
+ *
+ * Defensive about shape, like rewriteComponentIds and fillFixedConstraintFields:
+ * this runs on an unknown value before validateProjectSchema, so a
+ * constraint that doesn't look well-formed enough to hash is left with
+ * whatever id it already had and reported by the real validator instead of
+ * guessed at here.
+ */
+function rewriteConstraintIds(candidate: unknown): unknown {
+  if (typeof candidate !== 'object' || candidate === null) return candidate;
+  const obj = candidate as Record<string, unknown>;
+  const constraints = obj['constraints'];
+  if (!Array.isArray(constraints)) return candidate;
+
+  return { ...obj, constraints: constraints.map(rewriteOneConstraintId) };
+}
+
+function rewriteOneConstraintId(constraint: unknown): unknown {
+  if (typeof constraint !== 'object' || constraint === null) return constraint;
+  const c = constraint as Record<string, unknown>;
+
+  const relation = c['relation'];
+  const rawText = c['rawText'];
+  const subject = c['subject'];
+  const object = c['object'];
+  const source = c['source'];
+
+  if (
+    typeof relation !== 'string' ||
+    typeof rawText !== 'string' ||
+    typeof subject !== 'object' ||
+    subject === null ||
+    typeof object !== 'object' ||
+    object === null ||
+    typeof source !== 'object' ||
+    source === null
+  ) {
+    return constraint;
+  }
+
+  const subjectPhrase = (subject as Record<string, unknown>)['phrase'];
+  const objectPhrase = (object as Record<string, unknown>)['phrase'];
+  const location = (source as Record<string, unknown>)['location'];
+  const line = (source as Record<string, unknown>)['line'];
+
+  if (typeof subjectPhrase !== 'string' || typeof objectPhrase !== 'string' || typeof location !== 'string') {
+    return constraint;
+  }
+
+  return {
+    ...c,
+    id: generatedConstraintId(relation, subjectPhrase, objectPhrase, rawText, location, line),
+  };
+}
+
+/**
+ * Same content-derivation scheme constraintId (src/conformance/compile.ts)
+ * and compiledConstraintId (compile-constraints.ts) both already follow,
+ * applied a third time rather than inventing a fourth id scheme: sha256 over
+ * the fields that determine identity, NUL-joined, truncated to 16 hex
+ * characters — matching both functions' choices exactly, so all three
+ * origins of a Constraint (extracted from a document, compiled from a
+ * workflow graph, or generated from a prompt) produce comparable ids for
+ * comparable content.
+ *
+ * `relation` is typed as `string`, not `ConstraintRelation`, unlike the other
+ * two functions' signatures — deliberately looser. Both of those run only on
+ * a relation already confirmed valid by their own pipeline; this one runs
+ * defensively, before validateProjectSchema, on a relation that has not been
+ * checked yet. Hashing an invalid relation string is harmless (the real
+ * validator rejects it regardless of what id it carries) and keeps this
+ * function's defensiveness consistent with rewriteOneConstraintId's own
+ * unknown-shaped input above it.
+ */
+function generatedConstraintId(
+  relation: string,
+  subject: string,
+  object: string,
+  rawText: string,
+  location: string,
+  line: unknown,
+): string {
+  return createHash('sha256')
+    .update([relation, subject.toLowerCase(), object.toLowerCase(), rawText, location, String(line)].join('\u0000'))
+    .digest('hex')
+    .slice(0, 16);
 }
 
 function isNonEmptyString(value: unknown): value is string {

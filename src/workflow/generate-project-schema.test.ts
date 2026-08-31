@@ -160,6 +160,106 @@ describe('createProjectSchemaGenerator', () => {
     }
   });
 
+  it('recomputes constraint ids, discarding a degenerate repeated-digit id the same way componentId already handles for components', async () => {
+    // The real malformed shape a live local-checkpoint generation actually
+    // produced on 2026-08-31 (desktop session, schema-injection fix
+    // verification) - id: "c966666666666666" is a decoding artifact, not
+    // sha256 output, the identical failure mode componentId() was already
+    // built to correct on components. No real constraint had ever existed
+    // to expose this on a constraint until that session.
+    const withDegenerateConstraintId = {
+      sessionId: 'session-test-008',
+      title: 'Team-Managed Task Boards',
+      originalPrompt: 'irrelevant for this fixture',
+      domains: {
+        frontend: { components: [], dependsOn: [] },
+        backend: { components: [], dependsOn: [] },
+        database: { components: [], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [
+        {
+          id: 'c966666666666666',
+          relation: 'must-not-import',
+          subject: { phrase: 'the Teams API' },
+          object: { phrase: 'a card or column directly' },
+          via: null,
+          source: { type: 'chat-log', location: 'session:session-real-023' },
+          confidence: 0.9,
+          lowConfidence: false,
+          rawText: "Only team members can see or edit a team's boards; no card/column access outside the team.",
+          provenance: 'STATED',
+        },
+      ],
+      provenance: 'STATED',
+    };
+    const provider = stubProvider(() => okResult(JSON.stringify(withDegenerateConstraintId)));
+    const generator = createProjectSchemaGenerator({ provider, cache: memoryCache() });
+
+    const result = await generator.generate(
+      "Build a task management app for small teams. Users sign in with email and password. Each team has boards, boards have columns, columns have cards. Team members can drag cards between columns. Only team members can see or edit a team's boards.",
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const id = result.value.constraints[0]!.id;
+      // Corrected, not the degenerate artifact.
+      expect(id).not.toBe('c966666666666666');
+      // A real sha256-slice(16) shape - lowercase hex, exactly 16 characters.
+      expect(id).toMatch(/^[0-9a-f]{16}$/);
+    }
+  });
+
+  it('recomputed constraint ids are stable across two generations of the same content, mirroring componentId', async () => {
+    const withDegenerateConstraintId = {
+      sessionId: 'session-test-009',
+      title: 'Team-Managed Task Boards',
+      originalPrompt: 'irrelevant for this fixture',
+      domains: {
+        frontend: { components: [], dependsOn: [] },
+        backend: { components: [], dependsOn: [] },
+        database: { components: [], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [
+        {
+          id: 'c966666666666666',
+          relation: 'must-not-import',
+          subject: { phrase: 'the Teams API' },
+          object: { phrase: 'a card or column directly' },
+          via: null,
+          source: { type: 'chat-log', location: 'session:session-real-023' },
+          confidence: 0.9,
+          lowConfidence: false,
+          rawText: "Only team members can see or edit a team's boards; no card/column access outside the team.",
+          provenance: 'STATED',
+        },
+      ],
+      provenance: 'STATED',
+    };
+    // Two separate generators, two separate (empty) caches - each call is a
+    // genuine independent computation of the id, not a cache replay, the
+    // same distinction this session's own real desktop test drew between
+    // "the cache guarantees byte-identical output" and "the id scheme
+    // itself is content-derived and stable" (source.timestamp was the one
+    // field observed to differ between two real independent generations;
+    // the id was not).
+    const first = await createProjectSchemaGenerator({
+      provider: stubProvider(() => okResult(JSON.stringify(withDegenerateConstraintId))),
+      cache: memoryCache(),
+    }).generate('Build a task management app for small teams.');
+    const second = await createProjectSchemaGenerator({
+      provider: stubProvider(() => okResult(JSON.stringify(withDegenerateConstraintId))),
+      cache: memoryCache(),
+    }).generate('Build a task management app for small teams.');
+
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    if (first.ok && second.ok) {
+      expect(first.value.constraints[0]!.id).toBe(second.value.constraints[0]!.id);
+    }
+  });
+
   it('rejects and does not cache an answer that fails validateProjectSchema', async () => {
     // Not provenance: 'DERIVED' - fillFixedConstraintFields now force-sets
     // provenance to 'STATED' on every candidate before validation runs, so
