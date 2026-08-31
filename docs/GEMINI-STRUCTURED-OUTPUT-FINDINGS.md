@@ -131,3 +131,64 @@ Anyone scheduling live-call work against Gemini in a single session should
 plan around this as a hard daily ceiling, not a rate limit that can be waited
 out within the session — the message itself states retrying will not help
 until the reset.
+
+## 5. Comparison: Gemini vs. the local checkpoint (2026-08-31)
+
+Two desktop sessions ran the real `scripts/generate-project-schema.mjs --local`
+pipeline (baseline checkpoint `run_20260822_130636`, Qwen2.5-7B-Instruct +
+LoRA) against held-out and in-distribution prompts, using the same
+`validateProjectSchema` gate and the same `fillFixedConstraintFields`/
+`componentId()` post-processing this file's §1-§2 fixes already put in
+place for Gemini. This section is that comparison, not a new pipeline.
+
+| Failure category | Gemini | Local (Qwen2.5-7B + LoRA, run_20260822_130636) |
+|---|---|---|
+| Schema-shape rejection | 4 distinct incompatibilities found | N/A — no structured-output enforcement at all |
+| Fixed-field echo reliability | Unreliable (confirmed, fixed via post-processing) | Never observed — 5/5 real generations (2 sessions, including a verbatim training prompt) returned constraints: [], so fillFixedConstraintFields/fillResolvedSubjectFixedFields have never actually run on local output |
+| Component id correctness | componentId() recomputation fixes it | Confirmed fixed — 3/5 raw ids were degenerate repeated-digit strings, recomputation corrected all 5, independently re-verified |
+| sessionId | Clean, prompt-derived | Confirmed broken — memorized training ids (session-gold-021, session-gold-031) on 5/5 calls, uncaught by validateProjectSchema, fix proposed but not yet applied |
+| Constraint generation itself | Reliable — every successful call produced real constraint content | Confirmed unreliable — 5/5 calls including a verbatim training example produced zero constraints; root cause undetermined (request/schema artifact vs genuine model limitation) |
+| Cross-call determinism | Not guaranteed, sometimes stable | Confirmed stable under greedy decoding, but only tested on empty-constraint output — determinism on real constraint content has never been observable |
+| Per-request latency (clean GPU) | 3-16s (network + generation) | 10.7-22.5s, no network component; degrades toward 20-27s under GPU contention; server has no concurrency handling — one request at a time |
+
+**Gemini is the safer default right now, unambiguously.** The table has
+exactly one row that determines this: constraint generation itself.
+Everything downstream of a `ProjectSchema` — the constraint compiler this
+project's next candidate step is meant to build — exists to consume
+constraint content. Gemini produces it reliably, on every successful call.
+The local checkpoint has produced it on **zero** of five real generations
+across two sessions, including a verbatim training example that its own
+training target says should have produced one. A provider that cannot be
+trusted to emit the one field the rest of the system is built around is
+not a fallback candidate yet, regardless of how well its other problems
+(ids, sessionId, latency) are understood or fixed.
+
+**Not all of local's problems sit at the same layer, and that distinction
+matters for what "fixed" would even mean here.** Component-id correctness
+and sessionId both fit the existing fix pattern exactly — a post-processing
+override or recomputation applied after parsing, the same shape as every
+Gemini fix in §1-§2. Empty constraint generation does not: post-processing
+can only correct or replace *fields on a constraint object that already
+exists*. It has no way to produce a constraint that the model never emitted
+in the first place. That puts this problem at a different layer entirely —
+either how the request is constructed (schema complexity, prompt framing,
+`effort` setting — the same category of problem §1's schema-dialect
+incompatibilities and §2's `via`-omission turned out to be for Gemini) or a
+genuine capability gap in what this specific checkpoint learned to produce.
+Nothing run so far distinguishes between those two, and the existing
+fix-via-post-processing pattern cannot resolve either one — it can only
+paper over field-level noise on output that already exists.
+
+**Before the local provider could be a real fallback and not just a
+research artifact:** the root cause of empty constraint generation needs
+isolating — at minimum, testing whether a simplified request (a smaller
+constraint sub-schema, or no schema constraint on the model call at all,
+mirroring how §1's fixes worked by removing complexity rather than adding
+retries) changes the outcome, which would point at request construction;
+if it doesn't, that points at the checkpoint's own training and would mean
+revisiting the training data or hyperparameters rather than the pipeline
+code. Only once at least one real constraint-bearing generation exists
+from this checkpoint do the still-untested questions — field-override
+reliability, the via null-fallback, and determinism on actual constraint
+content, none of which any run to date has been able to observe — become
+answerable at all.
