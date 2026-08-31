@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  analyzeGeneratedPair,
   analyzePrompt,
   createProjectSchemaGenerator,
   PROJECT_SCHEMA_JSON_SCHEMA,
@@ -116,6 +117,26 @@ describe('analyzePrompt', () => {
 
   it('does not flag an empty prompt as too-short (nothing to be short about)', () => {
     expect(analyzePrompt('').flags).not.toContain('too-short');
+  });
+});
+
+describe('analyzeGeneratedPair', () => {
+  it('does not flag access-control language paired with real constraint content', () => {
+    const prompt = 'A recipe manager where only the owner can edit a recipe; other members have read-only access.';
+    const result = analyzeGeneratedPair(prompt, [{ id: 'constraint-1', relation: 'must-not-import' }]);
+    expect(result.flags).not.toContain('suspicious-empty-constraints');
+  });
+
+  it('flags access-control language paired with empty constraints - the specific failure pattern this checkpoint has', () => {
+    const prompt = 'A support ticket system where only supervisors have access to the escalation queue.';
+    const result = analyzeGeneratedPair(prompt, []);
+    expect(result.flags).toContain('suspicious-empty-constraints');
+  });
+
+  it('does not flag empty constraints when the prompt implies no architectural rule at all', () => {
+    const prompt = 'A dice roller for tabletop games.';
+    const result = analyzeGeneratedPair(prompt, []);
+    expect(result.flags).not.toContain('suspicious-empty-constraints');
   });
 });
 

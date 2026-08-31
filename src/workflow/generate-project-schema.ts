@@ -138,6 +138,64 @@ export function analyzePrompt(prompt: string): PromptAnalysis {
 }
 
 // ---------------------------------------------------------------------------
+// Generated-pair analysis (no LLM call)
+// ---------------------------------------------------------------------------
+
+export type SyntheticPairFlag = 'suspicious-empty-constraints';
+
+export interface SyntheticPairAnalysis {
+  readonly flags: readonly SyntheticPairFlag[];
+}
+
+/**
+ * Curated, not exhaustive, same precision-over-recall posture as
+ * CONCRETE_DOMAIN_NOUNS and CONTRADICTION_PAIRS above - a prompt naming
+ * none of these is not necessarily free of an architectural rule, but one
+ * that does is meaningfully more likely to imply one.
+ */
+const ACCESS_CONTROL_TERMS: readonly string[] = ['role', 'permission', 'must not', 'only', 'access', 'layer', 'via'];
+
+/**
+ * Advisory pre-check for a generated (prompt, constraints) pair, meant for
+ * synthetic-generation curation before a pair is accepted into the dataset —
+ * not part of createProjectSchemaGenerator's own generate() path, and never
+ * a gate on it, same posture as analyzePrompt above: a signal for a human
+ * reviewer, never something that blocks or rejects on its own.
+ *
+ * Exists because of a specific, confirmed problem with this project's
+ * baseline checkpoint (run_20260822_130636), not a generic quality check:
+ * a 2026-08-31 desktop session found a 5/5 empty-`constraints` rate across
+ * real generations (including a verbatim training prompt whose own training
+ * target has a real constraint), and the checkpoint's own training data
+ * already carries a 73.6% empty-constraint skew (67 of 91 rows). Since
+ * `synthetic` pairs are meant to be bootstrapped from "a first fine-tune"
+ * (training/data/METHODOLOGY.md) — this checkpoint, or one like it —
+ * accepting its empty-constraint output at face value risks quietly
+ * amplifying the exact bias already diagnosed, rather than correcting it.
+ * `validateProjectSchema` cannot catch this: an empty `constraints` array
+ * is fully valid shape, zero rejections, zero warnings.
+ *
+ * Deliberately narrow: only flags a prompt that plausibly implies an
+ * architectural rule (per ACCESS_CONTROL_TERMS) paired with an empty result.
+ * A prompt with no such language and empty constraints is not the failure
+ * pattern being caught here - most real prompts genuinely imply no
+ * constraint at all (73.6% of this project's own hand-written/real-project
+ * corpus does), and flagging those too would bury the signal this exists to
+ * surface in noise.
+ */
+export function analyzeGeneratedPair(prompt: string, constraints: readonly unknown[]): SyntheticPairAnalysis {
+  const normalized = prompt.trim().toLowerCase();
+  const flags: SyntheticPairFlag[] = [];
+
+  const impliesAccessControl = ACCESS_CONTROL_TERMS.some((term) => normalized.includes(term));
+  if (impliesAccessControl && constraints.length === 0) {
+    flags.push('suspicious-empty-constraints');
+  }
+
+  return { flags };
+}
+
+// ---------------------------------------------------------------------------
 // ProjectSchema generation
 // ---------------------------------------------------------------------------
 
