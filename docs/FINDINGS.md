@@ -458,10 +458,47 @@ the class; the repair only ever subtracts instances from it.
 Two costs to plan for, both already measured or observed on this server:
 added prefill latency on top of the ~33% the schema-injection fix already cost
 (27,858 ms → 37,091 ms on an identical prompt, clean GPU both times), and a
-re-verification of determinism afterward. When constrained decoding lands, the
-repair path and its fixtures should be **deleted**, not retained as
-belt-and-braces — a repair kept past its purpose is a second, unmaintained code
-path guessing at output that no longer needs guessing at.
+re-verification of determinism afterward.
+
+### Update, 2026-09-01 — constrained decoding landed, and the repair is kept
+
+Constrained decoding is implemented and verified in `local_inference_server.py`
+(a punctuation-structural `LogitsProcessor`; full write-up in
+`LOCAL-MODEL-CONSTRAINED-DECODING-VERIFICATION.md`, outer repo). Measured on the
+identical 20 prompts, effective success went **60% → 85%**, with
+**`unparseable-json` eliminated, 8 of 8**. Per-token latency cost was 0.5%, an
+order of magnitude below the estimate. Determinism re-confirmed byte-identical.
+
+**This finding originally recommended deleting the repair once constrained
+decoding landed. That recommendation is reversed.** The repair
+(`repairMissingComponentsArrayClose`) is kept, for two reasons:
+
+1. **The constraint fails open by design.** If every candidate token would be
+   masked, or the state machine reaches an inconsistent state, it stops
+   constraining for the rest of that generation rather than write `-inf` across
+   the row and produce NaNs. Malformed text can therefore still reach the parser.
+   It is also applied only to requests that carry a schema. In both cases the
+   repair is the only thing standing between a decoder slip and a lost
+   generation — and it costs nothing when unused, since it runs solely inside
+   `finalize`'s existing `catch`.
+2. **It preserves the missing-bracket recovery path whenever the constraint is
+   not in force.** Under constraint, the three missing-bracket generations no
+   longer arrive malformed; they arrive as *valid JSON of the wrong shape* and
+   are rejected by `validateProjectSchema` instead. Deleting the repair would
+   mean that if the constraint is ever disabled, fails open, or is bypassed,
+   those generations revert to being unrecoverable.
+
+**Stated precisely, because it is easy to get backwards: the repair does not fix
+the three relocated failures.** They now parse cleanly, so the repair never
+fires on them. The failure moved from `unparseable-json` to `schema-violation`
+rather than disappearing — a string left sitting where a component object
+belongs, because the missing bracket is only provably illegal several tokens
+after the model has committed to it. Closing that would need array-element-type
+knowledge, which is schema awareness and out of the constraint's scope.
+
+So the accurate summary of constrained decoding is **two defect shapes
+eliminated, a third relocated** — not all three fixed. The repair is retained as
+a safety net for the first kind, not as a cure for the third.
 
 ## Limitations
 
