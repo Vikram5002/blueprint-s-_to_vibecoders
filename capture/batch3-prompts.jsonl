@@ -1,0 +1,20 @@
+{"prompt":"A farmers market stall booking app where organizers assign stalls and vendors can only see their own booking."}
+{"prompt":"A music school lesson scheduler where teachers set their availability and only the registrar can cancel a booked lesson."}
+{"prompt":"A bicycle courier dispatch board where couriers see only the deliveries assigned to them and dispatchers see every job."}
+{"prompt":"A community garden plot allocation tool where gardeners request plots and only the committee can approve or revoke one."}
+{"prompt":"An auto repair estimate approval app where customers approve estimates and only service advisors can change the line items."}
+{"prompt":"A hotel housekeeping task board where housekeepers see only their assigned floor and supervisors see every floor."}
+{"prompt":"A nonprofit grant application tracker where applicants see their own submission status and reviewers can see all applications."}
+{"prompt":"A church volunteer signup sheet where anyone can sign up for a slot but only coordinators can remove someone from one."}
+{"prompt":"A fishing charter booking site where captains manage their own trips and only the harbor office can issue a refund."}
+{"prompt":"A museum docent tour scheduler where docents claim open tours and only curators can publish the final schedule."}
+{"prompt":"A pet grooming appointment book where groomers see their own appointments and only the shop owner sees revenue totals."}
+{"prompt":"A bakery custom cake order form where customers submit requests and only bakers can change an order status."}
+{"prompt":"A cleaning service route planner where cleaners see only their own route and managers can reassign any stop."}
+{"prompt":"A tutoring center progress report tool where tutors write reports and only the parents of that student can read them."}
+{"prompt":"An escape room booking page where groups pick a time slot and pay a deposit."}
+{"prompt":"A home inventory app for insurance records that tracks belongings, receipts, and photos for one household."}
+{"prompt":"A drone flight log where pilots record each flight and only the compliance officer can mark a log reviewed."}
+{"prompt":"A youth soccer league roster app where coaches see only their own team and the league administrator sees every team."}
+{"prompt":"A vinyl record collection tracker where a collector catalogs albums and rates them, no accounts needed."}
+{"prompt":"A clinical trial participant scheduler where coordinators book visits and only the principal investigator can unblind an assignment."}
