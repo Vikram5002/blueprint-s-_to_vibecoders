@@ -389,6 +389,80 @@ available argument for the hand-verification requirement that caught them. Had
 they been reported, they would have been the project's first and most
 consequential false claim.
 
+---
+
+## Finding 8 — A deterministic checkpoint redistributes its malformation shapes between batches, so signature-based repair has a structural ceiling
+
+**Measurement:** two 20-prompt batches were generated against the same local
+QLoRA checkpoint (`local:qwen2.5-7b-instruct+run_20260822_130636`), same
+system prompt, same `PROJECT_SCHEMA_JSON_SCHEMA`, `temperature: 0`,
+`effort: 'medium'`, `MAX_OUTPUT_TOKENS = 4_096`. Both produced **exactly 6
+`unparseable-json` failures out of 20 — a 30% failure rate, twice.** The
+shapes those failures took did not hold:
+
+| Malformation | Batch 1 (2026-08-31) | Batch 2 (2026-09-01) |
+|---|---|---|
+| Missing `]` closing a `components` array, before `,"dependsOn"` | 5 | **2** |
+| Trailing comma before `]` (`},],"dependsOn"`) | 0 | **4** |
+| Doubled comma at an object/array boundary | 1 | 1 (co-occurring) |
+
+Every failure in both batches is a punctuation slip at an array or object
+boundary, with correct array *contents* and completion tokens at 9–15% of the
+budget — never truncation. Raw text for batch 2 is preserved in
+`capture/fresh-batch-2.jsonl`; the eleven fixtures distilled from it are in
+`src/workflow/fixtures/json-repair/`.
+
+**The trailing-comma shape does not appear in batch 1 at all.** It is not a
+rare variant that batch 1 happened to miss — in batch 2 it became the majority
+defect, displacing the shape that had accounted for 5 of 6 failures a day
+earlier. Nothing changed between the batches: same weights, same temperature,
+same schema, same prompt style. Determinism itself held throughout — re-running
+batch 2's failing prompts reproduced byte-identical output, same `JSON.parse`
+error positions (583, 452), same per-document occurrence counts (4, 2).
+
+**Caveat — two batches is two batches.** This is a distribution *shift*
+observed across two samples of 20, not a characterised distribution. The
+honest claim is "the defect shape is not stable across batches", not "it
+oscillates" or "it will shift again in some predictable way". What can be
+stated firmly is the negative: the batch-1 distribution did not predict the
+batch-2 distribution.
+
+**Consequence for repair.** `repairMissingComponentsArrayClose`
+(`src/workflow/generate-project-schema.ts`) recovers the missing-bracket shape
+and recovers **2 of batch 2's 6 failures**, verified live. Two facts bound how
+much that approach can ever be worth:
+
+1. The repair was specified from batch 1's evidence, which also suggested the
+   defect occurs *once per document*. It does not — it recurs **per domain**
+   (batch 2's instances carry it 4 and 2 times, and one document wrote two
+   domains correctly and two incorrectly). A gate requiring exactly one
+   occurrence, which is what batch 1's evidence implied, would have repaired
+   **0 of 6**.
+2. The shape that mattered most in batch 2 (trailing comma, 4 of 6) is not
+   repaired at all, because it was unknown when the repair was specified.
+
+A signature-based repair is therefore always fitted to the last observed
+distribution. It trails the model; it cannot anticipate it. Each newly observed
+shape costs another capture → diagnose → gate → test cycle to recover a
+shrinking slice of a failure rate that is not itself falling.
+
+**Consequence for what to build next — constrained decoding, as the next
+priority item, not a deferred one.** Every failure in both batches is a
+delimiter error with correct content. A grammar- or schema-constrained logits
+processor in `local_inference_server.py` makes emitting `,` where `]` is
+required *impossible* rather than merely unlikely, and it covers the missing
+bracket, the trailing comma, the doubled comma, and the shape that has not been
+observed yet — without needing to know any of them in advance. It eliminates
+the class; the repair only ever subtracts instances from it.
+
+Two costs to plan for, both already measured or observed on this server:
+added prefill latency on top of the ~33% the schema-injection fix already cost
+(27,858 ms → 37,091 ms on an identical prompt, clean GPU both times), and a
+re-verification of determinism afterward. When constrained decoding lands, the
+repair path and its fixtures should be **deleted**, not retained as
+belt-and-braces — a repair kept past its purpose is a second, unmaintained code
+path guessing at output that no longer needs guessing at.
+
 ## Limitations
 
 Stated plainly, because a findings index that only lists successes is not
