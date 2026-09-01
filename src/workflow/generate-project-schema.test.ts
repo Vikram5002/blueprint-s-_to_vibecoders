@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   analyzeGeneratedPair,
@@ -732,5 +734,205 @@ describe('createProjectSchemaGenerator', () => {
       expect(result.error.reason).toBe('schema-violation');
       expect(result.error.rejections.some((r) => r.path === '$.constraints[0].subject.phrase')).toBe(true);
     }
+  });
+});
+
+/**
+ * Real malformed and clean generations captured from the local QLoRA
+ * checkpoint by scripts/capture-schema-batch.mjs, saved verbatim. These are
+ * not hand-written approximations of the bug - each file is exactly what the
+ * model emitted, which is the whole point: the repair is only defensible if
+ * it is measured against output the model actually produces.
+ *
+ * manifest.json records, per fixture, which defect it carries and whether the
+ * repair is expected to fire.
+ */
+const REPAIR_FIXTURE_DIR = fileURLToPath(new URL('./fixtures/json-repair/', import.meta.url));
+
+interface RepairFixtureEntry {
+  readonly file: string;
+  readonly kind: string;
+  readonly expectRepairable: boolean;
+  readonly prompt: string;
+  readonly signatureOccurrences: number;
+}
+
+const REPAIR_MANIFEST: readonly RepairFixtureEntry[] = JSON.parse(
+  readFileSync(`${REPAIR_FIXTURE_DIR}manifest.json`, 'utf-8'),
+);
+
+function repairFixture(name: string): string {
+  return readFileSync(`${REPAIR_FIXTURE_DIR}${name}`, 'utf-8');
+}
+
+function fixturesOfKind(predicate: (entry: RepairFixtureEntry) => boolean): readonly RepairFixtureEntry[] {
+  const matches = REPAIR_MANIFEST.filter(predicate);
+  expect(matches.length).toBeGreaterThan(0);
+  return matches;
+}
+
+/** Runs one raw model text through the real generator, recording repair firings. */
+async function generateFrom(text: string, prompt = 'A captured prompt.') {
+  const cache = memoryCache();
+  let repairedCount = 0;
+  const generator = createProjectSchemaGenerator({
+    provider: stubProvider(() => okResult(text)),
+    cache,
+    onJsonRepaired: () => {
+      repairedCount += 1;
+    },
+  });
+  const result = await generator.generate(prompt);
+  return { result, repairedCount, cache };
+}
+
+describe('malformed-JSON repair', () => {
+  it('repairs every captured missing-bracket generation and validates the result', async () => {
+    for (const entry of fixturesOfKind((e) => e.kind === 'missing-bracket')) {
+      const { result, repairedCount } = await generateFrom(repairFixture(entry.file), entry.prompt);
+
+      expect(repairedCount, `${entry.file} should fire onJsonRepaired exactly once`).toBe(1);
+      expect(result.ok, `${entry.file} should validate after repair`).toBe(true);
+      if (result.ok) {
+        expect(result.value.provenance).toBe('STATED');
+        for (const domain of ['frontend', 'backend', 'database', 'security'] as const) {
+          expect(Array.isArray(result.value.domains[domain].components)).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('repairs fixtures carrying the signature more than once', async () => {
+    // The defect recurs per domain: the captured fixtures carry it 2 and 4
+    // times. An earlier draft of this gate required exactly one occurrence,
+    // which would have repaired none of them.
+    const multi = fixturesOfKind((e) => e.kind === 'missing-bracket' && e.signatureOccurrences > 1);
+    expect(multi.length).toBe(2);
+
+    for (const entry of multi) {
+      const { result, repairedCount } = await generateFrom(repairFixture(entry.file), entry.prompt);
+      expect(repairedCount).toBe(1);
+      expect(result.ok).toBe(true);
+    }
+  });
+
+  it('preserves every component name and purpose the model wrote', async () => {
+    for (const entry of fixturesOfKind((e) => e.kind === 'missing-bracket')) {
+      const raw = repairFixture(entry.file);
+      const { result } = await generateFrom(raw, entry.prompt);
+      expect(result.ok).toBe(true);
+      if (!result.ok) continue;
+
+      const written = [...raw.matchAll(/"(?:name|purpose)":"((?:[^"\\]|\\.)*)"/g)].map(
+        (m) => JSON.parse(`"${m[1]}"`) as string,
+      );
+      expect(written.length).toBeGreaterThan(0);
+
+      const kept = new Set<string>();
+      for (const domain of ['frontend', 'backend', 'database', 'security'] as const) {
+        for (const component of result.value.domains[domain].components) {
+          kept.add(component.name);
+          kept.add(component.purpose);
+        }
+      }
+      for (const literal of written) {
+        expect(kept.has(literal), `${entry.file} lost the literal ${JSON.stringify(literal)}`).toBe(true);
+      }
+    }
+  });
+
+  it('does not repair captured failures that carry a different malformation', async () => {
+    for (const entry of fixturesOfKind((e) => e.kind.startsWith('trailing-comma'))) {
+      const { result, repairedCount } = await generateFrom(repairFixture(entry.file), entry.prompt);
+
+      expect(repairedCount, `${entry.file} must not fire onJsonRepaired`).toBe(0);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.reason, `${entry.file} should still be rejected`).toBe('unparseable-json');
+      }
+    }
+  });
+
+  it('never enters the repair path for a cleanly generated response', async () => {
+    for (const entry of fixturesOfKind((e) => e.kind === 'clean')) {
+      const raw = repairFixture(entry.file);
+      // Asserted directly rather than inferred from "it did not fail":
+      // a clean generation must not merely succeed, it must never repair.
+      expect(raw.includes('},"dependsOn"'), `${entry.file} should carry no signature`).toBe(false);
+
+      const { result, repairedCount } = await generateFrom(raw, entry.prompt);
+      expect(repairedCount, `${entry.file} must not fire onJsonRepaired`).toBe(0);
+      expect(result.ok, `${entry.file} should validate unrepaired`).toBe(true);
+    }
+  });
+
+  it('rejects a repair that would silently drop a component', async () => {
+    // The dangerous case the content-conservation check exists for: a
+    // component object missing its OWN closing brace. Inserting `]` then
+    // produces JSON that parses, but the first component's fields have
+    // already been absorbed by duplicate keys - "Sign-In Form" is gone.
+    // Built by hand because the checkpoint has not produced this shape; the
+    // guard has to hold before it does, not after.
+    const mergedComponents =
+      '"frontend":{"components":[{"id":"aaaaaaaaaaaaaaaa","name":"Sign-In Form",' +
+      '"purpose":"Guardian signs a child in.","id":"bbbbbbbbbbbbbbbb",' +
+      '"name":"Attendance View","purpose":"Shows the full attendance log."}';
+
+    const merged = JSON.stringify({
+      sessionId: 'session-merge-001',
+      title: 'Merged Component Case',
+      originalPrompt: 'A daycare check-in app.',
+      domains: {
+        frontend: { components: [], dependsOn: ['backend'] },
+        backend: { components: [], dependsOn: [] },
+        database: { components: [], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [],
+    }).replace('"frontend":{"components":[]', mergedComponents);
+
+    // Preconditions: unparseable, carries the signature exactly once, and
+    // repairing it DOES parse - so only the conservation check can be what
+    // rejects it.
+    expect(() => JSON.parse(merged)).toThrow();
+    expect(merged.split('},"dependsOn"').length - 1).toBe(1);
+    expect(() => JSON.parse(merged.replaceAll('},"dependsOn"', '}],"dependsOn"'))).not.toThrow();
+
+    const { result, repairedCount } = await generateFrom(merged);
+
+    expect(repairedCount).toBe(0);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.reason).toBe('unparseable-json');
+    }
+  });
+
+  it('does not cache a repaired generation, but still caches a clean one', async () => {
+    const repairable = fixturesOfKind((e) => e.kind === 'missing-bracket')[0]!;
+    const repaired = await generateFrom(repairFixture(repairable.file), repairable.prompt);
+    expect(repaired.result.ok).toBe(true);
+    expect(repaired.repairedCount).toBe(1);
+    // Caching it would store the already-repaired text, which re-parses
+    // cleanly - so the next call would never re-enter the repair path and
+    // the marker would vanish from the record.
+    expect(repaired.cache.entries.size).toBe(0);
+
+    const cleanEntry = fixturesOfKind((e) => e.kind === 'clean')[0]!;
+    const clean = await generateFrom(repairFixture(cleanEntry.file), cleanEntry.prompt);
+    expect(clean.result.ok).toBe(true);
+    expect(clean.repairedCount).toBe(0);
+    expect(clean.cache.entries.size).toBe(1);
+  });
+
+  it('leaves generate() unchanged when no repair callback is supplied', async () => {
+    const entry = fixturesOfKind((e) => e.kind === 'missing-bracket')[0]!;
+    const generator = createProjectSchemaGenerator({
+      provider: stubProvider(() => okResult(repairFixture(entry.file))),
+      cache: memoryCache(),
+    });
+
+    const result = await generator.generate(entry.prompt);
+
+    expect(result.ok).toBe(true);
   });
 });

@@ -400,6 +400,23 @@ export interface CreateProjectSchemaGeneratorOptions {
    * here, not infer it from the result afterward.
    */
   readonly onViaFallback?: () => void;
+  /**
+   * Called once per generation whose text only parsed after
+   * repairMissingComponentsArrayClose repaired it - synchronously, before
+   * generate() resolves. Optional and side-channel only, exactly like
+   * onViaFallback above.
+   *
+   * Exists for the same reason: a repaired ProjectSchema is structurally
+   * indistinguishable from one the model emitted cleanly. Both end up as a
+   * validated schema with the same fields, so nothing downstream can tell
+   * them apart afterward. A caller that intends to keep a generated pair -
+   * scripts/capture-schema-batch.mjs writes the marker onto its record -
+   * has to observe it here.
+   *
+   * A repaired generation is never cached (see generate() below), so this
+   * fires on every call that repairs, not only the first.
+   */
+  readonly onJsonRepaired?: () => void;
 }
 
 export function createProjectSchemaGenerator(options: CreateProjectSchemaGeneratorOptions): ProjectSchemaGenerator {
@@ -420,7 +437,7 @@ export function createProjectSchemaGenerator(options: CreateProjectSchemaGenerat
         // same way a bad model answer would, not bypass the gate that exists
         // specifically to keep an invalid ProjectSchema from ever being
         // returned.
-        return finalize(cached.description ?? '', null, options.onViaFallback);
+        return finalize(cached.description ?? '', null, options.onViaFallback, options.onJsonRepaired);
       }
 
       const completion = await options.provider.complete({
@@ -443,12 +460,25 @@ export function createProjectSchemaGenerator(options: CreateProjectSchemaGenerat
         return err({ reason: 'provider-error', message: completion.error.message });
       }
 
-      const result = finalize(completion.value.text, new Date().toISOString(), options.onViaFallback);
-      if (result.ok) {
+      let repairedThisCall = false;
+      const result = finalize(completion.value.text, new Date().toISOString(), options.onViaFallback, () => {
+        repairedThisCall = true;
+        options.onJsonRepaired?.();
+      });
+      if (result.ok && !repairedThisCall) {
         // Only a validated answer is cached. Caching a rejected one would
         // make a bad answer sticky forever — every future call with the same
         // prompt would replay the same rejection instead of getting a fresh
         // attempt.
+        //
+        // A repaired answer is not cached either, for a related reason. What
+        // the cache stores is the *serialized validated schema*, which is
+        // well-formed by construction — so a cache hit on a repaired answer
+        // would re-parse cleanly, never re-enter the repair path, and never
+        // fire onJsonRepaired. The repair would vanish from the record on the
+        // second call, leaving exactly the silent indistinguishability that
+        // callback exists to prevent. Regenerating costs a model call; losing
+        // the provenance of a repair costs the ability to find it later.
         options.cache.set(key, {
           label: 'project-schema',
           description: JSON.stringify(result.value),
@@ -475,12 +505,22 @@ function finalize(
   text: string,
   generatedAt: string | null,
   onViaFallback?: () => void,
+  onJsonRepaired?: () => void,
 ): Result<ValidatedProjectSchema, GenerateFailure> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
   } catch (cause) {
-    return err({ reason: 'unparseable-json', message: `response was not valid JSON: ${String(cause)}` });
+    // Repair is attempted only here, on text that has already failed to
+    // parse. It can therefore never alter a generation that was working -
+    // the worst it can do is turn unparseable text into a parsed object,
+    // which is then held to every check a cleanly parsed one faces.
+    const repaired = repairMissingComponentsArrayClose(text);
+    if (repaired === null) {
+      return err({ reason: 'unparseable-json', message: `response was not valid JSON: ${String(cause)}` });
+    }
+    parsed = repaired;
+    onJsonRepaired?.();
   }
 
   const withFixedFields = fillFixedConstraintFields(rewriteComponentIds(parsed), generatedAt, onViaFallback);
@@ -494,6 +534,115 @@ function finalize(
     });
   }
   return ok(validated.value);
+}
+
+/**
+ * The one malformation this file repairs, and the exact text of it.
+ *
+ * The local QLoRA checkpoint intermittently ends a domain's `components`
+ * array without writing the closing `]`, going straight from the last
+ * component object to the next key:
+ *
+ *   ..."purpose":"Lets a manager reassign a request."},"dependsOn":["backend"]}
+ *                                                    ^ `}]` expected here
+ *
+ * A well-formed document writes `}],"dependsOn"` at the identical position.
+ * The array *contents* are correct in every observed instance - component
+ * ids, names and purposes all parse fine - and the response is nowhere near
+ * the token budget, so this is not truncation. It is a decoding-level slip
+ * at an array boundary, which is why repairing it is defensible at all:
+ * there is no missing content to invent, only a delimiter to restore.
+ *
+ * Deliberately literal. No whitespace tolerance, no bracket-balancing, no
+ * general-purpose JSON fixer. Every observed instance is byte-for-byte this
+ * string, and a repair that generalises past its evidence stops being "we
+ * understand this specific bug" and becomes "we guess at broken output".
+ */
+const MISSING_COMPONENTS_CLOSE = '},"dependsOn"';
+const REPAIRED_COMPONENTS_CLOSE = '}],"dependsOn"';
+
+/**
+ * Attempts the one repair described above, returning the parsed object on
+ * success and null on any doubt whatsoever.
+ *
+ * Every occurrence is repaired, not just one. The checkpoint omits the
+ * bracket independently per domain: observed documents carry the defect 2 and
+ * 4 times, and one of them wrote two domains correctly and two incorrectly in
+ * the same response. Requiring a single occurrence - the original shape of
+ * this gate - would have repaired none of the real failures ever captured.
+ * Multiple sites are not ambiguity here; they are the same slip repeated, each
+ * one structurally identical to the next.
+ *
+ * The gate that actually guards correctness is not the match count but
+ * conservesComponentText below. The dangerous case this must never wave
+ * through is a component object missing its *own* closing brace: there, the
+ * `}` before `,"dependsOn"` closes the last component rather than the array,
+ * its fields have already merged into a sibling, and inserting `]` yields a
+ * document that parses and could pass validation with one component silently
+ * gone. That case is caught by checking the text's own name/purpose literals
+ * survived, not by counting brackets.
+ */
+function repairMissingComponentsArrayClose(text: string): unknown | null {
+  if (!text.includes(MISSING_COMPONENTS_CLOSE)) return null;
+
+  let candidate: unknown;
+  try {
+    candidate = JSON.parse(text.replaceAll(MISSING_COMPONENTS_CLOSE, REPAIRED_COMPONENTS_CLOSE));
+  } catch {
+    // Repairing this signature did not produce valid JSON, so whatever is
+    // wrong with the text is not (or not only) the diagnosed bug. Reject it
+    // exactly as before rather than attempt a second guess.
+    return null;
+  }
+
+  return conservesComponentText(text, candidate) ? candidate : null;
+}
+
+/** Every `"name"`/`"purpose"` string literal in the raw text, unescaped. */
+const COMPONENT_TEXT_LITERAL = /"(?:name|purpose)":"((?:[^"\\]|\\.)*)"/g;
+
+/**
+ * True when every name and purpose the model actually wrote is still present
+ * as a string somewhere in the repaired object.
+ *
+ * Compares against the object's real string values rather than a substring
+ * search of its serialization: a substring search would happily match a name
+ * that survived only as a fragment of some larger merged string, which is
+ * precisely the corruption this is meant to detect.
+ */
+function conservesComponentText(rawText: string, candidate: unknown): boolean {
+  const present = new Set<string>();
+  collectStrings(candidate, present);
+
+  for (const match of rawText.matchAll(COMPONENT_TEXT_LITERAL)) {
+    const escaped = match[1];
+    if (escaped === undefined) continue;
+    let literal: string;
+    try {
+      literal = JSON.parse(`"${escaped}"`) as string;
+    } catch {
+      // A literal that cannot be unescaped on its own means the raw text is
+      // malformed in some way beyond the diagnosed signature.
+      return false;
+    }
+    if (!present.has(literal)) return false;
+  }
+
+  return true;
+}
+
+function collectStrings(value: unknown, into: Set<string>): void {
+  if (typeof value === 'string') {
+    into.add(value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const entry of value) collectStrings(entry, into);
+    return;
+  }
+  if (typeof value === 'object' && value !== null) {
+    for (const entry of Object.values(value)) collectStrings(entry, into);
+  }
 }
 
 /**
