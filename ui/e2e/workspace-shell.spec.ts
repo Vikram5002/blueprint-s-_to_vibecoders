@@ -137,7 +137,7 @@ test.describe('verification display — three outcomes', () => {
 
     await page.getByRole('button', { name: 'Violation detected' }).click();
     await expect(page.locator('[data-outcome="violated"]')).toBeVisible();
-    await expect(page.getByText('Violation Detected')).toBeVisible();
+    await expect(page.locator('[data-outcome="violated"]').getByText('Violation Detected')).toBeVisible();
 
     await page.getByRole('button', { name: 'Unverifiable — no rules stated' }).click();
     await expect(page.locator('[data-outcome="unverifiable"]')).toBeVisible();
@@ -159,10 +159,10 @@ test.describe('workflow graph — fit-to-view', () => {
     await page.goto('/workspace.html');
     await page.getByRole('tab', { name: 'Workflow graph (mock)' }).click();
 
-    await expect(page.getByText('Frontend')).toBeVisible();
-    await expect(page.getByText('Backend')).toBeVisible();
-    await expect(page.getByText('Database')).toBeVisible();
-    await expect(page.getByText('Security')).toBeVisible();
+    await expect(page.getByTestId('rf__node-frontend').getByText('Frontend')).toBeVisible();
+    await expect(page.getByTestId('rf__node-backend').getByText('Backend')).toBeVisible();
+    await expect(page.getByTestId('rf__node-database').getByText('Database')).toBeVisible();
+    await expect(page.getByTestId('rf__node-security').getByText('Security')).toBeVisible();
 
     const viewport = page.locator('.react-flow__viewport');
     const before = await viewport.getAttribute('style');
