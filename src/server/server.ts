@@ -31,7 +31,11 @@ import {
 import { buildIntentResponse } from './intent-api.js';
 import { buildDiffResponse, buildDriftHistoryResponse } from './history-api.js';
 import { buildViolationsResponse, buildSnapshotResponse } from './violations-api.js';
+import { createWorkflowRoutes, type WorkflowRouteDeps } from './workflow-api.js';
 import { ROOT_DIRECTORY, type ViewLevel } from '../graph/aggregate.js';
+import { chooseProvider, createProvider } from '../llm/select-provider.js';
+import { loadLabelCache } from '../llm/cache.js';
+import { createProjectSchemaGenerator } from '../workflow/generate-project-schema.js';
 import type { AnalysisContext } from './context.js';
 
 export const LOOPBACK_HOST = '127.0.0.1';
@@ -58,7 +62,16 @@ const CONTENT_TYPES: ReadonlyMap<string, string> = new Map([
   ['.ico', 'image/x-icon'],
 ]);
 
-export function createApp(context: AnalysisContext): Hono {
+/**
+ * `workflow` is optional and, unlike every other argument here, not bound
+ * to `context` at all — Layer 2 (prompt -> ProjectSchema -> compiled
+ * constraints) doesn't analyse a repository, so it needs an LLM dependency,
+ * not a walked/parsed/clustered one. Omitting it mounts no `/api/workflow/*`
+ * routes, which is what every existing caller of `createApp` still does —
+ * zero behavior change for them. `startServer` is the one real caller that
+ * resolves and passes it.
+ */
+export function createApp(context: AnalysisContext, workflow?: WorkflowRouteDeps): Hono {
   const app = new Hono();
 
   app.get('/api/summary', (c) => c.json(buildSummaryResponse(context)));
@@ -179,6 +192,14 @@ export function createApp(context: AnalysisContext): Hono {
     return result.ok ? c.json(result, 201) : c.json({ error: result.message }, 400);
   });
 
+  // Registered before the catch-all so a more specific path always wins,
+  // same discipline as /api/module-edge/* above. Mounted only when a
+  // caller actually passed workflow deps — see this function's own doc
+  // comment for why that's optional.
+  if (workflow !== undefined) {
+    app.route('/api/workflow', createWorkflowRoutes(workflow));
+  }
+
   app.get('*', async (c) => {
     const served = await serveStatic(c.req.path);
     if (served !== null) {
@@ -196,8 +217,34 @@ export function createApp(context: AnalysisContext): Hono {
   return app;
 }
 
+/**
+ * Resolves the real workflow dependency the same way every other real
+ * call site in this codebase resolves a provider — `chooseProvider` then
+ * `createProvider`, never reading `process.env` directly (`../pipeline/label-repository.ts`
+ * is the precedent). No `loadEnvFile` call here: only `cli.ts` may load
+ * `.env` (enforced by `architecture.test.ts`), and by the time a real
+ * process reaches `startServer`, `cli.ts` has already done it — `process.env`
+ * already carries whatever `.env` set. `null` (no key configured) is not an
+ * error; it is propagated into `WorkflowRouteDeps` so `/api/workflow/jobs`
+ * degrades to a clear 503 instead of the server refusing to start.
+ */
+async function resolveWorkflowDeps(context: AnalysisContext): Promise<WorkflowRouteDeps> {
+  const choice = chooseProvider();
+  const provider = await createProvider(choice);
+  if (provider === null) {
+    return { llm: null };
+  }
+
+  // One cache instance, shared between the generator (which writes to it
+  // internally on a fresh generation) and the flush call in workflow-api.ts
+  // — two separate loadLabelCache() calls would each own an independent
+  // in-memory map, and flushing one would never persist what the other wrote.
+  const cache = await loadLabelCache(context.root);
+  return { llm: { generator: createProjectSchemaGenerator({ provider, cache }), cache } };
+}
+
 export async function startServer(context: AnalysisContext): Promise<RunningServer> {
-  const app = createApp(context);
+  const app = createApp(context, await resolveWorkflowDeps(context));
 
   const server: ServerType = await new Promise((resolve) => {
     const created = serve({ fetch: app.fetch, hostname: LOOPBACK_HOST, port: 0 }, () => resolve(created));
