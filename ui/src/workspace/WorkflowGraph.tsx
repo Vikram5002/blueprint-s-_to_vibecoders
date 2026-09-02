@@ -9,6 +9,7 @@ import {
   type GenerationStatus,
 } from './generation-status';
 import type { DomainName, ProjectSchema } from './project-schema-types';
+import type { Constraint } from './verification-types';
 
 const NODE_TYPES = { workflow: WorkflowNode };
 
@@ -28,6 +29,16 @@ const RELATION_LABEL: Readonly<Record<string, string>> = {
 
 export interface WorkflowGraphProps {
   readonly schema: ProjectSchema;
+  /**
+   * The real compiler's closed-world `must-not-import` prohibitions for this
+   * schema (src/workflow/compile-constraints.ts), grouped by subject domain.
+   * Undefined for the mock-data path, which has no compiler output at all —
+   * the demo controls and mock scenarios are unaffected either way (ADR-001:
+   * zero regression). When present, each domain node gains a click affordance
+   * showing what it is forbidden from depending on, per ADR-001 Option C:
+   * prohibitions are never drawn as edges, only reachable from the node.
+   */
+  readonly prohibitions?: readonly Constraint[];
 }
 
 /**
@@ -41,9 +52,15 @@ export interface WorkflowGraphProps {
  * not part of ProjectSchema — see generation-status.ts), demo-controllable
  * below the canvas so all six states can be seen at once without a real
  * orchestrator driving them.
+ *
+ * Clicking a domain node (anywhere but the "View components" button, which
+ * stops its own click from bubbling) selects it for the same side panel edge
+ * inspection uses — see ADR-001. Selecting a node clears the selected edge
+ * and vice versa, so the panel always shows exactly one thing at a time.
  */
-export function WorkflowGraph({ schema }: WorkflowGraphProps): JSX.Element {
+export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX.Element {
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [selectedDomain, setSelectedDomain] = useState<DomainName | null>(null);
   const [viewingDomain, setViewingDomain] = useState<DomainName | null>(null);
   const [statuses, setStatuses] = useState<Record<DomainName, GenerationStatus>>({
     frontend: 'not-started',
@@ -55,6 +72,20 @@ export function WorkflowGraph({ schema }: WorkflowGraphProps): JSX.Element {
   const layout = useMemo(() => computeLayout(schema), [schema]);
   const edges = useMemo(() => deriveEdges(schema), [schema]);
   const maxWeight = useMemo(() => Math.max(1, ...edges.map((e) => e.weight)), [edges]);
+
+  const prohibitionsByDomain = useMemo(() => {
+    const grouped = new Map<DomainName, Constraint[]>();
+    for (const constraint of prohibitions ?? []) {
+      const subjectDomain = constraint.subject.phrase as DomainName;
+      const forDomain = grouped.get(subjectDomain);
+      if (forDomain === undefined) {
+        grouped.set(subjectDomain, [constraint]);
+      } else {
+        forDomain.push(constraint);
+      }
+    }
+    return grouped;
+  }, [prohibitions]);
 
   const flowNodes = useMemo<Node[]>(
     () =>
@@ -119,8 +150,18 @@ export function WorkflowGraph({ schema }: WorkflowGraphProps): JSX.Element {
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable
-            onEdgeClick={(_event, edge) => setSelectedEdgeId(edge.id)}
-            onPaneClick={() => setSelectedEdgeId(null)}
+            onEdgeClick={(_event, edge) => {
+              setSelectedEdgeId(edge.id);
+              setSelectedDomain(null);
+            }}
+            onNodeClick={(_event, node) => {
+              setSelectedDomain(node.id as DomainName);
+              setSelectedEdgeId(null);
+            }}
+            onPaneClick={() => {
+              setSelectedEdgeId(null);
+              setSelectedDomain(null);
+            }}
             proOptions={{ hideAttribution: true }}
           >
             <Background color="#1c212b" gap={22} />
@@ -137,13 +178,28 @@ export function WorkflowGraph({ schema }: WorkflowGraphProps): JSX.Element {
         </div>
 
         <aside className="w-72 flex-shrink-0 overflow-y-auto border-l border-slate-800 bg-slate-950 p-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Edge inspection
-          </h3>
-          {selectedEdge === null ? (
-            <p className="text-xs text-slate-500">Click an edge to see the rule it represents.</p>
+          {selectedDomain !== null && prohibitions !== undefined ? (
+            <DomainProhibitions
+              domain={selectedDomain}
+              prohibitions={prohibitionsByDomain.get(selectedDomain) ?? []}
+            />
           ) : (
-            <EdgeInspection edge={selectedEdge} />
+            <>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Edge inspection
+              </h3>
+              {selectedEdge === null ? (
+                <p className="text-xs text-slate-500">
+                  Click an edge to see the rule it represents
+                  {prohibitions !== undefined
+                    ? ', or a node to see what it must not depend on'
+                    : ''}
+                  .
+                </p>
+              ) : (
+                <EdgeInspection edge={selectedEdge} />
+              )}
+            </>
           )}
 
           <h3 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -208,6 +264,53 @@ function EdgeInspection({ edge }: { edge: WorkflowEdge }): JSX.Element {
           </div>
           <p className="text-slate-200">&quot;{edge.constraint.rawText}&quot;</p>
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * ADR-001 Option C: the compiler's closed-world `must-not-import`
+ * prohibitions for one domain, reached by clicking that domain's node —
+ * never drawn as graph edges. For 4 domains this list holds 3 entries per
+ * domain (every other domain, since dependsOn either names the edge as a
+ * permission or the compiler names it a prohibition — there is no third
+ * state), which is exactly the "always the complete directed graph"
+ * cardinality ADR-001 rejected drawing directly.
+ */
+function DomainProhibitions({
+  domain,
+  prohibitions,
+}: {
+  readonly domain: DomainName;
+  readonly prohibitions: readonly Constraint[];
+}): JSX.Element {
+  return (
+    <div>
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+        {DOMAIN_LABEL[domain]}: not allowed to depend on
+      </h3>
+      {prohibitions.length === 0 ? (
+        <p className="text-xs text-slate-500">No prohibitions compiled for this domain.</p>
+      ) : (
+        <ul className="space-y-2">
+          {prohibitions.map((constraint) => (
+            <li
+              key={constraint.id}
+              className="rounded border border-red-700/50 bg-red-950/20 p-2 text-xs"
+            >
+              <div className="mb-1 flex items-center gap-2">
+                <span className="rounded border border-red-500 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-300">
+                  Prohibited
+                </span>
+                <span className="text-[10px] text-slate-500">
+                  {DOMAIN_LABEL[constraint.object.phrase as DomainName] ?? constraint.object.phrase}
+                </span>
+              </div>
+              <p className="text-slate-200">&quot;{constraint.rawText}&quot;</p>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
