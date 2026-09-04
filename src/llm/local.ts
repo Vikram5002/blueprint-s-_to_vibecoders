@@ -29,6 +29,28 @@ import type { CompletionProvider, CompletionRequest, CompletionResult } from './
 export const DEFAULT_LOCAL_BASE_URL = 'http://127.0.0.1:8712';
 export const DEFAULT_LOCAL_MODEL = 'local:qwen2.5-7b-instruct+run_20260822_130636';
 
+/**
+ * Wall-clock ceiling on a single request. Node's `fetch` has no default
+ * timeout — `gemini.ts`'s own `REQUEST_TIMEOUT_MS` exists because an untimed
+ * call once hung a corpus run for over twenty minutes at near-zero CPU, and
+ * this adapter had no equivalent until now, unlike every other one.
+ *
+ * That gap mattered more here than it would for a vendor API: this server
+ * has been measured at 10.7-27s per request with zero concurrency handling
+ * — one GPU, one model, requests serialize — so a stuck or heavily contended
+ * request had no path to ever reach a terminal state; a caller polling a job
+ * (see `server/workflow-api.ts`) would see it sit in `running` forever.
+ *
+ * 300s is well above the worst single-request latency measured (27s) and
+ * gives real headroom for legitimate queuing behind other concurrent
+ * requests (bounded server-side by `MAX_CONCURRENT_JOBS`), while still
+ * eventually surfacing a genuinely dead connection as a real failure rather
+ * than an invisible hang. Not tuned to bound expected contention — like
+ * `gemini.ts`'s timeout, it exists to catch the dead-connection case, not to
+ * promise a latency ceiling under load.
+ */
+export const REQUEST_TIMEOUT_MS = 300_000;
+
 export interface LocalOptions {
   readonly baseUrl?: string;
   readonly model?: string;
@@ -57,6 +79,7 @@ export function createLocalProvider(options: LocalOptions = {}): CompletionProvi
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify(request),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         });
       } catch (cause) {
         return { ok: false, error: { kind: 'unavailable', message: `network error: ${String(cause)}` } };
