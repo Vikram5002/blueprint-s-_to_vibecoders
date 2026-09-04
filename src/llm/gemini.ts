@@ -237,7 +237,11 @@ export function createGeminiProvider(options: GeminiOptions): CompletionProvider
         } catch (cause) {
           lastFailure = {
             ok: false,
-            error: { kind: 'unavailable', message: redact(`network error: ${String(cause)}`) },
+            // A network-level failure (timeout, DNS, connection reset) is
+            // exactly the kind of thing the retry loop already treats as
+            // worth another attempt - retryable: true here just makes that
+            // existing judgement visible to a caller, not a new one.
+            error: { kind: 'unavailable', message: redact(`network error: ${String(cause)}`), retryable: true },
           };
           if (attempt === MAX_ATTEMPTS) return lastFailure;
           await sleep(backoffFor(attempt, null));
@@ -255,11 +259,15 @@ export function createGeminiProvider(options: GeminiOptions): CompletionProvider
         if (response.status === 429) {
           const verdict = classifyQuotaFailure(text);
           if (!verdict.retryable) {
-            return { ok: false, error: { kind: 'unavailable', message: verdict.detail } };
+            // The one case this whole field exists for: a daily quota
+            // exhaustion, already known internally (it's why this returns
+            // immediately instead of continuing the loop) but previously
+            // discarded into verdict.detail's message text on the way out.
+            return { ok: false, error: { kind: 'unavailable', message: verdict.detail, retryable: false } };
           }
           lastFailure = {
             ok: false,
-            error: { kind: 'unavailable', message: `${verdict.detail} after ${attempt} attempt(s)` },
+            error: { kind: 'unavailable', message: `${verdict.detail} after ${attempt} attempt(s)`, retryable: true },
           };
           if (attempt === MAX_ATTEMPTS) return lastFailure;
           await sleep(backoffFor(attempt, verdict.retryAfterMs));
@@ -269,7 +277,7 @@ export function createGeminiProvider(options: GeminiOptions): CompletionProvider
         if (response.status >= 500) {
           lastFailure = {
             ok: false,
-            error: { kind: 'unavailable', message: `HTTP ${response.status} after ${attempt} attempt(s)` },
+            error: { kind: 'unavailable', message: `HTTP ${response.status} after ${attempt} attempt(s)`, retryable: true },
           };
           if (attempt === MAX_ATTEMPTS) return lastFailure;
           await sleep(backoffFor(attempt, null));
@@ -283,16 +291,18 @@ export function createGeminiProvider(options: GeminiOptions): CompletionProvider
           continue;
         }
 
-        return {
-          ok: false,
-          error: {
-            kind: response.status === 400 ? 'refused' : 'unavailable',
-            message: `HTTP ${response.status}: ${summarise(text)}`,
-          },
-        };
+        // 401/403/404 land here as 'unavailable' - a bad key or a wrong
+        // model name fails identically every time, the same reasoning
+        // that already keeps this codepath outside the retry loop above.
+        return response.status === 400
+          ? { ok: false, error: { kind: 'refused', message: `HTTP ${response.status}: ${summarise(text)}` } }
+          : {
+              ok: false,
+              error: { kind: 'unavailable', message: `HTTP ${response.status}: ${summarise(text)}`, retryable: false },
+            };
       }
 
-      return lastFailure ?? { ok: false, error: { kind: 'unavailable', message: 'exhausted retries' } };
+      return lastFailure ?? { ok: false, error: { kind: 'unavailable', message: 'exhausted retries', retryable: true } };
     },
   };
 }

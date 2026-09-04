@@ -72,8 +72,23 @@ export interface CompletionResponse {
 export type CompletionFailure =
   /** The provider declined, or returned nothing usable. */
   | { readonly kind: 'refused'; readonly message: string }
-  /** Network, auth, rate limit, or any other transport-level problem. */
-  | { readonly kind: 'unavailable'; readonly message: string }
+  /**
+   * Network, auth, rate limit, or any other transport-level problem.
+   *
+   * `retryable` is optional and provider-specific, not a promise every
+   * adapter makes. Only `gemini.ts` sets it today, from the same verdict
+   * `classifyQuotaFailure` already computes internally to decide whether to
+   * keep backing off — a daily quota exhaustion is `false` ("this resets at
+   * midnight Pacific; retrying now cannot help"), a per-minute limit or a
+   * transient network/5xx problem is `true`. `bluesminds.ts`, `anthropic.ts`
+   * and `local.ts` never set it, deliberately: none of them compute this
+   * distinction today, and a default value here would assert a verdict none
+   * of them has a real basis for — the same posture `schemaDowngraded`
+   * already takes on `CompletionResponse` above ("optional because most
+   * providers never do this... reported rather than swallowed"). Absent
+   * means "unknown", not "yes".
+   */
+  | { readonly kind: 'unavailable'; readonly message: string; readonly retryable?: boolean }
   /**
    * The answer was cut off at the output token limit.
    *
