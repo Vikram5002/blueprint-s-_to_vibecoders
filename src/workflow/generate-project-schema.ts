@@ -381,8 +381,15 @@ export const PROJECT_SCHEMA_JSON_SCHEMA = {
 const SCHEMA_FINGERPRINT = JSON.stringify(PROJECT_SCHEMA_JSON_SCHEMA);
 
 export type GenerateFailure =
-  /** The provider itself failed — network, refusal, truncation. */
-  | { readonly reason: 'provider-error'; readonly message: string }
+  /**
+   * The provider itself failed — network, refusal, truncation.
+   *
+   * `retryable` is threaded straight through from `CompletionFailure`
+   * when the provider supplied one (currently only `gemini.ts`, from
+   * `classifyQuotaFailure`'s verdict) - optional here for the same
+   * reason it's optional there: absent means unknown, not "yes".
+   */
+  | { readonly reason: 'provider-error'; readonly message: string; readonly retryable?: boolean }
   /** The provider's text did not even parse as JSON. */
   | { readonly reason: 'unparseable-json'; readonly message: string }
   /** Parsed, but validateProjectSchema rejected it. Never cached. */
@@ -466,7 +473,17 @@ export function createProjectSchemaGenerator(options: CreateProjectSchemaGenerat
       });
 
       if (!completion.ok) {
-        return err({ reason: 'provider-error', message: completion.error.message });
+        return err({
+          reason: 'provider-error',
+          message: completion.error.message,
+          // Only CompletionFailure's 'unavailable' kind ever carries this;
+          // 'refused'/'incomplete' have no such field, so this is simply
+          // undefined for them - same optional-and-absent-by-default
+          // posture as provider.ts's own field.
+          ...(completion.error.kind === 'unavailable' && completion.error.retryable !== undefined
+            ? { retryable: completion.error.retryable }
+            : {}),
+        });
       }
 
       let repairedThisCall = false;
