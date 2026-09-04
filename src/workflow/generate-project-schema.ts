@@ -304,6 +304,15 @@ const CONSTRAINT_SCHEMA = {
     relation: { type: 'string', enum: [...CONSTRAINT_RELATIONS] },
     subject: UNRESOLVED_PROSE_SUBJECT_SCHEMA,
     object: UNRESOLVED_PROSE_SUBJECT_SCHEMA,
+    // Not in `required` below - see the docstring above this schema.
+    // must-not-import and must-be-layer-above never use via at all, but
+    // via was required on every constraint regardless of relation (no
+    // conditional-on-relation construct was used), so the model had no
+    // schema signal that via didn't apply and had to answer *something*
+    // for it - live data showed it usually attempted an object it could
+    // not fill with a real phrase, discarded by the null-fallback below
+    // 10/10 times observed, always on a relation via was never meant for.
+    // Optional here removes the pressure to answer at all for those cases.
     via: { anyOf: [UNRESOLVED_PROSE_SUBJECT_SCHEMA, { enum: [null] }] },
     // line and timestamp are not requested here, for the same reason
     // subject/object/via's status and origin are not (see
@@ -338,7 +347,7 @@ const CONSTRAINT_SCHEMA = {
     // DERIVED"), so this is the same class of enum-locked single value
     // as status/origin/target/reason. Set by fillFixedConstraintFields.
   },
-  required: ['id', 'relation', 'subject', 'object', 'via', 'source', 'confidence', 'lowConfidence', 'rawText'],
+  required: ['id', 'relation', 'subject', 'object', 'source', 'confidence', 'lowConfidence', 'rawText'],
   additionalProperties: false,
 } as const;
 
@@ -816,6 +825,20 @@ function fillResolvedSubjectFixedFields(
   canFallBackToNull: boolean,
   onFallback?: () => void,
 ): unknown {
+  // via is no longer in CONSTRAINT_SCHEMA's `required` (see its own
+  // docstring) - a key genuinely absent from the model's answer is
+  // `undefined`, not `null`, and validateProjectSchema treats those
+  // differently: `undefined !== null`, so an unhandled `undefined` here
+  // would be rejected as missing-or-wrong-type instead of correctly
+  // read as "no via". This is the desired case, not a discard - the
+  // model choosing not to answer via at all is exactly what making the
+  // field optional was for - so it resolves straight to null without
+  // calling onFallback, unlike the "attempted but unusable" path below.
+  // subject/object never take this branch (canFallBackToNull is false
+  // for both), so a missing subject/object still falls through to the
+  // unchanged check next and still correctly fails validation.
+  if (roleValue === undefined && canFallBackToNull) return null;
+
   if (typeof roleValue !== 'object' || roleValue === null) return roleValue;
   const filled: Record<string, unknown> = {
     ...(roleValue as Record<string, unknown>),
