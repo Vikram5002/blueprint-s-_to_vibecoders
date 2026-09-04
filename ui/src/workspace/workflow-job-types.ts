@@ -19,7 +19,7 @@
  * anything — same discipline verification-types.ts documents for itself.
  */
 
-import type { Constraint } from './verification-types';
+import type { Constraint, ConstraintSource } from './verification-types';
 import type { DomainName, ProjectSchema } from './project-schema-types';
 
 export type WorkflowJobStatus = 'pending' | 'running' | 'succeeded' | 'failed';
@@ -27,6 +27,7 @@ export type WorkflowJobStatus = 'pending' | 'running' | 'succeeded' | 'failed';
 export interface WorkflowPermission {
   readonly subjectDomain: DomainName;
   readonly objectDomain: DomainName;
+  readonly source: ConstraintSource;
 }
 
 export interface WorkflowJobResult {
