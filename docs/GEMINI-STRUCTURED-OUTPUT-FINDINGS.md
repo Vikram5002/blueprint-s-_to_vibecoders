@@ -79,10 +79,11 @@ Found across multiple live calls over two commits, not a single run:
 `eb76fc9` (status/origin/target/reason/provenance/line/timestamp) and
 `b808167` (similarity/alternatives, and the `via` omission fix).
 
-## 3. Determinism across separate calls: not guaranteed, uncharacterised
+## 3. Determinism across separate calls: measured, and it's bimodal, not random
 
-Two directly contradicting observations, both from real live calls on the
-same day:
+Superseded by a real 10-call measurement (below) what was earlier only two
+data points. The two original observations are kept as historical context,
+since they're what motivated running the real measurement:
 
 - **Divergent**: re-running the same prompt ("carpool coordinator") produced
   a completely different constraint set on a fresh call than an earlier
@@ -103,15 +104,52 @@ same day:
   entry 2, `18:38:56.573Z`) before it could confirm or contradict either
   reading.
 
-**Conclusion**: unstable-but-sometimes-stable, uncharacterised. Both
-observations are true, from different points on the same underlying
-non-deterministic process — temperature 0 does not guarantee identical
-output across separate network calls for this generator. The module's own
-determinism guarantee (`createProjectSchemaGenerator`'s cache) covers only
-the cache path — a cache hit replays a stored answer byte-for-byte. It says
-nothing about, and does not make true, "ask Gemini the same thing twice and
-get the same answer" — that path has not been made deterministic and, per
-the above, is not naturally deterministic either.
+### The real measurement: 10 fresh calls, same prompt, cache cleared before each
+
+Same prompt as above, against `gemini-3.5-flash` (the pipeline's actual
+default), `.vibe/` deleted before every one of the 10 calls so every call
+was a genuine live generation, never a cache hit. All 10 succeeded.
+
+**Result: exactly two clusters of 5, each byte-identical within itself
+(excluding `timestamp`/`sessionId`), 0 of 10 matching all 9 others.** Not
+noisy variation around one answer — two distinct, individually stable
+outputs, split 50/50:
+
+| Field | Cluster A (5 calls) | Cluster B (5 calls) |
+|---|---|---|
+| `dependsOn` topology (all 4 domains) | identical to Cluster B | identical to Cluster A |
+| `backend` component 2 | "User and Profile Service" (profile management) | "Carpool Matching Engine" (ride-matching algorithm) — a different feature, not a paraphrase |
+| every component's `purpose` text | differs in wording from Cluster B even where names match | differs in wording from Cluster A even where names match |
+| `constraints.length` | 1 (`must-not-import`) | 2 (`must-not-import`, `must-be-layer-above`) |
+
+**Plain determinism rate: 50% (5/10) match any given call exactly; the
+other 50% form a second, equally stable alternative.** Framed the way a
+caching or Layer-3 routing decision needs it: asking the same question
+twice is close to a coin flip between two specific, real, reproducible
+answers — not a rare edge case, and not unbounded noise either.
+
+**A secondary, smaller data point on a different model** (`gemini-3.5-flash-lite`,
+tried only because `flash`'s daily quota was exhausted mid-session):
+10 attempted, 6 failed on transient `HTTP 503` (server overload, not
+quota — a real but separate instability), 4 succeeded, and **all 4 differed
+from each other** — including one case where `security` depended on
+`backend`, a dependency edge absent from the other 3 and reversed from
+that pair's usual direction. Not folded into the 50% figure above since
+it's a different model and a much smaller sample (n=4), but worth
+recording: whatever `flash`'s bimodal stability is, `flash-lite` is
+visibly less stable, not more.
+
+**Conclusion**: not "uncharacterised" any more. On the pipeline's actual
+default model, repeated generation from the same prompt is bimodal —
+two stable outputs, not one, appearing with roughly equal frequency. The
+module's own determinism guarantee (`createProjectSchemaGenerator`'s cache)
+still covers only the cache path — a cache hit replays a stored answer
+byte-for-byte — and that remains a completely different guarantee from
+"ask Gemini the same thing twice and get the same answer," which this
+measurement shows holds only about half the time, for one prompt tested.
+A caching or routing strategy that assumes "the same prompt always
+produces the same schema" should assume instead: on a fresh call, expect
+one of a small number of stable variants, not a single canonical answer.
 
 ## 4. Free-tier daily quota is a real planning constraint
 
