@@ -163,7 +163,6 @@ node dist/cli.js .   # Run against current directory
   ~200 modules; send 200 labelled nodes. Code snippets go only for the single cluster being
   labelled.
 - **Do not add authentication, cloud sync, or multi-user features.** This is local-first.
-- **Do not add a visual drag-and-drop editor.** Out of scope for the MVP.
 - **Do not install heavy dependencies** without asking. Startup time matters for a CLI.
 - **Do not let the LLM infer structure** when static analysis can determine it. Always prefer
   the deterministic path.
