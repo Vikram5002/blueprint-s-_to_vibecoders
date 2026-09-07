@@ -786,6 +786,11 @@ async function generateFrom(text: string, prompt = 'A captured prompt.') {
   return { result, repairedCount, cache };
 }
 
+// Mirrors repairPrematureDependsOnElement's internal DUPLICATE_DEPENDS_ON_ELEMENT
+// pattern, which is not exported - used only to inspect the repair
+// transformation directly, independent of full schema validation.
+const DUPLICATE_DEPENDS_ON_ELEMENT_PATTERN = /,\s*"dependsOn"\s*(?=\]\s*,\s*"dependsOn"\s*:)/g;
+
 describe('malformed-JSON repair', () => {
   it('repairs every captured missing-bracket generation and validates the result', async () => {
     for (const entry of fixturesOfKind((e) => e.kind === 'missing-bracket')) {
@@ -941,7 +946,7 @@ describe('malformed-JSON repair', () => {
     // too late, swallowing the literal "dependsOn" as a bogus array element,
     // and the real dependsOn key/value never appears at all - so unlike the
     // missing-bracket repair, there is no dependency list to recover.
-    for (const entry of fixturesOfKind((e) => e.kind === 'premature-dependson-element')) {
+    for (const entry of fixturesOfKind((e) => e.kind === 'premature-dependson-absent')) {
       const raw = repairFixture(entry.file);
       expect(() => JSON.parse(raw), `${entry.file} should be valid JSON as-is, unlike missing-bracket`).not.toThrow();
 
@@ -960,7 +965,7 @@ describe('malformed-JSON repair', () => {
   });
 
   it('preserves every component name and purpose for the premature-dependsOn defect', async () => {
-    for (const entry of fixturesOfKind((e) => e.kind === 'premature-dependson-element')) {
+    for (const entry of fixturesOfKind((e) => e.kind === 'premature-dependson-absent')) {
       const raw = repairFixture(entry.file);
       const { result } = await generateFrom(raw, entry.prompt);
       expect(result.ok).toBe(true);
@@ -992,6 +997,130 @@ describe('malformed-JSON repair', () => {
     const twoSpace = '"components":[{"id":"x","name":"n","purpose":"p"},  "dependsOn"  ]  }';
     for (const variant of [zeroSpace, twoSpace]) {
       expect(/,\s*"dependsOn"\s*\]\s*\}/.test(variant)).toBe(true);
+    }
+  });
+
+  it('repairs the premature-dependsOn-duplicate defect, leaving the real dependsOn key untouched', async () => {
+    // The REAL captured shape (a 197-prompt batch, 2026-09-07): the bogus
+    // "dependsOn" element is followed by the correct, already-populated
+    // "dependsOn":[...] key - not by domain closure. Only the bogus element
+    // should be deleted; the real key's value must survive byte-for-byte.
+    //
+    // The real capture used here also happens to carry a second, unrelated
+    // defect: the model wrote "dependsOn":[""] (an empty-string dependency)
+    // for two of its four domains - genuine bad content, not a JSON-shape
+    // problem, and not something repairPrematureDependsOnElement's job to
+    // fix. So this fixture can still end in schema-violation after a fully
+    // correct repair; what proves the repair worked is that no rejection
+    // ever again says "not-an-object" for a components entry - that specific
+    // failure mode is what the bogus element used to cause, and its absence
+    // here is the signal, not overall validation success.
+    for (const entry of fixturesOfKind((e) => e.kind === 'premature-dependson-duplicate')) {
+      const raw = repairFixture(entry.file);
+      expect(() => JSON.parse(raw), `${entry.file} should be valid JSON as-is`).not.toThrow();
+
+      const rawParsed = JSON.parse(raw) as {
+        domains: Record<string, { dependsOn: unknown }>;
+      };
+
+      const { result, repairedCount } = await generateFrom(raw, entry.prompt);
+
+      expect(repairedCount, `${entry.file} should fire onJsonRepaired exactly once`).toBe(1);
+      if (result.ok) {
+        expect(result.value.provenance).toBe('STATED');
+        for (const domain of ['frontend', 'backend', 'database', 'security'] as const) {
+          expect(Array.isArray(result.value.domains[domain].components)).toBe(true);
+        }
+        expect(result.value.domains.frontend.dependsOn).toEqual(rawParsed.domains['frontend']!.dependsOn);
+        expect(result.value.domains.backend.dependsOn).toEqual(rawParsed.domains['backend']!.dependsOn);
+      } else if (result.error.reason === 'schema-violation') {
+        for (const rejection of result.error.rejections) {
+          expect(
+            rejection.reason,
+            `${entry.file}: ${rejection.path} still failed as not-an-object - the repair did not fully restructure the JSON`,
+          ).not.toBe('not-an-object');
+        }
+      } else {
+        throw new Error(`${entry.file}: expected schema-violation (unrelated content defect) or success, got ${result.error.reason}`);
+      }
+    }
+  });
+
+  it('preserves every component name and purpose for the premature-dependsOn-duplicate defect', () => {
+    // Checked directly against the repair transformation (mirroring how
+    // the whitespace-tolerance test below inspects the pattern directly),
+    // independent of full schema validation - this fixture's unrelated
+    // empty-string dependsOn content can fail validateProjectSchema even
+    // when the JSON-shape repair itself is entirely correct (see the test
+    // above), so gating literal-preservation on result.ok would skip the
+    // check on exactly the fixture meant to exercise it.
+    for (const entry of fixturesOfKind((e) => e.kind === 'premature-dependson-duplicate')) {
+      const raw = repairFixture(entry.file);
+      const repaired = raw.replace(DUPLICATE_DEPENDS_ON_ELEMENT_PATTERN, '');
+      const candidate = JSON.parse(repaired) as {
+        domains: Record<string, { components: readonly { name: string; purpose: string }[] }>;
+      };
+
+      const written = [...raw.matchAll(/"(?:name|purpose)":"((?:[^"\\]|\\.)*)"/g)].map(
+        (m) => JSON.parse(`"${m[1]}"`) as string,
+      );
+      expect(written.length).toBeGreaterThan(0);
+
+      const kept = new Set<string>();
+      for (const domain of ['frontend', 'backend', 'database', 'security']) {
+        for (const component of candidate.domains[domain]?.components ?? []) {
+          kept.add(component.name);
+          kept.add(component.purpose);
+        }
+      }
+      for (const literal of written) {
+        expect(kept.has(literal), `${entry.file} lost the literal ${JSON.stringify(literal)}`).toBe(true);
+      }
+    }
+  });
+
+  it('distinguishes the duplicate shape from the absent shape - duplicate is checked first', () => {
+    const duplicate = '"components":[{"id":"x","name":"n","purpose":"p"},"dependsOn"],"dependsOn":["backend"]}';
+    const absent = '"components":[{"id":"x","name":"n","purpose":"p"},"dependsOn"]}';
+
+    expect(/,\s*"dependsOn"\s*(?=\]\s*,\s*"dependsOn"\s*:)/.test(duplicate)).toBe(true);
+    expect(/,\s*"dependsOn"\s*(?=\]\s*,\s*"dependsOn"\s*:)/.test(absent)).toBe(false);
+    expect(/,\s*"dependsOn"\s*\]\s*\}/.test(absent)).toBe(true);
+  });
+
+  it('does not let the premature-dependsOn-duplicate repair corrupt a merged-component case', async () => {
+    // Same conservation danger as the other two repairs: a component object
+    // that silently merged two components via duplicate keys must still be
+    // rejected, even though the bogus element and the real trailing key are
+    // both individually well-formed here.
+    const mergedComponents =
+      '"frontend":{"components":[{"id":"aaaaaaaaaaaaaaaa","name":"Sign-In Form",' +
+      '"purpose":"Guardian signs a child in.","id":"bbbbbbbbbbbbbbbb",' +
+      '"name":"Attendance View","purpose":"Shows the full attendance log."},"dependsOn"],"dependsOn":["backend"]}';
+
+    const merged = JSON.stringify({
+      sessionId: 'session-merge-003',
+      title: 'Merged Component Case (premature dependsOn duplicate)',
+      originalPrompt: 'A daycare check-in app.',
+      domains: {
+        frontend: { components: [], dependsOn: [] },
+        backend: { components: [], dependsOn: [] },
+        database: { components: [], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [],
+    }).replace('"frontend":{"components":[],"dependsOn":[]}', mergedComponents);
+
+    expect(() => JSON.parse(merged)).not.toThrow();
+    expect(/,\s*"dependsOn"\s*(?=\]\s*,\s*"dependsOn"\s*:)/.test(merged)).toBe(true);
+    expect(() => JSON.parse(merged.replace(/,\s*"dependsOn"\s*(?=\]\s*,\s*"dependsOn"\s*:)/g, ''))).not.toThrow();
+
+    const { result, repairedCount } = await generateFrom(merged);
+
+    expect(repairedCount).toBe(0);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.reason).toBe('schema-violation');
     }
   });
 

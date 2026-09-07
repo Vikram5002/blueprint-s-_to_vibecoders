@@ -642,41 +642,71 @@ function repairMissingComponentsArrayClose(text: string): unknown | null {
  * A second, distinct malformation this file repairs, separate from the
  * missing-bracket case above.
  *
- * Here the model's closing `]` for a domain's `components` array lands one
- * token too late: it writes the literal string `"dependsOn"` as a bogus
- * extra array element, then closes the array there. The real `dependsOn`
- * key/value for that domain never gets written at all - not merely
- * misplaced, absent:
+ * The model's closing `]` for a domain's `components` array lands one token
+ * too late: it writes the literal string `"dependsOn"` as a bogus extra
+ * array element, then closes the array there:
  *
  *   "components": [
  *     { "id": "...", "name": "...", "purpose": "..." },
  *     "dependsOn"
  *   ]
  *
- * instead of the correct `...}],"dependsOn":["backend"]`. Whitespace before
- * the bracket varies between captures - some carry two spaces, at least one
- * carries zero - so the pattern matches on `\s*` rather than a fixed-width
- * literal.
+ * What follows this bogus element determines which of two shapes this is,
+ * and they require different repairs. A batch of 197 real captures (2026-09)
+ * found the DUPLICATE shape in 46 of 47 schema-violation failures and never
+ * once found the originally-assumed ABSENT shape - so duplicate is checked
+ * first, but absent is kept as a second detection path rather than deleted,
+ * since a checkpoint that already produces both known JSON bugs is not
+ * evidence the absent shape can never occur.
  *
- * Because the real dependsOn value never made it into the response, there is
- * nothing to recover it from. The repair inserts an empty array rather than
- * guessing which domains it should depend on - `[]` under-constrains the
- * compiled graph, which is the safe direction to be wrong in; inventing a
- * dependency that was never stated is not.
+ * DUPLICATE (the real, dominant shape): the model still goes on to write the
+ * correct `"dependsOn":[...]` key right after the bogus element - the value
+ * is never lost, only preceded by noise:
  *
- * Unlike repairMissingComponentsArrayClose, this defect's raw text is
- * syntactically valid JSON on its own - `"dependsOn"` is just a string in an
- * array, and closing early is not a parse error, only a missing key. finalize
- * therefore checks for this signature before attempting JSON.parse at all,
- * not inside its catch block; gating on a parse failure that will never
- * happen would mean this repair never fires.
+ *   ...},"dependsOn"  ],"dependsOn":["backend"]
+ *
+ * The repair here is just deletion: drop the bogus `,"dependsOn"` element
+ * and its leading comma, leave the real trailing key completely untouched.
+ * There is a real, already-correct value sitting right there - overwriting
+ * it with `[]` (or anything else) would destroy information the model
+ * actually got right.
+ *
+ * ABSENT (originally assumed, not yet seen in a real capture): the array
+ * closes and the domain object closes immediately after - no key follows at
+ * all:
+ *
+ *   ...},"dependsOn"]}
+ *
+ * Here there truly is nothing to recover, so the repair inserts `[]` -
+ * under-constraining the compiled graph is the safe direction to be wrong
+ * in; inventing a dependency that was never stated is not.
+ *
+ * Whitespace before the bracket varies between captures - some carry two
+ * spaces, at least one carries zero - so both patterns match on `\s*`
+ * rather than a fixed-width literal.
+ *
+ * Unlike repairMissingComponentsArrayClose, both shapes' raw text is
+ * syntactically valid JSON on their own - `"dependsOn"` is just a string in
+ * an array, and closing early (or being followed by a real key) is not a
+ * parse error. finalize therefore checks for this signature before
+ * attempting JSON.parse at all, not inside its catch block; gating on a
+ * parse failure that will never happen would mean this repair never fires.
  */
+const DUPLICATE_DEPENDS_ON_ELEMENT = /,\s*"dependsOn"\s*(?=\]\s*,\s*"dependsOn"\s*:)/g;
+const ABSENT_DEPENDS_ON_ELEMENT = /,\s*"dependsOn"\s*\]\s*\}/g;
+
 function repairPrematureDependsOnElement(text: string): unknown | null {
-  if (!/,\s*"dependsOn"\s*\]\s*\}/.test(text)) return null;
+  const isDuplicate = /,\s*"dependsOn"\s*(?=\]\s*,\s*"dependsOn"\s*:)/.test(text);
+  const isAbsent = !isDuplicate && /,\s*"dependsOn"\s*\]\s*\}/.test(text);
+  if (!isDuplicate && !isAbsent) return null;
 
   let candidate: unknown;
   try {
-    candidate = JSON.parse(text.replace(/,\s*"dependsOn"\s*\]\s*\}/g, '],"dependsOn":[]}'));
+    candidate = JSON.parse(
+      isDuplicate
+        ? text.replace(DUPLICATE_DEPENDS_ON_ELEMENT, '')
+        : text.replace(ABSENT_DEPENDS_ON_ELEMENT, '],"dependsOn":[]}'),
+    );
   } catch {
     // Repairing this signature did not produce valid JSON, so whatever is
     // wrong with the text is not (or not only) the diagnosed bug.
