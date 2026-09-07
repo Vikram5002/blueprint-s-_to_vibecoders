@@ -24,6 +24,19 @@
     "capturedFrom": "capture/fresh-batch-2.jsonl"
   },
   {
+    "file": "premature-dependson-a-freelancer-invoice-tracker.txt",
+    "kind": "premature-dependson-element",
+    "expectRepairable": true,
+    "prompt": "A freelancer invoice tracker where freelancers create invoices and only accountants can mark them paid.",
+    "note": "Unlike missing-bracket, this defect's raw text is syntactically valid JSON - the repair is gated on the signature match, not a parse failure.",
+    "parseErrorMessage": null,
+    "parseErrorPosition": null,
+    "signatureOccurrences": 1,
+    "wellFormedBoundaries": 3,
+    "completionTokens": null,
+    "capturedFrom": "constructed-2026-09-07"
+  },
+  {
     "file": "trailing-comma-a-veterinary-clinic-records.txt",
     "kind": "trailing-comma+doubled-comma",
     "expectRepairable": false,

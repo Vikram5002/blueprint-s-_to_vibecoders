@@ -534,19 +534,33 @@ function finalize(
   onJsonRepaired?: () => void,
 ): Result<ValidatedProjectSchema, GenerateFailure> {
   let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch (cause) {
-    // Repair is attempted only here, on text that has already failed to
-    // parse. It can therefore never alter a generation that was working -
-    // the worst it can do is turn unparseable text into a parsed object,
-    // which is then held to every check a cleanly parsed one faces.
-    const repaired = repairMissingComponentsArrayClose(text);
-    if (repaired === null) {
-      return err({ reason: 'unparseable-json', message: `response was not valid JSON: ${String(cause)}` });
-    }
-    parsed = repaired;
+
+  // repairPrematureDependsOnElement is checked before the parse attempt,
+  // not inside its catch block, because that defect is unlike
+  // repairMissingComponentsArrayClose's: a stray "dependsOn" string sitting
+  // where the real key belongs is syntactically valid JSON on its own - it
+  // parses cleanly, just with a bogus array element and the real dependsOn
+  // key missing. Gating it on a parse failure that will never happen would
+  // mean it never fires; the signature match is the gate instead.
+  const prematureRepair = repairPrematureDependsOnElement(text);
+  if (prematureRepair !== null) {
+    parsed = prematureRepair;
     onJsonRepaired?.();
+  } else {
+    try {
+      parsed = JSON.parse(text);
+    } catch (cause) {
+      // Repair is attempted only here, on text that has already failed to
+      // parse. It can therefore never alter a generation that was working -
+      // the worst it can do is turn unparseable text into a parsed object,
+      // which is then held to every check a cleanly parsed one faces.
+      const repaired = repairMissingComponentsArrayClose(text);
+      if (repaired === null) {
+        return err({ reason: 'unparseable-json', message: `response was not valid JSON: ${String(cause)}` });
+      }
+      parsed = repaired;
+      onJsonRepaired?.();
+    }
   }
 
   const withFixedFields = fillFixedConstraintFields(rewriteComponentIds(parsed), generatedAt, onViaFallback);
@@ -618,6 +632,54 @@ function repairMissingComponentsArrayClose(text: string): unknown | null {
     // Repairing this signature did not produce valid JSON, so whatever is
     // wrong with the text is not (or not only) the diagnosed bug. Reject it
     // exactly as before rather than attempt a second guess.
+    return null;
+  }
+
+  return conservesComponentText(text, candidate) ? candidate : null;
+}
+
+/**
+ * A second, distinct malformation this file repairs, separate from the
+ * missing-bracket case above.
+ *
+ * Here the model's closing `]` for a domain's `components` array lands one
+ * token too late: it writes the literal string `"dependsOn"` as a bogus
+ * extra array element, then closes the array there. The real `dependsOn`
+ * key/value for that domain never gets written at all - not merely
+ * misplaced, absent:
+ *
+ *   "components": [
+ *     { "id": "...", "name": "...", "purpose": "..." },
+ *     "dependsOn"
+ *   ]
+ *
+ * instead of the correct `...}],"dependsOn":["backend"]`. Whitespace before
+ * the bracket varies between captures - some carry two spaces, at least one
+ * carries zero - so the pattern matches on `\s*` rather than a fixed-width
+ * literal.
+ *
+ * Because the real dependsOn value never made it into the response, there is
+ * nothing to recover it from. The repair inserts an empty array rather than
+ * guessing which domains it should depend on - `[]` under-constrains the
+ * compiled graph, which is the safe direction to be wrong in; inventing a
+ * dependency that was never stated is not.
+ *
+ * Unlike repairMissingComponentsArrayClose, this defect's raw text is
+ * syntactically valid JSON on its own - `"dependsOn"` is just a string in an
+ * array, and closing early is not a parse error, only a missing key. finalize
+ * therefore checks for this signature before attempting JSON.parse at all,
+ * not inside its catch block; gating on a parse failure that will never
+ * happen would mean this repair never fires.
+ */
+function repairPrematureDependsOnElement(text: string): unknown | null {
+  if (!/,\s*"dependsOn"\s*\]\s*\}/.test(text)) return null;
+
+  let candidate: unknown;
+  try {
+    candidate = JSON.parse(text.replace(/,\s*"dependsOn"\s*\]\s*\}/g, '],"dependsOn":[]}'));
+  } catch {
+    // Repairing this signature did not produce valid JSON, so whatever is
+    // wrong with the text is not (or not only) the diagnosed bug.
     return null;
   }
 
