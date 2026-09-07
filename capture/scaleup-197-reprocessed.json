@@ -1,0 +1,1111 @@
+[
+  {
+    "index": 1,
+    "prevOutcome": "schema-violation",
+    "outcome": "schema-violation",
+    "jsonRepaired": true,
+    "rejections": [
+      "unknown-domain-dependency",
+      "unknown-domain-dependency"
+    ]
+  },
+  {
+    "index": 2,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 3,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 4,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 5,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 6,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 7,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 8,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 9,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 10,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 11,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 12,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 13,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 14,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 15,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 16,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 17,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 18,
+    "prevOutcome": "schema-violation",
+    "outcome": "schema-violation",
+    "jsonRepaired": false,
+    "rejections": [
+      "not-an-object",
+      "not-an-object",
+      "not-an-object",
+      "not-an-object"
+    ]
+  },
+  {
+    "index": 19,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 20,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 21,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 22,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 23,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 24,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 25,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 26,
+    "outcome": "provider-error",
+    "jsonRepaired": false,
+    "note": "provider-error, not reprocessed"
+  },
+  {
+    "index": 27,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 28,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 29,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 30,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 31,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 32,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 33,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 34,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 35,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 36,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 37,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 38,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 39,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 40,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 41,
+    "prevOutcome": "schema-violation",
+    "outcome": "schema-violation",
+    "jsonRepaired": true,
+    "rejections": [
+      "unknown-domain-dependency",
+      "unknown-domain-dependency"
+    ]
+  },
+  {
+    "index": 42,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 43,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 44,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 45,
+    "prevOutcome": "unparseable-json",
+    "outcome": "unparseable-json",
+    "jsonRepaired": false,
+    "rejections": null
+  },
+  {
+    "index": 46,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 47,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 48,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 49,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 50,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 51,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 52,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 53,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 54,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 55,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 56,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 57,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 58,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 59,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 60,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 61,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 62,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 63,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 64,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 65,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 66,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 67,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 68,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 69,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 70,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 71,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 72,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 73,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 74,
+    "outcome": "provider-error",
+    "jsonRepaired": false,
+    "note": "provider-error, not reprocessed"
+  },
+  {
+    "index": 75,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 76,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 77,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 78,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 79,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 80,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 81,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 82,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 83,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 84,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 85,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 86,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 87,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 88,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 89,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 90,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 91,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 92,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 93,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 94,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 95,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 96,
+    "prevOutcome": "schema-violation",
+    "outcome": "schema-violation",
+    "jsonRepaired": true,
+    "rejections": [
+      "unknown-domain-dependency"
+    ]
+  },
+  {
+    "index": 97,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 98,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 99,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 100,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 101,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 102,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 103,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 104,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 105,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 106,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 107,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 108,
+    "prevOutcome": "schema-violation",
+    "outcome": "schema-violation",
+    "jsonRepaired": true,
+    "rejections": [
+      "unknown-domain-dependency",
+      "unknown-domain-dependency"
+    ]
+  },
+  {
+    "index": 109,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 110,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 111,
+    "prevOutcome": "unparseable-json",
+    "outcome": "unparseable-json",
+    "jsonRepaired": false,
+    "rejections": null
+  },
+  {
+    "index": 112,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 113,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 114,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 115,
+    "prevOutcome": "unparseable-json",
+    "outcome": "unparseable-json",
+    "jsonRepaired": false,
+    "rejections": null
+  },
+  {
+    "index": 116,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 117,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 118,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 119,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 120,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 121,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 122,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 123,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 124,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 125,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 126,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 127,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 128,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 129,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 130,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 131,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 132,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 133,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 134,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 135,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 136,
+    "prevOutcome": "unparseable-json",
+    "outcome": "unparseable-json",
+    "jsonRepaired": false,
+    "rejections": null
+  },
+  {
+    "index": 137,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 138,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 139,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 140,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 141,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 142,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 143,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 144,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 145,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 146,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 147,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 148,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 149,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 150,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 151,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 152,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 153,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 154,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 155,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 156,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 157,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 158,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 159,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 160,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 161,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 162,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 163,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 164,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 165,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 166,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 167,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 168,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 169,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 170,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 171,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 172,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 173,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 174,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 175,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 176,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 177,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 178,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 179,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 180,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 181,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 182,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 183,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 184,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 185,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 186,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 187,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 188,
+    "prevOutcome": "schema-violation",
+    "outcome": "schema-violation",
+    "jsonRepaired": false,
+    "rejections": [
+      "missing-or-wrong-type",
+      "missing-or-wrong-type",
+      "missing-or-wrong-type"
+    ]
+  },
+  {
+    "index": 189,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 190,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 191,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 192,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 193,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 194,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 195,
+    "prevOutcome": "schema-violation",
+    "outcome": "success",
+    "jsonRepaired": true,
+    "rejections": null
+  },
+  {
+    "index": 196,
+    "outcome": "success",
+    "jsonRepaired": false
+  },
+  {
+    "index": 197,
+    "outcome": "success",
+    "jsonRepaired": false
+  }
+]
