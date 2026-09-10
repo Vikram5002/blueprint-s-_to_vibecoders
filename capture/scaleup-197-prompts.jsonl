@@ -1,0 +1,197 @@
+{"prompt":"A freelance contract tracker where freelancers log signed contracts and only accountants can mark an invoice paid."}
+{"prompt":"A community garden plot scheduler where members reserve garden plots and only coordinators can reassign a plot."}
+{"prompt":"A coworking space desk booking app where members book a desk for the day and only staff can override a booking."}
+{"prompt":"A food truck route planner where drivers log their daily route and only the owner can see revenue totals."}
+{"prompt":"A summer camp registration portal where parents register a child for a session and only camp directors can see medical notes."}
+{"prompt":"A farmers market vendor stall tracker where vendors reserve a stall for the weekend and only market managers can cancel a reservation."}
+{"prompt":"A hotel housekeeping task board where housekeepers mark rooms as cleaned and only supervisors can reassign a room."}
+{"prompt":"A school library book checkout system where students check out books and only librarians can waive a late fee."}
+{"prompt":"A volunteer shift sign-up sheet where volunteers sign up for shifts and only organizers can remove a volunteer."}
+{"prompt":"A personal trainer client tracker where trainers log client workouts and only the trainer who owns a client can edit their plan."}
+{"prompt":"A small law firm timesheet app where associates log billable hours and only partners can approve a timesheet."}
+{"prompt":"A museum exhibit tour scheduler where docents sign up to lead tours and only the curator can cancel a tour."}
+{"prompt":"A co-op grocery store shift board where members claim work shifts and only board members can waive a shift requirement."}
+{"prompt":"A pet boarding facility check-in app where staff check pets in and out and only managers can view billing history."}
+{"prompt":"A parking garage reservation system where drivers reserve a spot in advance and only attendants can override a reservation."}
+{"prompt":"A community theater audition tracker where actors sign up for audition slots and only directors can see casting notes."}
+{"prompt":"A food bank inventory tracker where volunteers log donated items and only the site lead can approve a large withdrawal."}
+{"prompt":"A small clinic appointment scheduler where patients book appointments and only doctors can view a patient chart."}
+{"prompt":"A co-working meeting room booking tool where members book meeting rooms and only admins can double-book a room."}
+{"prompt":"A neighborhood watch incident log where residents report incidents and only block captains can close a report."}
+{"prompt":"A bakery custom order tracker where customers place custom cake orders and only bakers can mark an order complete."}
+{"prompt":"A bike share fleet maintenance tracker where mechanics log repairs and only fleet managers can retire a bike."}
+{"prompt":"A student club budget tracker where club members submit expense requests and only the treasurer can approve a payout."}
+{"prompt":"A small aquarium feeding schedule app where keepers log feedings and only the head keeper can change a feeding schedule."}
+{"prompt":"A community pool lifeguard scheduling app where lifeguards claim open shifts and only the pool manager can approve a shift swap."}
+{"prompt":"A co-op childcare rotation tracker where parents sign up for childcare shifts and only the coordinator can adjust the rotation."}
+{"prompt":"A small orchestra rehearsal scheduler where musicians confirm attendance and only the conductor can cancel a rehearsal."}
+{"prompt":"A used bookstore consignment tracker where sellers list books on consignment and only staff can process a payout."}
+{"prompt":"A dog park membership check-in app where members check their dog in and only staff can revoke a membership."}
+{"prompt":"A small brewery keg inventory tracker where brewers log keg fills and only the head brewer can mark a batch spoiled."}
+{"prompt":"A tutoring center session scheduler where tutors log completed sessions and only the center director can adjust billing rates."}
+{"prompt":"A community solar co-op usage tracker where members view their own usage and only the co-op admin can adjust allocation."}
+{"prompt":"A small winery harvest log where field workers log grape yields and only the winemaker can finalize a harvest record."}
+{"prompt":"A co-op laundromat machine tracker where members report a broken machine and only maintenance staff can mark a machine fixed."}
+{"prompt":"A small press manuscript submission tracker where authors submit manuscripts and only editors can advance a submission to review."}
+{"prompt":"A rock climbing gym route setting tracker where setters log new routes and only the head setter can retire a route."}
+{"prompt":"A farm CSA box customization tool where members customize their weekly box and only farm staff can lock in the final box list."}
+{"prompt":"A small choir attendance tracker where singers mark themselves present and only the choir director can excuse an absence."}
+{"prompt":"A co-op bike repair shop parts tracker where mechanics request parts and only the shop manager can approve a large order."}
+{"prompt":"A community darkroom booking app where members book darkroom time and only staff can extend a booking past the limit."}
+{"prompt":"A small nonprofit grant application tracker where applicants submit grant requests and only the review committee can approve funding."}
+{"prompt":"A shared studio space equipment checkout tool where artists check out equipment and only staff can mark equipment as damaged."}
+{"prompt":"A co-op cheese aging tracker where cheesemakers log aging batches and only the head cheesemaker can approve a batch for sale."}
+{"prompt":"A small radio station DJ scheduling app where DJs claim open airtime slots and only the program director can preempt a slot."}
+{"prompt":"A community seed library checkout app where members check out seed packets and only librarians can add a new seed variety."}
+{"prompt":"A small archery range lane booking tool where members book a lane and only range officers can close a lane for safety."}
+{"prompt":"A co-op woodshop tool checkout tracker where members check out shared tools and only shop stewards can retire a tool."}
+{"prompt":"A small hostel bed booking system where guests book a bed for the night and only staff can override a booking conflict."}
+{"prompt":"A community kitchen rental scheduler where renters book kitchen time and only the kitchen manager can waive a cleaning fee."}
+{"prompt":"A small vineyard tasting room reservation app where guests reserve a tasting slot and only staff can comp a reservation."}
+{"prompt":"A personal reading list app where I track books I want to read and mark them finished."}
+{"prompt":"A home inventory app where I catalog items by room with photos and estimated value."}
+{"prompt":"A recipe box app where I save recipes and tag them by cuisine."}
+{"prompt":"A personal habit tracker where I log daily habits and see a streak count."}
+{"prompt":"A road trip planner where I map out stops and note things to see at each one."}
+{"prompt":"A plant watering reminder app where I log when each houseplant was last watered."}
+{"prompt":"A personal wine cellar tracker where I log bottles and drink-by dates."}
+{"prompt":"A home maintenance log where I record when appliances were serviced."}
+{"prompt":"A personal film watchlist where I track movies I want to see and rate ones I have seen."}
+{"prompt":"A freelance mileage log where I record trips for tax deduction purposes."}
+{"prompt":"A freelance contract tracker where freelancers log signed contracts, and only supervisors can delete a record."}
+{"prompt":"A community garden plot scheduler where members reserve garden plots, and only supervisors can delete a record."}
+{"prompt":"A coworking space desk booking app where members book a desk for the day, and only supervisors can delete a record."}
+{"prompt":"A food truck route planner where drivers log their daily route, and only supervisors can delete a record."}
+{"prompt":"A summer camp registration portal where parents register a child for a session, and only supervisors can delete a record."}
+{"prompt":"A farmers market vendor stall tracker where vendors reserve a stall for the weekend, and only supervisors can delete a record."}
+{"prompt":"A hotel housekeeping task board where housekeepers mark rooms as cleaned, and only supervisors can delete a record."}
+{"prompt":"A school library book checkout system where students check out books, and only supervisors can delete a record."}
+{"prompt":"A volunteer shift sign-up sheet where volunteers sign up for shifts, and only supervisors can delete a record."}
+{"prompt":"A personal trainer client tracker where trainers log client workouts, and only supervisors can delete a record."}
+{"prompt":"A small law firm timesheet app where associates log billable hours, and only supervisors can delete a record."}
+{"prompt":"A museum exhibit tour scheduler where docents sign up to lead tours, and only supervisors can delete a record."}
+{"prompt":"A co-op grocery store shift board where members claim work shifts, and only supervisors can delete a record."}
+{"prompt":"A pet boarding facility check-in app where staff check pets in and out, and only supervisors can delete a record."}
+{"prompt":"A parking garage reservation system where drivers reserve a spot in advance, and only supervisors can delete a record."}
+{"prompt":"A community theater audition tracker where actors sign up for audition slots, and only supervisors can delete a record."}
+{"prompt":"A food bank inventory tracker where volunteers log donated items, and only supervisors can delete a record."}
+{"prompt":"A small clinic appointment scheduler where patients book appointments, and only supervisors can delete a record."}
+{"prompt":"A co-working meeting room booking tool where members book meeting rooms, and only supervisors can delete a record."}
+{"prompt":"A neighborhood watch incident log where residents report incidents, and only supervisors can delete a record."}
+{"prompt":"A bakery custom order tracker where customers place custom cake orders, and only supervisors can delete a record."}
+{"prompt":"A bike share fleet maintenance tracker where mechanics log repairs, and only supervisors can delete a record."}
+{"prompt":"A student club budget tracker where club members submit expense requests, and only supervisors can delete a record."}
+{"prompt":"A small aquarium feeding schedule app where keepers log feedings, and only supervisors can delete a record."}
+{"prompt":"A community pool lifeguard scheduling app where lifeguards claim open shifts, and only supervisors can delete a record."}
+{"prompt":"A co-op childcare rotation tracker where parents sign up for childcare shifts, and only supervisors can delete a record."}
+{"prompt":"A small orchestra rehearsal scheduler where musicians confirm attendance, and only supervisors can delete a record."}
+{"prompt":"A used bookstore consignment tracker where sellers list books on consignment, and only supervisors can delete a record."}
+{"prompt":"A dog park membership check-in app where members check their dog in, and only supervisors can delete a record."}
+{"prompt":"A small brewery keg inventory tracker where brewers log keg fills, and only supervisors can delete a record."}
+{"prompt":"A tutoring center session scheduler where tutors log completed sessions, and only supervisors can delete a record."}
+{"prompt":"A community solar co-op usage tracker where members view their own usage, and only supervisors can delete a record."}
+{"prompt":"A small winery harvest log where field workers log grape yields, and only supervisors can delete a record."}
+{"prompt":"A co-op laundromat machine tracker where members report a broken machine, and only supervisors can delete a record."}
+{"prompt":"A small press manuscript submission tracker where authors submit manuscripts, and only supervisors can delete a record."}
+{"prompt":"A rock climbing gym route setting tracker where setters log new routes, and only supervisors can delete a record."}
+{"prompt":"A farm CSA box customization tool where members customize their weekly box, and only supervisors can delete a record."}
+{"prompt":"A small choir attendance tracker where singers mark themselves present, and only supervisors can delete a record."}
+{"prompt":"A co-op bike repair shop parts tracker where mechanics request parts, and only supervisors can delete a record."}
+{"prompt":"A community darkroom booking app where members book darkroom time, and only supervisors can delete a record."}
+{"prompt":"A small nonprofit grant application tracker where applicants submit grant requests, and only supervisors can delete a record."}
+{"prompt":"A shared studio space equipment checkout tool where artists check out equipment, and only supervisors can delete a record."}
+{"prompt":"A co-op cheese aging tracker where cheesemakers log aging batches, and only supervisors can delete a record."}
+{"prompt":"A small radio station DJ scheduling app where DJs claim open airtime slots, and only supervisors can delete a record."}
+{"prompt":"A community seed library checkout app where members check out seed packets, and only supervisors can delete a record."}
+{"prompt":"A small archery range lane booking tool where members book a lane, and only supervisors can delete a record."}
+{"prompt":"A co-op woodshop tool checkout tracker where members check out shared tools, and only supervisors can delete a record."}
+{"prompt":"A small hostel bed booking system where guests book a bed for the night, and only supervisors can delete a record."}
+{"prompt":"A community kitchen rental scheduler where renters book kitchen time, and only supervisors can delete a record."}
+{"prompt":"A small vineyard tasting room reservation app where guests reserve a tasting slot, and only supervisors can delete a record."}
+{"prompt":"A freelance contract tracker where freelancers log signed contracts, and only the owner account can export the full history."}
+{"prompt":"A community garden plot scheduler where members reserve garden plots, and only the owner account can export the full history."}
+{"prompt":"A coworking space desk booking app where members book a desk for the day, and only the owner account can export the full history."}
+{"prompt":"A food truck route planner where drivers log their daily route, and only the owner account can export the full history."}
+{"prompt":"A summer camp registration portal where parents register a child for a session, and only the owner account can export the full history."}
+{"prompt":"A farmers market vendor stall tracker where vendors reserve a stall for the weekend, and only the owner account can export the full history."}
+{"prompt":"A hotel housekeeping task board where housekeepers mark rooms as cleaned, and only the owner account can export the full history."}
+{"prompt":"A school library book checkout system where students check out books, and only the owner account can export the full history."}
+{"prompt":"A volunteer shift sign-up sheet where volunteers sign up for shifts, and only the owner account can export the full history."}
+{"prompt":"A personal trainer client tracker where trainers log client workouts, and only the owner account can export the full history."}
+{"prompt":"A small law firm timesheet app where associates log billable hours, and only the owner account can export the full history."}
+{"prompt":"A museum exhibit tour scheduler where docents sign up to lead tours, and only the owner account can export the full history."}
+{"prompt":"A co-op grocery store shift board where members claim work shifts, and only the owner account can export the full history."}
+{"prompt":"A pet boarding facility check-in app where staff check pets in and out, and only the owner account can export the full history."}
+{"prompt":"A parking garage reservation system where drivers reserve a spot in advance, and only the owner account can export the full history."}
+{"prompt":"A community theater audition tracker where actors sign up for audition slots, and only the owner account can export the full history."}
+{"prompt":"A food bank inventory tracker where volunteers log donated items, and only the owner account can export the full history."}
+{"prompt":"A small clinic appointment scheduler where patients book appointments, and only the owner account can export the full history."}
+{"prompt":"A co-working meeting room booking tool where members book meeting rooms, and only the owner account can export the full history."}
+{"prompt":"A neighborhood watch incident log where residents report incidents, and only the owner account can export the full history."}
+{"prompt":"A bakery custom order tracker where customers place custom cake orders, and only the owner account can export the full history."}
+{"prompt":"A bike share fleet maintenance tracker where mechanics log repairs, and only the owner account can export the full history."}
+{"prompt":"A student club budget tracker where club members submit expense requests, and only the owner account can export the full history."}
+{"prompt":"A small aquarium feeding schedule app where keepers log feedings, and only the owner account can export the full history."}
+{"prompt":"A community pool lifeguard scheduling app where lifeguards claim open shifts, and only the owner account can export the full history."}
+{"prompt":"A co-op childcare rotation tracker where parents sign up for childcare shifts, and only the owner account can export the full history."}
+{"prompt":"A small orchestra rehearsal scheduler where musicians confirm attendance, and only the owner account can export the full history."}
+{"prompt":"A used bookstore consignment tracker where sellers list books on consignment, and only the owner account can export the full history."}
+{"prompt":"A dog park membership check-in app where members check their dog in, and only the owner account can export the full history."}
+{"prompt":"A small brewery keg inventory tracker where brewers log keg fills, and only the owner account can export the full history."}
+{"prompt":"A tutoring center session scheduler where tutors log completed sessions, and only the owner account can export the full history."}
+{"prompt":"A community solar co-op usage tracker where members view their own usage, and only the owner account can export the full history."}
+{"prompt":"A small winery harvest log where field workers log grape yields, and only the owner account can export the full history."}
+{"prompt":"A co-op laundromat machine tracker where members report a broken machine, and only the owner account can export the full history."}
+{"prompt":"A small press manuscript submission tracker where authors submit manuscripts, and only the owner account can export the full history."}
+{"prompt":"A rock climbing gym route setting tracker where setters log new routes, and only the owner account can export the full history."}
+{"prompt":"A farm CSA box customization tool where members customize their weekly box, and only the owner account can export the full history."}
+{"prompt":"A small choir attendance tracker where singers mark themselves present, and only the owner account can export the full history."}
+{"prompt":"A co-op bike repair shop parts tracker where mechanics request parts, and only the owner account can export the full history."}
+{"prompt":"A community darkroom booking app where members book darkroom time, and only the owner account can export the full history."}
+{"prompt":"A small nonprofit grant application tracker where applicants submit grant requests, and only the owner account can export the full history."}
+{"prompt":"A shared studio space equipment checkout tool where artists check out equipment, and only the owner account can export the full history."}
+{"prompt":"A co-op cheese aging tracker where cheesemakers log aging batches, and only the owner account can export the full history."}
+{"prompt":"A small radio station DJ scheduling app where DJs claim open airtime slots, and only the owner account can export the full history."}
+{"prompt":"A community seed library checkout app where members check out seed packets, and only the owner account can export the full history."}
+{"prompt":"A small archery range lane booking tool where members book a lane, and only the owner account can export the full history."}
+{"prompt":"A co-op woodshop tool checkout tracker where members check out shared tools, and only the owner account can export the full history."}
+{"prompt":"A small hostel bed booking system where guests book a bed for the night, and only the owner account can export the full history."}
+{"prompt":"A community kitchen rental scheduler where renters book kitchen time, and only the owner account can export the full history."}
+{"prompt":"A small vineyard tasting room reservation app where guests reserve a tasting slot, and only the owner account can export the full history."}
+{"prompt":"A freelance contract tracker where freelancers log signed contracts, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A community garden plot scheduler where members reserve garden plots, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A coworking space desk booking app where members book a desk for the day, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A food truck route planner where drivers log their daily route, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A summer camp registration portal where parents register a child for a session, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A farmers market vendor stall tracker where vendors reserve a stall for the weekend, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A hotel housekeeping task board where housekeepers mark rooms as cleaned, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A school library book checkout system where students check out books, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A volunteer shift sign-up sheet where volunteers sign up for shifts, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A personal trainer client tracker where trainers log client workouts, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A small law firm timesheet app where associates log billable hours, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A museum exhibit tour scheduler where docents sign up to lead tours, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A co-op grocery store shift board where members claim work shifts, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A pet boarding facility check-in app where staff check pets in and out, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A parking garage reservation system where drivers reserve a spot in advance, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A community theater audition tracker where actors sign up for audition slots, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A food bank inventory tracker where volunteers log donated items, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A small clinic appointment scheduler where patients book appointments, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A co-working meeting room booking tool where members book meeting rooms, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A neighborhood watch incident log where residents report incidents, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A bakery custom order tracker where customers place custom cake orders, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A bike share fleet maintenance tracker where mechanics log repairs, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A student club budget tracker where club members submit expense requests, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A small aquarium feeding schedule app where keepers log feedings, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A community pool lifeguard scheduling app where lifeguards claim open shifts, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A co-op childcare rotation tracker where parents sign up for childcare shifts, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A small orchestra rehearsal scheduler where musicians confirm attendance, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A used bookstore consignment tracker where sellers list books on consignment, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A dog park membership check-in app where members check their dog in, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A small brewery keg inventory tracker where brewers log keg fills, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A tutoring center session scheduler where tutors log completed sessions, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A community solar co-op usage tracker where members view their own usage, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A small winery harvest log where field workers log grape yields, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A co-op laundromat machine tracker where members report a broken machine, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A small press manuscript submission tracker where authors submit manuscripts, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A rock climbing gym route setting tracker where setters log new routes, and regular members can only see their own entries, never anyone else's."}
+{"prompt":"A farm CSA box customization tool where members customize their weekly box, and regular members can only see their own entries, never anyone else's."}

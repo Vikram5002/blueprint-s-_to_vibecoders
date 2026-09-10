@@ -24,6 +24,32 @@
     "capturedFrom": "capture/fresh-batch-2.jsonl"
   },
   {
+    "file": "premature-dependson-a-freelancer-invoice-tracker.txt",
+    "kind": "premature-dependson-absent",
+    "expectRepairable": true,
+    "prompt": "A freelancer invoice tracker where freelancers create invoices and only accountants can mark them paid.",
+    "note": "Constructed, not yet observed in a real capture - a 197-prompt real batch (2026-09-07) found the duplicate shape in 46/47 schema-violation failures and never this one. Kept for the code path that handles it, in case it occurs later. This defect's raw text is syntactically valid JSON either way - the repair is gated on signature match, not a parse failure.",
+    "parseErrorMessage": null,
+    "parseErrorPosition": null,
+    "signatureOccurrences": 1,
+    "wellFormedBoundaries": 3,
+    "completionTokens": null,
+    "capturedFrom": "constructed-2026-09-07"
+  },
+  {
+    "file": "premature-dependson-duplicate-a-freelance-contract-tracker.txt",
+    "kind": "premature-dependson-duplicate",
+    "expectRepairable": true,
+    "prompt": "A freelance contract tracker where freelancers log signed contracts and only accountants can mark an invoice paid.",
+    "note": "The REAL captured shape: the bogus \"dependsOn\" array element is immediately followed by the correct, already-populated \"dependsOn\":[...] key, in every one of the 4 domains here. The repair must delete only the bogus element and leave the real key untouched.",
+    "parseErrorMessage": null,
+    "parseErrorPosition": null,
+    "signatureOccurrences": 4,
+    "wellFormedBoundaries": 0,
+    "completionTokens": null,
+    "capturedFrom": "capture/scaleup-197.jsonl#1"
+  },
+  {
     "file": "trailing-comma-a-veterinary-clinic-records.txt",
     "kind": "trailing-comma+doubled-comma",
     "expectRepairable": false,
