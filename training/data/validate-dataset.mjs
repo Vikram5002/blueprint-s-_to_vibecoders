@@ -16,7 +16,7 @@
  *   node training/data/validate-dataset.mjs training/data/gold/gold.jsonl
  *   node training/data/validate-dataset.mjs --dup-threshold=0.9
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -31,9 +31,25 @@ const thresholdArg = args.find((a) => a.startsWith('--dup-threshold='));
 const DUP_THRESHOLD = thresholdArg ? Number(thresholdArg.slice('--dup-threshold='.length)) : 0.8;
 const explicitFiles = args.filter((a) => !a.startsWith('--'));
 
+/**
+ * Every *.jsonl under training/data/synthetic/, not a fixed list of
+ * filenames - this is the split new batches land in most often (per-batch
+ * files, one per checkpoint, same convention as gold/real-project), and a
+ * hardcoded filename here already missed synthetic-batch-1.jsonl once (it
+ * shipped without this validator ever being updated to see it).
+ */
+const syntheticDir = join(repoRoot, 'training', 'data', 'synthetic');
+const syntheticFiles = existsSync(syntheticDir)
+  ? readdirSync(syntheticDir)
+      .filter((name) => name.endsWith('.jsonl'))
+      .sort()
+      .map((name) => join(syntheticDir, name))
+  : [];
+
 const DEFAULT_FILES = [
   join(repoRoot, 'training', 'data', 'gold', 'gold.jsonl'),
   join(repoRoot, 'training', 'data', 'real-project', 'real-project.jsonl'),
+  ...syntheticFiles,
 ];
 
 const files = (explicitFiles.length > 0 ? explicitFiles : DEFAULT_FILES).filter((path) => {
