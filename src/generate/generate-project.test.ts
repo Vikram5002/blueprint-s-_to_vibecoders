@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   buildMilestone1Schema,
   buildMilestone2Schema,
+  buildScaleTestSchema,
   generateMilestone1Project,
   generateProject,
   MILESTONE_1_CONSTRAINT_DSL,
   MILESTONE_2_CONSTRAINT_DSL,
+  SCALE_TEST_CONSTRAINT_DSL_1,
+  SCALE_TEST_CONSTRAINT_DSL_2,
   schemaImpliesDatabase,
 } from './generate-project.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
@@ -254,5 +257,47 @@ describe('generateProject (Milestone 2, general orchestrator)', () => {
     expect(result.value.files.some((f) => f.path.startsWith('backend/src/db/'))).toBe(false);
     const pkg = JSON.parse(result.value.files.find((f) => f.path === 'package.json')?.contents ?? '{}');
     expect(pkg.engines).toBeUndefined();
+  });
+});
+
+describe('buildScaleTestSchema', () => {
+  const schema = buildScaleTestSchema('session-test', 'test-fixture');
+
+  it('has at least 3x Milestone 2\'s component count, spanning all four domains', () => {
+    const total =
+      schema.domains.frontend.components.length +
+      schema.domains.backend.components.length +
+      schema.domains.database.components.length +
+      schema.domains.security.components.length;
+    expect(total).toBeGreaterThanOrEqual(9);
+    expect(schema.domains.database.components.length).toBeGreaterThan(0);
+    expect(schema.domains.backend.components.length).toBeGreaterThan(0);
+    expect(schema.domains.security.components.length).toBeGreaterThan(0);
+    expect(schema.domains.frontend.components.length).toBeGreaterThan(0);
+  });
+
+  it('has at least two real, independently-resolved constraints', () => {
+    expect(schema.constraints.length).toBeGreaterThanOrEqual(2);
+    for (const constraint of schema.constraints) {
+      expect(constraint.subject.status).toBe('PATH_PATTERN');
+      expect(constraint.object.status).toBe('PATH_PATTERN');
+    }
+    const rawTexts = schema.constraints.map((c) => c.rawText);
+    expect(rawTexts).toContain(SCALE_TEST_CONSTRAINT_DSL_1);
+    expect(rawTexts).toContain(SCALE_TEST_CONSTRAINT_DSL_2);
+  });
+
+  it('the database domain is implied per the Task 1 heuristic, same as Milestone 2', () => {
+    expect(schemaImpliesDatabase(schema)).toBe(true);
+  });
+
+  it('every component has a distinct id - no accidental collisions across this schema\'s 9 components', () => {
+    const ids = [
+      ...schema.domains.frontend.components,
+      ...schema.domains.backend.components,
+      ...schema.domains.database.components,
+      ...schema.domains.security.components,
+    ].map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

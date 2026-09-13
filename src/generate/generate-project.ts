@@ -357,11 +357,19 @@ function httpEndpointsForDomain(schema: ValidatedProjectSchema, domain: DomainNa
   return endpoints;
 }
 
-async function generateComponentFile(
+/**
+ * Exported (unlike Milestone 1's `generateOne`) because Milestone 3's
+ * verify-and-regenerate loop needs to call this a second time for exactly
+ * one component, with `priorViolation` set - the same generation path a
+ * fresh component takes, just with corrective context appended to the
+ * prompt (see component-codegen.ts's `PriorViolationContext`).
+ */
+export async function generateComponentFile(
   generator: ReturnType<typeof createComponentCodeGenerator>,
   schema: ValidatedProjectSchema,
   component: Component,
   domain: DomainName,
+  priorViolation?: ComponentGenerationContext['priorViolation'],
 ): Promise<{ readonly ok: true; readonly value: GeneratedFile } | { readonly ok: false; readonly error: GenerateProjectFailure }> {
   const targetPath = componentTargetPath(domain, component);
 
@@ -375,6 +383,7 @@ async function generateComponentFile(
     availablePackages: AVAILABLE_PACKAGES[domain],
     exportContract: EXPORT_CONTRACT[domain],
     relevantConstraints: selectRelevantConstraints(schema.constraints, domainKeywords(domain)),
+    ...(priorViolation === undefined ? {} : { priorViolation }),
   };
 
   const result = await generator.generate(context);
@@ -382,6 +391,29 @@ async function generateComponentFile(
     return { ok: false, error: { component, domain, failure: result.error } };
   }
   return { ok: true, value: { path: targetPath, contents: result.value } };
+}
+
+/**
+ * Finds which schema component a real generated file path belongs to, by
+ * recomputing every component's conventional target path and matching -
+ * the same convention componentTargetPath already defines, run in reverse.
+ * Used by Milestone 3's verify-and-regenerate loop to turn a Blueprint
+ * violation's `fromFile` back into the one component to regenerate. Returns
+ * null for a path that belongs to no component (a templated entry point
+ * like backend/src/index.ts, which nothing ever regenerates).
+ */
+export function findComponentByTargetPath(
+  schema: ValidatedProjectSchema,
+  targetPath: string,
+): { readonly component: Component; readonly domain: DomainName } | null {
+  for (const domain of DOMAIN_NAMES) {
+    for (const component of schema.domains[domain].components) {
+      if (componentTargetPath(domain, component) === targetPath) {
+        return { component, domain };
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -521,6 +553,159 @@ export function buildMilestone2Schema(sessionId: string, constraintLocation: str
   if (!validated.ok) {
     throw new Error(
       `Milestone 2's hand-built fixture schema failed its own validation: ${JSON.stringify(validated.error)}`,
+    );
+  }
+  return validated.value;
+}
+
+// ---------------------------------------------------------------------------
+// Milestone 3: scale test - a genuinely larger schema, all four domains,
+// two real constraints
+// ---------------------------------------------------------------------------
+
+/** Shared by every Milestone 3 scale-test constraint - see compileMilestone1Constraint/compileMilestone2Constraint for the one-constraint-per-milestone precedent this generalizes. */
+function compileConstraint(text: string, directories: readonly string[], location: string): Constraint {
+  const compiled = compileBlueprint({ text, location, modules: [], directories });
+  const constraint = compiled.constraints[0];
+  if (constraint === undefined) {
+    throw new Error(`Scale-test constraint DSL failed to compile: ${text} -> ${JSON.stringify(compiled.rejected)}`);
+  }
+  return constraint;
+}
+
+const TASK_STORE: Component = {
+  id: componentId('database', 'TaskStore', 'task-store'),
+  name: 'TaskStore',
+  purpose:
+    'Initializes a node:sqlite table `tasks` (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, ' +
+    'status TEXT NOT NULL DEFAULT \'open\', assignee_id INTEGER) in the shared database file at ' +
+    'backend/app.db, creating it if absent. Exports named functions insertTask(title, assigneeId), ' +
+    'listTasks() (all rows), and setTaskStatus(id, status).',
+};
+
+const USER_STORE: Component = {
+  id: componentId('database', 'UserStore', 'user-store'),
+  name: 'UserStore',
+  purpose:
+    'Initializes a node:sqlite table `users` (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, ' +
+    'email TEXT NOT NULL) in the shared database file at backend/app.db, creating it if absent. Exports ' +
+    'named functions insertUser(name, email), findUserById(id), and listUsers().',
+};
+
+const COMMENT_STORE: Component = {
+  id: componentId('database', 'CommentStore', 'comment-store'),
+  name: 'CommentStore',
+  purpose:
+    'Initializes a node:sqlite table `comments` (id INTEGER PRIMARY KEY AUTOINCREMENT, task_id INTEGER NOT ' +
+    'NULL, author_id INTEGER NOT NULL, body TEXT NOT NULL) in the shared database file at backend/app.db, ' +
+    'creating it if absent. Exports named functions insertComment(taskId, authorId, body) and ' +
+    'listCommentsForTask(taskId).',
+};
+
+const SCALE_TASK_ROUTER: Component = {
+  id: componentId('backend', 'TaskRouter', 'scale-task-router'),
+  name: 'TaskRouter',
+  purpose:
+    'Exposes REST endpoints for creating a task (POST / with { title, assigneeId }), listing every task ' +
+    '(GET /), and updating a task\'s status (PATCH /:id/status with { status }), calling the database ' +
+    "domain's TaskStore functions (insertTask, listTasks, setTaskStatus) directly, imported from the " +
+    'db/task-store file, to persist and read real rows.',
+};
+
+const SCALE_USER_ROUTER: Component = {
+  id: componentId('backend', 'UserRouter', 'scale-user-router'),
+  name: 'UserRouter',
+  purpose:
+    'Exposes REST endpoints for creating a user (POST / with { name, email }) and listing every user ' +
+    "(GET /), calling the database domain's UserStore functions (insertUser, listUsers) directly, " +
+    'imported from the db/user-store file, to persist and read real rows.',
+};
+
+const COMMENT_ROUTER: Component = {
+  id: componentId('backend', 'CommentRouter', 'comment-router'),
+  name: 'CommentRouter',
+  purpose:
+    'Exposes REST endpoints for adding a comment to a task (POST / with { taskId, authorId, body }) and ' +
+    "listing every comment for a task (GET /?taskId=), calling the database domain's CommentStore " +
+    'functions (insertComment, listCommentsForTask) directly, imported from the db/comment-store file, to ' +
+    'persist and read real rows.',
+};
+
+const AUTH_MIDDLEWARE_SCALE: Component = {
+  id: componentId('security', 'AuthMiddleware', 'auth-middleware-scale'),
+  name: 'AuthMiddleware',
+  purpose:
+    'Reads a userId from the x-user-id request header on every request and rejects with 401 if the header ' +
+    'is missing or empty. Does not look up the user anywhere - it only checks the header is present - so ' +
+    'it needs no knowledge of how users are stored.',
+};
+
+const BOARD_PAGE: Component = {
+  id: componentId('frontend', 'BoardPage', 'board-page'),
+  name: 'BoardPage',
+  purpose:
+    "Renders a page that, on mount, fetches every task from the backend's real GET /api/task-router " +
+    "endpoint and every comment for the first task from GET /api/comment-router?taskId=1, displaying " +
+    'tasks grouped by status with their comment counts. No form, read-only for this component.',
+};
+
+const LOGIN_PAGE: Component = {
+  id: componentId('frontend', 'LoginPage', 'login-page'),
+  name: 'LoginPage',
+  purpose:
+    'Renders a simple form (name and email text inputs, a submit button) that POSTs a new user as JSON to ' +
+    "the backend's real /api/user-router endpoint and shows a success message once the request completes.",
+};
+
+/**
+ * Two real constraints, deliberately spanning two different domain pairs
+ * rather than two variants of the same rule - both in the same
+ * real-path-based style Milestones 1 and 2 already proved Blueprint's
+ * subject resolver binds deterministically:
+ *
+ * - The Milestone 2 rule, generalized: no backend route may reach into
+ *   the database layer directly - applies to all three routers at once,
+ *   since the directory pattern covers the whole backend/src/db folder,
+ *   not one specific file.
+ * - A second, independent rule in the Milestone 1 family: the security
+ *   layer may not reach into the routes layer. AuthMiddleware's purpose
+ *   above is written to need no such thing (see its own docstring), so
+ *   this constraint is expected to be satisfied, not violated - included
+ *   to prove "correctly evaluated" covers the satisfied case too, not
+ *   only the violated one Milestones 1 and 2 each happened to produce.
+ */
+export const SCALE_TEST_CONSTRAINT_DSL_1 = 'backend/src/routes must not import backend/src/db';
+export const SCALE_TEST_CONSTRAINT_DSL_2 = 'backend/src/middleware must not import backend/src/routes';
+
+/**
+ * Builds a schema with 3x Milestone 2's component count (9 vs. 3), spanning
+ * all four domains and two independent constraints - the scale Milestone 3
+ * Task 3 asks for, not a trivial variant of Milestone 2's Recipe Box.
+ */
+export function buildScaleTestSchema(sessionId: string, constraintLocation: string): ValidatedProjectSchema {
+  const candidate = {
+    sessionId,
+    title: 'Team task board',
+    originalPrompt:
+      'A small team task board: create users, assign tasks to them, comment on tasks, and see everything ' +
+      'on one board. Every request must come from a real, identified user.',
+    domains: {
+      frontend: { components: [BOARD_PAGE, LOGIN_PAGE], dependsOn: ['backend'] },
+      backend: { components: [SCALE_TASK_ROUTER, SCALE_USER_ROUTER, COMMENT_ROUTER], dependsOn: ['database'] },
+      database: { components: [TASK_STORE, USER_STORE, COMMENT_STORE], dependsOn: [] },
+      security: { components: [AUTH_MIDDLEWARE_SCALE], dependsOn: [] },
+    },
+    constraints: [
+      compileConstraint(SCALE_TEST_CONSTRAINT_DSL_1, ['backend/src/routes', 'backend/src/db'], constraintLocation),
+      compileConstraint(SCALE_TEST_CONSTRAINT_DSL_2, ['backend/src/middleware', 'backend/src/routes'], constraintLocation),
+    ],
+    provenance: 'STATED' as const,
+  };
+
+  const validated = validateProjectSchema(candidate);
+  if (!validated.ok) {
+    throw new Error(
+      `Scale-test hand-built fixture schema failed its own validation: ${JSON.stringify(validated.error)}`,
     );
   }
   return validated.value;
