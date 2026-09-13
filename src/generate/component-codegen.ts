@@ -51,8 +51,17 @@ single "code" field whose string value is the complete, literal contents of
 the file - real newlines and indentation as they would appear on disk, not
 markdown, not a fenced code block, and no text outside that one field.`;
 
-/** Generous for one route or middleware file; these are small by design. */
-const MAX_OUTPUT_TOKENS = 2_048;
+/**
+ * Room for one component file. Originally 2,048 - generous for the small
+ * router/middleware files Milestone 1 tested, but a real Milestone 3 scale
+ * run truncated a frontend page combining two fetch calls with
+ * grouping/rendering logic ("the answer was cut off at the output token
+ * limit"), a real generation failure, not a design flaw. Raised to 4,096 to
+ * match `workflow/generate-project-schema.ts`'s own budget for a whole
+ * multi-domain ProjectSchema - one moderately complex page or route should
+ * comfortably fit in what that module allows for an entire schema.
+ */
+const MAX_OUTPUT_TOKENS = 4_096;
 
 const COMPONENT_CODE_JSON_SCHEMA = {
   type: 'object',
@@ -97,6 +106,26 @@ export interface ComponentGenerationContext {
    * Blueprint's job, run after the file exists (Milestone 1 §4).
    */
   readonly relevantConstraints: readonly Constraint[];
+  /**
+   * Milestone 3's auto-regeneration retry: present only on the one retried
+   * call for a component whose first attempt violated a constraint,
+   * verified for real against the actually-written file (never on the
+   * first attempt for any component - a component with no prior violation
+   * has nothing to correct). Carries the exact evidence Blueprint found,
+   * not a paraphrase, so the model sees precisely what it did wrong -
+   * "your previous attempt did this, which violates this stated rule" per
+   * the approved design, not a vague "try again."
+   */
+  readonly priorViolation?: PriorViolationContext;
+}
+
+export interface PriorViolationContext {
+  /** The exact constraint sentence violated, verbatim - same rawText a fresh generation already sees. */
+  readonly ruleText: string;
+  /** Blueprint's own plain-language explanation of the violation. */
+  readonly explanation: string;
+  /** The real offending line(s) from the previous attempt, file + line + literal snippet - never paraphrased. */
+  readonly evidence: readonly { readonly file: string; readonly line: number; readonly snippet: string }[];
 }
 
 export type ComponentCodeFailure =
@@ -207,6 +236,20 @@ function buildUserPrompt(context: ComponentGenerationContext): string {
     }
   } else {
     lines.push('Architectural constraints already declared for this project: none.');
+  }
+
+  if (context.priorViolation !== undefined) {
+    lines.push(
+      '',
+      'CORRECTION REQUIRED - your previous attempt at this exact file was already written to disk and ' +
+        'checked against the project\'s real architecture. It violated a stated rule:',
+      `  Rule violated: ${context.priorViolation.ruleText}`,
+      `  What happened: ${context.priorViolation.explanation}`,
+      'The exact offending line(s) from your previous attempt:',
+      ...context.priorViolation.evidence.map((e) => `  ${e.file}:${e.line}: ${e.snippet}`),
+      'Write a new version of this file that still fulfils the purpose above WITHOUT that import or call. ' +
+        'Do not repeat the offending line(s) shown above in any form.',
+    );
   }
 
   return lines.join('\n');
