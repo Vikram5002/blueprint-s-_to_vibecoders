@@ -32,11 +32,14 @@ import { buildIntentResponse } from './intent-api.js';
 import { buildDiffResponse, buildDriftHistoryResponse } from './history-api.js';
 import { buildViolationsResponse, buildSnapshotResponse } from './violations-api.js';
 import { createWorkflowRoutes, type WorkflowRouteDeps } from './workflow-api.js';
+import { createGenerationRoutes, type ApplicationRouteDeps } from './generation-api.js';
 import { ROOT_DIRECTORY, type ViewLevel } from '../graph/aggregate.js';
 import { chooseProvider, createProvider } from '../llm/select-provider.js';
 import { loadLabelCache } from '../llm/cache.js';
 import { createProjectSchemaGenerator } from '../workflow/generate-project-schema.js';
 import type { AnalysisContext } from './context.js';
+import type { CompletionProvider } from '../llm/provider.js';
+import type { LabelCache } from '../llm/cache.js';
 
 export const LOOPBACK_HOST = '127.0.0.1';
 
@@ -71,7 +74,7 @@ const CONTENT_TYPES: ReadonlyMap<string, string> = new Map([
  * zero behavior change for them. `startServer` is the one real caller that
  * resolves and passes it.
  */
-export function createApp(context: AnalysisContext, workflow?: WorkflowRouteDeps): Hono {
+export function createApp(context: AnalysisContext, workflow?: WorkflowRouteDeps, application?: ApplicationRouteDeps): Hono {
   const app = new Hono();
 
   app.get('/api/summary', (c) => c.json(buildSummaryResponse(context)));
@@ -200,6 +203,14 @@ export function createApp(context: AnalysisContext, workflow?: WorkflowRouteDeps
     app.route('/api/workflow', createWorkflowRoutes(workflow));
   }
 
+  // Same mount prefix as the schema-generation routes above, deliberately:
+  // both are "the workflow" from a browser's point of view (prompt -> schema
+  // -> real application), just two different resources under it
+  // (`/jobs` vs `/application-jobs`) - no path collision between them.
+  if (application !== undefined) {
+    app.route('/api/workflow', createGenerationRoutes(application));
+  }
+
   app.get('*', async (c) => {
     const served = await serveStatic(c.req.path);
     if (served !== null) {
@@ -228,23 +239,48 @@ export function createApp(context: AnalysisContext, workflow?: WorkflowRouteDeps
  * error; it is propagated into `WorkflowRouteDeps` so `/api/workflow/jobs`
  * degrades to a clear 503 instead of the server refusing to start.
  */
-async function resolveWorkflowDeps(context: AnalysisContext): Promise<WorkflowRouteDeps> {
+interface ResolvedLlm {
+  readonly provider: CompletionProvider;
+  readonly cache: LabelCache;
+}
+
+/**
+ * Resolves the one real provider+cache pair both `/api/workflow/jobs`
+ * (schema generation) and `/api/workflow/application-jobs` (Layer 3's real
+ * code generation) are built from - `chooseProvider` then `createProvider`,
+ * never reading `process.env` directly (`../pipeline/label-repository.ts`
+ * is the precedent). No `loadEnvFile` call here: only `cli.ts` may load
+ * `.env` (enforced by `architecture.test.ts`), and by the time a real
+ * process reaches `startServer`, `cli.ts` has already done it — `process.env`
+ * already carries whatever `.env` set. `null` (no key configured) is not an
+ * error; both route sets degrade to a clear 503 instead of the server
+ * refusing to start.
+ *
+ * One cache instance, shared across both route sets: two separate
+ * `loadLabelCache()` calls would each own an independent in-memory map, and
+ * flushing one would never persist what the other wrote.
+ */
+async function resolveLlm(context: AnalysisContext): Promise<ResolvedLlm | null> {
   const choice = chooseProvider();
   const provider = await createProvider(choice);
   if (provider === null) {
-    return { llm: null };
+    return null;
   }
-
-  // One cache instance, shared between the generator (which writes to it
-  // internally on a fresh generation) and the flush call in workflow-api.ts
-  // — two separate loadLabelCache() calls would each own an independent
-  // in-memory map, and flushing one would never persist what the other wrote.
   const cache = await loadLabelCache(context.root);
-  return { llm: { generator: createProjectSchemaGenerator({ provider, cache }), cache } };
+  return { provider, cache };
+}
+
+/** Where Layer 3 writes each application-generation job's real project - same `generated/` convention the CLI scripts and ingest's own exclusion (src/ingest/ignore-rules.ts) already use. */
+function generationRootFor(context: AnalysisContext): string {
+  return `${context.root.replace(/[\\/]+$/, '')}/generated`;
 }
 
 export async function startServer(context: AnalysisContext): Promise<RunningServer> {
-  const app = createApp(context, await resolveWorkflowDeps(context));
+  const llm = await resolveLlm(context);
+  const workflowDeps: WorkflowRouteDeps = llm === null ? { llm: null } : { llm: { generator: createProjectSchemaGenerator(llm), cache: llm.cache } };
+  const applicationDeps: ApplicationRouteDeps = { llm, generationRoot: generationRootFor(context) };
+
+  const app = createApp(context, workflowDeps, applicationDeps);
 
   const server: ServerType = await new Promise((resolve) => {
     const created = serve({ fetch: app.fetch, hostname: LOOPBACK_HOST, port: 0 }, () => resolve(created));

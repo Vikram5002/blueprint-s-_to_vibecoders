@@ -163,6 +163,41 @@ describe('generateAndVerifyProject', () => {
     expect(correctionCall?.user).toContain("../routes/user-router");
   });
 
+  it('reports every real phase in order when a retry is needed', async () => {
+    const schema = buildRetryTestSchema();
+    const provider = providerFrom((request) => {
+      if (request.user.includes('Domain: backend')) return ROUTER_CODE;
+      return request.user.includes('CORRECTION REQUIRED') ? COMPLIANT_MIDDLEWARE : VIOLATING_MIDDLEWARE;
+    });
+    const phases: string[] = [];
+
+    const result = await generateAndVerifyProject(schema, {
+      provider,
+      cache: memoryCache(),
+      root,
+      onPhase: (phase) => phases.push(phase),
+    });
+
+    expect(result.ok).toBe(true);
+    expect(phases).toEqual(['generating', 'verifying', 'regenerating', 'reverifying']);
+  });
+
+  it('stops after verifying when the first attempt already complies - no regenerating/reverifying phase', async () => {
+    const schema = buildRetryTestSchema();
+    const provider = providerFrom((request) => (request.user.includes('Domain: backend') ? ROUTER_CODE : COMPLIANT_MIDDLEWARE));
+    const phases: string[] = [];
+
+    const result = await generateAndVerifyProject(schema, {
+      provider,
+      cache: memoryCache(),
+      root,
+      onPhase: (phase) => phases.push(phase),
+    });
+
+    expect(result.ok).toBe(true);
+    expect(phases).toEqual(['generating', 'verifying']);
+  });
+
   it('hard-fails as a review item when the retry still violates, without a second retry', async () => {
     const schema = buildRetryTestSchema();
     const provider = providerFrom((request) => {

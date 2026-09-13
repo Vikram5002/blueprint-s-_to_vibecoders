@@ -65,9 +65,20 @@ export type GenerateAndVerifyFailure =
   | GenerateProjectFailure
   | { readonly reason: 'pipeline-error'; readonly message: string };
 
+/**
+ * Coarse-grained phase reporting for a caller with a real progress UI (the
+ * server's application-generation job, surfaced in the Workflow UI) -
+ * everything this function actually does, in the order it does it.
+ * `regenerating`/`reverifying` are only ever reported when the first check
+ * found at least one attributable violation; a project that passes on the
+ * first attempt goes straight from `verifying` to done.
+ */
+export type GenerationPhase = 'generating' | 'verifying' | 'regenerating' | 'reverifying';
+
 export interface GenerateAndVerifyOptions extends CreateComponentCodeGeneratorOptions {
   /** Directory the project is written to and verified in. Cleared and recreated on every call. */
   readonly root: string;
+  readonly onPhase?: (phase: GenerationPhase) => void;
 }
 
 /**
@@ -201,12 +212,14 @@ export async function generateAndVerifyProject(
   schema: ValidatedProjectSchema,
   options: GenerateAndVerifyOptions,
 ): Promise<Result<GenerateAndVerifyResult, GenerateAndVerifyFailure>> {
+  options.onPhase?.('generating');
   const generated = await generateProject(schema, options);
   if (!generated.ok) return err(generated.error);
 
   await writeProjectFiles(options.root, generated.value.files, true);
   const blueprintFile = await writeBlueprintFile(options.root, schema);
 
+  options.onPhase?.('verifying');
   const firstCheck = await verify(options.root, blueprintFile);
   if (!firstCheck.ok) return err(firstCheck.error);
 
@@ -218,6 +231,7 @@ export async function generateAndVerifyProject(
   // groupEdgesByFile's own docstring for why those are not the same thing.
   const { byFile, unattributable: firstPassUnattributable } = groupEdgesByFile(firstCheck.value);
 
+  options.onPhase?.('regenerating');
   const generator = createComponentCodeGenerator(options);
   let files = generated.value.files;
   const attempts: { readonly component: Component; readonly domain: DomainName; readonly targetPath: string; readonly firstAttemptViolation: PriorViolationContext }[] = [];
@@ -247,6 +261,7 @@ export async function generateAndVerifyProject(
   }
 
   await writeProjectFiles(options.root, files, false);
+  options.onPhase?.('reverifying');
   const secondCheck = await verify(options.root, blueprintFile);
   if (!secondCheck.ok) return err(secondCheck.error);
 
