@@ -11,7 +11,10 @@ import type { Ignore } from 'ignore';
 
 /**
  * Directories skipped unconditionally, whether or not a .gitignore mentions
- * them. `.vibe` is this tool's own SQLite location.
+ * them. `.vibe` is this tool's own SQLite location. `generated` is where the
+ * Layer 3 code-generation pipeline writes real scaffolded projects to disk
+ * (see src/generate/) — never analysed by a normal `vibe-blueprint .` run on
+ * this repo, the same way this tool never analyses its own `.vibe` database.
  */
 export const ALWAYS_SKIPPED_DIRECTORIES: ReadonlySet<string> = new Set([
   'node_modules',
@@ -21,6 +24,7 @@ export const ALWAYS_SKIPPED_DIRECTORIES: ReadonlySet<string> = new Set([
   '__pycache__',
   '.venv',
   '.vibe',
+  'generated',
 ]);
 
 export interface IgnoreMatcher {

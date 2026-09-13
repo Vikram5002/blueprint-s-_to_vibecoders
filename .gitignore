@@ -5,6 +5,11 @@ build/
 src/server/static/
 coverage/
 .vibe/
+
+# Layer 3 code generation output: real scaffolded projects written to disk
+# and verified against the Blueprint CLI. Never committed, never analysed by
+# a normal `vibe-blueprint .` run on this repo (see ingest/ignore-rules.ts).
+generated/
 ui/test-results/
 ui/playwright-report/
 *.tsbuildinfo

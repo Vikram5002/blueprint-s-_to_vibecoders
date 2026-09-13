@@ -14,6 +14,10 @@ export const config = tseslint.config(
       // `npm run lint` into a coin flip depending on whether collection is
       // running.
       '.vibe/**',
+      // Layer 3 code-generation output: real scaffolded projects written to
+      // disk and verified against the Blueprint CLI, not source this project
+      // owns or wants linted with its own rules (see src/generate/).
+      'generated/**',
       'ui/**',
       'coverage/**',
       'src/parser/fixtures/**',
@@ -112,6 +116,7 @@ export const config = tseslint.config(
       globals: {
         console: 'readonly',
         process: 'readonly',
+        Buffer: 'readonly',
         URL: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',

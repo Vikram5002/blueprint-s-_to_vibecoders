@@ -3,7 +3,7 @@ import { ALWAYS_SKIPPED_DIRECTORIES, createIgnoreMatcher, isAlwaysSkipped, isIgn
 
 describe('isAlwaysSkipped', () => {
   it('covers every directory named in the Phase 1 spec', () => {
-    for (const name of ['node_modules', '.git', 'dist', 'build', '__pycache__', '.venv']) {
+    for (const name of ['node_modules', '.git', 'dist', 'build', '__pycache__', '.venv', 'generated']) {
       expect(isAlwaysSkipped(name)).toBe(true);
     }
   });
