@@ -280,8 +280,25 @@ recorded as such via `inferredDomains` rather than implied to carry more
 rigor than they do. Verifying a larger fraction is future work, not
 something this dataset's first pass claims to have done.
 
-`synthetic` collection has not started, and should not until a first
-fine-tune exists to generate from — see [[project_loq_no_7b_model]] for the
-machine constraint that applies once that fine-tuning work begins in earnest
-(LOQ rehearses on the 0.5B model only; the real training run happens on the
-borrowed desktop).
+**`synthetic` collection has started: 197 pairs, across two files.**
+`synthetic-batch-1.jsonl` (12 pairs) predates this section's last edit and
+was never reflected back into it - this paragraph previously said
+collection "has not started" after that file already existed, which was
+wrong by the time anyone next read it. `synthetic-batch-2.jsonl` (185
+pairs) was merged from a 197-prompt real-pipeline capture batch: every
+clean-success and repaired-success record, re-derived through the real
+`createProjectSchemaGenerator` after a JSON-repair fix, formatted to this
+file's schema. `training/data/validate-dataset.mjs`'s `DEFAULT_FILES` also
+silently excluded `synthetic/` until now - it lists every `*.jsonl` under
+the directory instead of a fixed filename, so a future batch file doesn't
+require remembering to add it here by hand.
+
+**Current true total, as of this count: 288 pairs** (47 gold + 44
+real-project + 12 + 185 synthetic) toward the ~300 `synthetic` target
+(197/300, short by 103) and the wider original ballpark of hand-written +
+real-project + 300 synthetic (~391 total, short by ~103 either way this is
+read). Not yet at target - stated plainly rather than rounded up.
+
+See [[project_loq_no_7b_model]] for the machine constraint that applies to
+fine-tuning work (LOQ rehearses on the 0.5B model only; the real training
+run happens on the borrowed desktop).

@@ -1,7 +1,14 @@
 /**
- * Local implementation of CompletionProvider — serves the baseline QLoRA
- * checkpoint (run_20260822_130636: Qwen2.5-7B-Instruct + LoRA adapter) via a
- * local HTTP server, instead of a vendor API.
+ * Local implementation of CompletionProvider — serves the QLoRA checkpoint
+ * (run_20260912_154324: Qwen2.5-7B-Instruct + LoRA adapter, r=16/alpha=16,
+ * 3 epochs, 288 training rows) via a local HTTP server, instead of a vendor
+ * API. Replaces the original baseline (run_20260822_130636, 91 rows) — see
+ * training/eval/RESULTS-run_20260912_154324.md for why: tied on held-out
+ * pass-count and the (structurally unfixable) fake-id defect, but a real,
+ * measured fix to the training data's diagnosed 73.6% empty-constraint skew
+ * (0/10 constraint-bearing outputs under the old checkpoint, on both the
+ * original held-out set and Config C, vs. 4/10 and then 17/18 grounded on a
+ * larger targeted probe under this one).
  *
  * ## No SDK, same as bluesminds.ts and gemini.ts
  *
@@ -27,7 +34,7 @@
 import type { CompletionProvider, CompletionRequest, CompletionResult } from './provider.js';
 
 export const DEFAULT_LOCAL_BASE_URL = 'http://127.0.0.1:8712';
-export const DEFAULT_LOCAL_MODEL = 'local:qwen2.5-7b-instruct+run_20260822_130636';
+export const DEFAULT_LOCAL_MODEL = 'local:qwen2.5-7b-instruct+run_20260912_154324';
 
 /**
  * Wall-clock ceiling on a single request. Node's `fetch` has no default
