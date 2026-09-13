@@ -1,9 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchWorkflowJob, generateProjectSchemaViaApi, submitWorkflowJob } from './workflow-api-client';
+import {
+  applicationJobDownloadUrl,
+  fetchApplicationJob,
+  fetchWorkflowJob,
+  generateApplicationViaApi,
+  generateProjectSchemaViaApi,
+  submitApplicationJob,
+  submitWorkflowJob,
+} from './workflow-api-client';
 import type { WorkflowJob } from './workflow-job-types';
+import type { ApplicationJob } from './application-job-types';
+import type { ProjectSchema } from './project-schema-types';
 
 function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 afterEach(() => {
@@ -13,7 +26,9 @@ afterEach(() => {
 
 describe('submitWorkflowJob', () => {
   it('posts the prompt and returns the 202 body', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ id: 'job-1', status: 'pending' }, 202));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ id: 'job-1', status: 'pending' }, 202));
     vi.stubGlobal('fetch', fetchMock);
 
     const result = await submitWorkflowJob('build a todo app');
@@ -21,17 +36,26 @@ describe('submitWorkflowJob', () => {
     expect(result).toEqual({ id: 'job-1', status: 'pending' });
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/workflow/jobs',
-      expect.objectContaining({ method: 'POST', body: JSON.stringify({ prompt: 'build a todo app' }) }),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ prompt: 'build a todo app' }),
+      }),
     );
   });
 
   it('surfaces the server error message on a non-2xx response, e.g. capacity rejection', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(jsonResponse({ error: 'at capacity: 8 job(s) already pending or running' }, 503)),
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse({ error: 'at capacity: 8 job(s) already pending or running' }, 503),
+        ),
     );
 
-    await expect(submitWorkflowJob('x')).rejects.toThrow('at capacity: 8 job(s) already pending or running');
+    await expect(submitWorkflowJob('x')).rejects.toThrow(
+      'at capacity: 8 job(s) already pending or running',
+    );
   });
 });
 
@@ -44,7 +68,10 @@ describe('fetchWorkflowJob', () => {
   });
 
   it('throws on an unknown job id (404)', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ error: 'unknown job: nope' }, 404)));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse({ error: 'unknown job: nope' }, 404)),
+    );
 
     await expect(fetchWorkflowJob('nope')).rejects.toThrow('unknown job: nope');
   });
@@ -116,7 +143,11 @@ describe('generateProjectSchemaViaApi', () => {
 
     const job = await generateProjectSchemaViaApi('x', { pollIntervalMs: 0 });
     expect(job.status).toBe('failed');
-    expect(job.error).toEqual({ phase: 'generate', reason: 'provider-error', message: 'network down' });
+    expect(job.error).toEqual({
+      phase: 'generate',
+      reason: 'provider-error',
+      message: 'network down',
+    });
   });
 
   it('rejects with AbortError when the signal is aborted mid-poll', async () => {
@@ -129,8 +160,193 @@ describe('generateProjectSchemaViaApi', () => {
       }),
     );
 
-    await expect(generateProjectSchemaViaApi('x', { signal: controller.signal, pollIntervalMs: 5 })).rejects.toThrow(
-      /cancelled/,
+    await expect(
+      generateProjectSchemaViaApi('x', { signal: controller.signal, pollIntervalMs: 5 }),
+    ).rejects.toThrow(/cancelled/);
+  });
+});
+
+const TEST_SCHEMA: ProjectSchema = {
+  sessionId: 's1',
+  title: 't',
+  originalPrompt: 'x',
+  domains: {
+    frontend: { components: [], dependsOn: [] },
+    backend: { components: [], dependsOn: [] },
+    database: { components: [], dependsOn: [] },
+    security: { components: [], dependsOn: [] },
+  },
+  constraints: [],
+  provenance: 'STATED',
+};
+
+describe('submitApplicationJob', () => {
+  it('posts the schema and returns the 202 body', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ id: 'app-1', status: 'pending' }, 202));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await submitApplicationJob(TEST_SCHEMA);
+
+    expect(result).toEqual({ id: 'app-1', status: 'pending' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/workflow/application-jobs',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ schema: TEST_SCHEMA }) }),
     );
+  });
+
+  it('surfaces the server error message on a non-2xx response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse({ error: 'schema failed validation' }, 400)),
+    );
+
+    await expect(submitApplicationJob(TEST_SCHEMA)).rejects.toThrow('schema failed validation');
+  });
+});
+
+describe('fetchApplicationJob', () => {
+  it('returns the job body on success', async () => {
+    const job: ApplicationJob = {
+      id: 'app-1',
+      createdAt: 'now',
+      status: 'running',
+      phase: 'generating',
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(job)));
+
+    await expect(fetchApplicationJob('app-1')).resolves.toEqual(job);
+  });
+
+  it('throws on an unknown job id (404)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse({ error: 'unknown application job: nope' }, 404)),
+    );
+
+    await expect(fetchApplicationJob('nope')).rejects.toThrow('unknown application job: nope');
+  });
+});
+
+describe('applicationJobDownloadUrl', () => {
+  it('builds the real download endpoint, URL-encoding the id', () => {
+    expect(applicationJobDownloadUrl('app 1/2')).toBe(
+      '/api/workflow/application-jobs/app%201%2F2/download',
+    );
+  });
+});
+
+describe('generateApplicationViaApi', () => {
+  it('polls pending -> running -> succeeded and resolves with the full terminal job, including phase transitions', async () => {
+    const running: ApplicationJob = {
+      id: 'app-1',
+      createdAt: 'now',
+      status: 'running',
+      phase: 'generating',
+    };
+    const installing: ApplicationJob = {
+      id: 'app-1',
+      createdAt: 'now',
+      status: 'running',
+      phase: 'installing',
+    };
+    const succeeded: ApplicationJob = {
+      id: 'app-1',
+      createdAt: 'now',
+      status: 'succeeded',
+      result: {
+        files: [{ path: 'package.json', bytes: 10 }],
+        regenerationLog: [],
+        unresolvedViolations: [],
+        build: { installOk: true, buildOk: true },
+      },
+    };
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ id: 'app-1', status: 'pending' }, 202))
+      .mockResolvedValueOnce(jsonResponse(running))
+      .mockResolvedValueOnce(jsonResponse(installing))
+      .mockResolvedValueOnce(jsonResponse(succeeded));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const seenPhases: (string | undefined)[] = [];
+    const job = await generateApplicationViaApi(TEST_SCHEMA, {
+      pollIntervalMs: 0,
+      onStatus: (j) => seenPhases.push(j.phase),
+    });
+
+    expect(job.status).toBe('succeeded');
+    expect(job.result?.build.buildOk).toBe(true);
+    expect(seenPhases).toEqual(['generating', 'installing', undefined]);
+  });
+
+  it('resolves with a failed terminal job carrying the real pipeline-error shape, rather than throwing', async () => {
+    const failed: ApplicationJob = {
+      id: 'app-2',
+      createdAt: 'now',
+      status: 'failed',
+      error: {
+        phase: 'generate-application',
+        reason: 'pipeline-error',
+        message: 'provider unavailable',
+      },
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse({ id: 'app-2', status: 'pending' }, 202))
+        .mockResolvedValueOnce(jsonResponse(failed)),
+    );
+
+    const job = await generateApplicationViaApi(TEST_SCHEMA, { pollIntervalMs: 0 });
+    expect(job.status).toBe('failed');
+    expect(job.error).toEqual({
+      phase: 'generate-application',
+      reason: 'pipeline-error',
+      message: 'provider unavailable',
+    });
+  });
+
+  it('resolves with a failed terminal job carrying the real component-generation-failure shape', async () => {
+    const failed: ApplicationJob = {
+      id: 'app-3',
+      createdAt: 'now',
+      status: 'failed',
+      error: {
+        phase: 'generate-application',
+        component: { id: 'c1', name: 'AuthMiddleware', purpose: 'x' },
+        domain: 'security',
+        failure: { reason: 'provider-error', message: 'daily quota exhausted' },
+      },
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse({ id: 'app-3', status: 'pending' }, 202))
+        .mockResolvedValueOnce(jsonResponse(failed)),
+    );
+
+    const job = await generateApplicationViaApi(TEST_SCHEMA, { pollIntervalMs: 0 });
+    expect(job.status).toBe('failed');
+    expect(job.error).toEqual(failed.error);
+  });
+
+  it('rejects with AbortError when the signal is aborted mid-poll', async () => {
+    const controller = new AbortController();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => {
+        controller.abort();
+        return Promise.resolve(jsonResponse({ id: 'app-3', status: 'pending' }, 202));
+      }),
+    );
+
+    await expect(
+      generateApplicationViaApi(TEST_SCHEMA, { signal: controller.signal, pollIntervalMs: 5 }),
+    ).rejects.toThrow(/cancelled/);
   });
 });

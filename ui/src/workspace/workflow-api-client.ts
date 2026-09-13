@@ -17,6 +17,8 @@
  * JSON API api.ts otherwise wraps.
  */
 import type { WorkflowJob, WorkflowJobStatus } from './workflow-job-types';
+import type { ApplicationJob, ApplicationJobStatus } from './application-job-types';
+import type { ProjectSchema } from './project-schema-types';
 
 async function readErrorMessage(response: Response, fallback: string): Promise<string> {
   const detail = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -84,6 +86,88 @@ export async function generateProjectSchemaViaApi(
     const job = await fetchWorkflowJob(submitted.id);
     options.onStatus?.(job.status);
     if (TERMINAL_STATUSES.has(job.status)) {
+      return job;
+    }
+
+    await delay(pollIntervalMs, options.signal);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Layer 3: schema -> real generated, assembled, verified application
+// (/api/workflow/application-jobs, src/server/generation-api.ts). Same
+// submit-and-poll shape as the schema-generation functions above, reused
+// rather than duplicated - only the resource path and payload differ.
+// ---------------------------------------------------------------------------
+
+export interface SubmittedApplicationJob {
+  readonly id: string;
+  readonly status: ApplicationJobStatus;
+}
+
+export async function submitApplicationJob(
+  schema: ProjectSchema,
+): Promise<SubmittedApplicationJob> {
+  const response = await fetch('/api/workflow/application-jobs', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ schema }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `submit failed: ${response.status}`));
+  }
+  return (await response.json()) as SubmittedApplicationJob;
+}
+
+export async function fetchApplicationJob(id: string): Promise<ApplicationJob> {
+  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(id)}`);
+  if (!response.ok) {
+    throw new Error(
+      await readErrorMessage(response, `fetch application job failed: ${response.status}`),
+    );
+  }
+  return (await response.json()) as ApplicationJob;
+}
+
+/** The real, downloadable zip URL for a succeeded job - an <a href> target, not fetched by this client itself. */
+export function applicationJobDownloadUrl(id: string): string {
+  return `/api/workflow/application-jobs/${encodeURIComponent(id)}/download`;
+}
+
+const APPLICATION_TERMINAL_STATUSES: ReadonlySet<ApplicationJobStatus> = new Set([
+  'succeeded',
+  'failed',
+]);
+
+export interface GenerateApplicationViaApiOptions {
+  readonly onStatus?: (job: ApplicationJob) => void;
+  readonly pollIntervalMs?: number;
+  readonly signal?: AbortSignal;
+}
+
+/**
+ * Submits a validated ProjectSchema and polls until the application job
+ * reaches a terminal state. Unlike `generateProjectSchemaViaApi`'s
+ * `onStatus`, this passes the whole job on each poll (not just the status
+ * string) - a real progress UI needs `job.phase` (which real step is
+ * running: generating / verifying / regenerating / reverifying / installing
+ * / building), not just pending-vs-running.
+ */
+export async function generateApplicationViaApi(
+  schema: ProjectSchema,
+  options: GenerateApplicationViaApiOptions = {},
+): Promise<ApplicationJob> {
+  const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+  const submitted = await submitApplicationJob(schema);
+
+  for (;;) {
+    if (options.signal?.aborted) {
+      throw new DOMException('application generation cancelled', 'AbortError');
+    }
+
+    const job = await fetchApplicationJob(submitted.id);
+    options.onStatus?.(job);
+    if (APPLICATION_TERMINAL_STATUSES.has(job.status)) {
       return job;
     }
 

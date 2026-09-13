@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { WorkflowGraph } from './WorkflowGraph';
-import { SMALL_PROJECT_SCHEMA, LARGE_PROJECT_SCHEMA } from './workflow-mocks';
+import { GenerateApplicationPanel } from './GenerateApplicationPanel';
+import { SMALL_PROJECT_SCHEMA, LARGE_PROJECT_SCHEMA, KNOWN_TENSION_SCHEMA } from './workflow-mocks';
 import { generateProjectSchemaViaApi } from './workflow-api-client';
 import type { WorkflowJob, WorkflowJobResult, WorkflowJobStatus } from './workflow-job-types';
 
-type Scenario = 'small' | 'large';
+type Scenario = 'small' | 'large' | 'tension';
 type Mode = 'mock' | 'live';
 
 /**
@@ -26,7 +27,12 @@ type Mode = 'mock' | 'live';
 export function WorkflowDemo(): JSX.Element {
   const [mode, setMode] = useState<Mode>('mock');
   const [scenario, setScenario] = useState<Scenario>('small');
-  const mockSchema = scenario === 'small' ? SMALL_PROJECT_SCHEMA : LARGE_PROJECT_SCHEMA;
+  const mockSchema =
+    scenario === 'small'
+      ? SMALL_PROJECT_SCHEMA
+      : scenario === 'large'
+        ? LARGE_PROJECT_SCHEMA
+        : KNOWN_TENSION_SCHEMA;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -69,6 +75,14 @@ export function WorkflowDemo(): JSX.Element {
               >
                 Large project (350-component scale test)
               </button>
+              <button
+                type="button"
+                onClick={() => setScenario('tension')}
+                data-active={scenario === 'tension'}
+                className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 data-[active=true]:border-slate-400 data-[active=true]:bg-slate-800 data-[active=true]:text-slate-100"
+              >
+                Known-tension fixture (Milestone 1)
+              </button>
             </div>
             <span className="rounded border border-amber-700/50 bg-amber-950/20 px-2 py-1 text-[11px] text-amber-300">
               Hand-built ProjectSchema mock (src/types/project-schema.ts) — no orchestrator run
@@ -78,8 +92,17 @@ export function WorkflowDemo(): JSX.Element {
         )}
       </div>
 
-      <div className="min-h-0 flex-1">
-        {mode === 'mock' ? <WorkflowGraph key={scenario} schema={mockSchema} /> : <LiveWorkflow />}
+      <div className="flex min-h-0 flex-1 flex-col">
+        {mode === 'mock' ? (
+          <>
+            <div className="min-h-0 flex-1">
+              <WorkflowGraph key={scenario} schema={mockSchema} />
+            </div>
+            <GenerateApplicationPanel key={mockSchema.sessionId} schema={mockSchema} />
+          </>
+        ) : (
+          <LiveWorkflow />
+        )}
       </div>
     </div>
   );
@@ -191,11 +214,19 @@ function LiveWorkflow(): JSX.Element {
         )}
 
         {state.kind === 'succeeded' && (
-          <WorkflowGraph
-            key={state.result.schema.sessionId}
-            schema={state.result.schema}
-            prohibitions={state.result.prohibitions}
-          />
+          <div className="flex h-full min-h-0 flex-col">
+            <div className="min-h-0 flex-1">
+              <WorkflowGraph
+                key={state.result.schema.sessionId}
+                schema={state.result.schema}
+                prohibitions={state.result.prohibitions}
+              />
+            </div>
+            <GenerateApplicationPanel
+              key={state.result.schema.sessionId}
+              schema={state.result.schema}
+            />
+          </div>
         )}
       </div>
     </div>

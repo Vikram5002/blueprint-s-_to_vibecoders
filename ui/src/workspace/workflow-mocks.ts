@@ -31,6 +31,25 @@ function domainRole(name: string): ResolvedSubject {
   };
 }
 
+/**
+ * A real, resolvable directory path - not a domain name - matching how
+ * src/blueprint/dsl.ts's `compileBlueprint` actually resolves a path-shaped
+ * phrase (`resolveSubject`'s `looksLikePath` branch), used by
+ * KNOWN_TENSION_SCHEMA below since that fixture is meant to be handed
+ * straight to Layer 3's real generation+verification loop, which resolves
+ * constraints against real generated file paths, not domain labels.
+ */
+function pathRole(pattern: string): ResolvedSubject {
+  return {
+    phrase: pattern,
+    status: 'PATH_PATTERN',
+    target: `${pattern}/**`,
+    reason: null,
+    similarity: 1,
+    alternatives: [],
+  };
+}
+
 let constraintCounter = 0;
 function domainConstraint(
   relation: Constraint['relation'],
@@ -44,6 +63,28 @@ function domainConstraint(
     relation,
     subject: domainRole(subjectDomain),
     object: domainRole(objectDomain),
+    via: null,
+    source: { type: 'user-authored', location: 'project prompt', line: null, timestamp: null },
+    confidence: 1,
+    lowConfidence: false,
+    rawText,
+    provenance: 'STATED',
+  };
+}
+
+/** Same as domainConstraint, but subject/object are real directory paths - see KNOWN_TENSION_SCHEMA. */
+function pathConstraint(
+  relation: Constraint['relation'],
+  subjectPath: string,
+  objectPath: string,
+  rawText: string,
+): Constraint {
+  constraintCounter += 1;
+  return {
+    id: `mock-project-constraint-${constraintCounter}`,
+    relation,
+    subject: pathRole(subjectPath),
+    object: pathRole(objectPath),
     via: null,
     source: { type: 'user-authored', location: 'project prompt', line: null, timestamp: null },
     confidence: 1,
@@ -140,5 +181,68 @@ export const LARGE_PROJECT_SCHEMA: ProjectSchema = {
     security: { components: [], dependsOn: [] },
   },
   constraints: [],
+  provenance: 'STATED',
+};
+
+// --- Scenario 3: a known-tension fixture, reused from Milestone 1 ---------
+//
+// The exact schema src/generate/generate-project.ts's buildMilestone1Schema
+// builds (component names, purposes, and the one constraint, copied
+// verbatim - hand-duplicated for the same rule-4 reason every other mirror
+// in this directory is). AuthMiddleware's purpose requires calling a
+// function defined in backend/src/routes/user-router, which the constraint
+// explicitly forbids importing - a real, unforced tension a live Milestone
+// 1 run already proved triggers a genuine Blueprint violation, kept here so
+// the "Generate Application" action has a deterministic fixture to
+// demonstrate the auto-regeneration retry (and, if the model still
+// violates after correcting, the hard-fail review-item path) without
+// depending on Layer 2 happening to reproduce the same tension from a raw
+// prompt.
+
+export const KNOWN_TENSION_SCHEMA: ProjectSchema = {
+  sessionId: 'mock-session-3-known-tension',
+  title: 'Task tracker with auth',
+  originalPrompt:
+    'A small task tracker: users can sign up, and only requests from a real, existing user may reach the task endpoints.',
+  domains: {
+    frontend: { components: [], dependsOn: [] },
+    backend: {
+      components: [
+        component(
+          'UserRouter',
+          'Exposes REST endpoints for creating a user account (POST /) and fetching one by id (GET /:id), ' +
+            'storing accounts in a plain in-memory array. Also exports a findUserById(id) helper function that ' +
+            'looks a user up in that same in-memory array, for other backend code to reuse.',
+        ),
+        component(
+          'TaskRouter',
+          'Exposes REST endpoints for creating a task (POST /), listing all tasks (GET /), and marking one ' +
+            'complete (PATCH /:id/complete), storing tasks in a plain in-memory array.',
+        ),
+      ],
+      dependsOn: [],
+    },
+    database: { components: [], dependsOn: [] },
+    security: {
+      components: [
+        component(
+          'AuthMiddleware',
+          'Reads a userId from the x-user-id request header on every request. Verifies the requester is a real ' +
+            "user by calling the UserRouter's findUserById(userId) helper directly and checking it returns a user " +
+            '(import findUserById from the routes/user-router file for this). If no such user exists, responds ' +
+            '401 and stops the request; otherwise calls next().',
+        ),
+      ],
+      dependsOn: [],
+    },
+  },
+  constraints: [
+    pathConstraint(
+      'must-not-import',
+      'backend/src/middleware',
+      'backend/src/routes',
+      'backend/src/middleware must not import backend/src/routes',
+    ),
+  ],
   provenance: 'STATED',
 };
