@@ -75,6 +75,16 @@ export interface ComponentGenerationContext {
    * names, since there is no domain-named module for a component to import.
    */
   readonly allowedImportPaths: readonly string[];
+  /**
+   * Real backend HTTP routes this component may call over the network - not
+   * a file to import. Frontend components never receive `allowedImportPaths`
+   * across the frontend/backend boundary (a browser bundle cannot import an
+   * Express Router object), so this is how a frontend component is told the
+   * REAL, already-generated route to call instead of guessing one. Empty
+   * for every non-frontend domain in Milestone 2, and empty for a frontend
+   * component whose schema declares no backend dependency.
+   */
+  readonly httpEndpoints?: readonly string[];
   /** npm packages already in the generated package.json, available to import. */
   readonly availablePackages: readonly string[];
   /** One line of guidance on the required export shape, e.g. "export default an Express Router". */
@@ -183,6 +193,12 @@ function buildUserPrompt(context: ComponentGenerationContext): string {
       ? `Allowed local imports: ${context.allowedImportPaths.join(', ')}`
       : 'Allowed local imports: none - this file must have no local (relative) imports',
   ];
+
+  if (context.httpEndpoints !== undefined && context.httpEndpoints.length > 0) {
+    lines.push(
+      `Real backend HTTP endpoints you may call over the network (fetch by URL, never import as a file): ${context.httpEndpoints.join(', ')}`,
+    );
+  }
 
   if (context.relevantConstraints.length > 0) {
     lines.push('Architectural constraints already declared for this project (do not violate these):');

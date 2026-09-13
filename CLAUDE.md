@@ -37,7 +37,7 @@ a supported language after both reference corpora were collected.
 See `docs/PHASE-1-SPEC.md` for the full tracker, week by week.
 See `docs/ARCHITECTURE.md` for the data model and full pipeline.
 Per-stage detail: `CLUSTERING.md`, `LABELLING.md`, `CORRECTIONS.md`, `PROVIDERS.md`,
-`INTENT.md`, `VIOLATIONS.md`, `DRIFT.md`, `MCP.md`, `BLUEPRINT.md`.
+`INTENT.md`, `VIOLATIONS.md`, `DRIFT.md`, `MCP.md`, `BLUEPRINT.md`, `GENERATION.md`.
 See `docs/PAPER-OUTLINE.md` for the section structure, which numbers are citable
 as-is, and what remains unmeasured.
 See `docs/FINDINGS.md` for the consolidated, numbered evidence index — the
