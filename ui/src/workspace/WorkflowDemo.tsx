@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { WorkflowGraph } from './WorkflowGraph';
 import { GenerateApplicationPanel } from './GenerateApplicationPanel';
-import { SMALL_PROJECT_SCHEMA, LARGE_PROJECT_SCHEMA, KNOWN_TENSION_SCHEMA, SCALE_TEST_SCHEMA } from './workflow-mocks';
+import {
+  SMALL_PROJECT_SCHEMA,
+  LARGE_PROJECT_SCHEMA,
+  KNOWN_TENSION_SCHEMA,
+  SCALE_TEST_SCHEMA,
+} from './workflow-mocks';
 import { generateProjectSchemaViaApi } from './workflow-api-client';
 import type { WorkflowJob, WorkflowJobResult, WorkflowJobStatus } from './workflow-job-types';
 

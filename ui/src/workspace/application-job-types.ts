@@ -14,7 +14,7 @@
  * documents for itself.
  */
 
-import type { Violation } from './verification-types';
+import type { Constraint, Violation } from './verification-types';
 import type { Component, DomainName } from './project-schema-types';
 
 export type ApplicationJobStatus = 'pending' | 'running' | 'succeeded' | 'failed';
@@ -41,6 +41,8 @@ export interface RegenerationAttempt {
   readonly domain: DomainName;
   readonly targetPath: string;
   readonly firstAttemptViolation: PriorViolationContext;
+  /** Which check triggered this retry - a real Blueprint violation, or Item 3's narrower service-locator-evasion check. */
+  readonly origin: 'blueprint-violation' | 'service-locator-evasion';
   readonly outcome: 'fixed' | 'still-violating';
 }
 
@@ -50,10 +52,27 @@ export interface BuildOutcome {
   readonly failureOutput?: string;
 }
 
+/**
+ * Item 3: a suspected auth-bypass-style finding - a real, forbidden export
+ * referenced through a runtime locator call (e.g. `app.get('findUserById')`)
+ * instead of a static import. Never a real Blueprint `Violation` - see
+ * src/generate/detect-service-locator-evasion.ts's own header for why this
+ * is deliberately a separate, narrower, Layer-3-only signal.
+ */
+export interface SuspectedServiceLocatorEvasion {
+  readonly file: string;
+  readonly line: number;
+  readonly snippet: string;
+  readonly lookupKey: string;
+  readonly matchedExportFile: string;
+  readonly constraint: Constraint;
+}
+
 export interface ApplicationJobResult {
   readonly files: readonly FileSummary[];
   readonly regenerationLog: readonly RegenerationAttempt[];
   readonly unresolvedViolations: readonly Violation[];
+  readonly unresolvedServiceLocatorFindings: readonly SuspectedServiceLocatorEvasion[];
   readonly build: BuildOutcome;
 }
 

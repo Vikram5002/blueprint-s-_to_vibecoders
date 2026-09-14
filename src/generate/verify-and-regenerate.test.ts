@@ -330,4 +330,114 @@ describe('generateAndVerifyProject', () => {
     expect(authFile?.contents).toBe(`${COMPLIANT_MIDDLEWARE}\n`);
     expect(loggingFile?.contents).toBe(`${LOGGING_MIDDLEWARE_COMPLIANT}\n`);
   });
+
+  describe('Item 3: suspected service-locator evasion', () => {
+    const LOCATOR_EVASION_MIDDLEWARE = [
+      'export default function authMiddleware(req, res, next) {',
+      "  const findUserById = req.app.get('findUserById');",
+      "  if (typeof findUserById === 'function' && findUserById(req.headers['x-user-id'])) {",
+      '    next();',
+      '    return;',
+      '  }',
+      '  res.status(401).json({ error: "unauthorized" });',
+      '}',
+    ].join('\n');
+
+    it('retries a component that creates no import violation but exhibits the auth-bypass pattern on its FIRST attempt', async () => {
+      const schema = buildRetryTestSchema();
+      const provider = providerFrom((request) => {
+        if (request.user.includes('Domain: backend')) return ROUTER_CODE;
+        // No import at all on the first attempt (Blueprint sees nothing
+        // wrong), but the runtime locator call is the exact pattern to catch.
+        return request.user.includes('CORRECTION REQUIRED') ? COMPLIANT_MIDDLEWARE : LOCATOR_EVASION_MIDDLEWARE;
+      });
+
+      const result = await generateAndVerifyProject(schema, { provider, cache: memoryCache(), root });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      // Blueprint itself found nothing - no static import edge exists.
+      expect(result.value.unresolvedViolations).toEqual([]);
+      // But the service-locator check caught it and triggered exactly one retry.
+      expect(result.value.regenerationLog).toHaveLength(1);
+      const attempt = result.value.regenerationLog[0];
+      expect(attempt?.origin).toBe('service-locator-evasion');
+      expect(attempt?.outcome).toBe('fixed');
+      expect(attempt?.firstAttemptViolation.ruleText).toBe(
+        'backend/src/middleware must not import backend/src/routes',
+      );
+      expect(attempt?.firstAttemptViolation.evidence[0]?.snippet).toContain("req.app.get('findUserById')");
+      expect(result.value.unresolvedServiceLocatorFindings).toEqual([]);
+    });
+
+    it('hard-fails as a review item, separate from unresolvedViolations, when the retry keeps the locator workaround', async () => {
+      const schema = buildRetryTestSchema();
+      const provider = providerFrom((request) => {
+        if (request.user.includes('Domain: backend')) return ROUTER_CODE;
+        // Never removes the locator call, even after correction.
+        return LOCATOR_EVASION_MIDDLEWARE;
+      });
+
+      const result = await generateAndVerifyProject(schema, { provider, cache: memoryCache(), root });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      expect(result.value.unresolvedViolations).toEqual([]);
+      expect(result.value.regenerationLog).toHaveLength(1);
+      expect(result.value.regenerationLog[0]?.origin).toBe('service-locator-evasion');
+      expect(result.value.regenerationLog[0]?.outcome).toBe('still-violating');
+
+      expect(result.value.unresolvedServiceLocatorFindings).toHaveLength(1);
+      expect(result.value.unresolvedServiceLocatorFindings[0]?.lookupKey).toBe('findUserById');
+      expect(result.value.unresolvedServiceLocatorFindings[0]?.matchedExportFile).toBe(
+        'backend/src/routes/user-router.ts',
+      );
+
+      // Never two retries.
+      const securityCalls = provider.calls.filter((c) => c.user.includes('Domain: security'));
+      expect(securityCalls).toHaveLength(2);
+    });
+
+    it(
+      'catches the real regression this check exists for: a Blueprint-violation retry that "fixes" the ' +
+        'import but swaps in the exact service-locator evasion (docs/GENERATION.md\'s own live finding)',
+      async () => {
+        const schema = buildRetryTestSchema();
+        const provider = providerFrom((request) => {
+          if (request.user.includes('Domain: backend')) return ROUTER_CODE;
+          // First attempt: a real, static import violation (Blueprint-origin
+          // retry fires). "Corrected" attempt: no import edge, but the exact
+          // real-world workaround from the live Milestone 3 finding.
+          return request.user.includes('CORRECTION REQUIRED') ? LOCATOR_EVASION_MIDDLEWARE : VIOLATING_MIDDLEWARE;
+        });
+
+        const result = await generateAndVerifyProject(schema, { provider, cache: memoryCache(), root });
+
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+
+        // Blueprint's own second check reports this file clean - no import
+        // edge exists in the "corrected" version. Without Item 3, this would
+        // have been reported 'fixed'.
+        expect(result.value.unresolvedViolations).toEqual([]);
+
+        expect(result.value.regenerationLog).toHaveLength(1);
+        const attempt = result.value.regenerationLog[0];
+        // The retry that fired was Blueprint-triggered (a real import existed
+        // on the first attempt) - origin reflects what actually triggered it.
+        expect(attempt?.origin).toBe('blueprint-violation');
+        // But the outcome is correctly 'still-violating', not 'fixed', because
+        // the service-locator check catches what Blueprint's second pass
+        // cannot see.
+        expect(attempt?.outcome).toBe('still-violating');
+
+        expect(result.value.unresolvedServiceLocatorFindings).toHaveLength(1);
+        expect(result.value.unresolvedServiceLocatorFindings[0]?.file).toBe(
+          'backend/src/middleware/auth-middleware.ts',
+        );
+      },
+    );
+  });
 });

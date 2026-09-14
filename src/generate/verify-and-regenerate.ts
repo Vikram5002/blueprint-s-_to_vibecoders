@@ -36,13 +36,26 @@ import {
   type GenerateProjectFailure,
 } from './generate-project.js';
 import type { GeneratedFile } from './assemble.js';
+import {
+  detectServiceLocatorEvasion,
+  type SuspectedServiceLocatorEvasion,
+} from './detect-service-locator-evasion.js';
 
 export interface RegenerationAttempt {
   readonly component: Component;
   readonly domain: DomainName;
   readonly targetPath: string;
-  /** The real violation the first attempt produced - never paraphrased. */
+  /** The real violation (or suspected evasion) the first attempt produced - never paraphrased. */
   readonly firstAttemptViolation: PriorViolationContext;
+  /**
+   * What triggered this retry - a real Blueprint import-graph `Violation`,
+   * or Item 3's narrower `SuspectedServiceLocatorEvasion` check (see
+   * detect-service-locator-evasion.ts). Reported explicitly rather than
+   * folded together: the two are different kinds of finding with different
+   * confidence, and the audit log this project has never simplified for the
+   * UI (docs/GENERATION.md, Task 1.4) should say honestly which one fired.
+   */
+  readonly origin: 'blueprint-violation' | 'service-locator-evasion';
   /** 'fixed': the same file/constraint pair no longer appears in the re-run. 'still-violating': hard-failed, kept as the last attempt's content. */
   readonly outcome: 'fixed' | 'still-violating';
 }
@@ -59,6 +72,17 @@ export interface GenerateAndVerifyResult {
    * several files), which is never eligible for this loop's kind of retry.
    */
   readonly unresolvedViolations: readonly Violation[];
+  /**
+   * Item 3: suspected auth-bypass-style findings (a real, forbidden export
+   * referenced through a runtime locator call instead of a static import)
+   * still present after every eligible retry ran. Deliberately a SEPARATE
+   * list from `unresolvedViolations`, never merged - these are not real
+   * Blueprint violations (no forbidden import edge exists), only a strong,
+   * narrow signal that one might be evaded. See
+   * detect-service-locator-evasion.ts's own header for why this is a
+   * Layer-3-only check, never a Blueprint feature.
+   */
+  readonly unresolvedServiceLocatorFindings: readonly SuspectedServiceLocatorEvasion[];
 }
 
 export type GenerateAndVerifyFailure =
@@ -154,6 +178,27 @@ function toPriorViolationContext(violation: Violation, edges: readonly Violating
 }
 
 /**
+ * Turns one suspected service-locator evasion finding into the same
+ * corrective-context shape Blueprint violations already use - the whole
+ * point of reusing `PriorViolationContext` rather than inventing a second
+ * corrective-context format, per Item 3's approved design. `ruleText` is
+ * still the real constraint's `rawText`: the rule this finding suspects is
+ * being evaded is a real, stated one, even though no import edge exists to
+ * prove the evasion structurally.
+ */
+function toServiceLocatorPriorContext(finding: SuspectedServiceLocatorEvasion): PriorViolationContext {
+  return {
+    ruleText: finding.constraint.rawText,
+    explanation:
+      `This file creates no forbidden import edge, but its own code looks up '${finding.lookupKey}' via a ` +
+      `runtime locator call (e.g. app.get('${finding.lookupKey}')), and '${finding.lookupKey}' is a real, ` +
+      `named export of ${finding.matchedExportFile} - a file this rule forbids importing from. This looks like ` +
+      'the forbidden dependency was kept alive through a runtime workaround instead of actually being removed.',
+    evidence: [{ file: finding.file, line: finding.line, snippet: finding.snippet }],
+  };
+}
+
+/**
  * Groups every violation's edges by the file that actually contains the
  * offending import - the real per-component attribution this loop needs.
  * Grouping by file rather than by whole Violation is what makes multiple
@@ -223,41 +268,103 @@ export async function generateAndVerifyProject(
   const firstCheck = await verify(options.root, blueprintFile);
   if (!firstCheck.ok) return err(firstCheck.error);
 
-  if (firstCheck.value.length === 0) {
-    return ok({ files: generated.value.files, regenerationLog: [], unresolvedViolations: [] });
+  // Item 3's check runs on the SAME first-attempt output, independent of
+  // whether Blueprint found anything - a component can pass Blueprint
+  // cleanly and still exhibit a suspected evasion (that is the entire
+  // limitation this check exists to narrow), so this must never be
+  // skipped just because firstCheck.value is empty.
+  const firstLocatorFindings = detectServiceLocatorEvasion(generated.value.files, schema.constraints);
+
+  if (firstCheck.value.length === 0 && firstLocatorFindings.length === 0) {
+    return ok({
+      files: generated.value.files,
+      regenerationLog: [],
+      unresolvedViolations: [],
+      unresolvedServiceLocatorFindings: [],
+    });
   }
 
   // One retry candidate per offending FILE, not per Violation object - see
   // groupEdgesByFile's own docstring for why those are not the same thing.
   const { byFile, unattributable: firstPassUnattributable } = groupEdgesByFile(firstCheck.value);
 
+  // A locator finding is one entry per file (first one wins) - a component
+  // gets at most one retry regardless of how many suspicious calls it
+  // contains, same "one retry per component, ever" invariant Blueprint
+  // violations already follow.
+  const locatorFindingsByFile = new Map<string, SuspectedServiceLocatorEvasion>();
+  for (const finding of firstLocatorFindings) {
+    if (!locatorFindingsByFile.has(finding.file)) locatorFindingsByFile.set(finding.file, finding);
+  }
+
+  // Merge both signals into one retry candidate set, keyed by file. A file
+  // with BOTH a real Blueprint violation and a suspected locator evasion in
+  // the same pass gets exactly one retry (never two), and the real
+  // Blueprint violation takes precedence as corrective context - it is the
+  // stronger, structurally-proven signal of the two.
+  const retryCandidates = new Map<
+    string,
+    { readonly origin: 'blueprint-violation' | 'service-locator-evasion'; readonly priorContext: PriorViolationContext }
+  >();
+  for (const [targetPath, { violation, edges }] of byFile) {
+    retryCandidates.set(targetPath, { origin: 'blueprint-violation', priorContext: toPriorViolationContext(violation, edges) });
+  }
+  for (const [targetPath, finding] of locatorFindingsByFile) {
+    if (!retryCandidates.has(targetPath)) {
+      retryCandidates.set(targetPath, { origin: 'service-locator-evasion', priorContext: toServiceLocatorPriorContext(finding) });
+    }
+  }
+
   options.onPhase?.('regenerating');
   const generator = createComponentCodeGenerator(options);
   let files = generated.value.files;
-  const attempts: { readonly component: Component; readonly domain: DomainName; readonly targetPath: string; readonly firstAttemptViolation: PriorViolationContext }[] = [];
+  const attempts: {
+    readonly component: Component;
+    readonly domain: DomainName;
+    readonly targetPath: string;
+    readonly firstAttemptViolation: PriorViolationContext;
+    readonly origin: 'blueprint-violation' | 'service-locator-evasion';
+  }[] = [];
   const unattributable: Violation[] = [...firstPassUnattributable];
+  const unattributedLocatorFindings: SuspectedServiceLocatorEvasion[] = [];
 
-  for (const [targetPath, { violation, edges }] of byFile) {
+  for (const [targetPath, candidate] of retryCandidates) {
     const owner = findComponentByTargetPath(schema, targetPath);
     if (owner === null) {
-      // The violating file is not a component this loop can regenerate (a
+      // The offending file is not a component this loop can regenerate (a
       // templated entry point, for instance) - report it as unresolved
       // rather than guess at what to change.
-      unattributable.push(violation);
+      if (candidate.origin === 'blueprint-violation') {
+        const entry = byFile.get(targetPath);
+        if (entry !== undefined) unattributable.push(entry.violation);
+      } else {
+        const finding = locatorFindingsByFile.get(targetPath);
+        if (finding !== undefined) unattributedLocatorFindings.push(finding);
+      }
       continue;
     }
 
-    const firstAttemptViolation = toPriorViolationContext(violation, edges);
-    const regenerated = await generateComponentFile(generator, schema, owner.component, owner.domain, firstAttemptViolation, files);
+    const regenerated = await generateComponentFile(generator, schema, owner.component, owner.domain, candidate.priorContext, files);
     if (!regenerated.ok) return err(regenerated.error);
 
     files = files.map((f) => (f.path === targetPath ? regenerated.value : f));
-    attempts.push({ component: owner.component, domain: owner.domain, targetPath, firstAttemptViolation });
+    attempts.push({
+      component: owner.component,
+      domain: owner.domain,
+      targetPath,
+      firstAttemptViolation: candidate.priorContext,
+      origin: candidate.origin,
+    });
   }
 
   if (attempts.length === 0) {
-    // Every violation was unattributable - nothing to retry.
-    return ok({ files, regenerationLog: [], unresolvedViolations: unattributable });
+    // Every finding was unattributable - nothing to retry.
+    return ok({
+      files,
+      regenerationLog: [],
+      unresolvedViolations: unattributable,
+      unresolvedServiceLocatorFindings: unattributedLocatorFindings,
+    });
   }
 
   await writeProjectFiles(options.root, files, false);
@@ -265,11 +372,20 @@ export async function generateAndVerifyProject(
   const secondCheck = await verify(options.root, blueprintFile);
   if (!secondCheck.ok) return err(secondCheck.error);
 
+  // Re-scanned on the POST-retry files: this is what catches a retry that
+  // "fixed" a Blueprint violation by introducing exactly the kind of
+  // runtime workaround this check exists to catch (see
+  // docs/GENERATION.md's own real example of this happening) - such a
+  // component must be reported 'still-violating', not 'fixed', even though
+  // Blueprint's own second check reports it clean.
+  const secondLocatorFindings = detectServiceLocatorEvasion(files, schema.constraints);
+
   const stillViolatingFiles = filesStillViolating(secondCheck.value);
+  const stillEvadingFiles = new Set(secondLocatorFindings.map((finding) => finding.file));
 
   const regenerationLog: RegenerationAttempt[] = attempts.map((attempt) => ({
     ...attempt,
-    outcome: stillViolatingFiles.has(attempt.targetPath) ? 'still-violating' : 'fixed',
+    outcome: stillViolatingFiles.has(attempt.targetPath) || stillEvadingFiles.has(attempt.targetPath) ? 'still-violating' : 'fixed',
   }));
 
   const attemptedPaths = new Set(attempts.map((attempt) => attempt.targetPath));
@@ -284,6 +400,10 @@ export async function generateAndVerifyProject(
       violation.kind !== 'cycle' && violation.edges.some((edge) => attemptedPaths.has(edge.fromFile)),
     ),
   ];
+  const unresolvedServiceLocatorFindings = [
+    ...unattributedLocatorFindings,
+    ...secondLocatorFindings.filter((finding) => attemptedPaths.has(finding.file)),
+  ];
 
-  return ok({ files, regenerationLog, unresolvedViolations });
+  return ok({ files, regenerationLog, unresolvedViolations, unresolvedServiceLocatorFindings });
 }

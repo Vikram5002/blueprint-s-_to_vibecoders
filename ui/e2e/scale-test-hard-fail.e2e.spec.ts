@@ -134,7 +134,6 @@ test.describe('real "Generate Application" flow against the scale-test fixture -
     const fixedCount = await page.getByText('FIXED on retry').count();
     const stillViolatingCount = await page.getByText('STILL VIOLATING — review item').count();
     const outcome = stillViolatingCount > 0 ? 'still-violating' : fixedCount > 0 ? 'fixed' : 'unknown';
-    // eslint-disable-next-line no-console
     console.log(
       `[scale-test hard-fail e2e] real retry outcome observed in the browser: ${outcome} ` +
         `(${fixedCount} fixed, ${stillViolatingCount} still-violating)`,

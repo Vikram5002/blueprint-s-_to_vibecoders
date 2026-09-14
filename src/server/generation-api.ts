@@ -35,6 +35,7 @@ import type { CompletionProvider } from '../llm/provider.js';
 import type { LabelCache } from '../llm/cache.js';
 import type { GeneratedFile } from '../generate/assemble.js';
 import type { Violation } from '../types/violations.js';
+import type { SuspectedServiceLocatorEvasion } from '../generate/detect-service-locator-evasion.js';
 
 export type ApplicationJobStatus = 'pending' | 'running' | 'succeeded' | 'failed';
 
@@ -62,6 +63,13 @@ export interface ApplicationJobResult {
    * list honestly, not to fold it into a pass/fail boolean.
    */
   readonly unresolvedViolations: readonly Violation[];
+  /**
+   * Item 3: real, unresolved suspected auth-bypass-style findings - see
+   * `GenerateAndVerifyResult`'s field of the same name in
+   * verify-and-regenerate.ts for why this is never merged into
+   * `unresolvedViolations`.
+   */
+  readonly unresolvedServiceLocatorFindings: readonly SuspectedServiceLocatorEvasion[];
   readonly build: BuildOutcome;
 }
 
@@ -279,6 +287,7 @@ async function runApplicationJob(
       files,
       regenerationLog: generated.value.regenerationLog,
       unresolvedViolations: generated.value.unresolvedViolations,
+      unresolvedServiceLocatorFindings: generated.value.unresolvedServiceLocatorFindings,
       build: buildOutcome,
     },
   });

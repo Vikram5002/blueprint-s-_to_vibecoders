@@ -140,6 +140,7 @@ function ApplicationJobReport({ job }: { readonly job: ApplicationJob }): JSX.El
   }
 
   const hasUnresolved = result.unresolvedViolations.length > 0;
+  const hasUnresolvedLocatorFindings = result.unresolvedServiceLocatorFindings.length > 0;
 
   return (
     <div className="mt-3 space-y-3 text-sm">
@@ -158,6 +159,11 @@ function ApplicationJobReport({ job }: { readonly job: ApplicationJob }): JSX.El
           ok={!hasUnresolved}
           okLabel="Blueprint: all constraints satisfied"
           failLabel={`Blueprint: ${result.unresolvedViolations.length} unresolved violation(s)`}
+        />
+        <Badge
+          ok={!hasUnresolvedLocatorFindings}
+          okLabel="No suspected auth-bypass patterns"
+          failLabel={`${result.unresolvedServiceLocatorFindings.length} suspected auth-bypass finding(s)`}
         />
         <a
           href={applicationJobDownloadUrl(job.id)}
@@ -201,6 +207,11 @@ function ApplicationJobReport({ job }: { readonly job: ApplicationJob }): JSX.El
                     {attempt.outcome === 'fixed'
                       ? 'FIXED on retry'
                       : 'STILL VIOLATING — review item'}
+                  </span>
+                  <span className="rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-[11px] text-slate-400">
+                    {attempt.origin === 'blueprint-violation'
+                      ? 'Blueprint violation'
+                      : 'suspected auth-bypass pattern'}
                   </span>
                   <span className="font-medium text-slate-200">
                     {attempt.component.name} ({attempt.domain})
@@ -250,6 +261,41 @@ function ApplicationJobReport({ job }: { readonly job: ApplicationJob }): JSX.El
                       {e.file}:{e.line}: {e.snippet}
                     </div>
                   ))}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {hasUnresolvedLocatorFindings && (
+        <div className="rounded-lg border border-amber-700/50 bg-amber-950/20 p-2">
+          <div className="mb-2 text-xs font-semibold text-amber-300">
+            Suspected auth-bypass patterns — {result.unresolvedServiceLocatorFindings.length} review
+            item(s), NOT a Blueprint violation
+          </div>
+          <p className="mb-2 text-xs text-amber-400">
+            No forbidden import edge exists here — Blueprint reports these files clean. This is a
+            narrower, separate signal: a real, forbidden export was found referenced through a
+            runtime lookup instead of a static import, which is exactly the auth-bypass pattern
+            documented in docs/GENERATION.md. Always reviewed by hand, never auto-fixable with
+            certainty.
+          </p>
+          <ul className="space-y-2">
+            {result.unresolvedServiceLocatorFindings.map((finding, index) => (
+              <li
+                key={`${finding.file}-${index}`}
+                className="rounded border border-amber-900 bg-black/20 p-2"
+              >
+                <div className="text-xs font-medium text-amber-200">
+                  Rule possibly evaded: {finding.constraint.rawText}
+                </div>
+                <div className="text-xs text-amber-300">
+                  Looked up &apos;{finding.lookupKey}&apos;, a real export of{' '}
+                  {finding.matchedExportFile}
+                </div>
+                <div className="mt-1 rounded bg-black/30 px-2 py-1 font-mono text-[11px] text-amber-200">
+                  {finding.file}:{finding.line}: {finding.snippet}
+                </div>
               </li>
             ))}
           </ul>

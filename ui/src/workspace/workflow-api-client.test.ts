@@ -259,6 +259,7 @@ describe('generateApplicationViaApi', () => {
         files: [{ path: 'package.json', bytes: 10 }],
         regenerationLog: [],
         unresolvedViolations: [],
+        unresolvedServiceLocatorFindings: [],
         build: { installOk: true, buildOk: true },
       },
     };

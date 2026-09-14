@@ -307,6 +307,58 @@ conformance engine — proposed here, not implemented:**
   a user's real repository, where Blueprint's core engine already
   correctly stays silent on this.
 
+**Implemented, 2026-09-14, exactly as proposed above.**
+`src/generate/detect-service-locator-evasion.ts` scans every generated
+file against every `must-not-import` constraint whose subject and object
+both resolved to a real `PATH_PATTERN`, looking for a `<anything>.get('name')`
+/ `<anything>.set('name'` call whose string argument exactly matches a
+real, `extractNamedExports`-derived export of some file the constraint
+forbids the subject file from importing. Produces its own type,
+`SuspectedServiceLocatorEvasion` — never a `Violation`, never folded into
+one, on the wire (`ApplicationJobResult`) or in the UI (its own badge and
+its own "Suspected auth-bypass patterns" section, visually and
+structurally distinct from Blueprint's violation list).
+
+**Decision: a caught finding triggers the SAME one-retry-then-hard-fail
+treatment as a Blueprint violation, tracked with an explicit `origin`
+field so the audit log never hides which check actually fired.** Reasoning:
+this check exists because the underlying risk — a forbidden dependency kept
+alive at runtime — is exactly as serious as a real import violation, just
+harder to prove structurally; treating it as a lesser "warning" most
+components would learn to ignore undersells the actual risk this whole
+section documents (a silently no-op auth check). `verify-and-regenerate.ts`
+now runs `detectServiceLocatorEvasion` on the SAME first-attempt output
+Blueprint checks (not only when Blueprint finds nothing - a component can
+pass Blueprint cleanly and still exhibit this pattern, which is the entire
+point), merges any finding into the same one-retry-per-file candidate set a
+real violation would use (a file with both signals in the same pass gets
+one retry, with the real Blueprint violation as the stronger, structurally-
+proven corrective context), and re-scans the POST-retry output for
+persisting or newly-introduced findings. Critically, this re-scan is what
+catches the exact regression this check exists for: a retry that "fixes" a
+real Blueprint violation by swapping in a service-locator workaround is
+now correctly reported `still-violating`, never `fixed`, even though
+Blueprint's own second pass reports the file clean.
+
+**Regression tests, both directions:** `detect-service-locator-evasion.test.ts`
+reproduces the EXACT `req.app.get('findUserById')` code quoted earlier in
+this section as its positive case, and separately confirms zero findings
+against ordinary, legitimate `app.get('view engine')` /
+`app.set('trust proxy', 1)` / `app.get('port')` calls - both directions
+tested, not just the catch. `verify-and-regenerate.test.ts` adds three
+integration tests: a component that exhibits the pattern with no
+Blueprint violation at all (caught, retried, `origin:
+'service-locator-evasion'`); the same case with a retry that never removes
+the workaround (`still-violating`, listed in the new, separate
+`unresolvedServiceLocatorFindings`, never in `unresolvedViolations`); and
+the real regression case - a Blueprint-violation-triggered retry (`origin:
+'blueprint-violation'`) whose "corrected" output swaps in the exact
+service-locator evasion, correctly reported `still-violating` despite
+Blueprint's own second check reporting zero violations. Full suite:
+1058/1059 passing (the one failure is the same pre-existing,
+environment-dependent live-provider flake tracked throughout this
+project). Lint clean.
+
 ### Open item: live hard-fail reproduction still unobserved in the browser (Milestone 4)
 
 **Status: open, not closed.** Task 3.4 of Milestone 4 asked for a live browser
