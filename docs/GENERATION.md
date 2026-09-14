@@ -227,6 +227,86 @@ consequence: **every retry-corrected component is a mandatory manual
 review item**, not an optional one, regardless of which specific way it
 happened to stop violating.
 
+**Investigated, 2026-09-14 — conclusion: not tractable as a Blueprint
+feature; tractable only as a narrow, opt-in Layer-3 check, and not
+implemented.** Re-read the actual offending code quoted above in full and
+checked what Blueprint's own extraction layer (`src/parser/extract-ts.ts`)
+already captures, to answer concretely rather than guess.
+
+`extractTypeScriptSymbols` already walks every `call_expression` node in a
+file (`collectCallExpression`), but only ever turns one into an
+`ImportRecord` when the callee is exactly `require` or a dynamic `import()`
+— i.e. a call whose argument is a *module specifier*, something Blueprint's
+whole edge model exists to resolve to a real file. `req.app.get('findUserById')`
+is structurally nothing like that: the callee is a member expression
+(`req.app.get`), and the string argument (`'findUserById'`) is not a module
+path — it never gets near the resolver, the graph, or an `Edge`, so there is
+no existing hook this pattern could attach to. Detecting it would mean
+teaching Blueprint's core extraction layer to recognize one specific
+runtime API convention (Express's `app.get(key)`/`app.set(key, value)`
+locator idiom) and treat a plain string literal as if it named a forbidden
+export — a fundamentally different kind of check than "does a real import
+edge exist," grafted onto a tool whose entire value proposition is that it
+never guesses at meaning it cannot trace to a real import statement.
+
+**As a general, always-on Blueprint capability, this is not tractable —
+concretely, not just in principle.** `app.get(<string>)`/`app.set(<string>,
+...)` is one of the most common idioms in real, hand-written Express code
+for entirely legitimate purposes with no relationship to import forbidding
+at all: `app.set('trust proxy', 1)` / `app.get('trust proxy')`,
+`app.set('view engine', 'ejs')`, `app.get('port')` are all standard
+production Express configuration calls. A blanket "flag any `app.get`/
+`app.set` call with a non-path-shaped string" rule would false-positive
+constantly against ordinary Express code that has nothing to do with this
+project's generation pipeline — the same reasoning that already rules out
+treating "any dynamic/runtime dependency-injection pattern" as suspicious
+by default: `Map.get(key)`, DI containers, and config lookups are all
+extremely common, entirely legitimate uses of the identical call shape.
+General-purpose static import-graph analysis has no way to distinguish
+"this is evading a stated constraint" from "this is a config getter" from
+the call shape alone, and a tool whose entire value is precision (rule 3:
+never create an edge you cannot point at a real import line for) should not
+start guessing here.
+
+**A narrower, precise version IS concretely tractable, but only inside this
+project's own Layer 3 generation pipeline, never in Blueprint's core
+conformance engine — proposed here, not implemented:**
+
+- **What to detect:** in `verify-and-regenerate.ts`, after a component
+  passes the real Blueprint check, scan its generated source text (a plain
+  string scan, the same regex-based posture `extractNamedExports` already
+  takes for extracting identifiers, not a graph edge) for a call shaped
+  like `<anything>.get('<name>')` or `<anything>.set('<name>'` where
+  `<name>` is a string-literal argument. Cross-reference every such
+  `<name>` against the real, already-known named exports (via the same
+  `extractNamedExports` infrastructure item 1 just built) of every file in
+  a domain the current component's constraints forbid it from importing.
+  A match — the literal string equals a real, forbidden export's actual
+  name — is a strong, precise signal: not "any locator call," only one
+  whose argument happens to spell out the exact identifier a stated rule
+  just forbade importing.
+- **Where it would run:** as a new check inside `generateAndVerifyProject`,
+  after the existing Blueprint verify step and independent of it — its own
+  finding type (e.g. `SuspectedServiceLocatorEvasion`), never folded into
+  `Violation`, since it is not a real import-edge finding and must never be
+  presented as one. Whether a match should trigger the existing
+  one-retry-per-component mechanism (feeding "you referenced this forbidden
+  identifier via a runtime lookup instead of removing the dependency" as
+  corrective context) or only ever surface as a mandatory manual-review
+  flag is itself a decision for whoever approves implementing this, not
+  assumed here.
+- **False-positive risk:** low, specifically *because* it is scoped to
+  this pipeline's own fixed, small, predictable `EXPORT_CONTRACT`
+  convention — identifiers like `router`, `middleware`, and a handful of
+  per-database query function names a real person chose for their purpose
+  text, not arbitrary hand-written code where a coincidentally-matching
+  config key (`app.get('port')` if some database file happened to export a
+  function literally named `port`) could still false-positive. Not zero
+  risk, but meaningfully lower than the general, unscoped version above,
+  and only ever applied to this pipeline's own generated output — never to
+  a user's real repository, where Blueprint's core engine already
+  correctly stays silent on this.
+
 ### Open item: live hard-fail reproduction still unobserved in the browser (Milestone 4)
 
 **Status: open, not closed.** Task 3.4 of Milestone 4 asked for a live browser
