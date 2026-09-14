@@ -398,6 +398,78 @@ decide between the two - that decision, and the work it implies, is left
 for a future session with a clear head start on what to investigate rather
 than an instinct to just try again.
 
+**Investigated further, 2026-09-14 — a real, non-hypothetical mechanical
+cause was found; it does not fully resolve the question above, but it
+does mean "try again" was never going to be a clean test.** Checked
+concretely rather than assuming: `git log` shows `DEFAULT_GEMINI_MODEL`
+(`src/llm/gemini.ts`) has been the single string literal `'gemini-3.5-flash'`
+since the constant was first introduced — it has never changed in this
+project's code, across both the original known-tension hard-fail, the
+original scale-test hard-fail, and every recent self-correcting run. So
+in-code, the model identifier is not the variable.
+
+But the actual generation and retry-context construction code IS
+different now. `component-codegen.ts` has exactly four commits in its
+history; the CORRECTION REQUIRED retry-context block itself
+(`buildUserPrompt`'s `priorViolation` branch) is byte-for-byte identical
+between Milestone 3's original retry logic (`a9b9d81`) and today
+(confirmed with `git diff a9b9d81 e09e64b -- src/generate/component-codegen.ts`
+showing zero lines changed in that block) — so the specific text a
+component sees when told "you violated this rule, here is the evidence"
+has not changed at all. What HAS changed, entirely from Item 1's
+export-convention fix (`e09e64b`):
+
+1. `COMPONENT_CODE_SYSTEM_PROMPT` gained a new, emphatic paragraph
+   ("Always use named exports. Never use a default export, under any
+   circumstances...") — a more directive, repetition-heavy instruction
+   style than the rest of the prompt used before.
+2. `EXPORT_CONTRACT`'s wording changed from open-ended ("export default an
+   Express Router") to a fixed, explicit named identifier ("Export ... as
+   a named export literally called `router`").
+3. Most relevant to the scale-test fixture specifically: every backend
+   router in that schema has `backend.dependsOn = ['database']`, which
+   means `allowedDependenciesForDomain` already permitted it to import the
+   database file (the domain-level dependency is legitimate; only the
+   finer-grained, real-path constraint forbids it — see
+   `buildScaleTestSchema`'s own comment). Before Item 1's fix, that
+   component's context carried only the import PATH. After the fix, it
+   ALSO carries `dependencyExports` — the real named functions
+   (`insertTask`, `listTasks`, `setTaskStatus`, etc.) that file actually
+   exports — on both the first attempt AND the retry, since
+   `verify-and-regenerate.ts`'s retry call site now passes `generatedSoFar`
+   too.
+
+None of these three changes touch the CORRECTION REQUIRED text a
+component sees on retry. But (1) and (2) are a real, measurable shift in
+how directive and explicit the overall system prompt is, and (3) is a
+real, new piece of information present in exactly the prompts these two
+fixtures' retries depend on. Either is a plausible mechanism for a model
+following instructions (including "remove this import") more reliably
+than before, without requiring any change in the model itself.
+
+**This does not fully answer the open question above — it narrows it.**
+It rules out "the model ID changed in our own code" as an explanation. It
+does NOT rule out explanation 1 (Google silently updating what
+`gemini-3.5-flash` serves under a stable alias, a common industry
+practice this project has no way to detect or control) or explanation 2
+(coincidence at `n=2`) — both remain live possibilities. What it adds is
+a third, concrete, non-mutually-exclusive candidate: **explanation 3, a
+real prompt/context change in Item 1's own fix plausibly made the
+retry (and possibly the first attempt too) more reliable at this specific
+class of violation, independent of anything about the model itself.**
+No new fixture was constructed for this pass, since a genuine mechanical
+cause was found in the exact code path in question (Step 3's branch, not
+Step 4's) — spending a live API call on a third attempt at the SAME two
+fixtures would not have distinguished any of the three explanations from
+each other, since none of the three predict a specific run failing or
+succeeding; a controlled comparison (the same fixture, with and without
+Item 1's prompt changes, run enough times to see a real rate difference)
+is the only way to isolate explanation 3 from 1 and 2, and is exactly
+the kind of "characterize the current failure modes at scale" work the
+paragraph above already flagged as the real next step - not attempted
+here, left for a future session with this narrower, three-way question
+instead of the original two-way one.
+
 ### Cross-file export-convention mismatches cause an unretried build failure (found live, post-Milestone-4)
 
 **What happened:** a genuinely new live prompt ("a simple recipe box app for
