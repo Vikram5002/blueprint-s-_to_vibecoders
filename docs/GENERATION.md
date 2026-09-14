@@ -752,3 +752,17 @@ therefore remains verified only by `build-failure-retry.test.ts`'s real
 `tsc`-compiling integration test, not by a live browser observation** —
 recorded honestly, not rounded up, matching this document's standing
 practice for every other partially-observed claim.
+
+**What a future session should specifically go confirm:** exactly this one
+branch — `attributeBuildFailure` returning `{ kind: 'attributed' }` for a
+real, live `npm run build` failure (every diagnostic naming the same real
+component file) and `regenerateForBuildFailure` then producing a
+correction that makes a real, subsequent `npm run build` pass, all
+observed through the actual browser UI, not a script or unit test. The
+`{ kind: 'ambiguous' }` safety-rule branch is already confirmed live (the
+`frontend/src/main.tsx` case above); it does not need re-confirming. The
+earlier session's non-browser `TS2345` diagnostic (recipe-api-service.ts,
+a real `string`-vs-`number` argument mismatch) is a concrete, previously
+-observed example of the kind of single-file failure that would exercise
+the untested branch, worth trying to reproduce again live rather than a
+fresh, unrelated schema.
