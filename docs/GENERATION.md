@@ -321,15 +321,82 @@ shapes, and an earlier Milestone 3 script-based scale test did produce a real,
 live `still-violating` outcome — but that was not observed through the actual
 browser UI in Milestone 4.
 
-**Next attempt should target Milestone 3's scale-test fixture**
-(`buildScaleTestSchema` / `scripts/milestone3-scale-test.mjs`), the one that
-reliably hard-failed in that earlier script-based run, rather than retrying
-the Known-tension fixture again — the Known-tension fixture has now
-self-corrected in every live attempt made against it and is not a reliable
-reproduction case. This may require exposing that scale-test schema as a
-mock scenario in `workflow-mocks.ts`/`WorkflowDemo.tsx` (it is not currently
-wired into the UI's mock picker) so the e2e test can select it the same way
-it selects the Known-tension fixture today.
+**Attempted again, 2026-09-14, against the scale-test fixture specifically —
+still not reproduced, and this is itself real, useful data, not a dead
+end.** `SCALE_TEST_SCHEMA` was added to `workflow-mocks.ts` (mirroring
+`buildScaleTestSchema` verbatim) and wired into `WorkflowDemo.tsx` as a new
+"Scale-test fixture (Milestone 3, TaskRouter hard-fail)" scenario button, and
+a new live e2e spec (`ui/e2e/scale-test-hard-fail.e2e.spec.ts`) drove it
+through a real browser against a freshly-confirmed-live provider (a new API
+key, verified with one cheap test call before committing to the full run,
+after the previous key's daily free-tier quota had been exhausted). The run
+was genuinely live — 13 fresh cache entries were written with real
+timestamps, including exactly the 3 backend routers (TaskRouter, UserRouter,
+CommentRouter) whose purpose text explicitly asked them to import the
+database layer directly, each producing a real first-attempt violation and
+each self-correcting on Milestone 3's one allowed retry. Outcome: **`fixed`,
+0 unresolved violations** — the same fixture that reliably hard-failed in
+Milestone 3's original script-based run did not hard-fail this time, on the
+currently-available model (`gemini-3.5-flash`).
+
+This is the second distinct fixture, now, that reliably self-corrects
+instead of hard-failing under live, current conditions — plausibly because
+Blueprint's real corrective evidence (the exact rule, file, and line) is
+simply easier for the current model to act on correctly than it was for
+whatever model produced the original hard-fail evidence, not because
+anything in this pipeline changed to make hard-failing less likely. The
+hard-fail *rendering* path remains verified only by
+`verify-and-regenerate.test.ts`'s unit test (using the real data shapes) and
+by Milestone 3's original script-based run's own report — never yet by a
+live browser observation. `ui/e2e/scale-test-hard-fail.e2e.spec.ts` is kept
+as a permanent regression asset regardless: it is still real, live coverage
+of a code path no other live test exercises (three components needing a
+retry simultaneously in one run, not one), and it honestly logs and asserts
+against whichever real outcome occurs rather than assuming one. A future
+attempt with a different or future model version may yet reproduce a live
+hard-fail through this exact spec with no changes needed — this item stays
+open, not because nothing was tried, but because two genuine, good-faith
+attempts against two different documented "should hard-fail" fixtures have
+not produced one.
+
+**An open question this raises, recorded precisely rather than left
+implicit — not concluded either way:** both fixtures on record as having
+reliably hard-failed were designed against whatever model was live at the
+time of their original run (an earlier Gemini version for the known-tension
+fixture's Milestone 1 origin; a possibly-different one for the scale-test
+fixture's Milestone 3 script run). Both have now self-corrected on every
+live attempt made against them under the currently-available model
+(`gemini-3.5-flash`). That is consistent with two different explanations,
+and this project has not gathered enough evidence to distinguish them:
+
+1. **The underlying model has genuinely become more reliable** at exactly
+   this class of violation — reading Blueprint's real corrective evidence
+   (rule, file, line) and correctly removing a forbidden import while still
+   satisfying the stated purpose — since these fixtures were designed
+   against an earlier model. If true, the auto-regeneration retry's
+   practical hard-fail rate may be lower now than it was when Milestone 3
+   measured it, which would itself be worth knowing and re-measuring at
+   scale, not just for these two hand-picked fixtures.
+2. **This is coincidence at `n=2`.** Two non-deterministic live attempts
+   against two fixtures is a very small sample; a fixture "reliably"
+   hard-failing in one earlier script-based run and self-correcting in one
+   or two live attempts since is not yet a statistically meaningful
+   reversal, and could just as easily flip back on the next attempt.
+
+**Why this matters for whoever picks this item up next:** the honest
+next step is not "run these same two fixtures a third time and hope for a
+different result" — if explanation 1 holds, repeating the same fixtures
+will keep self-correcting regardless of how many more attempts are made,
+and the real next step would be designing a NEW fixture calibrated against
+the CURRENT model's actual failure modes (which requires first
+characterizing what those are, e.g. by running many small variations and
+observing the retry's real success rate, not assuming today's model fails
+the same way an earlier one did). If explanation 2 holds, a handful more
+attempts against the existing fixtures might still eventually reproduce a
+hard-fail, and no new fixture design is needed. This document does not
+decide between the two - that decision, and the work it implies, is left
+for a future session with a clear head start on what to investigate rather
+than an instinct to just try again.
 
 ### Cross-file export-convention mismatches cause an unretried build failure (found live, post-Milestone-4)
 

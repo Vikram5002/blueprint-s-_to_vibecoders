@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { WorkflowGraph } from './WorkflowGraph';
 import { GenerateApplicationPanel } from './GenerateApplicationPanel';
-import { SMALL_PROJECT_SCHEMA, LARGE_PROJECT_SCHEMA, KNOWN_TENSION_SCHEMA } from './workflow-mocks';
+import { SMALL_PROJECT_SCHEMA, LARGE_PROJECT_SCHEMA, KNOWN_TENSION_SCHEMA, SCALE_TEST_SCHEMA } from './workflow-mocks';
 import { generateProjectSchemaViaApi } from './workflow-api-client';
 import type { WorkflowJob, WorkflowJobResult, WorkflowJobStatus } from './workflow-job-types';
 
-type Scenario = 'small' | 'large' | 'tension';
+type Scenario = 'small' | 'large' | 'tension' | 'scale-test';
 type Mode = 'mock' | 'live';
 
 /**
@@ -32,7 +32,9 @@ export function WorkflowDemo(): JSX.Element {
       ? SMALL_PROJECT_SCHEMA
       : scenario === 'large'
         ? LARGE_PROJECT_SCHEMA
-        : KNOWN_TENSION_SCHEMA;
+        : scenario === 'tension'
+          ? KNOWN_TENSION_SCHEMA
+          : SCALE_TEST_SCHEMA;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -82,6 +84,14 @@ export function WorkflowDemo(): JSX.Element {
                 className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 data-[active=true]:border-slate-400 data-[active=true]:bg-slate-800 data-[active=true]:text-slate-100"
               >
                 Known-tension fixture (Milestone 1)
+              </button>
+              <button
+                type="button"
+                onClick={() => setScenario('scale-test')}
+                data-active={scenario === 'scale-test'}
+                className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 data-[active=true]:border-slate-400 data-[active=true]:bg-slate-800 data-[active=true]:text-slate-100"
+              >
+                Scale-test fixture (Milestone 3, TaskRouter hard-fail)
               </button>
             </div>
             <span className="rounded border border-amber-700/50 bg-amber-950/20 px-2 py-1 text-[11px] text-amber-300">

@@ -246,3 +246,119 @@ export const KNOWN_TENSION_SCHEMA: ProjectSchema = {
   ],
   provenance: 'STATED',
 };
+
+// --- Scenario 4: the Milestone 3 scale-test fixture, reused verbatim ------
+//
+// The exact schema src/generate/generate-project.ts's buildScaleTestSchema
+// builds (component names, purposes, and both constraints, copied verbatim -
+// hand-duplicated for the same rule-4 reason KNOWN_TENSION_SCHEMA above
+// documents for itself). This is the fixture docs/GENERATION.md's own
+// "Open item" names as the one that reliably hard-failed in Milestone 3's
+// earlier script-based run (TaskRouter's routes/db violation did NOT
+// self-correct on retry, unlike KNOWN_TENSION_SCHEMA, which self-corrected
+// in every live browser attempt made against it) - added here so that
+// live browser attempt has a deterministic fixture to target instead of
+// re-trying the one fixture already shown not to reproduce a hard-fail.
+
+export const SCALE_TEST_SCHEMA: ProjectSchema = {
+  sessionId: 'mock-session-4-scale-test',
+  title: 'Team task board',
+  originalPrompt:
+    'A small team task board: create users, assign tasks to them, comment on tasks, and see everything on ' +
+    'one board. Every request must come from a real, identified user.',
+  domains: {
+    frontend: {
+      components: [
+        component(
+          'BoardPage',
+          "Renders a page that, on mount, fetches every task from the backend's real GET /api/task-router " +
+            'endpoint and every comment for the first task from GET /api/comment-router?taskId=1, displaying ' +
+            'tasks grouped by status with their comment counts. No form, read-only for this component.',
+        ),
+        component(
+          'LoginPage',
+          'Renders a simple form (name and email text inputs, a submit button) that POSTs a new user as JSON ' +
+            "to the backend's real /api/user-router endpoint and shows a success message once the request " +
+            'completes.',
+        ),
+      ],
+      dependsOn: ['backend'],
+    },
+    backend: {
+      components: [
+        component(
+          'TaskRouter',
+          'Exposes REST endpoints for creating a task (POST / with { title, assigneeId }), listing every task ' +
+            "(GET /), and updating a task's status (PATCH /:id/status with { status }), calling the database " +
+            "domain's TaskStore functions (insertTask, listTasks, setTaskStatus) directly, imported from the " +
+            'db/task-store file, to persist and read real rows.',
+        ),
+        component(
+          'UserRouter',
+          'Exposes REST endpoints for creating a user (POST / with { name, email }) and listing every user ' +
+            "(GET /), calling the database domain's UserStore functions (insertUser, listUsers) directly, " +
+            'imported from the db/user-store file, to persist and read real rows.',
+        ),
+        component(
+          'CommentRouter',
+          'Exposes REST endpoints for adding a comment to a task (POST / with { taskId, authorId, body }) and ' +
+            "listing every comment for a task (GET /?taskId=), calling the database domain's CommentStore " +
+            'functions (insertComment, listCommentsForTask) directly, imported from the db/comment-store file, ' +
+            'to persist and read real rows.',
+        ),
+      ],
+      dependsOn: ['database'],
+    },
+    database: {
+      components: [
+        component(
+          'TaskStore',
+          'Initializes a node:sqlite table `tasks` (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT ' +
+            "NULL, status TEXT NOT NULL DEFAULT 'open', assignee_id INTEGER) in the shared database file at " +
+            'backend/app.db, creating it if absent. Exports named functions insertTask(title, assigneeId), ' +
+            'listTasks() (all rows), and setTaskStatus(id, status).',
+        ),
+        component(
+          'UserStore',
+          'Initializes a node:sqlite table `users` (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, ' +
+            'email TEXT NOT NULL) in the shared database file at backend/app.db, creating it if absent. ' +
+            'Exports named functions insertUser(name, email), findUserById(id), and listUsers().',
+        ),
+        component(
+          'CommentStore',
+          'Initializes a node:sqlite table `comments` (id INTEGER PRIMARY KEY AUTOINCREMENT, task_id INTEGER ' +
+            'NOT NULL, author_id INTEGER NOT NULL, body TEXT NOT NULL) in the shared database file at ' +
+            'backend/app.db, creating it if absent. Exports named functions insertComment(taskId, authorId, ' +
+            'body) and listCommentsForTask(taskId).',
+        ),
+      ],
+      dependsOn: [],
+    },
+    security: {
+      components: [
+        component(
+          'AuthMiddleware',
+          'Reads a userId from the x-user-id request header on every request and rejects with 401 if the ' +
+            'header is missing or empty. Does not look up the user anywhere - it only checks the header is ' +
+            'present - so it needs no knowledge of how users are stored.',
+        ),
+      ],
+      dependsOn: [],
+    },
+  },
+  constraints: [
+    pathConstraint(
+      'must-not-import',
+      'backend/src/routes',
+      'backend/src/db',
+      'backend/src/routes must not import backend/src/db',
+    ),
+    pathConstraint(
+      'must-not-import',
+      'backend/src/middleware',
+      'backend/src/routes',
+      'backend/src/middleware must not import backend/src/routes',
+    ),
+  ],
+  provenance: 'STATED',
+};
