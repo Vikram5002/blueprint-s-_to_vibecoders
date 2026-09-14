@@ -199,30 +199,6 @@ of those are what an import-graph tool does or was ever proposed to do.
 Building one is a legitimate, separate project; silently expecting the
 existing pipeline to already cover it would be the mistake.
 
-### Open item: live hard-fail reproduction still unobserved in the browser (Milestone 4)
-
-**Status: open, not closed.** Task 3.4 of Milestone 4 asked for a live browser
-run that deliberately triggers a hard-failed (`STILL VIOLATING`) component and
-confirms the UI reports it honestly. Three live runs of
-`ui/e2e/generate-application.e2e.spec.ts` against the Known-tension fixture
-(`KNOWN_TENSION_SCHEMA`, two of the three with the label cache cleared to force
-a fresh model call) all produced `outcome: 'fixed'` — the model corrected the
-violation on its first retry every time. The hard-fail rendering path is
-covered by a unit test in `verify-and-regenerate.test.ts` using the real data
-shapes, and an earlier Milestone 3 script-based scale test did produce a real,
-live `still-violating` outcome — but that was not observed through the actual
-browser UI in Milestone 4.
-
-**Next attempt should target Milestone 3's scale-test fixture**
-(`buildScaleTestSchema` / `scripts/milestone3-scale-test.mjs`), the one that
-reliably hard-failed in that earlier script-based run, rather than retrying
-the Known-tension fixture again — the Known-tension fixture has now
-self-corrected in every live attempt made against it and is not a reliable
-reproduction case. This may require exposing that scale-test schema as a
-mock scenario in `workflow-mocks.ts`/`WorkflowDemo.tsx` (it is not currently
-wired into the UI's mock picker) so the e2e test can select it the same way
-it selects the Known-tension fixture today.
-
 **Recommendation for any future user (human or agent) of this pipeline:**
 treat a Blueprint-clean generated project as *structurally* conformant to
 its stated architecture, never as a substitute for reviewing what a
@@ -250,3 +226,110 @@ the same limitation, not two different problems. The practical
 consequence: **every retry-corrected component is a mandatory manual
 review item**, not an optional one, regardless of which specific way it
 happened to stop violating.
+
+### Open item: live hard-fail reproduction still unobserved in the browser (Milestone 4)
+
+**Status: open, not closed.** Task 3.4 of Milestone 4 asked for a live browser
+run that deliberately triggers a hard-failed (`STILL VIOLATING`) component and
+confirms the UI reports it honestly. Three live runs of
+`ui/e2e/generate-application.e2e.spec.ts` against the Known-tension fixture
+(`KNOWN_TENSION_SCHEMA`, two of the three with the label cache cleared to force
+a fresh model call) all produced `outcome: 'fixed'` — the model corrected the
+violation on its first retry every time. The hard-fail rendering path is
+covered by a unit test in `verify-and-regenerate.test.ts` using the real data
+shapes, and an earlier Milestone 3 script-based scale test did produce a real,
+live `still-violating` outcome — but that was not observed through the actual
+browser UI in Milestone 4.
+
+**Next attempt should target Milestone 3's scale-test fixture**
+(`buildScaleTestSchema` / `scripts/milestone3-scale-test.mjs`), the one that
+reliably hard-failed in that earlier script-based run, rather than retrying
+the Known-tension fixture again — the Known-tension fixture has now
+self-corrected in every live attempt made against it and is not a reliable
+reproduction case. This may require exposing that scale-test schema as a
+mock scenario in `workflow-mocks.ts`/`WorkflowDemo.tsx` (it is not currently
+wired into the UI's mock picker) so the e2e test can select it the same way
+it selects the Known-tension fixture today.
+
+### Cross-file export-convention mismatches cause an unretried build failure (found live, post-Milestone-4)
+
+**What happened:** a genuinely new live prompt ("a simple recipe box app for
+saving favorite recipes with ingredients and steps") ran the full pipeline
+end to end — schema generated, 8 component files generated, `npm install`
+passed, Blueprint verification passed with all constraints satisfied — and
+then `npm run build` failed with real `tsc` errors:
+
+```
+backend/src/routes/recipe-api-service.ts(2,10): error TS2305: Module
+'../db/recipe-database' has no exported member 'recipeDatabase'.
+backend/src/routes/recipe-api-service.ts(3,10): error TS2614: Module
+'../middleware/input-validation-and-auth' has no exported member
+'validateRecipe'. Did you mean to use 'import validateRecipe from
+"../middleware/input-validation-and-auth"' instead?
+```
+
+Reproduced directly from the on-disk output of that exact run (no
+regeneration needed): `input-validation-and-auth.ts` uses a single
+`export default function`, but `recipe-api-service.ts` imports it as named
+`{ validateRecipe, authenticate }`. Separately, `recipe-database.ts` never
+exports a `recipeDatabase` object at all — it exports individual named
+functions (`createRecipe`, `getRecipe`, `listRecipes`, `deleteRecipe`) — but
+the router imports and calls a `recipeDatabase.getAll()` that was never
+generated anywhere. The compiler's own suggested fix (`Did you mean to use
+'import validateRecipe from ...' instead`) names the exact problem.
+
+**Why this happens — confirmed from the actual code, not assumed:** each
+component in `src/generate/generate-project.ts` is generated by an
+independent `CompletionProvider.complete()` call
+(`src/generate/component-codegen.ts`). The only shared context a component
+receives about a file it is allowed to import from is `allowedImportPaths`
+— a list of file *paths* — plus, for its own file, one fixed,
+domain-level `EXPORT_CONTRACT` string describing how *that* domain's files
+should export (e.g. `security: 'export default an Express middleware
+function'`, `database: 'named export db ... No default export'`). Nothing
+in `ComponentGenerationContext` ever tells a *consuming* component the
+actual, already-decided export shape or identifier names of a specific
+already-generated dependency file. `EXPORT_CONTRACT.database`'s "named
+export `db`" guidance covers the database handle itself but not the
+per-query named functions a router needs to call, and there is no
+equivalent contract at all for what identifiers a generated middleware or
+router file exports for other files to consume. This is a structural gap in
+`COMPONENT_CODE_SYSTEM_PROMPT`/`buildUserPrompt`, not a one-off model
+inconsistency: nothing currently prevents it from recurring on any schema
+where one component's generated code needs to call into another's, since
+each side guesses the interface independently.
+
+**Confirmed from the actual code: this currently causes a full,
+unretried build failure.** `runApplicationJob`
+(`src/server/generation-api.ts`) calls `generateAndVerifyProject()` —
+Milestone 3's entire generate → Blueprint-verify → auto-regeneration-retry
+loop — to full completion first, and only *after* that returns does it run
+`npm install` and (if install succeeded) `npm run build`. A `tsc` failure at
+that point only sets `buildOutcome.buildOk = false` with the raw compiler
+output attached as `failureOutput`; there is no code path from a build
+failure back into `generateAndVerifyProject` or into any component
+regeneration. Milestone 3's retry is triggered exclusively by a Blueprint
+`Violation` found by `runApplicationJob`'s call into the verification
+pipeline — never by a `tsc` diagnostic, which the retry loop never sees at
+all.
+
+**Concrete next step (not implemented — a decision for later, matching how
+the other two limitations above were handled):** two options, not mutually
+exclusive:
+
+- **(a) Fix the system prompt.** Mandate one consistent, explicit
+  export convention project-wide in `COMPONENT_CODE_SYSTEM_PROMPT` and/or
+  `EXPORT_CONTRACT` (e.g. always named exports for cross-component
+  consumption, with the exact identifier names surfaced to consumers) so
+  independently-generated files stop guessing each other's shape.
+- **(b) Extend the retry mechanism to also fire on a build failure.** The
+  same pattern Milestone 3 already proved for Blueprint violations — feed
+  the actual `tsc` diagnostic (file, line, message) back to the specific
+  component(s) it names as corrective context, regenerate once, re-run
+  `npm run build`, hard-fail as a review item if it still fails — rather
+  than treating `npm run build` as an unretried terminal check as it is
+  today.
+
+Either fix touches code this project has deliberately not modified
+mid-demo; this section exists to make the gap precise and discoverable,
+not to resolve it.
