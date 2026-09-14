@@ -359,6 +359,28 @@ Blueprint's own second check reporting zero violations. Full suite:
 environment-dependent live-provider flake tracked throughout this
 project). Lint clean.
 
+**Live-verified, 2026-09-14 (Part 4 close-out) — the check ran for real
+against real generated output, correctly reporting no finding on a
+component that did not exhibit the pattern.** Ran
+`ui/e2e/generate-application.e2e.spec.ts` live, in the actual browser,
+against the known-tension fixture with a freshly-cleared cache (forcing a
+genuine new model call, not a cache replay). The real first attempt
+produced a real, unforced Blueprint violation (a static
+`import { findUserById } from '../routes/user-router'`); the real retry
+removed the import entirely by narrowing the check to "reject if the
+header is missing" — no locator call of any kind. Inspected the actual
+generated `auth-middleware.ts` directly: no `.get(...)`/`.set(...)` call
+exists, so `detectServiceLocatorEvasion` correctly found nothing, and the
+UI's "No suspected auth-bypass patterns" badge matched that ground truth
+exactly. **This confirms the check runs live and does not false-positive
+on a real, legitimate structural pass** — but a live TRUE POSITIVE (the
+check actually catching a real `req.app.get(...)`-style evasion in the
+browser) was not observed this session, since this run's model did not
+happen to reproduce that specific workaround. The catch itself remains
+verified by `detect-service-locator-evasion.test.ts`'s positive case,
+built from the exact real code this section already documents, not a
+synthetic example.
+
 ### Open item: live hard-fail reproduction still unobserved in the browser (Milestone 4)
 
 **Status: open, not closed.** Task 3.4 of Milestone 4 asked for a live browser
@@ -521,6 +543,17 @@ the kind of "characterize the current failure modes at scale" work the
 paragraph above already flagged as the real next step - not attempted
 here, left for a future session with this narrower, three-way question
 instead of the original two-way one.
+
+**Status, 2026-09-14 (Part 4 close-out): still open, not resolved.** A
+Part 4 live run (driving the known-tension fixture through the real
+browser with a freshly-cleared cache, to confirm Item 3's new
+service-locator check live) produced yet another real, unforced
+first-attempt violation followed by a retry that self-corrected — a
+fourth real data point in the same direction, still never a live
+`still-violating` outcome. This item is intentionally NOT marked resolved:
+the open question above (server-side model change vs. this session's own
+prompt changes vs. coincidence) remains genuinely undetermined, and no new
+evidence from Part 4 changes that.
 
 ### Cross-file export-convention mismatches cause an unretried build failure (found live, post-Milestone-4)
 
@@ -694,3 +727,28 @@ a multi-file-ambiguous failure and an unparseable failure both confirm zero
 retries are attempted and the files are returned untouched, byte for byte.
 Full suite: 1068/1069 passing (same pre-existing, environment-dependent
 live-provider flake). Lint clean.
+
+**Live-verified, 2026-09-14 (Part 4 close-out) — the safety-rule branch
+confirmed live on a genuinely real build failure; the clean-attribution
+retry branch was not.** Drove the real "Generate from prompt" path
+(`ui/e2e/part4-live-verification.e2e.spec.ts`) with the exact live prompt
+that produced real `npm run build` failures earlier this session ("a
+simple recipe box app..."). The real build genuinely failed with one
+diagnostic: `frontend/src/main.tsx(17,8): error TS2741: Property
+'recipeId' is missing...` — `frontend/src/main.tsx` is
+`frontendEntryPointFile`'s own templated output, never an LLM-generated
+component. `attributeBuildFailure` correctly returned `{ kind: 'ambiguous'
+}` (confirmed by running the project's own `npm run build` directly
+against the generated output and cross-checking `findComponentByTargetPath`
+returns null for that path) and no retry fired, exactly the "never guess"
+safety rule this section commits to. A second live attempt, aimed at
+reproducing the OTHER branch (a diagnostic naming exactly one real
+component, which DID occur in an earlier, non-browser-driven live run this
+session — see the cross-file export-convention section's `TS2345` example),
+ran into the Gemini free-tier daily quota being exhausted mid-generation
+before reaching the build step, and was not retried further this session.
+**The clean-attribution "regenerate once, verify it now builds" branch
+therefore remains verified only by `build-failure-retry.test.ts`'s real
+`tsc`-compiling integration test, not by a live browser observation** —
+recorded honestly, not rounded up, matching this document's standing
+practice for every other partially-observed claim.
