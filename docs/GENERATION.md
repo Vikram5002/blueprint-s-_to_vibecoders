@@ -199,6 +199,30 @@ of those are what an import-graph tool does or was ever proposed to do.
 Building one is a legitimate, separate project; silently expecting the
 existing pipeline to already cover it would be the mistake.
 
+### Open item: live hard-fail reproduction still unobserved in the browser (Milestone 4)
+
+**Status: open, not closed.** Task 3.4 of Milestone 4 asked for a live browser
+run that deliberately triggers a hard-failed (`STILL VIOLATING`) component and
+confirms the UI reports it honestly. Three live runs of
+`ui/e2e/generate-application.e2e.spec.ts` against the Known-tension fixture
+(`KNOWN_TENSION_SCHEMA`, two of the three with the label cache cleared to force
+a fresh model call) all produced `outcome: 'fixed'` — the model corrected the
+violation on its first retry every time. The hard-fail rendering path is
+covered by a unit test in `verify-and-regenerate.test.ts` using the real data
+shapes, and an earlier Milestone 3 script-based scale test did produce a real,
+live `still-violating` outcome — but that was not observed through the actual
+browser UI in Milestone 4.
+
+**Next attempt should target Milestone 3's scale-test fixture**
+(`buildScaleTestSchema` / `scripts/milestone3-scale-test.mjs`), the one that
+reliably hard-failed in that earlier script-based run, rather than retrying
+the Known-tension fixture again — the Known-tension fixture has now
+self-corrected in every live attempt made against it and is not a reliable
+reproduction case. This may require exposing that scale-test schema as a
+mock scenario in `workflow-mocks.ts`/`WorkflowDemo.tsx` (it is not currently
+wired into the UI's mock picker) so the e2e test can select it the same way
+it selects the Known-tension fixture today.
+
 **Recommendation for any future user (human or agent) of this pipeline:**
 treat a Blueprint-clean generated project as *structurally* conformant to
 its stated architecture, never as a substitute for reviewing what a
