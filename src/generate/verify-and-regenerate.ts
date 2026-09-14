@@ -248,7 +248,7 @@ export async function generateAndVerifyProject(
     }
 
     const firstAttemptViolation = toPriorViolationContext(violation, edges);
-    const regenerated = await generateComponentFile(generator, schema, owner.component, owner.domain, firstAttemptViolation);
+    const regenerated = await generateComponentFile(generator, schema, owner.component, owner.domain, firstAttemptViolation, files);
     if (!regenerated.ok) return err(regenerated.error);
 
     files = files.map((f) => (f.path === targetPath ? regenerated.value : f));

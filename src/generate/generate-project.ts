@@ -22,10 +22,12 @@ import type { Constraint } from '../types/constraints.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 import {
   createComponentCodeGenerator,
+  extractNamedExports,
   selectRelevantConstraints,
   type ComponentCodeFailure,
   type ComponentGenerationContext,
   type CreateComponentCodeGeneratorOptions,
+  type DependencyExportInfo,
 } from './component-codegen.js';
 import {
   backendEntryPointFile,
@@ -33,6 +35,7 @@ import {
   componentTargetPath,
   frontendEntryPointFile,
   packageJsonFile,
+  pascalIdentifier,
   tsconfigFile,
   type GeneratedFile,
 } from './assemble.js';
@@ -165,13 +168,13 @@ export async function generateMilestone1Project(
   const securityComponents = schema.domains.security.components;
 
   for (const component of backendComponents) {
-    const generated = await generateOne(generator, schema, component, 'backend');
+    const generated = await generateOne(generator, schema, component, 'backend', files);
     if (!generated.ok) return generated;
     files.push(generated.value);
   }
 
   for (const component of securityComponents) {
-    const generated = await generateOne(generator, schema, component, 'security');
+    const generated = await generateOne(generator, schema, component, 'security', files);
     if (!generated.ok) return generated;
     files.push(generated.value);
   }
@@ -186,6 +189,7 @@ async function generateOne(
   schema: ValidatedProjectSchema,
   component: Component,
   domain: 'backend' | 'security',
+  generatedSoFar: readonly GeneratedFile[],
 ): Promise<{ readonly ok: true; readonly value: GeneratedFile } | { readonly ok: false; readonly error: GenerateProjectFailure }> {
   const targetPath = componentTargetPath(domain, component);
 
@@ -194,21 +198,20 @@ async function generateOne(
   // legitimately fulfil its stated purpose - whether doing so also violates
   // the constraint above is exactly what this milestone measures, not
   // something prevented here.
-  const allowedImportPaths =
-    domain === 'security' ? [relativeImportPath(targetPath, componentTargetPath('backend', USER_ROUTER))] : [];
+  const userRouterPath = componentTargetPath('backend', USER_ROUTER);
+  const dependencies: readonly { readonly importPath: string; readonly sourceTargetPath: string }[] =
+    domain === 'security' ? [{ importPath: relativeImportPath(targetPath, userRouterPath), sourceTargetPath: userRouterPath }] : [];
 
   const context: ComponentGenerationContext = {
     schemaTitle: schema.title,
     component,
     domain,
     targetPath,
-    allowedImportPaths,
+    allowedImportPaths: dependencies.map((dep) => dep.importPath),
     availablePackages: ['express'],
-    exportContract:
-      domain === 'backend'
-        ? 'export default an Express Router (import { Router } from "express")'
-        : 'export default an Express middleware function (req, res, next)',
+    exportContract: exportContractFor(domain, component),
     relevantConstraints: selectRelevantConstraints(schema.constraints, domainKeywords(domain)),
+    ...(dependencies.length > 0 ? { dependencyExports: computeDependencyExports(dependencies, generatedSoFar) } : {}),
   };
 
   const result = await generator.generate(context);
@@ -277,7 +280,19 @@ export function schemaImpliesDatabase(schema: ValidatedProjectSchema): boolean {
  */
 const DOMAIN_PROCESSING_ORDER: readonly DomainName[] = ['database', 'backend', 'security', 'frontend'];
 
-const EXPORT_CONTRACT: Readonly<Record<DomainName, string>> = {
+/**
+ * Every domain's export shape is now stated as a named export with a FIXED,
+ * predictable identifier - `router`/`middleware` for backend/security,
+ * matching the templated entry points in assemble.ts, which import exactly
+ * those names. Frontend is the one domain whose fixed identifier cannot be
+ * a shared constant (`RecipeListPage` and `BoardPage` cannot both export
+ * something called `page`), so its contract is built per-component by
+ * `exportContractFor` below rather than living in this table. See
+ * docs/GENERATION.md's "Cross-file export-convention mismatch" limitation
+ * for why every domain moved to a single, mandatory named-exports
+ * convention instead of the previous mix of default and named exports.
+ */
+const EXPORT_CONTRACT: Readonly<Record<Exclude<DomainName, 'frontend'>, string>> = {
   database:
     'import { DatabaseSync } from "node:sqlite" - this is Node\'s own built-in SQLite module, NOT the ' +
     '"better-sqlite3" npm package, so never import from "better-sqlite3". Export the DatabaseSync instance ' +
@@ -288,12 +303,38 @@ const EXPORT_CONTRACT: Readonly<Record<DomainName, string>> = {
     '`as YourType[]` cast will fail to compile - cast through `unknown` first, e.g. ' +
     '`stmt.all() as unknown as Recipe[]`. Also export one named function per query the purpose describes. ' +
     'No default export.',
-  backend: 'export default an Express Router (import { Router } from "express")',
-  security: 'export default an Express middleware function (req, res, next)',
-  frontend:
-    'export default a React function component (import type { FC } from "react" if needed); do not call ' +
-    'createRoot or render anything yourself, that is handled elsewhere',
+  backend:
+    'Export the Express Router (import { Router } from "express") as a named export literally called ' +
+    '`router` - e.g. `export const router = Router();`. No default export.',
+  security:
+    'Export the Express middleware function (req, res, next) as a named export literally called ' +
+    '`middleware` - e.g. `export function middleware(req, res, next) { ... }`. No default export.',
 };
+
+/**
+ * Frontend's contract names the export after the component's own name (its
+ * generated file is the only one that will ever export something with that
+ * identifier, so no collision risk the way a shared `page` name would have)
+ * - everything else reuses the fixed, shared table above.
+ */
+function exportContractFor(domain: DomainName, component: Component): string {
+  if (domain === 'frontend') {
+    // The required identifier is derived from the component's slug, not its
+    // raw `name` - a schema's component name is free text (e.g. "Recipe
+    // Dashboard", with a space) and is not guaranteed to be a valid JS
+    // identifier. `pascalIdentifier(componentSlug(...))` is the exact same
+    // derivation frontendEntryPointFile (assemble.ts) uses for its own
+    // import, so the two sides can never disagree - see this file's
+    // decision log entry for the live build this mismatch broke.
+    const identifier = pascalIdentifier(componentSlug(component.name));
+    return (
+      `Export the React function component as a named export literally called \`${identifier}\` - e.g. ` +
+      `\`export function ${identifier}(...) { ... }\` (import type { FC } from "react" if needed). ` +
+      'No default export. Do not call createRoot or render anything yourself, that is handled elsewhere.'
+    );
+  }
+  return EXPORT_CONTRACT[domain];
+}
 
 const AVAILABLE_PACKAGES: Readonly<Record<DomainName, readonly string[]>> = {
   // node:sqlite is Node's own built-in module - no npm install needed, and
@@ -324,15 +365,42 @@ const AVAILABLE_PACKAGES: Readonly<Record<DomainName, readonly string[]>> = {
  * another. A frontend component's dependency on the backend is expressed as
  * `httpEndpoints` instead - see httpEndpointsForDomain below.
  */
-function allowedImportsForDomain(schema: ValidatedProjectSchema, domain: DomainName, targetPath: string): string[] {
+function allowedDependenciesForDomain(
+  schema: ValidatedProjectSchema,
+  domain: DomainName,
+  targetPath: string,
+): readonly { readonly importPath: string; readonly sourceTargetPath: string }[] {
   if (domain === 'frontend') return [];
-  const paths: string[] = [];
+  const dependencies: { readonly importPath: string; readonly sourceTargetPath: string }[] = [];
   for (const dep of schema.domains[domain].dependsOn) {
     for (const component of schema.domains[dep].components) {
-      paths.push(relativeImportPath(targetPath, componentTargetPath(dep, component)));
+      const sourceTargetPath = componentTargetPath(dep, component);
+      dependencies.push({ importPath: relativeImportPath(targetPath, sourceTargetPath), sourceTargetPath });
     }
   }
-  return paths;
+  return dependencies;
+}
+
+/**
+ * The actual fix for the cross-file export-convention mismatch (see
+ * docs/GENERATION.md): looks up each dependency's real, already-generated
+ * content in `generatedSoFar` (populated by the fixed `DOMAIN_PROCESSING_ORDER`
+ * this project already relies on - a component's dependencies are always
+ * generated before it is) and extracts its real named exports, rather than
+ * letting the consuming component guess. A dependency not yet found in
+ * `generatedSoFar` (should not happen given the fixed processing order, but
+ * never assumed) reports an empty export list rather than throwing - the
+ * model is then told explicitly "no exports found", the same honest-gap
+ * posture the rest of this pipeline takes over guessing.
+ */
+function computeDependencyExports(
+  dependencies: readonly { readonly importPath: string; readonly sourceTargetPath: string }[],
+  generatedSoFar: readonly GeneratedFile[],
+): readonly DependencyExportInfo[] {
+  return dependencies.map((dep) => {
+    const file = generatedSoFar.find((f) => f.path === dep.sourceTargetPath);
+    return { importPath: dep.importPath, exportedNames: file === undefined ? [] : extractNamedExports(file.contents) };
+  });
 }
 
 /**
@@ -370,20 +438,23 @@ export async function generateComponentFile(
   component: Component,
   domain: DomainName,
   priorViolation?: ComponentGenerationContext['priorViolation'],
+  generatedSoFar: readonly GeneratedFile[] = [],
 ): Promise<{ readonly ok: true; readonly value: GeneratedFile } | { readonly ok: false; readonly error: GenerateProjectFailure }> {
   const targetPath = componentTargetPath(domain, component);
+  const dependencies = allowedDependenciesForDomain(schema, domain, targetPath);
 
   const context: ComponentGenerationContext = {
     schemaTitle: schema.title,
     component,
     domain,
     targetPath,
-    allowedImportPaths: allowedImportsForDomain(schema, domain, targetPath),
+    allowedImportPaths: dependencies.map((dep) => dep.importPath),
     httpEndpoints: httpEndpointsForDomain(schema, domain),
     availablePackages: AVAILABLE_PACKAGES[domain],
-    exportContract: EXPORT_CONTRACT[domain],
+    exportContract: exportContractFor(domain, component),
     relevantConstraints: selectRelevantConstraints(schema.constraints, domainKeywords(domain)),
     ...(priorViolation === undefined ? {} : { priorViolation }),
+    ...(dependencies.length > 0 ? { dependencyExports: computeDependencyExports(dependencies, generatedSoFar) } : {}),
   };
 
   const result = await generator.generate(context);
@@ -443,7 +514,7 @@ export async function generateProject(
   for (const domain of DOMAIN_PROCESSING_ORDER) {
     if (domain === 'database' && !includeDatabase) continue;
     for (const component of schema.domains[domain].components) {
-      const generated = await generateComponentFile(generator, schema, component, domain);
+      const generated = await generateComponentFile(generator, schema, component, domain, undefined, files);
       if (!generated.ok) return generated;
       files.push(generated.value);
     }

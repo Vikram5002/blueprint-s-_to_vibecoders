@@ -83,9 +83,24 @@ describe('frontendEntryPointFile', () => {
     const file = frontendEntryPointFile([RECIPE_LIST_PAGE]);
 
     expect(file.path).toBe('frontend/src/main.tsx');
-    expect(file.contents).toContain("import RecipeListPage from './pages/recipe-list-page';");
+    expect(file.contents).toContain("import { RecipeListPage } from './pages/recipe-list-page';");
     expect(file.contents).toContain('createRoot(container).render(');
     expect(file.contents).toContain('<RecipeListPage />');
+  });
+
+  // Regression: a live run of the real Layer 2 schema generator produced a
+  // component named "Recipe Dashboard" (a space, not PascalCase) - naively
+  // importing `{ ${component.name} }` produced `import { Recipe Dashboard
+  // ... }`, invalid JS syntax that failed npm run build with TS1005 (",'
+  // expected"). The import binding must always be the sanitized
+  // pascalIdentifier(componentSlug(...)) derivation, never the raw name.
+  it('sanitizes a component name containing spaces into a valid import identifier', () => {
+    const RECIPE_DASHBOARD: Component = { id: '5', name: 'Recipe Dashboard', purpose: 'v' };
+    const file = frontendEntryPointFile([RECIPE_DASHBOARD]);
+
+    expect(file.contents).toContain("import { RecipeDashboard } from './pages/recipe-dashboard';");
+    expect(file.contents).not.toContain('Recipe Dashboard');
+    expect(file.contents).toContain('<RecipeDashboard />');
   });
 });
 
@@ -94,8 +109,8 @@ describe('backendEntryPointFile', () => {
     const file = backendEntryPointFile([USER_ROUTER], [AUTH_MIDDLEWARE]);
 
     expect(file.path).toBe('backend/src/index.ts');
-    expect(file.contents).toContain("import authMiddleware from './middleware/auth-middleware';");
-    expect(file.contents).toContain("import userRouter from './routes/user-router';");
+    expect(file.contents).toContain("import { middleware as authMiddleware } from './middleware/auth-middleware';");
+    expect(file.contents).toContain("import { router as userRouter } from './routes/user-router';");
     expect(file.contents).toContain('app.use(authMiddleware);');
     expect(file.contents).toContain("app.use('/api/user-router', userRouter);");
 

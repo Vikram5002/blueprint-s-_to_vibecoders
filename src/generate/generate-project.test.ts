@@ -1,4 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+const require = createRequire(import.meta.url);
 import {
   buildMilestone1Schema,
   buildMilestone2Schema,
@@ -12,6 +19,7 @@ import {
   schemaImpliesDatabase,
 } from './generate-project.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
+import { componentId } from '../types/project-schema.js';
 import type { CompletionProvider, CompletionRequest, CompletionResult } from '../llm/provider.js';
 import type { CachedLabel, LabelCache } from '../llm/cache.js';
 
@@ -258,6 +266,220 @@ describe('generateProject (Milestone 2, general orchestrator)', () => {
     const pkg = JSON.parse(result.value.files.find((f) => f.path === 'package.json')?.contents ?? '{}');
     expect(pkg.engines).toBeUndefined();
   });
+});
+
+describe('cross-file export-convention consistency (regression: the live recipe-box build failure)', () => {
+  // Reproduces the exact live bug documented in docs/GENERATION.md: a
+  // database component exporting individual named functions, and a backend
+  // component whose purpose requires calling them directly - the same
+  // RecipeStore/RecipeRouter relationship as buildMilestone2Schema, renamed
+  // here only to keep this test self-contained and independent of that
+  // fixture's own evolution.
+  const RECIPE_STORE = {
+    id: componentId('database', 'RecipeStore', 'recipe-store-regression'),
+    name: 'RecipeStore',
+    purpose:
+      'Initializes a recipes table. Exports named functions insertRecipe(title, ingredients) and ' +
+      'listRecipes().',
+  };
+  const RECIPE_API_SERVICE = {
+    id: componentId('backend', 'RecipeApiService', 'recipe-api-service-regression'),
+    name: 'RecipeApiService',
+    purpose:
+      "Exposes REST endpoints for creating and listing recipes, calling the database domain's insertRecipe " +
+      'and listRecipes functions directly.',
+  };
+
+  function buildRegressionSchema() {
+    const candidate = {
+      sessionId: 'regression-test',
+      title: 'Recipe box (regression)',
+      originalPrompt: 'A simple recipe box app for saving favorite recipes with ingredients and steps.',
+      domains: {
+        frontend: { components: [], dependsOn: [] },
+        backend: { components: [RECIPE_API_SERVICE], dependsOn: ['database'] },
+        database: { components: [RECIPE_STORE], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [],
+      provenance: 'STATED' as const,
+    };
+    const validated = validateProjectSchema(candidate);
+    if (!validated.ok) throw new Error(`regression fixture failed validation: ${JSON.stringify(validated.error)}`);
+    return validated.value;
+  }
+
+  it('tells a frontend component to export under a sanitized identifier, not its raw (possibly space-containing) name', async () => {
+    // Regression: a live Layer 2 schema genuinely named a component "Recipe
+    // Dashboard" (a space, not PascalCase) - the export contract must name
+    // the same sanitized identifier assemble.ts's entry-point template
+    // imports, never the raw schema name, or the two sides disagree and
+    // npm run build fails with a syntax error (see docs/GENERATION.md).
+    const provider = stubProvider(() => okResult('placeholder'));
+    const candidate = {
+      sessionId: 'regression-test-2',
+      title: 'Recipe box (regression 2)',
+      originalPrompt: 'x',
+      domains: {
+        frontend: {
+          components: [
+            { id: componentId('frontend', 'Recipe Dashboard', 'recipe-dashboard-regression'), name: 'Recipe Dashboard', purpose: 'x' },
+          ],
+          dependsOn: [],
+        },
+        backend: { components: [], dependsOn: [] },
+        database: { components: [], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [],
+      provenance: 'STATED' as const,
+    };
+    const validated = validateProjectSchema(candidate);
+    expect(validated.ok).toBe(true);
+    if (!validated.ok) return;
+
+    await generateProject(validated.value, { provider, cache: memoryCache() });
+
+    const frontendCall = provider.calls.find((c) => c.user.includes('Domain: frontend'));
+    const requiredExportLine = /Required export shape: (.+)/.exec(frontendCall?.user ?? '')?.[1] ?? '';
+    expect(requiredExportLine).toContain('RecipeDashboard');
+    expect(requiredExportLine).not.toContain('Recipe Dashboard');
+  });
+
+  it("tells the consuming component the database file's REAL named exports, not a guess", async () => {
+    const provider = stubProvider((request) =>
+      okResult(
+        request.user.includes('Domain: database')
+          ? 'export function insertRecipe(title, ingredients) { return 1; }\nexport function listRecipes() { return []; }\n'
+          : 'placeholder',
+      ),
+    );
+    const schema = buildRegressionSchema();
+
+    const result = await generateProject(schema, { provider, cache: memoryCache() });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    // The backend component's prompt (generated second, per DOMAIN_PROCESSING_ORDER)
+    // is told the database file's real exports - exactly `insertRecipe` and
+    // `listRecipes`, never a guessed name like `recipeDatabase`, which is the
+    // precise mismatch the live bug reproduced.
+    const backendCall = provider.calls.find((c) => c.user.includes('Domain: backend'));
+    expect(backendCall).toBeDefined();
+    expect(backendCall?.user).toContain('REAL exported names');
+    expect(backendCall?.user).toContain('exports: insertRecipe, listRecipes');
+    expect(backendCall?.user).not.toContain('recipeDatabase');
+
+    // The system prompt itself now mandates the convention unconditionally.
+    expect(backendCall?.system).toContain('Always use named exports');
+    expect(backendCall?.system).toContain('Never use a default export');
+  });
+
+  it('never used a default export or fabricates an export name for a file with no exports yet', async () => {
+    const provider = stubProvider(() => okResult('placeholder'));
+    const schema = buildRegressionSchema();
+
+    await generateProject(schema, { provider, cache: memoryCache() });
+
+    // Every call's "Required export shape" line - the per-domain
+    // exportContract - now instructs a named export, never "export default".
+    for (const call of provider.calls) {
+      const requiredExportLine = /Required export shape: (.+)/.exec(call.user)?.[1] ?? '';
+      expect(requiredExportLine).not.toContain('export default');
+    }
+  });
+
+  it(
+    'produces backend and database files that actually compile together with tsc - not just a changed prompt',
+    async () => {
+      // A stub standing in for a model that DOES use the real export names it
+      // was given - proving the fix closes the gap when the context is
+      // correct, which is what this pipeline change controls. Whether every
+      // real model always uses that context correctly is a separate,
+      // unresolved question this test does not claim to answer (see
+      // docs/GENERATION.md's decision log for that kind of caveat elsewhere
+      // in this pipeline).
+      const provider = stubProvider((request) => {
+        if (request.user.includes('Domain: database')) {
+          return okResult(
+            'export function insertRecipe(title: string, ingredients: string): number {\n  return 1;\n}\n' +
+              'export function listRecipes(): { title: string; ingredients: string }[] {\n  return [];\n}\n',
+          );
+        }
+        const exportsLine = /exports: ([^\n]+)/.exec(request.user);
+        const names = exportsLine?.[1]?.split(', ').filter((n) => n !== '(none found - do not import anything from this file)') ?? [];
+        const importLine = names.length > 0 ? `import { ${names.join(', ')} } from '../db/recipe-store';\n` : '';
+        return okResult(
+          `${importLine}export function createRecipe(title: string, ingredients: string): number {\n  return ${
+            names.includes('insertRecipe') ? 'insertRecipe(title, ingredients)' : '0'
+          };\n}\nexport function getAllRecipes(): unknown[] {\n  return ${
+            names.includes('listRecipes') ? 'listRecipes()' : '[]'
+          };\n}\n`,
+        );
+      });
+      const schema = buildRegressionSchema();
+
+      const result = await generateProject(schema, { provider, cache: memoryCache() });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      const root = await mkdtemp(join(tmpdir(), 'vibe-blueprint-regression-'));
+      try {
+        // Only the two component files this test is actually about - the
+        // templated backend/src/index.ts entry point expects a `router`
+        // named export per assemble.ts's real contract, which this stub
+        // provider (deliberately narrow, focused on the db/router export
+        // mismatch) does not produce, and package.json/tsconfig are not
+        // TypeScript source for tsc to check.
+        const filesToCheck = result.value.files.filter(
+          (f) => f.path.startsWith('backend/src/db/') || f.path.startsWith('backend/src/routes/'),
+        );
+        for (const file of filesToCheck) {
+          const fullPath = join(root, ...file.path.split('/'));
+          await mkdir(join(fullPath, '..'), { recursive: true });
+          await writeFile(fullPath, file.contents, 'utf8');
+        }
+        // A minimal tsconfig, independent of the real generated package.json,
+        // since this test's purpose is narrowly "do these two files' real
+        // named imports/exports resolve and type-check", not a full
+        // install+build of the express/node:sqlite stack those other
+        // milestones already verify live.
+        await writeFile(
+          join(root, 'tsconfig.json'),
+          JSON.stringify(
+            {
+              compilerOptions: {
+                target: 'ES2020',
+                module: 'commonjs',
+                moduleResolution: 'node',
+                strict: true,
+                skipLibCheck: true,
+                noEmit: true,
+              },
+              include: ['backend/**/*.ts'],
+            },
+            null,
+            2,
+          ),
+          'utf8',
+        );
+
+        // Runs the repo's own real, already-installed TypeScript compiler
+        // directly via its binary (not `npx`, which resolves from `root`'s
+        // isolated temp cwd and would otherwise fall through to installing
+        // an unrelated "tsc" package from the registry) - not a mock, not a
+        // regex check for "looks like it would compile".
+        const tscBin = require.resolve('typescript/bin/tsc');
+        expect(() =>
+          execFileSync(process.execPath, [tscBin, '-p', root], { cwd: root, stdio: 'pipe' }),
+        ).not.toThrow();
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+    30_000,
+  );
 });
 
 describe('buildScaleTestSchema', () => {

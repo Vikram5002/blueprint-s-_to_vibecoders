@@ -134,11 +134,12 @@ export function componentTargetPath(domain: DomainName, component: Component): s
  * every security-domain component as global middleware (order: security
  * before routes, so an auth check the model actually wrote runs before any
  * route it protects) and every backend-domain component as a router at
- * `/api/<slug>`. Assumes each generated file's default export matches the
- * contract stated in its own generation prompt (an Express Router for
- * backend components, an Express middleware function for security ones) -
- * if a generated file's export shape does not match, `tsc` fails to build
- * and that failure is reported honestly rather than patched around here.
+ * `/api/<slug>`. Assumes each generated file's named export matches the
+ * fixed contract stated in its own generation prompt - a named export
+ * literally called `middleware` for security components, `router` for
+ * backend ones (see `EXPORT_CONTRACT` in generate-project.ts) - if a
+ * generated file's export shape does not match, `tsc` fails to build and
+ * that failure is reported honestly rather than patched around here.
  */
 export function backendEntryPointFile(
   backendComponents: readonly Component[],
@@ -151,11 +152,11 @@ export function backendEntryPointFile(
 
   for (const component of securityComponents) {
     const slug = componentSlug(component.name);
-    lines.push(`import ${importIdentifier(slug)} from './middleware/${slug}';`);
+    lines.push(`import { middleware as ${importIdentifier(slug)} } from './middleware/${slug}';`);
   }
   for (const component of backendComponents) {
     const slug = componentSlug(component.name);
-    lines.push(`import ${importIdentifier(slug)} from './routes/${slug}';`);
+    lines.push(`import { router as ${importIdentifier(slug)} } from './routes/${slug}';`);
   }
 
   lines.push('', 'const app = express();', 'app.use(express.json());', '');
@@ -187,7 +188,17 @@ function importIdentifier(slug: string): string {
   return slug.replace(/-([a-z0-9])/g, (_match, char: string) => char.toUpperCase());
 }
 
-function pascalIdentifier(slug: string): string {
+/**
+ * Exported so `exportContractFor` in generate-project.ts can tell a frontend
+ * component's generation prompt the EXACT identifier this file's own import
+ * will use - `component.name` itself is not safe to use directly (schema
+ * component names are free text from Layer 2 or a hand-built fixture, e.g.
+ * "Recipe Dashboard" with a space, which is not a valid JS identifier and
+ * broke a real live build - see docs/GENERATION.md), so both sides must
+ * derive the same sanitized identifier from the same slug rather than one
+ * side using the raw name.
+ */
+export function pascalIdentifier(slug: string): string {
   const camel = importIdentifier(slug);
   return camel.charAt(0).toUpperCase() + camel.slice(1);
 }
@@ -196,17 +207,19 @@ function pascalIdentifier(slug: string): string {
  * Templated, not LLM-generated, same reasoning as backendEntryPointFile:
  * mounting is the one place most likely to have cross-file wiring bugs, kept
  * out of the model's hands. Milestone 2 scope only - every frontend
- * component's default-exported React component is stacked in one root, no
- * router. Real multi-page routing (react-router, per-page URLs) is "frontend
- * -database wiring correctness at scale", explicitly deferred to Milestone
- * 3 alongside the auto-regeneration loop.
+ * component's named-exported React component (named exactly after the
+ * component itself, per `exportContractFor` in generate-project.ts) is
+ * stacked in one root, no router. Real multi-page routing (react-router,
+ * per-page URLs) is "frontend-database wiring correctness at scale",
+ * explicitly deferred to Milestone 3 alongside the auto-regeneration loop.
  */
 export function frontendEntryPointFile(frontendComponents: readonly Component[]): GeneratedFile {
   const lines: string[] = ["import { StrictMode } from 'react';", "import { createRoot } from 'react-dom/client';", ''];
 
   for (const component of frontendComponents) {
     const slug = componentSlug(component.name);
-    lines.push(`import ${pascalIdentifier(slug)} from './pages/${slug}';`);
+    const identifier = pascalIdentifier(slug);
+    lines.push(`import { ${identifier} } from './pages/${slug}';`);
   }
 
   lines.push(

@@ -46,6 +46,18 @@ npm dependencies, do not add authentication, logging, retry logic, or error
 handling beyond what the purpose itself describes, and do not scaffold
 anything for a domain other than the one this component belongs to.
 
+Always use named exports. Never use a default export, under any
+circumstances - not "export default function", not "export default" on its
+own line, nothing. Every file this project generates is written by a
+separate, independent request exactly like this one, so a default export
+gives a consuming file nothing to check its guess against; a named export
+fails loudly and specifically (a missing- or wrong-named-export compiler
+error naming the exact identifier) if a consuming file gets it wrong, which
+is far more debuggable than a default-export shape mismatch. If you are told
+which other files you may import from, you will also be told each one's
+REAL exported names - use exactly those identifiers, never a name you
+invent or guess.
+
 Reply with exactly one JSON object matching the schema you were given: a
 single "code" field whose string value is the complete, literal contents of
 the file - real newlines and indentation as they would appear on disk, not
@@ -107,6 +119,20 @@ export interface ComponentGenerationContext {
    */
   readonly relevantConstraints: readonly Constraint[];
   /**
+   * The REAL exported identifiers of each file named in `allowedImportPaths`,
+   * extracted from that file's actual generated content (see
+   * `extractNamedExports` below) - never a guess, never the domain's generic
+   * export-shape contract restated. This is the fix for the cross-file
+   * export-convention mismatch found live (see docs/GENERATION.md): before
+   * this field existed, a component was told WHICH file it could import but
+   * never WHAT that file actually exported, so two independently-generated
+   * files could each guess a different, incompatible shape for the other.
+   * Empty or omitted for a component with no allowed imports, or when the
+   * dependency file has not been generated yet (should not happen given the
+   * fixed domain processing order, but never assumed).
+   */
+  readonly dependencyExports?: readonly DependencyExportInfo[];
+  /**
    * Milestone 3's auto-regeneration retry: present only on the one retried
    * call for a component whose first attempt violated a constraint,
    * verified for real against the actually-written file (never on the
@@ -117,6 +143,13 @@ export interface ComponentGenerationContext {
    * the approved design, not a vague "try again."
    */
   readonly priorViolation?: PriorViolationContext;
+}
+
+export interface DependencyExportInfo {
+  /** The exact import specifier the consuming file was told it may use, e.g. "../db/recipe-store". */
+  readonly importPath: string;
+  /** Every named export `extractNamedExports` found in that file's real, already-generated content. */
+  readonly exportedNames: readonly string[];
 }
 
 export interface PriorViolationContext {
@@ -223,6 +256,21 @@ function buildUserPrompt(context: ComponentGenerationContext): string {
       : 'Allowed local imports: none - this file must have no local (relative) imports',
   ];
 
+  if (context.dependencyExports !== undefined && context.dependencyExports.length > 0) {
+    lines.push(
+      'Each allowed import path above already exists on disk - these are its REAL exported names, ' +
+        'extracted directly from the real file, not a guess. Import only these exact identifiers as named ' +
+        'imports; never assume a default export, never invent a name that is not listed:',
+    );
+    for (const dep of context.dependencyExports) {
+      lines.push(
+        dep.exportedNames.length > 0
+          ? `- ${dep.importPath} exports: ${dep.exportedNames.join(', ')}`
+          : `- ${dep.importPath} exports: (none found - do not import anything from this file)`,
+      );
+    }
+  }
+
   if (context.httpEndpoints !== undefined && context.httpEndpoints.length > 0) {
     lines.push(
       `Real backend HTTP endpoints you may call over the network (fetch by URL, never import as a file): ${context.httpEndpoints.join(', ')}`,
@@ -301,6 +349,59 @@ function extractCode(text: string): Result<string, ComponentCodeFailure> {
  * which is the worse failure per the same precision-over-recall reasoning
  * generate-project-schema.ts already uses for its own heuristics.
  */
+/**
+ * Regex-based extraction of a TypeScript file's named exports - deliberately
+ * not a real parse: this project already vendors `web-tree-sitter` for its
+ * own measurement pipeline, but pulling that into a code-generation helper
+ * for "what identifiers does this one file export" is a real dependency for
+ * a narrow, good-enough job regex already does, given every file this runs
+ * against is itself generated to the single named-exports-only convention
+ * `COMPONENT_CODE_SYSTEM_PROMPT` now mandates. Covers `export function`,
+ * `export async function`, `export const/let/var`, `export class`, `export
+ * interface`, `export type`, and `export { a, b as c }` (including a `type`
+ * modifier inside the braces). Does not attempt to parse a multi-declarator
+ * statement (`export const a = 1, b = 2`) beyond its first identifier - an
+ * accepted gap the same "false negative is worse than false positive"
+ * reasoning `selectRelevantConstraints` already documents does not apply
+ * here in reverse, since a generated file is expected to declare one export
+ * per statement anyway, per this project's own generation prompt.
+ */
+export function extractNamedExports(source: string): readonly string[] {
+  const names = new Set<string>();
+
+  const declarationPatterns = [
+    /export\s+(?:async\s+)?function\s*\*?\s+([A-Za-z_$][\w$]*)/g,
+    /export\s+(?:const|let|var)\s+([A-Za-z_$][\w$]*)/g,
+    /export\s+class\s+([A-Za-z_$][\w$]*)/g,
+    /export\s+interface\s+([A-Za-z_$][\w$]*)/g,
+    /export\s+type\s+([A-Za-z_$][\w$]*)/g,
+  ];
+  for (const pattern of declarationPatterns) {
+    for (const match of source.matchAll(pattern)) {
+      const name = match[1];
+      if (name !== undefined) names.add(name);
+    }
+  }
+
+  const braceExportPattern = /export\s*\{([^}]*)\}/g;
+  for (const match of source.matchAll(braceExportPattern)) {
+    const body = match[1] ?? '';
+    for (const rawItem of body.split(',')) {
+      const item = rawItem.trim().replace(/^type\s+/, '');
+      if (item === '') continue;
+      const asMatch = /^([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)$/.exec(item);
+      if (asMatch?.[2] !== undefined) {
+        names.add(asMatch[2]);
+        continue;
+      }
+      const identifierMatch = /^[A-Za-z_$][\w$]*$/.exec(item);
+      if (identifierMatch !== null) names.add(item);
+    }
+  }
+
+  return [...names].sort();
+}
+
 export function selectRelevantConstraints(
   constraints: readonly Constraint[],
   keywords: readonly string[],

@@ -313,23 +313,69 @@ regeneration. Milestone 3's retry is triggered exclusively by a Blueprint
 pipeline — never by a `tsc` diagnostic, which the retry loop never sees at
 all.
 
-**Concrete next step (not implemented — a decision for later, matching how
-the other two limitations above were handled):** two options, not mutually
-exclusive:
+**Update, 2026-09-14 — option (a) implemented, and confirmed by the same
+live prompt to narrow, not eliminate, this limitation.** Two fixes landed:
+every domain now mandates a single, enforced named-export convention
+(`COMPONENT_CODE_SYSTEM_PROMPT` states it unconditionally; `EXPORT_CONTRACT`
+fixes the exact identifier per domain — `router`, `middleware`, a sanitized
+per-component identifier for frontend, database's existing named-function
+convention), and — the actual structural fix — a consuming component's
+generation context now carries `dependencyExports`: the real, already-
+generated dependency file's actual exported names, extracted from its real
+on-disk content (`extractNamedExports` in `component-codegen.ts`), never a
+guess. Re-running the *exact same* live prompt ("a simple recipe box app for
+saving favorite recipes with ingredients and steps") through the real
+pipeline twice, post-fix, produced **zero** `TS2305`/`TS2614`
+export-mismatch errors either time — the specific bug reproduced above is
+confirmed closed.
 
-- **(a) Fix the system prompt.** Mandate one consistent, explicit
-  export convention project-wide in `COMPONENT_CODE_SYSTEM_PROMPT` and/or
-  `EXPORT_CONTRACT` (e.g. always named exports for cross-component
-  consumption, with the exact identifier names surfaced to consumers) so
-  independently-generated files stop guessing each other's shape.
+**Both live re-runs still failed `npm run build`, on different, unrelated
+errors** — exactly the outcome the "Concrete next step" below anticipated
+when it proposed (a) and (b) as non-exclusive: narrowing the failure
+surface, not guaranteeing a clean build, since a model can still write
+incorrect code even when given correct interface information. Concrete
+evidence from the same live run, both instances confirmed unrelated to
+export/import shape:
+
+```
+backend/src/routes/recipe-api-service.ts(26,36): error TS2345: Argument of
+type 'string' is not assignable to parameter of type 'number'.
+frontend/src/main.tsx(17,8): error TS2741: Property 'recipeId' is missing
+in type '{}' but required in type 'RecipeDetailViewProps'.
+```
+
+The first is an ordinary type-correctness bug inside one component's own
+logic (a route handler passing a `string` where its own database function
+declared a `number` parameter) — nothing to do with cross-file export
+shape. The second is a different structural gap entirely: a frontend page
+component declared a required prop (`recipeId`), but the templated entry
+point (`frontendEntryPointFile` in `assemble.ts`) mounts every frontend
+component with no props at all, an assumption the export-convention fix
+does not touch and was never asked to. Neither was fixed in this pass —
+doing so would be a different, unscoped change — but both are exactly the
+class of failure a build-triggered retry (option (b) below) would attempt
+to correct, and neither would have been caught before `npm run build` ran,
+since Blueprint's import-graph check has no way to see either kind of
+error.
+
+**Concrete next step:** with (a) implemented, the one remaining option from
+the original two, still not implemented — a decision for later, same
+discipline as every other limitation on this page:
+
 - **(b) Extend the retry mechanism to also fire on a build failure.** The
   same pattern Milestone 3 already proved for Blueprint violations — feed
   the actual `tsc` diagnostic (file, line, message) back to the specific
   component(s) it names as corrective context, regenerate once, re-run
   `npm run build`, hard-fail as a review item if it still fails — rather
   than treating `npm run build` as an unretried terminal check as it is
-  today.
+  today. The two errors above are direct, live evidence of what (b) would
+  need to handle: a same-file type error (straightforward attribution, the
+  diagnostic already names the one offending file) and a cross-file
+  prop-contract mismatch between a generated component and a templated,
+  non-LLM entry point (a kind of attribution this pipeline has not needed
+  to solve yet, since every prior retry case involved two independently
+  *generated* files, never a generated file against a templated one).
 
-Either fix touches code this project has deliberately not modified
+This fix touches code this project has deliberately not modified
 mid-demo; this section exists to make the gap precise and discoverable,
 not to resolve it.

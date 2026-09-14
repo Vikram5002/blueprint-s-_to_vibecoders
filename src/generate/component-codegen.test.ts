@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { createComponentCodeGenerator, selectRelevantConstraints, type ComponentGenerationContext } from './component-codegen.js';
+import {
+  createComponentCodeGenerator,
+  extractNamedExports,
+  selectRelevantConstraints,
+  type ComponentGenerationContext,
+} from './component-codegen.js';
 import type { CompletionProvider, CompletionRequest, CompletionResult } from '../llm/provider.js';
 import type { CachedLabel, LabelCache } from '../llm/cache.js';
 import type { Constraint } from '../types/constraints.js';
@@ -136,6 +141,51 @@ function constraintNaming(subjectPhrase: string, objectPhrase: string): Constrai
     provenance: 'STATED',
   };
 }
+
+describe('extractNamedExports', () => {
+  it('extracts named function and const exports - the real recipe-store.ts shape from the live recipe-box bug', () => {
+    const source = `
+import { DatabaseSync } from "node:sqlite";
+export const db = new DatabaseSync("recipes.db");
+export function insertRecipe(title: string, ingredients: string): number {
+  return 1;
+}
+export function listRecipes(): unknown[] {
+  return [];
+}
+`;
+    expect(extractNamedExports(source)).toEqual(['db', 'insertRecipe', 'listRecipes']);
+  });
+
+  it('does not invent an export for a name that was only guessed by a consumer, e.g. "recipeDatabase"', () => {
+    // The exact real shape from the live bug: no object called `recipeDatabase`
+    // exists anywhere in this file, only individual named functions.
+    const source = `export function createRecipe() {}\nexport function getRecipe() {}\n`;
+    const exported = extractNamedExports(source);
+    expect(exported).toEqual(['createRecipe', 'getRecipe']);
+    expect(exported).not.toContain('recipeDatabase');
+  });
+
+  it('extracts async functions, classes, interfaces, and types', () => {
+    const source = `
+export async function fetchThing() {}
+export class Thing {}
+export interface ThingShape {}
+export type ThingAlias = ThingShape;
+`;
+    expect(extractNamedExports(source)).toEqual(['Thing', 'ThingAlias', 'ThingShape', 'fetchThing']);
+  });
+
+  it('extracts re-exported and aliased names from an export list', () => {
+    const source = `function a() {}\nfunction b() {}\nexport { a, b as renamedB };`;
+    expect(extractNamedExports(source)).toEqual(['a', 'renamedB']);
+  });
+
+  it('finds nothing exported in a file that only has a default export', () => {
+    const source = `export default function middleware(req: unknown, res: unknown, next: () => void) {}\n`;
+    expect(extractNamedExports(source)).toEqual([]);
+  });
+});
 
 describe('selectRelevantConstraints', () => {
   it('matches a constraint whose subject or object phrase contains a given keyword', () => {
