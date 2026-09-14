@@ -18,19 +18,24 @@ import type { ProjectSchema } from './project-schema-types';
  * simplify the retry/failure reporting to make the UI look cleaner."
  */
 
+type Phase =
+  GenerationPhase | 'installing' | 'building' | 'build-regenerating' | 'build-reverifying';
+
 type PanelState =
   | { readonly kind: 'idle' }
-  | { readonly kind: 'in-flight'; readonly phase?: GenerationPhase | 'installing' | 'building' }
+  | { readonly kind: 'in-flight'; readonly phase?: Phase }
   | { readonly kind: 'done'; readonly job: ApplicationJob }
   | { readonly kind: 'error'; readonly message: string };
 
-const PHASE_LABEL: Readonly<Record<GenerationPhase | 'installing' | 'building', string>> = {
+const PHASE_LABEL: Readonly<Record<Phase, string>> = {
   generating: 'Generating component files…',
   verifying: 'Verifying with Blueprint…',
   regenerating: 'Correcting a violating component…',
   reverifying: 'Re-verifying the correction…',
   installing: 'Running npm install…',
   building: 'Running npm run build…',
+  'build-regenerating': 'Correcting a build failure…',
+  'build-reverifying': 'Re-running npm run build…',
 };
 
 export function GenerateApplicationPanel({
@@ -211,7 +216,9 @@ function ApplicationJobReport({ job }: { readonly job: ApplicationJob }): JSX.El
                   <span className="rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-[11px] text-slate-400">
                     {attempt.origin === 'blueprint-violation'
                       ? 'Blueprint violation'
-                      : 'suspected auth-bypass pattern'}
+                      : attempt.origin === 'service-locator-evasion'
+                        ? 'suspected auth-bypass pattern'
+                        : 'npm run build failure'}
                   </span>
                   <span className="font-medium text-slate-200">
                     {attempt.component.name} ({attempt.domain})

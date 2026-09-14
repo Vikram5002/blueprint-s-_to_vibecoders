@@ -650,3 +650,47 @@ discipline as every other limitation on this page:
 This fix touches code this project has deliberately not modified
 mid-demo; this section exists to make the gap precise and discoverable,
 not to resolve it.
+
+**Implemented, 2026-09-14 — option (b), exactly as scoped, including the
+safety rule.** `src/generate/verify-and-regenerate.ts` gains
+`parseTscDiagnostics` (parses the real, stable `tsc` format:
+`<file>(<line>,<col>): error <code>: <message>`), `attributeBuildFailure`,
+and `regenerateForBuildFailure`. Deliberately NOT folded into
+`generateAndVerifyProject` itself: that function's own fast unit tests, and
+every caller that only cares about the Blueprint/service-locator loop,
+never need a real `npm install`/`npm run build` to run - an early version
+of this change baked install/build unconditionally into
+`generateAndVerifyProject` and it broke every one of those tests with real
+subprocess timeouts, which is exactly the coupling this final design avoids.
+Instead, `src/server/generation-api.ts` (the one place that already runs
+`npm install`/`npm run build` for real) calls `regenerateForBuildFailure`
+itself when a build fails, exactly the pattern Milestone 3 already proved:
+parse the real diagnostic, attribute it, regenerate once with the raw `tsc`
+text as corrective context (reusing `PriorViolationContext`'s exact shape),
+write to disk, and the caller re-runs `npm run build` itself to learn the
+real outcome.
+
+**The safety rule is implemented precisely as scoped, never loosened:**
+`attributeBuildFailure` auto-retries ONLY when every parsed diagnostic
+names the exact same file, and that file maps to a real schema component.
+Zero diagnostics, diagnostics spanning more than one distinct file, or a
+diagnostic naming a file that maps to no component (a templated entry
+point, exactly the `frontend/src/main.tsx`/`RecipeDetailViewProps` case
+recorded above) all resolve to `{ kind: 'ambiguous' }` — no retry is
+attempted, and the original failed build is reported honestly, unretried,
+the same "never guess" posture `groupEdgesByFile` already established for
+multi-file Blueprint violations. A caught, cleanly-attributed failure gets
+the same one-retry-then-hard-fail treatment as every other retry reason,
+logged in the same `regenerationLog` with `origin: 'build-failure'`.
+
+**Regression tests, both required cases:** `build-failure-retry.test.ts`
+covers `parseTscDiagnostics` and `attributeBuildFailure` directly (including
+the exact single-file live diagnostic quoted above, a synthetic two-file
+case, and a diagnostic naming a templated entry point), then
+`regenerateForBuildFailure` end to end: a single-file failure fires exactly
+one retry, and the corrected output is verified to actually compile with the
+repo's own real `tsc` binary — not just "the stub returned different text";
+a multi-file-ambiguous failure and an unparseable failure both confirm zero
+retries are attempted and the files are returned untouched, byte for byte.
+Full suite: 1068/1069 passing (same pre-existing, environment-dependent
+live-provider flake). Lint clean.

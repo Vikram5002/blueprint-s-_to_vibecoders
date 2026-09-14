@@ -25,6 +25,7 @@ import { join } from 'node:path';
 import { Hono } from 'hono';
 import {
   generateAndVerifyProject,
+  regenerateForBuildFailure,
   type GenerateAndVerifyFailure,
   type GenerationPhase,
   type RegenerationAttempt,
@@ -81,7 +82,7 @@ export interface ApplicationJob {
   readonly id: string;
   readonly createdAt: string;
   readonly status: ApplicationJobStatus;
-  readonly phase?: GenerationPhase | 'installing' | 'building';
+  readonly phase?: GenerationPhase | 'installing' | 'building' | 'build-regenerating' | 'build-reverifying';
   readonly result?: ApplicationJobResult;
   readonly error?: ApplicationJobError;
 }
@@ -268,7 +269,54 @@ async function runApplicationJob(
     build = await runCommand('npm', ['run', 'build'], root);
   }
 
-  const files: FileSummary[] = generated.value.files.map((file: GeneratedFile) => ({
+  let resultFiles = generated.value.files;
+  let regenerationLog = generated.value.regenerationLog;
+
+  // Part 3: extend the retry mechanism to a real build failure, exactly the
+  // same one-retry-then-hard-fail discipline every other retry reason
+  // already follows. Only ever attempted when `npm install` itself
+  // succeeded - an install failure is essentially never a single
+  // component's own code problem, and there is nothing here to attribute a
+  // dependency-resolution or environment failure to.
+  if (install.ok && !build.ok) {
+    current = { ...current, phase: 'build-regenerating' };
+    store.set(current);
+    const buildRetry = await regenerateForBuildFailure(
+      schema,
+      { provider: llm.provider, cache: llm.cache, root },
+      resultFiles,
+      build.output,
+    );
+    if (!buildRetry.ok) {
+      store.set({ ...current, status: 'failed', error: { phase: 'generate-application', ...buildRetry.error } });
+      return;
+    }
+
+    if (buildRetry.value.attempted !== null) {
+      resultFiles = buildRetry.value.files;
+      current = { ...current, phase: 'build-reverifying' };
+      store.set(current);
+      const rebuild = await runCommand('npm', ['run', 'build'], root);
+      regenerationLog = [
+        ...regenerationLog,
+        {
+          component: buildRetry.value.attempted.component,
+          domain: buildRetry.value.attempted.domain,
+          targetPath: buildRetry.value.attempted.targetPath,
+          firstAttemptViolation: buildRetry.value.attempted.firstAttemptViolation,
+          origin: 'build-failure',
+          outcome: rebuild.ok ? 'fixed' : 'still-violating',
+        },
+      ];
+      build = rebuild;
+    }
+    // buildRetry.value.attempted === null: the failure did not attribute
+    // cleanly to one component (zero, or more than one, distinct file named
+    // across the diagnostics) - never guess, leave `build` as the original
+    // failed outcome, reported honestly below as an unretried build failure.
+  }
+
+  const files: FileSummary[] = resultFiles.map((file: GeneratedFile) => ({
     path: file.path,
     bytes: Buffer.byteLength(file.contents, 'utf8'),
   }));
@@ -285,7 +333,7 @@ async function runApplicationJob(
     status: 'succeeded',
     result: {
       files,
-      regenerationLog: generated.value.regenerationLog,
+      regenerationLog,
       unresolvedViolations: generated.value.unresolvedViolations,
       unresolvedServiceLocatorFindings: generated.value.unresolvedServiceLocatorFindings,
       build: buildOutcome,

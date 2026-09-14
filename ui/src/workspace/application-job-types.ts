@@ -42,7 +42,7 @@ export interface RegenerationAttempt {
   readonly targetPath: string;
   readonly firstAttemptViolation: PriorViolationContext;
   /** Which check triggered this retry - a real Blueprint violation, or Item 3's narrower service-locator-evasion check. */
-  readonly origin: 'blueprint-violation' | 'service-locator-evasion';
+  readonly origin: 'blueprint-violation' | 'service-locator-evasion' | 'build-failure';
   readonly outcome: 'fixed' | 'still-violating';
 }
 
@@ -113,7 +113,8 @@ export interface ApplicationJob {
   readonly id: string;
   readonly createdAt: string;
   readonly status: ApplicationJobStatus;
-  readonly phase?: GenerationPhase | 'installing' | 'building';
+  readonly phase?:
+    GenerationPhase | 'installing' | 'building' | 'build-regenerating' | 'build-reverifying';
   readonly result?: ApplicationJobResult;
   readonly error?: ApplicationJobError;
 }
