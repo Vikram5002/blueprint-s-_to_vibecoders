@@ -317,7 +317,10 @@ export function PageBuilderCanvas(): JSX.Element {
   const [generated, setGenerated] = useState<GeneratedPageFile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  /** The fixed 1280x800 element coordinate space. */
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  /** The flexible, scrollable window onto it - what is actually visible on screen. */
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   /**
    * A real, live bug: without an activation constraint, a zero-movement
    * pointerdown+pointerup (an ordinary click) is ambiguous with a drag
@@ -334,7 +337,8 @@ export function PageBuilderCanvas(): JSX.Element {
   function handleDragEnd(event: DragEndEvent): void {
     const activeId = String(event.active.id);
     const canvasRect = canvasRef.current?.getBoundingClientRect();
-    if (canvasRect === undefined) return;
+    const viewportRect = viewportRef.current?.getBoundingClientRect();
+    if (canvasRect === undefined || viewportRect === undefined) return;
 
     if (activeId.startsWith('palette:')) {
       const type = activeId.slice('palette:'.length) as CanvasElementType;
@@ -354,13 +358,19 @@ export function PageBuilderCanvas(): JSX.Element {
       if (finalRect === null) return;
       const centerX = finalRect.left + finalRect.width / 2;
       const centerY = finalRect.top + finalRect.height / 2;
+      // Asked against the VISIBLE viewport, not the canvas: the canvas is now
+      // usually wider than what is on screen, and a drop onto scrolled-out
+      // canvas area the user cannot even see is not a drop they meant.
       const droppedOnCanvas =
-        centerX >= canvasRect.left &&
-        centerX <= canvasRect.right &&
-        centerY >= canvasRect.top &&
-        centerY <= canvasRect.bottom;
+        centerX >= viewportRect.left &&
+        centerX <= viewportRect.right &&
+        centerY >= viewportRect.top &&
+        centerY <= viewportRect.bottom;
       if (!droppedOnCanvas) return;
 
+      // Canvas-space. No scroll adjustment needed: the canvas element scrolls
+      // together with its own contents, so its rect's origin already IS the
+      // element coordinate space's origin at any scroll offset.
       const dropX = finalRect.left - canvasRect.left;
       const dropY = finalRect.top - canvasRect.top;
 
@@ -419,7 +429,7 @@ export function PageBuilderCanvas(): JSX.Element {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto p-6">
-      <div className="mx-auto max-w-6xl space-y-4">
+      <div className="mx-auto max-w-[1700px] space-y-4">
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-xs text-slate-400">
             Page name
@@ -452,21 +462,62 @@ export function PageBuilderCanvas(): JSX.Element {
               <p className="pt-2 text-[10px] text-slate-500">Drag any element onto the canvas.</p>
             </aside>
 
+            {/*
+              Two elements, not one, and that split is load-bearing.
+              Previously the fixed 1280x800 canvas WAS the grid item, and a
+              grid item with a definite width contributes that width as the
+              track's minimum - so `1fr` resolved to a literal 1280px
+              (measured: `grid-template-columns: 160px 1280px 260px`),
+              overflowing the container and pushing the 260px Inspector
+              column clean off the right edge of the viewport (x=1784 in a
+              1536px window, with no page scrollbar to reach it). The Label
+              and Color controls had been rendering the whole time; nobody
+              could see them. `min-width: 0` does NOT fix that case - it
+              overrides the content-based automatic minimum, not the
+              minimum contribution of a specified size.
+
+              So the flexible, scrollable viewport is the grid item, and the
+              fixed-size canvas lives inside it. That also keeps the drop
+              maths honest: the inner canvas scrolls WITH its contents, so
+              its own rect stays the element coordinate space at any scroll
+              offset, while the outer rect is what "was this dropped on the
+              visible canvas?" has to be asked against.
+            */}
             <div
-              ref={canvasRef}
-              data-testid="page-builder-canvas"
-              onClick={() => setSelectedId(null)}
-              style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, position: 'relative' }}
-              className="max-w-full overflow-auto border border-slate-700 bg-white"
+              ref={viewportRef}
+              data-testid="page-builder-viewport"
+              className="min-w-0 overflow-auto border border-slate-700"
             >
-              {elements.map((element) => (
-                <PlacedElement
-                  key={element.id}
-                  element={element}
-                  selected={element.id === selectedId}
-                  onSelect={() => setSelectedId(element.id)}
-                />
-              ))}
+              <div
+                ref={canvasRef}
+                data-testid="page-builder-canvas"
+                // Only a click on the canvas BACKGROUND clears the selection.
+                // Without the target check this fired for clicks on placed
+                // elements too, since those bubble - so selecting an element
+                // by clicking it set `selectedId` on pointerup and then
+                // immediately cleared it on the click that followed, and the
+                // Inspector snapped back to "select an element". An element
+                // was therefore only ever editable in the instant after it
+                // was dropped (which auto-selects); clicking it again to
+                // rename or recolour it could never work. Checked here
+                // rather than with stopPropagation() on the child, because
+                // PlacedElement's own comment documents why interfering with
+                // its pointer events breaks dnd-kit's drag cleanup.
+                onClick={(event) => {
+                  if (event.target === event.currentTarget) setSelectedId(null);
+                }}
+                style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, position: 'relative' }}
+                className="bg-white"
+              >
+                {elements.map((element) => (
+                  <PlacedElement
+                    key={element.id}
+                    element={element}
+                    selected={element.id === selectedId}
+                    onSelect={() => setSelectedId(element.id)}
+                  />
+                ))}
+              </div>
             </div>
 
             <aside className="space-y-3 rounded-lg border border-slate-800 bg-slate-900 p-3">

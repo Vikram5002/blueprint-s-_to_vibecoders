@@ -403,3 +403,96 @@ test.describe('Page builder Milestone 1: real drag-and-drop, real deterministic 
     }
   });
 });
+
+/**
+ * Regression coverage for two bugs that made the Inspector's controls
+ * effectively unreachable, both reported by a real user as "there is no
+ * colour option and no way to name a button" - the controls existed and had
+ * existed all along, but:
+ *
+ *  1. The 1280px canvas WAS the `1fr` grid item, and a grid item with a
+ *     definite width contributes that width as the track's minimum, so the
+ *     track resolved to a literal 1280px and shoved the 260px Inspector
+ *     column off the right edge (measured at x=1784 in a 1536px window,
+ *     with no page scrollbar to reach it).
+ *  2. Clicking a placed element selected it on pointerup and then instantly
+ *     cleared it, because the click bubbled to the canvas's own
+ *     clear-selection handler - so an element was only ever editable in the
+ *     instant after being dropped.
+ *
+ * Deliberately runs at a REALISTIC 1536x730 viewport, not the 2400x1400 the
+ * suite above uses: that large viewport is exactly why neither bug was ever
+ * caught, since at 2400px wide everything fit regardless.
+ */
+test.describe('Page builder: the Inspector is reachable and usable at a real window size', () => {
+  test.setTimeout(120_000);
+  test.use({ viewport: { width: 1536, height: 730 } });
+
+  let cli: RunningCli;
+
+  test.beforeAll(async () => {
+    cli = await startCli();
+  }, 60_000);
+
+  test.afterAll(async () => {
+    await cli?.stop();
+  });
+
+  test('re-selects, renames and recolours an element - all of it on screen', async ({ page }) => {
+    await page.goto(`${cli.baseUrl}/workspace.html`);
+    await page.getByRole('tab', { name: 'Page builder' }).click();
+
+    const canvasBox = await page.getByTestId('page-builder-canvas').boundingBox();
+    const paletteBox = await page.getByTestId('palette-button').boundingBox();
+    if (canvasBox === null || paletteBox === null) throw new Error('missing bounding box');
+
+    const GRAB_INSET = 5;
+    await dragTo(
+      page,
+      { x: paletteBox.x + GRAB_INSET, y: paletteBox.y + GRAB_INSET },
+      { x: canvasBox.x + 120 + GRAB_INSET, y: canvasBox.y + 120 + GRAB_INSET },
+    );
+
+    // Bug 1: the whole Inspector must be inside the window, not past its edge.
+    const inspectorOnScreen = await page.evaluate(() => {
+      const heading = [...document.querySelectorAll('h4')].find((el) => el.textContent?.trim() === 'Inspector');
+      const panel = heading?.closest('aside');
+      if (!panel) return null;
+      const rect = panel.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, viewportWidth: window.innerWidth };
+    });
+    if (inspectorOnScreen === null) throw new Error('Inspector panel not found');
+    expect(inspectorOnScreen.left).toBeGreaterThanOrEqual(0);
+    expect(inspectorOnScreen.right).toBeLessThanOrEqual(inspectorOnScreen.viewportWidth);
+
+    // A drop auto-selects, so clear that first: clicking the empty canvas
+    // BACKGROUND must still deselect (the other half of the fix).
+    const inspector = page.locator('aside').last();
+    const labelInput = inspector.locator('input[type="text"]');
+    await expect(labelInput).toBeVisible();
+    await page.mouse.click(canvasBox.x + 500, canvasBox.y + 350);
+    await expect(labelInput).toHaveCount(0);
+
+    // Bug 2: click the placed element - it must become, and STAY, selected.
+    const placed = page.locator('[data-testid^="placed-"]').first();
+    const placedBox = await placed.boundingBox();
+    if (placedBox === null) throw new Error('placed element has no bounding box');
+    await page.mouse.click(placedBox.x + placedBox.width / 2, placedBox.y + placedBox.height / 2);
+    await expect(labelInput).toBeVisible();
+
+    // Now actually use the controls the user said did not exist.
+    await labelInput.fill('Submit');
+    await page.getByTestId('color-success').click();
+
+    await expect(placed).toHaveText('Submit');
+    await expect
+      .poll(async () => placed.evaluate((el) => getComputedStyle(el).backgroundColor))
+      .toBe('rgb(22, 163, 74)'); // DESIGN_TOKENS.success, #16a34a
+
+    // Both choices must survive into the real generated file.
+    await page.getByRole('button', { name: 'Generate', exact: true }).click();
+    const code = page.getByTestId('generated-code');
+    await expect(code).toBeVisible();
+    await expect(code).toContainText('>Submit</button>');
+  });
+});
