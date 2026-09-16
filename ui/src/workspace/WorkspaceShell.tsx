@@ -4,11 +4,13 @@ import { PromptBar } from './PromptBar';
 import { LayoutDemo } from './LayoutDemo';
 import { VerificationDemo } from './VerificationDemo';
 import { WorkflowDemo } from './WorkflowDemo';
+import { PageBuilderCanvas } from './PageBuilderCanvas';
 import { useWorkspaceStore, type Tab } from './store';
 
 const TABS: readonly { readonly id: Tab; readonly label: string }[] = [
   { id: 'conversation', label: 'Conversation' },
-  { id: 'layout', label: 'Layout (mock)' },
+  { id: 'layout', label: 'Page regions (mock)' },
+  { id: 'page-builder', label: 'Page builder' },
   { id: 'verification', label: 'Verification (mock)' },
   { id: 'workflow', label: 'Workflow graph (mock)' },
 ];
@@ -63,6 +65,7 @@ export function WorkspaceShell(): JSX.Element {
           </>
         )}
         {activeTab === 'layout' && <LayoutDemo />}
+        {activeTab === 'page-builder' && <PageBuilderCanvas />}
         {activeTab === 'verification' && <VerificationDemo />}
         {activeTab === 'workflow' && <WorkflowDemo />}
       </div>

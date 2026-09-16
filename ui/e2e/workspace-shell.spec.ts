@@ -100,7 +100,7 @@ test.describe('sidebar collapse / expand', () => {
 test.describe('tab navigation', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
-  test('starts on Conversation and moves between all four sections with zero console errors', async ({
+  test('starts on Conversation and moves between all five sections with zero console errors', async ({
     page,
   }) => {
     const consoleErrors: string[] = [];
@@ -111,7 +111,8 @@ test.describe('tab navigation', () => {
     await page.goto('/workspace.html');
 
     const conversationTab = page.getByRole('tab', { name: 'Conversation' });
-    const layoutTab = page.getByRole('tab', { name: 'Layout (mock)' });
+    const layoutTab = page.getByRole('tab', { name: 'Page regions (mock)' });
+    const pageBuilderTab = page.getByRole('tab', { name: 'Page builder' });
     const verificationTab = page.getByRole('tab', { name: 'Verification (mock)' });
     const workflowTab = page.getByRole('tab', { name: 'Workflow graph (mock)' });
 
@@ -122,6 +123,10 @@ test.describe('tab navigation', () => {
     await expect(layoutTab).toHaveAttribute('aria-selected', 'true');
     await expect(conversationTab).toHaveAttribute('aria-selected', 'false');
     await expect(page.getByText('Mock data — these presets are hard-coded')).toBeVisible();
+
+    await pageBuilderTab.click();
+    await expect(pageBuilderTab).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('page-builder-canvas')).toBeVisible();
 
     await verificationTab.click();
     await expect(verificationTab).toHaveAttribute('aria-selected', 'true');
@@ -197,7 +202,7 @@ test.describe('workflow graph — fit-to-view', () => {
 test.describe('no horizontal overflow at 768px', () => {
   test.use({ viewport: { width: 768, height: 1024 } });
 
-  for (const tab of ['Conversation', 'Layout (mock)', 'Verification (mock)', 'Workflow graph (mock)']) {
+  for (const tab of ['Conversation', 'Page regions (mock)', 'Page builder', 'Verification (mock)', 'Workflow graph (mock)']) {
     test(`"${tab}" tab has no horizontal overflow`, async ({ page }) => {
       await page.goto('/workspace.html');
       await page.getByRole('tab', { name: tab }).click();
