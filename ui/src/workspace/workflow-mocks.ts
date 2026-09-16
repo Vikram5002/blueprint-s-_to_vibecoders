@@ -362,3 +362,57 @@ export const SCALE_TEST_SCHEMA: ProjectSchema = {
   ],
   provenance: 'STATED',
 };
+
+// --- Scenario 5: a deliberately single-component, single-domain schema ---
+//
+// Constructed specifically to reproduce the build-failure retry's
+// 'attributed' branch live (see docs/GENERATION.md's own record of why the
+// recipe-box prompt cannot do this: its schema always spans multiple
+// generated domains - frontend, backend, database - so any independent bug
+// in one domain's file tends to co-occur with an unrelated bug elsewhere
+// (most reliably, frontendEntryPointFile's own "mount every page with zero
+// props" gap firing whenever a frontend detail page needs one), making the
+// build output span more than one file almost every time. This schema
+// populates ONLY the backend domain - frontend, database, and security all
+// stay empty - so the only non-templated, LLM-generated file in the whole
+// project is InventoryService's own file. package.json/tsconfig.json/
+// backend/src/index.ts are templated, non-LLM code from assemble.ts that
+// has never once produced a compile error across dozens of prior live and
+// unit runs. With no second domain, there is no second file an independent
+// bug could occur in: if `tsc` fails at all, it can only ever name this one
+// file - a structural guarantee, not a hope, that holds regardless of what
+// the model actually writes.
+//
+// InventoryService's purpose deliberately mirrors the exact class of real,
+// unforced bug already seen live (recipe-api-service.ts's real "argument of
+// type 'string' is not assignable to parameter of type 'number'"): reading
+// a value from Express's `req.query` (always a string) and using it
+// directly in numeric arithmetic. This makes a similar real mistake
+// plausible without scripting or injecting one - whether it actually
+// happens is still entirely up to the model.
+
+export const SINGLE_COMPONENT_SCHEMA: ProjectSchema = {
+  sessionId: 'mock-session-5-single-component',
+  title: 'Warehouse inventory adjuster',
+  originalPrompt: 'A tiny backend-only service for adjusting a warehouse item stock count.',
+  domains: {
+    frontend: { components: [], dependsOn: [] },
+    backend: {
+      components: [
+        component(
+          'InventoryService',
+          "Exposes REST endpoints for tracking a single warehouse item's stock count, held in an " +
+            "in-memory number starting at 100. POST /adjust reads a `delta` value from the request's query " +
+            'string (e.g. ?delta=5) and adds it to the current count, returning the new count. GET ' +
+            '/threshold-check reads a `minThreshold` value from the query string and returns whether the ' +
+            'current count is currently below it, comparing them as numbers.',
+        ),
+      ],
+      dependsOn: [],
+    },
+    database: { components: [], dependsOn: [] },
+    security: { components: [], dependsOn: [] },
+  },
+  constraints: [],
+  provenance: 'STATED',
+};
