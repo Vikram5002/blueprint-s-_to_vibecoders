@@ -34,7 +34,7 @@
  * be reproducible only as long as nobody's environment changed.
  */
 import { createAnthropicProvider, readApiKey, DEFAULT_MODEL as DEFAULT_ANTHROPIC_MODEL } from './anthropic.js';
-import { createGeminiProvider, readGeminiApiKey, DEFAULT_GEMINI_MODEL } from './gemini.js';
+import { createGeminiProvider, readGeminiApiKeys, DEFAULT_GEMINI_MODEL } from './gemini.js';
 import {
   createBluesmindsProvider,
   readBluesmindsApiKey,
@@ -67,6 +67,15 @@ export interface ProviderChoice {
   readonly apiKey: string | null;
   /** Which environment variable the key would come from. Empty for `local` — no such variable exists. */
   readonly keyEnv: string;
+  /**
+   * Same-vendor, same-model key rotation (Gemini only - see gemini.ts's own
+   * header for why this is not the provider-fallback decision this file's
+   * own header documents rejecting): every `GEMINI_API_KEY_2`/`_3`/...
+   * configured beyond the primary `apiKey` above, in order. Always empty for
+   * every other provider, and empty for `gemini` itself when no numbered
+   * key is set - "one key" behaves exactly as it always has.
+   */
+  readonly additionalApiKeys?: readonly string[];
 }
 
 /**
@@ -94,11 +103,13 @@ export function chooseProvider(env: NodeJS.ProcessEnv = process.env): ProviderCh
   }
 
   if (provider === 'gemini') {
+    const keys = readGeminiApiKeys(env);
     return {
       provider,
       model: pick(DEFAULT_GEMINI_MODEL),
-      apiKey: readGeminiApiKey(env),
+      apiKey: keys[0] ?? null,
       keyEnv: 'GEMINI_API_KEY',
+      additionalApiKeys: keys.slice(1),
     };
   }
 
@@ -145,7 +156,13 @@ export async function createProvider(choice: ProviderChoice): Promise<Completion
     return createAnthropicProvider({ apiKey: choice.apiKey, model: choice.model });
   }
   if (choice.provider === 'gemini') {
-    return createGeminiProvider({ apiKey: choice.apiKey, model: choice.model });
+    return createGeminiProvider({
+      apiKey: choice.apiKey,
+      model: choice.model,
+      ...(choice.additionalApiKeys !== undefined && choice.additionalApiKeys.length > 0
+        ? { additionalApiKeys: choice.additionalApiKeys }
+        : {}),
+    });
   }
   return createBluesmindsProvider({ apiKey: choice.apiKey, model: choice.model });
 }
