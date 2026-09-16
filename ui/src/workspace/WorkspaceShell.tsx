@@ -5,6 +5,7 @@ import { LayoutDemo } from './LayoutDemo';
 import { VerificationDemo } from './VerificationDemo';
 import { WorkflowDemo } from './WorkflowDemo';
 import { PageBuilderCanvas } from './PageBuilderCanvas';
+import { ProviderPicker } from './ProviderPicker';
 import { useWorkspaceStore, type Tab } from './store';
 
 const TABS: readonly { readonly id: Tab; readonly label: string }[] = [
@@ -51,11 +52,16 @@ export function WorkspaceShell(): JSX.Element {
               role="tab"
               aria-selected={activeTab === tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="rounded px-2.5 py-1 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-100 aria-selected:bg-slate-800 aria-selected:text-slate-100"
+              className="whitespace-nowrap rounded px-2.5 py-1 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-100 aria-selected:bg-slate-800 aria-selected:text-slate-100"
             >
               {tab.label}
             </button>
           ))}
+
+          {/* Not inside any one tab: the choice decides who serves BOTH schema generation and the application generation that follows it. */}
+          <div className="ml-auto flex items-center pr-1">
+            <ProviderPicker />
+          </div>
         </div>
 
         {activeTab === 'conversation' && (

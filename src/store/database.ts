@@ -15,7 +15,7 @@ import { posix } from 'node:path';
 
 export type BlueprintDatabase = Database.Database;
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export function databasePathFor(root: string): string {
   return posix.join(root.replace(/\\/g, '/'), '.vibe', 'blueprint.db');
@@ -132,6 +132,19 @@ function migrate(db: BlueprintDatabase): void {
 
     CREATE INDEX IF NOT EXISTS workflow_sessions_by_date
       ON workflow_sessions (created_at);
+
+    -- v4 -> v5 adds a tiny key/value table for durable user choices that are
+    -- neither analysis output nor a correction. One row per setting, last
+    -- write wins. Today that is exactly one key ('llm.provider', see
+    -- src/llm/provider-registry.ts): which model answers generation requests
+    -- is a deliberate choice a person made, so it should survive the restart
+    -- that re-analysing a repository already implies, rather than silently
+    -- reverting to whatever the environment happens to say.
+    CREATE TABLE IF NOT EXISTS settings (
+      key         TEXT PRIMARY KEY,
+      value       TEXT NOT NULL,
+      updated_at  TEXT NOT NULL
+    );
   `);
 
   db.pragma(`user_version = ${SCHEMA_VERSION}`);

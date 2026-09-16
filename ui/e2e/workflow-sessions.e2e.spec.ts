@@ -135,3 +135,68 @@ test.describe('Sessions sidebar: real, server-persisted generation runs', () => 
     await expect(page.getByText('Enter a prompt above to generate a real ProjectSchema.')).not.toBeVisible();
   });
 });
+
+/**
+ * The model picker: switching which provider answers generation requests,
+ * without editing an env var and restarting. Runs against the real CLI
+ * server (so `/api/providers` is really mounted and really probes for a
+ * local inference server), in the same spec file as the sessions test
+ * because both need exactly this `startCli` harness.
+ */
+test.describe('Model picker: choosing between a cloud API and the local model', () => {
+  test.setTimeout(120_000);
+
+  let cli: RunningCli;
+
+  test.beforeAll(async () => {
+    cli = await startCli();
+  }, 60_000);
+
+  test.afterAll(async () => {
+    await cli?.stop();
+  });
+
+  test('lists every provider with real availability, and a switch reaches the server and survives a reload', async ({
+    page,
+  }) => {
+    await page.goto(`${cli.baseUrl}/workspace.html`);
+
+    const picker = page.getByTestId('provider-select');
+    await expect(picker).toBeVisible();
+
+    // Every selectable provider is offered, and the ones that cannot serve a
+    // request right now say so rather than silently failing later.
+    const options = await picker.locator('option').allTextContents();
+    expect(options).toHaveLength(4);
+    expect(options.some((text) => text.startsWith('Gemini'))).toBe(true);
+    expect(options.some((text) => text.startsWith('Local model'))).toBe(true);
+
+    // The local inference server is not running in CI or on a dev box by
+    // default, so it must be offered but marked unavailable - selectable
+    // anyway, because you may be about to start it.
+    const localOption = options.find((text) => text.startsWith('Local model'));
+    expect(localOption).toContain('unavailable');
+
+    await picker.selectOption('local');
+    await expect(picker).toHaveValue('local');
+    // The warning names the actual thing to run, not a generic error.
+    await expect(page.getByTestId('provider-detail')).toContainText('local_inference_server.py');
+
+    // The server agrees - this is not just client-side state.
+    const serverCurrent = await page.evaluate(async () => {
+      const response = await fetch('/api/providers');
+      return ((await response.json()) as { current: string }).current;
+    });
+    expect(serverCurrent).toBe('local');
+
+    // And it is persisted, not per-tab.
+    await page.reload();
+    await expect(page.getByTestId('provider-select')).toHaveValue('local');
+
+    // Put it back so this test leaves the shared fixture's .vibe database as
+    // it found it - the setting outlives the process, so not restoring it
+    // would silently change what every later run of any other spec uses.
+    await page.getByTestId('provider-select').selectOption('gemini');
+    await expect(page.getByTestId('provider-select')).toHaveValue('gemini');
+  });
+});

@@ -34,11 +34,18 @@ import { buildViolationsResponse, buildSnapshotResponse } from './violations-api
 import { createWorkflowRoutes, type WorkflowRouteDeps } from './workflow-api.js';
 import { createGenerationRoutes, type ApplicationRouteDeps } from './generation-api.js';
 import { createPageBuilderRoutes } from './page-builder-api.js';
+import { createProviderRoutes, type ProviderRouteDeps } from './providers-api.js';
 import { ROOT_DIRECTORY, type ViewLevel } from '../graph/aggregate.js';
-import { chooseProvider, createProvider } from '../llm/select-provider.js';
 import { loadLabelCache } from '../llm/cache.js';
 import { createProjectSchemaGenerator } from '../workflow/generate-project-schema.js';
 import { createWorkflowSessionsStore } from '../store/workflow-sessions-store.js';
+import { createSettingsStore } from '../store/settings-store.js';
+import {
+  createProviderRegistry,
+  createSwitchableProvider,
+  PROVIDER_SETTING_KEY,
+  type ProviderRegistry,
+} from '../llm/provider-registry.js';
 import type { AnalysisContext } from './context.js';
 import type { CompletionProvider } from '../llm/provider.js';
 import type { LabelCache } from '../llm/cache.js';
@@ -76,7 +83,12 @@ const CONTENT_TYPES: ReadonlyMap<string, string> = new Map([
  * zero behavior change for them. `startServer` is the one real caller that
  * resolves and passes it.
  */
-export function createApp(context: AnalysisContext, workflow?: WorkflowRouteDeps, application?: ApplicationRouteDeps): Hono {
+export function createApp(
+  context: AnalysisContext,
+  workflow?: WorkflowRouteDeps,
+  application?: ApplicationRouteDeps,
+  providers?: ProviderRouteDeps,
+): Hono {
   const app = new Hono();
 
   app.get('/api/summary', (c) => c.json(buildSummaryResponse(context)));
@@ -218,6 +230,14 @@ export function createApp(context: AnalysisContext, workflow?: WorkflowRouteDeps
   // no provider dependency to exist at all.
   app.route('/api/page-builder', createPageBuilderRoutes());
 
+  // Which model answers generation requests. Mounted only when a registry was
+  // supplied, same optional-deps pattern the two route sets above already
+  // follow - every existing `createApp` caller that passes neither keeps
+  // exactly the surface it had.
+  if (providers !== undefined) {
+    app.route('/api/providers', createProviderRoutes(providers));
+  }
+
   app.get('*', async (c) => {
     const served = await serveStatic(c.req.path);
     if (served !== null) {
@@ -252,11 +272,14 @@ interface ResolvedLlm {
 }
 
 /**
- * Resolves the one real provider+cache pair both `/api/workflow/jobs`
+ * Resolves the one provider+cache pair both `/api/workflow/jobs`
  * (schema generation) and `/api/workflow/application-jobs` (Layer 3's real
- * code generation) are built from - `chooseProvider` then `createProvider`,
- * never reading `process.env` directly (`../pipeline/label-repository.ts`
- * is the precedent). No `loadEnvFile` call here: only `cli.ts` may load
+ * code generation) are built from. Provider construction itself now belongs
+ * to `provider-registry.ts` (which still goes through `chooseProvider` then
+ * `createProvider`, never reading `process.env` directly —
+ * `../pipeline/label-repository.ts` is the precedent) so that the choice can
+ * change at runtime; what this returns is the switchable proxy, not a
+ * concrete vendor adapter. No `loadEnvFile` call here: only `cli.ts` may load
  * `.env` (enforced by `architecture.test.ts`), and by the time a real
  * process reaches `startServer`, `cli.ts` has already done it — `process.env`
  * already carries whatever `.env` set. `null` (no key configured) is not an
@@ -267,14 +290,19 @@ interface ResolvedLlm {
  * `loadLabelCache()` calls would each own an independent in-memory map, and
  * flushing one would never persist what the other wrote.
  */
-async function resolveLlm(context: AnalysisContext): Promise<ResolvedLlm | null> {
-  const choice = chooseProvider();
-  const provider = await createProvider(choice);
-  if (provider === null) {
+async function resolveLlm(context: AnalysisContext, registry: ProviderRegistry): Promise<ResolvedLlm | null> {
+  // Availability is decided by whether the CURRENTLY selected provider can be
+  // constructed, but the object handed downstream is the switchable proxy -
+  // so a later switch retargets every route without rebuilding any of them
+  // (see provider-registry.ts). `local` needs no credentials at all, so it is
+  // always constructible; that is why a machine with no API key whatsoever
+  // still gets working routes once the local server is running.
+  const concrete = await registry.resolve();
+  if (concrete === null) {
     return null;
   }
   const cache = await loadLabelCache(context.root);
-  return { provider, cache };
+  return { provider: createSwitchableProvider(registry, concrete.model), cache };
 }
 
 /** Where Layer 3 writes each application-generation job's real project - same `generated/` convention the CLI scripts and ingest's own exclusion (src/ingest/ignore-rules.ts) already use. */
@@ -283,7 +311,12 @@ function generationRootFor(context: AnalysisContext): string {
 }
 
 export async function startServer(context: AnalysisContext): Promise<RunningServer> {
-  const llm = await resolveLlm(context);
+  const settings = createSettingsStore(context.db);
+  const registry = createProviderRegistry({
+    initial: settings.get(PROVIDER_SETTING_KEY),
+    onSelect: (provider) => settings.set(PROVIDER_SETTING_KEY, provider),
+  });
+  const llm = await resolveLlm(context, registry);
   const sessions = createWorkflowSessionsStore(context.db);
   const workflowDeps: WorkflowRouteDeps =
     llm === null
@@ -291,7 +324,7 @@ export async function startServer(context: AnalysisContext): Promise<RunningServ
       : { llm: { generator: createProjectSchemaGenerator(llm), cache: llm.cache }, sessions };
   const applicationDeps: ApplicationRouteDeps = { llm, generationRoot: generationRootFor(context) };
 
-  const app = createApp(context, workflowDeps, applicationDeps);
+  const app = createApp(context, workflowDeps, applicationDeps, { registry });
 
   const server: ServerType = await new Promise((resolve) => {
     const created = serve({ fetch: app.fetch, hostname: LOOPBACK_HOST, port: 0 }, () => resolve(created));
