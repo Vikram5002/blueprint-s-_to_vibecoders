@@ -22,14 +22,22 @@ export async function fetchProviders(): Promise<ProvidersResponse> {
   return (await response.json()) as ProvidersResponse;
 }
 
-export async function selectProvider(provider: ProviderName): Promise<ProvidersResponse> {
+/** Both fields are optional server-side, so pointing at a new tunnel and switching to it is one request rather than two. */
+export async function updateProviders(update: {
+  readonly provider?: ProviderName;
+  readonly localBaseUrl?: string;
+}): Promise<ProvidersResponse> {
   const response = await fetch('/api/providers', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ provider }),
+    body: JSON.stringify(update),
   });
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, `select provider failed: ${response.status}`));
+    throw new Error(await readErrorMessage(response, `update providers failed: ${response.status}`));
   }
   return (await response.json()) as ProvidersResponse;
+}
+
+export async function selectProvider(provider: ProviderName): Promise<ProvidersResponse> {
+  return updateProviders({ provider });
 }

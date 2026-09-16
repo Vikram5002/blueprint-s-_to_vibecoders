@@ -88,6 +88,54 @@ describe('POST /api/providers', () => {
     expect(registry.current()).toBe('gemini');
   });
 
+  it('points the local provider at a tunnel URL, without needing a provider field', async () => {
+    const { app, registry } = routes(null);
+    const response = await app.request('/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ localBaseUrl: 'https://abc-def.trycloudflare.com' }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { localBaseUrl: string; current: string };
+    expect(body.localBaseUrl).toBe('https://abc-def.trycloudflare.com');
+    // A URL-only update must not disturb which provider is selected.
+    expect(body.current).toBe('gemini');
+    expect(registry.localBaseUrl()).toBe('https://abc-def.trycloudflare.com');
+  });
+
+  it('accepts the tunnel URL and the switch to it in ONE request - no window where local points at a dead origin', async () => {
+    const { app, registry } = routes(null);
+    const response = await app.request('/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ provider: 'local', localBaseUrl: 'https://abc-def.trycloudflare.com' }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(registry.current()).toBe('local');
+    expect(registry.localBaseUrl()).toBe('https://abc-def.trycloudflare.com');
+  });
+
+  it('rejects a URL that is not http(s) and changes nothing', async () => {
+    const { app, registry } = routes(null);
+    const response = await app.request('/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ provider: 'local', localBaseUrl: 'localhost:8712' }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(registry.current()).toBe('gemini');
+    expect(registry.localBaseUrl()).toBe('http://127.0.0.1:8712');
+  });
+
+  it('reports the current local origin on GET, so the picker can show what it will talk to', async () => {
+    const { app } = routes(null);
+    const body = (await (await app.request('/')).json()) as { localBaseUrl: string };
+    expect(body.localBaseUrl).toBe('http://127.0.0.1:8712');
+  });
+
   it('rejects a malformed body without throwing', async () => {
     const { app } = routes(null);
     const response = await app.request('/', {

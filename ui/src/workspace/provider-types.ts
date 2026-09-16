@@ -17,6 +17,8 @@ export interface ProviderStatus {
 
 export interface ProvidersResponse {
   readonly current: ProviderName;
+  /** Where the local inference server is expected - loopback, a LAN machine, or a cloud-GPU tunnel. */
+  readonly localBaseUrl: string;
   readonly providers: readonly ProviderStatus[];
   /** Present when the provider just selected is not currently reachable/configured. */
   readonly warning?: string;

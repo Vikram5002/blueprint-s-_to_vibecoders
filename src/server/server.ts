@@ -43,6 +43,7 @@ import { createSettingsStore } from '../store/settings-store.js';
 import {
   createProviderRegistry,
   createSwitchableProvider,
+  LOCAL_BASE_URL_SETTING_KEY,
   PROVIDER_SETTING_KEY,
   type ProviderRegistry,
 } from '../llm/provider-registry.js';
@@ -314,7 +315,9 @@ export async function startServer(context: AnalysisContext): Promise<RunningServ
   const settings = createSettingsStore(context.db);
   const registry = createProviderRegistry({
     initial: settings.get(PROVIDER_SETTING_KEY),
+    initialLocalBaseUrl: settings.get(LOCAL_BASE_URL_SETTING_KEY),
     onSelect: (provider) => settings.set(PROVIDER_SETTING_KEY, provider),
+    onLocalBaseUrl: (baseUrl) => settings.set(LOCAL_BASE_URL_SETTING_KEY, baseUrl),
   });
   const llm = await resolveLlm(context, registry);
   const sessions = createWorkflowSessionsStore(context.db);

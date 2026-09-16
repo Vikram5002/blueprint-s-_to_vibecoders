@@ -40,7 +40,7 @@ import {
   readBluesmindsApiKey,
   DEFAULT_BLUESMINDS_MODEL,
 } from './bluesminds.js';
-import { createLocalProvider, DEFAULT_LOCAL_MODEL } from './local.js';
+import { createLocalProvider, DEFAULT_LOCAL_MODEL, readLocalBaseUrl } from './local.js';
 import type { CompletionProvider } from './provider.js';
 
 export type ProviderName = 'bluesminds' | 'gemini' | 'anthropic' | 'local';
@@ -76,6 +76,8 @@ export interface ProviderChoice {
    * key is set - "one key" behaves exactly as it always has.
    */
   readonly additionalApiKeys?: readonly string[];
+  /** `local` only: where its inference server is reachable. Absent everywhere else - a vendor API's origin is not the user's to move. */
+  readonly baseUrl?: string;
 }
 
 /**
@@ -121,6 +123,7 @@ export function chooseProvider(env: NodeJS.ProcessEnv = process.env): ProviderCh
       // createProvider never gates local on this field.
       apiKey: null,
       keyEnv: '',
+      baseUrl: readLocalBaseUrl(env),
     };
   }
 
@@ -147,7 +150,10 @@ export function chooseProvider(env: NodeJS.ProcessEnv = process.env): ProviderCh
  */
 export async function createProvider(choice: ProviderChoice): Promise<CompletionProvider | null> {
   if (choice.provider === 'local') {
-    return createLocalProvider({ model: choice.model });
+    return createLocalProvider({
+      model: choice.model,
+      ...(choice.baseUrl === undefined ? {} : { baseUrl: choice.baseUrl }),
+    });
   }
 
   if (choice.apiKey === null) return null;

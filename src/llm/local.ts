@@ -1,14 +1,24 @@
 /**
- * Local implementation of CompletionProvider — serves the QLoRA checkpoint
- * (run_20260912_154324: Qwen2.5-7B-Instruct + LoRA adapter, r=16/alpha=16,
- * 3 epochs, 288 training rows) via a local HTTP server, instead of a vendor
- * API. Replaces the original baseline (run_20260822_130636, 91 rows) — see
- * training/eval/RESULTS-run_20260912_154324.md for why: tied on held-out
- * pass-count and the (structurally unfixable) fake-id defect, but a real,
- * measured fix to the training data's diagnosed 73.6% empty-constraint skew
- * (0/10 constraint-bearing outputs under the old checkpoint, on both the
- * original held-out set and Config C, vs. 4/10 and then 17/18 grounded on a
- * larger targeted probe under this one).
+ * Local implementation of CompletionProvider — serves a QLoRA checkpoint
+ * (Qwen2.5-7B-Instruct + LoRA adapter, r=16/alpha=16, 3 epochs) via an HTTP
+ * inference server, instead of a vendor API.
+ *
+ * Two checkpoints exist. training/eval/RESULTS-run_20260912_154324.md records
+ * why run_20260912_154324 (288 rows) is the better one: tied with the
+ * baseline on held-out pass-count and the (structurally unfixable) fake-id
+ * defect, but a real, measured fix to the training data's 73.6%
+ * empty-constraint skew (0/10 constraint-bearing outputs under the baseline,
+ * vs. 4/10 and then 17/18 grounded on a larger targeted probe).
+ *
+ * `DEFAULT_LOCAL_MODEL` nonetheless names the BASELINE, run_20260822_130636
+ * (91 rows), because it is the checkpoint that is actually served: it is the
+ * only adapter present in the distributed bundle and the Colab notebook
+ * (docs/colab/), whose server is started with exactly this model name. The
+ * default previously named the newer checkpoint, so every answer the
+ * baseline produced was labelled - and cached - as the newer model's, which
+ * is precisely the provenance confusion this project exists to prevent.
+ * When the newer adapter is what is being served, say so explicitly:
+ * VIBE_LLM_MODEL=local:qwen2.5-7b-instruct+run_20260912_154324.
  *
  * ## No SDK, same as bluesminds.ts and gemini.ts
  *
@@ -34,7 +44,29 @@
 import type { CompletionProvider, CompletionRequest, CompletionResult } from './provider.js';
 
 export const DEFAULT_LOCAL_BASE_URL = 'http://127.0.0.1:8712';
-export const DEFAULT_LOCAL_MODEL = 'local:qwen2.5-7b-instruct+run_20260912_154324';
+
+/**
+ * Overrides where the local model is served from.
+ *
+ * Loopback is the common case, but it is not the only one: this checkpoint
+ * is a 7B that needs more VRAM than some machines have, so the server
+ * legitimately runs somewhere else — another machine on the LAN, or a free
+ * cloud GPU reached through a tunnel — while the workspace stays local. The
+ * adapter is unchanged either way; only the origin moves.
+ *
+ * A tunnel hands out a new hostname every session, which is why the runtime
+ * setting (provider-registry.ts, persisted alongside the provider choice)
+ * exists on top of this: nobody should have to edit a dotfile and restart
+ * the server twice an hour. This variable is the initial default.
+ */
+export const LOCAL_BASE_URL_ENV = 'VIBE_LOCAL_BASE_URL';
+
+/** Trailing slashes are trimmed so `${baseUrl}/complete` can never produce a double slash, which some tunnels answer with a redirect rather than the route. */
+export function readLocalBaseUrl(env: NodeJS.ProcessEnv = process.env): string {
+  const configured = env[LOCAL_BASE_URL_ENV]?.trim();
+  return configured === undefined || configured === '' ? DEFAULT_LOCAL_BASE_URL : configured.replace(/\/+$/, '');
+}
+export const DEFAULT_LOCAL_MODEL = 'local:qwen2.5-7b-instruct+run_20260822_130636';
 
 /**
  * Wall-clock ceiling on a single request. Node's `fetch` has no default

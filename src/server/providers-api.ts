@@ -29,14 +29,38 @@ export function createProviderRoutes(deps: ProviderRouteDeps): Hono {
   const app = new Hono();
 
   app.get('/', async (c) =>
-    c.json({ current: deps.registry.current(), providers: await deps.registry.status() }),
+    c.json({
+      current: deps.registry.current(),
+      localBaseUrl: deps.registry.localBaseUrl(),
+      providers: await deps.registry.status(),
+    }),
   );
 
   app.post('/', async (c) => {
     const body: unknown = await c.req.json().catch(() => null);
 
+    // A request may carry either field or both: pointing at a freshly-started
+    // Colab tunnel AND switching to it is one user action, and splitting it
+    // into two round trips would leave a visible window where `local` is
+    // selected but still aimed at the previous, dead origin.
+    const requestedUrl =
+      typeof body === 'object' && body !== null ? (body as { localBaseUrl?: unknown }).localBaseUrl : undefined;
+    if (requestedUrl !== undefined) {
+      if (typeof requestedUrl !== 'string' || !deps.registry.setLocalBaseUrl(requestedUrl)) {
+        return c.json({ error: 'localBaseUrl must be an http(s) URL, e.g. https://something.trycloudflare.com' }, 400);
+      }
+    }
+
     const provider = parseProviderRequest(body);
     if (provider === null) {
+      // A URL-only update is a complete, valid request on its own.
+      if (requestedUrl !== undefined) {
+        return c.json({
+          current: deps.registry.current(),
+          localBaseUrl: deps.registry.localBaseUrl(),
+          providers: await deps.registry.status(),
+        });
+      }
       return c.json(
         { error: `expected { provider: one of ${SELECTABLE_PROVIDERS.join(', ')} }` },
         400,
@@ -53,7 +77,12 @@ export function createProviderRoutes(deps: ProviderRouteDeps): Hono {
     deps.registry.select(provider);
     const providers = await deps.registry.status();
     const chosen = providers.find((entry) => entry.id === provider);
-    return c.json({ current: deps.registry.current(), providers, warning: chosen?.available === false ? chosen.detail : undefined });
+    return c.json({
+      current: deps.registry.current(),
+      localBaseUrl: deps.registry.localBaseUrl(),
+      providers,
+      warning: chosen?.available === false ? chosen.detail : undefined,
+    });
   });
 
   return app;

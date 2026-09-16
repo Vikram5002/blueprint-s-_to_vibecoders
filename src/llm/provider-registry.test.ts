@@ -100,6 +100,85 @@ describe('createProviderRegistry', () => {
   });
 });
 
+describe('local base URL - pointing at a machine that is not this one', () => {
+  it('defaults to loopback when nothing is configured or persisted', () => {
+    const registry = createProviderRegistry({ env: {}, initial: null });
+    expect(registry.localBaseUrl()).toBe('http://127.0.0.1:8712');
+  });
+
+  it('prefers a persisted origin over the environment default', () => {
+    const registry = createProviderRegistry({
+      env: { VIBE_LOCAL_BASE_URL: 'http://192.168.1.50:8712' } as NodeJS.ProcessEnv,
+      initial: null,
+      initialLocalBaseUrl: 'https://saved-tunnel.trycloudflare.com',
+    });
+    expect(registry.localBaseUrl()).toBe('https://saved-tunnel.trycloudflare.com');
+  });
+
+  it('falls back to the environment when nothing was persisted', () => {
+    const registry = createProviderRegistry({
+      env: { VIBE_LOCAL_BASE_URL: 'http://192.168.1.50:8712' } as NodeJS.ProcessEnv,
+      initial: null,
+      initialLocalBaseUrl: null,
+    });
+    expect(registry.localBaseUrl()).toBe('http://192.168.1.50:8712');
+  });
+
+  it('accepts a tunnel URL, trims its trailing slash, and persists it once', () => {
+    const saved: string[] = [];
+    const registry = createProviderRegistry({
+      env: {},
+      initial: null,
+      onLocalBaseUrl: (url) => saved.push(url),
+    });
+
+    expect(registry.setLocalBaseUrl('https://abc-def.trycloudflare.com/')).toBe(true);
+    expect(registry.localBaseUrl()).toBe('https://abc-def.trycloudflare.com');
+    // Same value again is a no-op, not a second write.
+    expect(registry.setLocalBaseUrl('https://abc-def.trycloudflare.com')).toBe(true);
+    expect(saved).toEqual(['https://abc-def.trycloudflare.com']);
+  });
+
+  it('rejects anything that is not an http(s) URL, leaving the current origin untouched', () => {
+    const registry = createProviderRegistry({ env: {}, initial: null });
+    for (const bad of ['', '   ', 'not a url', 'ftp://host/x', 'localhost:8712']) {
+      expect(registry.setLocalBaseUrl(bad)).toBe(false);
+    }
+    expect(registry.localBaseUrl()).toBe('http://127.0.0.1:8712');
+  });
+
+  it('probes the configured origin, not loopback, and says which one it tried', async () => {
+    const probed: string[] = [];
+    const registry = createProviderRegistry({
+      env: {},
+      initial: null,
+      fetchImpl: (async (url: unknown) => {
+        probed.push(String(url));
+        return new Response('', { status: 404 });
+      }) as typeof fetch,
+    });
+    registry.setLocalBaseUrl('https://abc-def.trycloudflare.com');
+
+    const local = (await registry.status()).find((entry) => entry.id === 'local');
+    expect(probed).toEqual(['https://abc-def.trycloudflare.com']);
+    expect(local?.available).toBe(true);
+    expect(local?.detail).toContain('https://abc-def.trycloudflare.com');
+  });
+
+  it('discards the cached local provider when the origin changes, so requests follow the new tunnel', async () => {
+    const registry = createProviderRegistry({ env: {}, initial: 'local', fetchImpl: reachable });
+
+    const before = await registry.resolve();
+    registry.setLocalBaseUrl('https://new-tunnel.trycloudflare.com');
+    const after = await registry.resolve();
+
+    // A fresh instance, not the one that captured the previous origin - this
+    // is the difference between a switch that works and one that silently
+    // keeps talking to a dead Colab session.
+    expect(before).not.toBe(after);
+  });
+});
+
 describe('probeLocalServer', () => {
   it('treats any HTTP response as "a server is listening"', async () => {
     await expect(probeLocalServer('http://127.0.0.1:8712', reachable)).resolves.toBe(true);
