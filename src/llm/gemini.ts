@@ -19,6 +19,36 @@
  * parameter, so it cannot appear in a URL that ends up in an error message, a
  * proxy log or a stack trace. Every error body this file surfaces is passed
  * through `redact()` first.
+ *
+ * ## Same-key rotation is not the rejected provider-fallback decision
+ *
+ * `select-provider.ts`'s own header documents a deliberate choice: this
+ * project never silently falls back from one *vendor/model* to another
+ * (Gemini -> local -> Anthropic) on failure, because that breaks
+ * reproducibility and can route failure traffic into a weaker backend. That
+ * decision is unchanged and untouched here.
+ *
+ * What this file does instead is narrower and does not implicate that
+ * decision at all: when several `GEMINI_API_KEY`/`GEMINI_API_KEY_2`/...
+ * credentials are configured, all for the SAME vendor and the SAME pinned
+ * model, the provider advances to the next configured key whenever the
+ * active one is exhausted on a failure that a *different* key or account
+ * could plausibly answer differently — a confirmed daily quota exhaustion,
+ * or `MAX_ATTEMPTS` worth of a transient 429/5xx/network failure that never
+ * cleared. The model, the prompt, and every other behaviour are unchanged -
+ * only which account's quota/capacity answers the call.
+ *
+ * Rotation still never fires on a *structural* failure - a bad key, a wrong
+ * model name, or a malformed request (400/401/403/404, `retryable` absent
+ * or `false`). Found live: a user with 7 configured keys, 3 already
+ * rotated past on confirmed daily-quota exhaustion, hit a run of 503s on
+ * the 4th and the whole generation failed immediately — 3 more untried,
+ * unexhausted keys sat unused because the original policy rotated on
+ * exactly one narrow outcome (`daily-quota-exhausted`) and treated every
+ * other exhausted-after-5-attempts failure as final. Those structural
+ * cases still fail loudly rather than silently rotating past what is
+ * actually a configuration mistake (see `reasonToRotate` below for the
+ * exact line the two are drawn on).
  */
 import { estimateCostUsd } from './pricing.js';
 import type { CompletionProvider, CompletionRequest, CompletionResult } from './provider.js';
@@ -95,6 +125,16 @@ export const MAX_BACKOFF_MS = 60_000;
 
 export interface GeminiOptions {
   readonly apiKey: string;
+  /**
+   * Same-vendor, same-model key rotation (see this file's own header for why
+   * this is not the rejected provider-fallback decision): additional
+   * `GEMINI_API_KEY_2`/`_3`/... credentials, tried in order whenever the
+   * active key is exhausted on daily quota or on `MAX_ATTEMPTS` of a
+   * transient failure (429/5xx/network) - never on a structural failure
+   * (bad key, wrong model, malformed request). Empty or omitted means
+   * exactly today's behaviour - one key, fail immediately on exhaustion.
+   */
+  readonly additionalApiKeys?: readonly string[];
   readonly model?: string;
   /**
    * Injected in tests so retry behaviour can be exercised without real
@@ -105,8 +145,32 @@ export interface GeminiOptions {
 }
 
 export function readGeminiApiKey(env: NodeJS.ProcessEnv = process.env): string | null {
-  const key = env[GEMINI_API_KEY_ENV];
-  return key === undefined || key.trim() === '' ? null : key.trim();
+  return readGeminiApiKeys(env)[0] ?? null;
+}
+
+/**
+ * `GEMINI_API_KEY`, then `GEMINI_API_KEY_2`, `GEMINI_API_KEY_3`, ... -
+ * numbered, not a fixed-size array, so any number of accounts' keys can be
+ * configured. Probing stops at the first missing or blank-after-trim
+ * numbered variable; a gap (key 1 and key 3 set, key 2 blank) is treated as
+ * "stop here", not "skip and keep going" - a silently-skipped middle key
+ * would be a confusing, undebuggable configuration to have working by
+ * accident.
+ */
+export function readGeminiApiKeys(env: NodeJS.ProcessEnv = process.env): readonly string[] {
+  const keys: string[] = [];
+
+  const first = env[GEMINI_API_KEY_ENV];
+  if (first === undefined || first.trim() === '') return keys;
+  keys.push(first.trim());
+
+  for (let index = 2; ; index += 1) {
+    const value = env[`${GEMINI_API_KEY_ENV}_${index}`];
+    if (value === undefined || value.trim() === '') break;
+    keys.push(value.trim());
+  }
+
+  return keys;
 }
 
 /**
@@ -194,10 +258,53 @@ export function classifyQuotaFailure(body: string): QuotaVerdict {
 
 const defaultSleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * `'daily-quota-exhausted'` is a structural marker built at the exact call
+ * site that already computes `classifyQuotaFailure`'s verdict, so rotation
+ * never has to re-derive "was this specifically a daily quota exhaustion"
+ * from a generic `CompletionFailure` later. Every other exhausted-key
+ * outcome - success, a truncated/refused/blocked answer, or `MAX_ATTEMPTS`
+ * of a transient or structural failure - is tagged `'other'`;
+ * `reasonToRotate` below is what tells those apart by reading
+ * `result.error.retryable` rather than needing a third tag.
+ */
+type AttemptOutcome =
+  | { readonly tag: 'success'; readonly result: CompletionResult }
+  | { readonly tag: 'daily-quota-exhausted'; readonly result: CompletionResult & { readonly ok: false } }
+  | { readonly tag: 'other'; readonly result: CompletionResult };
+
+/**
+ * Null means "return this outcome as-is"; a non-null string is both the
+ * signal to rotate and the reason logged when it happens.
+ *
+ * The line this draws: `retryable: true`/`'daily-quota-exhausted'` means a
+ * different key or account could plausibly answer differently (a per-key
+ * quota bucket, a per-project rate limit, a transient 5xx that clears
+ * eventually) — worth spending a spare key on. Everything else
+ * (`retryable: false` or absent: a bad key, a wrong model, a malformed
+ * request) would fail identically on every configured key, so rotating
+ * would only mask a real configuration mistake as if it were exhaustion,
+ * burning through every spare key to confirm the same broken request five
+ * more times each.
+ */
+function reasonToRotate(outcome: AttemptOutcome): string | null {
+  if (outcome.tag === 'daily-quota-exhausted') return 'daily quota';
+  if (
+    outcome.tag === 'other' &&
+    !outcome.result.ok &&
+    outcome.result.error.kind === 'unavailable' &&
+    outcome.result.error.retryable === true
+  ) {
+    return 'transient failure';
+  }
+  return null;
+}
+
 export function createGeminiProvider(options: GeminiOptions): CompletionProvider {
   const model = options.model ?? DEFAULT_GEMINI_MODEL;
   const doFetch = options.fetchImpl ?? fetch;
   const sleep = options.sleep ?? defaultSleep;
+  const keys: readonly string[] = [options.apiKey, ...(options.additionalApiKeys ?? [])];
 
   /**
    * Whether this model accepts `thinkingConfig`, learned rather than declared.
@@ -214,95 +321,147 @@ export function createGeminiProvider(options: GeminiOptions): CompletionProvider
    */
   let thinkingConfigSupported = true;
 
+  /**
+   * Same-key rotation state, held for the life of this provider - see this
+   * file's own header comment for why persisting "key N is exhausted for
+   * today" across every call this provider ever serves, rather than
+   * resetting per request, is correct: `createProvider` is called once per
+   * process (`server.ts`'s `startServer`), so this closure already lives as
+   * long as the daily quota window does in practice.
+   */
+  let activeKeyIndex = 0;
+
+  /** One key's worth of the original attempt loop, unchanged in behaviour, now tagging its own outcome for the rotation loop below to act on. */
+  async function attemptWithKey(apiKey: string, request: CompletionRequest): Promise<AttemptOutcome> {
+    let lastFailure: CompletionResult | null = null;
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+      let response: Response;
+      try {
+        response = await doFetch(`${ENDPOINT}/${model}:generateContent`, {
+          method: 'POST',
+          headers: {
+            // Header, not a query parameter: a URL can end up in a log.
+            'x-goog-api-key': apiKey,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(buildRequestBody(request, { withThinkingConfig: thinkingConfigSupported })),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
+      } catch (cause) {
+        lastFailure = {
+          ok: false,
+          // A network-level failure (timeout, DNS, connection reset) is
+          // exactly the kind of thing the retry loop already treats as
+          // worth another attempt - retryable: true here just makes that
+          // existing judgement visible to a caller, not a new one.
+          error: { kind: 'unavailable', message: redact(`network error: ${String(cause)}`), retryable: true },
+        };
+        if (attempt === MAX_ATTEMPTS) return { tag: 'other', result: lastFailure };
+        await sleep(backoffFor(attempt, null));
+        continue;
+      }
+
+      if (response.ok) {
+        return { tag: 'success', result: readSuccess(await response.text(), model) };
+      }
+
+      const text = redact(await response.text());
+
+      // 429 and 5xx are worth another go; 400/401/403/404 are not — a bad key
+      // or a wrong model name will fail identically five times.
+      if (response.status === 429) {
+        const verdict = classifyQuotaFailure(text);
+        if (!verdict.retryable) {
+          // The one case this whole field exists for: a daily quota
+          // exhaustion, already known internally (it's why this returns
+          // immediately instead of continuing the loop) but previously
+          // discarded into verdict.detail's message text on the way out.
+          // Tagged distinctly - this is the only place key rotation may act.
+          return {
+            tag: 'daily-quota-exhausted',
+            result: { ok: false, error: { kind: 'unavailable', message: verdict.detail, retryable: false } },
+          };
+        }
+        lastFailure = {
+          ok: false,
+          error: { kind: 'unavailable', message: `${verdict.detail} after ${attempt} attempt(s)`, retryable: true },
+        };
+        if (attempt === MAX_ATTEMPTS) return { tag: 'other', result: lastFailure };
+        await sleep(backoffFor(attempt, verdict.retryAfterMs));
+        continue;
+      }
+
+      if (response.status >= 500) {
+        lastFailure = {
+          ok: false,
+          error: { kind: 'unavailable', message: `HTTP ${response.status} after ${attempt} attempt(s)`, retryable: true },
+        };
+        if (attempt === MAX_ATTEMPTS) return { tag: 'other', result: lastFailure };
+        await sleep(backoffFor(attempt, null));
+        continue;
+      }
+
+      // A 400 while sending thinkingConfig is probably the model refusing
+      // that parameter. Drop it and try once more before giving up.
+      if (response.status === 400 && thinkingConfigSupported && looksLikeThinkingRejection(text)) {
+        thinkingConfigSupported = false;
+        continue;
+      }
+
+      // 401/403/404 land here as 'unavailable' - a bad key or a wrong
+      // model name fails identically every time, the same reasoning
+      // that already keeps this codepath outside the retry loop above.
+      // Tagged 'other', never 'daily-quota-exhausted' - rotating on a bad
+      // key would silently mask a real configuration mistake as if it were
+      // quota exhaustion, which is not what this feature is for.
+      return {
+        tag: 'other',
+        result:
+          response.status === 400
+            ? { ok: false, error: { kind: 'refused', message: `HTTP ${response.status}: ${summarise(text)}` } }
+            : {
+                ok: false,
+                error: { kind: 'unavailable', message: `HTTP ${response.status}: ${summarise(text)}`, retryable: false },
+              },
+      };
+    }
+
+    return { tag: 'other', result: lastFailure ?? { ok: false, error: { kind: 'unavailable', message: 'exhausted retries', retryable: true } } };
+  }
+
   return {
     name: `gemini:${model}`,
     model,
 
     complete: async (request: CompletionRequest): Promise<CompletionResult> => {
-      let lastFailure: CompletionResult | null = null;
+      for (;;) {
+        // Observability: which key answers this call, always logged (index
+        // and count only - the key value itself is never logged, same
+        // discipline `redact()` enforces on error bodies).
+        console.error(`[gemini] using API key ${activeKeyIndex + 1}/${keys.length}`);
 
-      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
-        let response: Response;
-        try {
-          response = await doFetch(`${ENDPOINT}/${model}:generateContent`, {
-            method: 'POST',
-            headers: {
-              // Header, not a query parameter: a URL can end up in a log.
-              'x-goog-api-key': options.apiKey,
-              'content-type': 'application/json',
-            },
-            body: JSON.stringify(buildRequestBody(request, { withThinkingConfig: thinkingConfigSupported })),
-            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-          });
-        } catch (cause) {
-          lastFailure = {
+        const outcome = await attemptWithKey(keys[activeKeyIndex] as string, request);
+        const rotationReason = reasonToRotate(outcome);
+        // The `outcome.result.ok` half of this guard is redundant with what
+        // `reasonToRotate` already checked internally, but repeated here so
+        // TypeScript narrows `outcome.result` to its `{ ok: false }` member
+        // below - a function call alone carries no such guarantee for it.
+        if (rotationReason === null || outcome.result.ok) return outcome.result;
+
+        if (activeKeyIndex + 1 >= keys.length) {
+          const suffix = keys.length > 1 ? ` (all ${keys.length} configured key(s) exhausted)` : '';
+          return {
             ok: false,
-            // A network-level failure (timeout, DNS, connection reset) is
-            // exactly the kind of thing the retry loop already treats as
-            // worth another attempt - retryable: true here just makes that
-            // existing judgement visible to a caller, not a new one.
-            error: { kind: 'unavailable', message: redact(`network error: ${String(cause)}`), retryable: true },
+            error: { ...outcome.result.error, message: `${outcome.result.error.message}${suffix}` },
           };
-          if (attempt === MAX_ATTEMPTS) return lastFailure;
-          await sleep(backoffFor(attempt, null));
-          continue;
         }
 
-        if (response.ok) {
-          return readSuccess(await response.text(), model);
-        }
-
-        const text = redact(await response.text());
-
-        // 429 and 5xx are worth another go; 400/401/403/404 are not — a bad key
-        // or a wrong model name will fail identically five times.
-        if (response.status === 429) {
-          const verdict = classifyQuotaFailure(text);
-          if (!verdict.retryable) {
-            // The one case this whole field exists for: a daily quota
-            // exhaustion, already known internally (it's why this returns
-            // immediately instead of continuing the loop) but previously
-            // discarded into verdict.detail's message text on the way out.
-            return { ok: false, error: { kind: 'unavailable', message: verdict.detail, retryable: false } };
-          }
-          lastFailure = {
-            ok: false,
-            error: { kind: 'unavailable', message: `${verdict.detail} after ${attempt} attempt(s)`, retryable: true },
-          };
-          if (attempt === MAX_ATTEMPTS) return lastFailure;
-          await sleep(backoffFor(attempt, verdict.retryAfterMs));
-          continue;
-        }
-
-        if (response.status >= 500) {
-          lastFailure = {
-            ok: false,
-            error: { kind: 'unavailable', message: `HTTP ${response.status} after ${attempt} attempt(s)`, retryable: true },
-          };
-          if (attempt === MAX_ATTEMPTS) return lastFailure;
-          await sleep(backoffFor(attempt, null));
-          continue;
-        }
-
-        // A 400 while sending thinkingConfig is probably the model refusing
-        // that parameter. Drop it and try once more before giving up.
-        if (response.status === 400 && thinkingConfigSupported && looksLikeThinkingRejection(text)) {
-          thinkingConfigSupported = false;
-          continue;
-        }
-
-        // 401/403/404 land here as 'unavailable' - a bad key or a wrong
-        // model name fails identically every time, the same reasoning
-        // that already keeps this codepath outside the retry loop above.
-        return response.status === 400
-          ? { ok: false, error: { kind: 'refused', message: `HTTP ${response.status}: ${summarise(text)}` } }
-          : {
-              ok: false,
-              error: { kind: 'unavailable', message: `HTTP ${response.status}: ${summarise(text)}`, retryable: false },
-            };
+        console.error(
+          `[gemini] key ${activeKeyIndex + 1}/${keys.length} exhausted (${rotationReason}) - rotating to key ${activeKeyIndex + 2}/${keys.length}`,
+        );
+        activeKeyIndex += 1;
       }
-
-      return lastFailure ?? { ok: false, error: { kind: 'unavailable', message: 'exhausted retries', retryable: true } };
     },
   };
 }

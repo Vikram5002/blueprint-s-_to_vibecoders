@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   backoffFor,
   classifyQuotaFailure,
@@ -8,6 +8,7 @@ import {
   REQUEST_TIMEOUT_MS,
   MAX_BACKOFF_MS,
   readGeminiApiKey,
+  readGeminiApiKeys,
   redact,
   thinkingBudgetFor,
 } from './gemini.js';
@@ -580,5 +581,284 @@ describe('.env loading', () => {
     expect(described).toBe('from .env');
     expect(described).not.toContain(SECRET);
     expect(describeKeySource('GEMINI_API_KEY', [], {})).toBe('not set');
+  });
+});
+
+describe('readGeminiApiKeys - numbered, not a fixed-size array', () => {
+  it('reads a single key exactly as readGeminiApiKey always did', () => {
+    expect(readGeminiApiKeys({ GEMINI_API_KEY: SECRET })).toEqual([SECRET]);
+    expect(readGeminiApiKey({ GEMINI_API_KEY: SECRET })).toBe(SECRET);
+  });
+
+  it('reads any number of numbered keys in order, stopping at the first gap', () => {
+    expect(
+      readGeminiApiKeys({
+        GEMINI_API_KEY: 'k1',
+        GEMINI_API_KEY_2: 'k2',
+        GEMINI_API_KEY_3: 'k3',
+        GEMINI_API_KEY_5: 'k5',
+      }),
+    ).toEqual(['k1', 'k2', 'k3']);
+  });
+
+  it('treats a blank numbered key the same as a missing one', () => {
+    expect(readGeminiApiKeys({ GEMINI_API_KEY: 'k1', GEMINI_API_KEY_2: '   ' })).toEqual(['k1']);
+  });
+
+  it('returns an empty array, not a throw, when no key is configured at all', () => {
+    expect(readGeminiApiKeys({})).toEqual([]);
+    expect(readGeminiApiKey({})).toBeNull();
+  });
+
+  it('trims whitespace on every key, numbered or not', () => {
+    expect(readGeminiApiKeys({ GEMINI_API_KEY: '  k1  ', GEMINI_API_KEY_2: '  k2  ' })).toEqual(['k1', 'k2']);
+  });
+});
+
+describe('same-key rotation on genuine daily quota exhaustion', () => {
+  it('rotates to the next configured key and completes the SAME request when the active key is confirmed exhausted', async () => {
+    const seenKeys: string[] = [];
+    const logs: string[] = [];
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation((line: unknown) => void logs.push(String(line)));
+
+    const provider = createGeminiProvider({
+      apiKey: 'key-one',
+      additionalApiKeys: ['key-two'],
+      fetchImpl: (async (_url, init) => {
+        const key = (init?.headers as Record<string, string>)['x-goog-api-key'];
+        seenKeys.push(key);
+        return key === 'key-one' ? jsonResponse(RATE_LIMIT_PER_DAY, 429) : jsonResponse(OK_BODY);
+      }) as typeof fetch,
+    });
+
+    const result = await provider.complete(request);
+
+    expect(result.ok).toBe(true);
+    expect(seenKeys).toEqual(['key-one', 'key-two']);
+
+    expect(logs.some((line) => line.includes('using API key 1/2'))).toBe(true);
+    expect(
+      logs.some((line) => line.includes('key 1/2 exhausted (daily quota)') && line.includes('rotating to key 2/2')),
+    ).toBe(true);
+    expect(logs.some((line) => line.includes('using API key 2/2'))).toBe(true);
+    expect(logs.every((line) => !line.includes('key-one') && !line.includes('key-two'))).toBe(true);
+
+    consoleSpy.mockRestore();
+  });
+
+  it('rotates through three keys when the first two are both exhausted', async () => {
+    const seenKeys: string[] = [];
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const provider = createGeminiProvider({
+      apiKey: 'key-one',
+      additionalApiKeys: ['key-two', 'key-three'],
+      fetchImpl: (async (_url, init) => {
+        const key = (init?.headers as Record<string, string>)['x-goog-api-key'];
+        seenKeys.push(key);
+        return key === 'key-three' ? jsonResponse(OK_BODY) : jsonResponse(RATE_LIMIT_PER_DAY, 429);
+      }) as typeof fetch,
+    });
+
+    const result = await provider.complete(request);
+
+    expect(result.ok).toBe(true);
+    expect(seenKeys).toEqual(['key-one', 'key-two', 'key-three']);
+
+    vi.restoreAllMocks();
+  });
+
+  it('persists rotation across calls on the same provider - never retries an already-exhausted key', async () => {
+    const seenKeys: string[] = [];
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const provider = createGeminiProvider({
+      apiKey: 'key-one',
+      additionalApiKeys: ['key-two'],
+      fetchImpl: (async (_url, init) => {
+        const key = (init?.headers as Record<string, string>)['x-goog-api-key'];
+        seenKeys.push(key);
+        return key === 'key-one' ? jsonResponse(RATE_LIMIT_PER_DAY, 429) : jsonResponse(OK_BODY);
+      }) as typeof fetch,
+    });
+
+    await provider.complete(request);
+    seenKeys.length = 0;
+    const second = await provider.complete(request);
+
+    expect(second.ok).toBe(true);
+    expect(seenKeys).toEqual(['key-two']);
+
+    vi.restoreAllMocks();
+  });
+});
+
+describe('same-key rotation also fires once a spare key exists and this key exhausts a transient failure', () => {
+  // Found live: a user with 7 configured keys, 3 already rotated past on
+  // confirmed daily-quota exhaustion, hit a run of 503s on the 4th key and
+  // the whole generation failed immediately, even though 3 more untried
+  // keys were sitting right there. The original policy rotated on exactly
+  // one narrow outcome (`daily-quota-exhausted`); every other
+  // exhausted-after-MAX_ATTEMPTS failure - a per-minute rate limit, a 5xx,
+  // a network error - gave up instead of trying a spare key that might
+  // answer differently. These three tests cover that expansion; the two
+  // below them (bad key / wrong model, a 400 refusal) cover what
+  // deliberately still does NOT rotate.
+  it('rotates to the next key once a per-minute rate limit exhausts MAX_ATTEMPTS on the first, then succeeds', async () => {
+    const seenKeys: string[] = [];
+    const provider = createGeminiProvider({
+      apiKey: 'key-one',
+      additionalApiKeys: ['key-two'],
+      sleep: async () => undefined,
+      fetchImpl: (async (_url, init) => {
+        const key = (init?.headers as Record<string, string>)['x-goog-api-key'];
+        seenKeys.push(key);
+        return key === 'key-one' ? jsonResponse(RATE_LIMIT_PER_MINUTE, 429) : jsonResponse(OK_BODY);
+      }) as typeof fetch,
+    });
+
+    const result = await provider.complete(request);
+
+    expect(result.ok).toBe(true);
+    // The first key still gets its own full MAX_ATTEMPTS before rotating -
+    // this is an addition to the exhaustion policy, not a shortcut past it.
+    expect(seenKeys.filter((key) => key === 'key-one')).toHaveLength(MAX_ATTEMPTS);
+    expect(seenKeys.at(-1)).toBe('key-two');
+  });
+
+  it('rotates to the next key once a run of 5xx failures exhausts MAX_ATTEMPTS on the first - the exact live scenario this fixes', async () => {
+    const seenKeys: string[] = [];
+    const provider = createGeminiProvider({
+      apiKey: 'key-one',
+      additionalApiKeys: ['key-two'],
+      sleep: async () => undefined,
+      fetchImpl: (async (_url, init) => {
+        const key = (init?.headers as Record<string, string>)['x-goog-api-key'];
+        seenKeys.push(key);
+        return key === 'key-one' ? new Response('boom', { status: 503 }) : jsonResponse(OK_BODY);
+      }) as typeof fetch,
+    });
+
+    const result = await provider.complete(request);
+
+    expect(result.ok).toBe(true);
+    expect(seenKeys.filter((key) => key === 'key-one')).toHaveLength(MAX_ATTEMPTS);
+    expect(seenKeys.at(-1)).toBe('key-two');
+  });
+
+  it('rotates to the next key once a persistent network error exhausts MAX_ATTEMPTS on the first', async () => {
+    const seenKeys: string[] = [];
+    const provider = createGeminiProvider({
+      apiKey: 'key-one',
+      additionalApiKeys: ['key-two'],
+      sleep: async () => undefined,
+      fetchImpl: (async (_url, init) => {
+        const key = (init?.headers as Record<string, string>)['x-goog-api-key'];
+        seenKeys.push(key);
+        if (key === 'key-one') throw new Error('ECONNRESET');
+        return jsonResponse(OK_BODY);
+      }) as typeof fetch,
+    });
+
+    const result = await provider.complete(request);
+
+    expect(result.ok).toBe(true);
+    expect(seenKeys.filter((key) => key === 'key-one')).toHaveLength(MAX_ATTEMPTS);
+    expect(seenKeys.at(-1)).toBe('key-two');
+  });
+
+  it('with only one key configured, a transient failure still exhausts and fails exactly as before - there is nothing to rotate to', async () => {
+    let calls = 0;
+    const provider = createGeminiProvider({
+      apiKey: 'key-one',
+      sleep: async () => undefined,
+      fetchImpl: (async () => {
+        calls += 1;
+        return new Response('boom', { status: 503 });
+      }) as typeof fetch,
+    });
+
+    const result = await provider.complete(request);
+
+    expect(result.ok).toBe(false);
+    expect(calls).toBe(MAX_ATTEMPTS);
+  });
+
+  it('does not rotate on a bad key / wrong model (401/403/404) - a config error is never mistaken for quota exhaustion', async () => {
+    const seenKeys: string[] = [];
+    const provider = createGeminiProvider({
+      apiKey: 'key-one',
+      additionalApiKeys: ['key-two'],
+      fetchImpl: (async (_url, init) => {
+        seenKeys.push((init?.headers as Record<string, string>)['x-goog-api-key']);
+        return new Response(JSON.stringify({ error: { message: 'API key not valid' } }), { status: 403 });
+      }) as typeof fetch,
+    });
+
+    const result = await provider.complete(request);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.retryable).toBe(false);
+    expect(seenKeys).toEqual(['key-one']);
+  });
+
+  it('does not rotate a 400 refusal', async () => {
+    const seenKeys: string[] = [];
+    const provider = createGeminiProvider({
+      apiKey: 'key-one',
+      additionalApiKeys: ['key-two'],
+      fetchImpl: (async (_url, init) => {
+        seenKeys.push((init?.headers as Record<string, string>)['x-goog-api-key']);
+        return new Response(JSON.stringify({ error: { message: 'invalid request' } }), { status: 400 });
+      }) as typeof fetch,
+    });
+
+    const result = await provider.complete(request);
+
+    expect(result.ok).toBe(false);
+    expect(seenKeys).toEqual(['key-one']);
+  });
+});
+
+describe('same-key rotation: all configured keys exhausted', () => {
+  it('fails with a clear message naming how many keys were tried, never falling through to a different provider', async () => {
+    const seenKeys: string[] = [];
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const provider = createGeminiProvider({
+      apiKey: 'key-one',
+      additionalApiKeys: ['key-two', 'key-three'],
+      fetchImpl: (async (_url, init) => {
+        seenKeys.push((init?.headers as Record<string, string>)['x-goog-api-key']);
+        return jsonResponse(RATE_LIMIT_PER_DAY, 429);
+      }) as typeof fetch,
+    });
+
+    const result = await provider.complete(request);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.retryable).toBe(false);
+    expect(result.error.message).toContain('daily free-tier quota exhausted');
+    expect(result.error.message).toContain('all 3 configured key(s) exhausted');
+    expect(seenKeys).toEqual(['key-one', 'key-two', 'key-three']);
+    expect(result.error.kind).toBe('unavailable');
+
+    vi.restoreAllMocks();
+  });
+
+  it('single key, no additionalApiKeys configured: exhaustion message is unchanged from today (no "all N" suffix)', async () => {
+    const provider = createGeminiProvider({
+      apiKey: 'key-one',
+      fetchImpl: (async () => jsonResponse(RATE_LIMIT_PER_DAY, 429)) as typeof fetch,
+    });
+
+    const result = await provider.complete(request);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.message).not.toContain('configured key(s) exhausted');
+    expect(result.error.message).toContain('daily free-tier quota exhausted');
   });
 });
