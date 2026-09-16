@@ -1,5 +1,13 @@
-import { useMemo, useState } from 'react';
-import { Background, Controls, MiniMap, ReactFlow, type Edge, type Node } from '@xyflow/react';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  Background,
+  Controls,
+  MiniMap,
+  ReactFlow,
+  type Edge,
+  type Node,
+  type NodeChange,
+} from '@xyflow/react';
 import { WorkflowNode, type WorkflowNodeData } from './WorkflowNode';
 import { ComponentListModal } from './ComponentListModal';
 import { computeLayout, deriveEdges, type WorkflowEdge } from './workflow-layout';
@@ -73,6 +81,45 @@ export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX
   const edges = useMemo(() => deriveEdges(schema), [schema]);
   const maxWeight = useMemo(() => Math.max(1, ...edges.map((e) => e.weight)), [edges]);
 
+  /**
+   * Every domain card is auto-sized from its own content (WorkflowNode has
+   * no fixed width/height) rather than a declared node width/height, so
+   * React Flow only learns each node's real size after mounting it and
+   * measuring the DOM — that measurement lives in React Flow's internal
+   * node representation, never echoed back onto the plain node objects
+   * below unless something actually applies the resulting NodeChange
+   * events. MiniMap's own node rects are gated on exactly that declared
+   * width/height (`nodeHasDimensions`, @xyflow/react's own check) - with
+   * nothing applying the changes, every node fails that check forever and
+   * the MiniMap renders its mask over zero node rects: a real, confirmed
+   * black box in the corner of this exact graph, reproduced live on both
+   * this view and the older GraphCanvas dashboard, not a one-off. Feeding
+   * the 'dimensions' changes back here is the fix React Flow's own docs
+   * prescribe for uncontrolled/auto-sized nodes.
+   */
+  const [measuredDimensions, setMeasuredDimensions] = useState<
+    Record<string, { readonly width: number; readonly height: number }>
+  >({});
+
+  const handleNodesChange = useCallback((changes: readonly NodeChange[]) => {
+    const dimensionChanges = changes.filter(
+      (change): change is Extract<NodeChange, { type: 'dimensions' }> => change.type === 'dimensions',
+    );
+    if (dimensionChanges.length === 0) return;
+    setMeasuredDimensions((current) => {
+      let next = current;
+      for (const change of dimensionChanges) {
+        if (change.dimensions === undefined) continue;
+        const { width, height } = change.dimensions;
+        const existing = next[change.id];
+        if (existing?.width === width && existing?.height === height) continue;
+        next = next === current ? { ...current } : next;
+        next[change.id] = { width, height };
+      }
+      return next;
+    });
+  }, []);
+
   const prohibitionsByDomain = useMemo(() => {
     const grouped = new Map<DomainName, Constraint[]>();
     for (const constraint of prohibitions ?? []) {
@@ -95,6 +142,7 @@ export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX
         position: layout[domain],
         draggable: false,
         connectable: false,
+        ...measuredDimensions[domain],
         data: {
           domain,
           componentCount: schema.domains[domain].components.length,
@@ -102,7 +150,7 @@ export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX
           onViewComponents: setViewingDomain,
         } satisfies WorkflowNodeData,
       })),
-    [schema, layout, statuses],
+    [schema, layout, statuses, measuredDimensions],
   );
 
   const flowEdges = useMemo<Edge[]>(
@@ -144,6 +192,7 @@ export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX
             nodes={flowNodes}
             edges={flowEdges}
             nodeTypes={NODE_TYPES}
+            onNodesChange={handleNodesChange}
             fitView
             minZoom={0.2}
             maxZoom={2}
