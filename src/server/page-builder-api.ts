@@ -33,7 +33,11 @@ function isCanvasElement(value: unknown): value is CanvasElement {
     typeof record['width'] === 'number' &&
     typeof record['height'] === 'number' &&
     typeof record['label'] === 'string' &&
-    typeof record['colorToken'] === 'string'
+    typeof record['colorToken'] === 'string' &&
+    // Optional, so absent is valid - but present-and-not-a-string is not.
+    // Whether the string names a REAL animation is `validatePageLayout`'s
+    // call, same split this function already keeps for colorToken.
+    (record['animation'] === undefined || typeof record['animation'] === 'string')
   );
 }
 
@@ -52,7 +56,7 @@ function parsePageLayout(body: unknown): PageLayout | null {
     id: candidate['id'],
     pageName: candidate['pageName'],
     elements: candidate['elements'],
-  };
+  } satisfies PageLayout;
 }
 
 export function createPageBuilderRoutes(): Hono {

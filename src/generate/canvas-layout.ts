@@ -52,6 +52,79 @@ export type DesignToken = keyof typeof DESIGN_TOKENS;
 
 export const DESIGN_TOKEN_NAMES: readonly DesignToken[] = Object.keys(DESIGN_TOKENS) as DesignToken[];
 
+/**
+ * Entry animations, as a fixed closed catalogue for the same reason
+ * DESIGN_TOKENS is one: an open "any CSS animation" field would hand the
+ * generator arbitrary text to paste into a stylesheet, which is exactly the
+ * "guess what free text means" risk this whole feature avoids. An
+ * unrecognized name is a hard validation error, never silently dropped.
+ *
+ * `keyframes` is the literal @keyframes body and `timing` the animation
+ * shorthand's tail - both copied verbatim into the generated file, never
+ * assembled from user input. Only the animations a layout actually uses are
+ * emitted, so a page with no animated elements generates no <style> block at
+ * all and is byte-identical to what it produced before this existed.
+ */
+export interface AnimationSpec {
+  /** Shown in the picker; never appears in generated output. */
+  readonly label: string;
+  readonly keyframes: string;
+  /** Everything after the keyframes name in the `animation` shorthand. */
+  readonly timing: string;
+}
+
+export const ANIMATIONS = {
+  'fade-in': {
+    label: 'Fade in',
+    keyframes: 'from { opacity: 0; } to { opacity: 1; }',
+    timing: '600ms ease-out both',
+  },
+  'slide-up': {
+    label: 'Slide up',
+    keyframes: 'from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); }',
+    timing: '600ms ease-out both',
+  },
+  'slide-down': {
+    label: 'Slide down',
+    keyframes: 'from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: translateY(0); }',
+    timing: '600ms ease-out both',
+  },
+  'slide-left': {
+    label: 'Slide in from right',
+    keyframes: 'from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: translateX(0); }',
+    timing: '600ms ease-out both',
+  },
+  'slide-right': {
+    label: 'Slide in from left',
+    keyframes: 'from { opacity: 0; transform: translateX(-32px); } to { opacity: 1; transform: translateX(0); }',
+    timing: '600ms ease-out both',
+  },
+  'zoom-in': {
+    label: 'Zoom in',
+    keyframes: 'from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); }',
+    timing: '450ms ease-out both',
+  },
+  pulse: {
+    label: 'Pulse (loops)',
+    keyframes: '0%, 100% { opacity: 1; } 50% { opacity: 0.55; }',
+    timing: '1.8s ease-in-out infinite',
+  },
+  bounce: {
+    label: 'Bounce (loops)',
+    keyframes: '0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); }',
+    timing: '1.4s ease-in-out infinite',
+  },
+} as const satisfies Record<string, AnimationSpec>;
+
+export type AnimationName = keyof typeof ANIMATIONS;
+
+export const ANIMATION_NAMES: readonly AnimationName[] = Object.keys(ANIMATIONS) as AnimationName[];
+
+/** Prefixed so a generated page's keyframes can never collide with whatever else is already on the page it is dropped into. */
+export function keyframesIdentifier(animation: AnimationName): string {
+  return `vb-${animation}`;
+}
+
 export type CanvasElementType =
   | 'heading'
   | 'text'
@@ -99,6 +172,8 @@ export interface CanvasElement {
    */
   readonly label: string;
   readonly colorToken: DesignToken;
+  /** Absent means no animation at all - the element generates exactly as it did before animations existed. */
+  readonly animation?: AnimationName;
 }
 
 /** Fixed 1280x800 canvas per the approved v1 scope - responsive/breakpoint support is explicitly deferred, not reconciled with LayoutSchema's own breakpoints concept in this pass. */
@@ -115,6 +190,7 @@ export interface PageLayout {
 export type LayoutValidationError =
   | { readonly reason: 'empty-page-name' }
   | { readonly reason: 'unknown-color-token'; readonly elementId: string; readonly token: string }
+  | { readonly reason: 'unknown-animation'; readonly elementId: string; readonly animation: string }
   | { readonly reason: 'out-of-bounds'; readonly elementId: string };
 
 /**
@@ -132,6 +208,9 @@ export function validatePageLayout(layout: PageLayout): readonly LayoutValidatio
   for (const element of layout.elements) {
     if (!(element.colorToken in DESIGN_TOKENS)) {
       errors.push({ reason: 'unknown-color-token', elementId: element.id, token: element.colorToken });
+    }
+    if (element.animation !== undefined && !(element.animation in ANIMATIONS)) {
+      errors.push({ reason: 'unknown-animation', elementId: element.id, animation: element.animation });
     }
     if (
       element.x < 0 ||
@@ -178,6 +257,7 @@ export function layoutToComponentFile(layout: PageLayout): GeneratedFile {
     `export const ${componentName}: FC = () => {\n` +
     '  return (\n' +
     `    <div style={{ position: 'relative', width: ${CANVAS_WIDTH}, height: ${CANVAS_HEIGHT} }}>\n` +
+    renderKeyframesBlock(layout.elements) +
     `${elementsJsx}\n` +
     '    </div>\n' +
     '  );\n' +
@@ -186,12 +266,48 @@ export function layoutToComponentFile(layout: PageLayout): GeneratedFile {
   return { path: pageLayoutTargetPath(layout), contents };
 }
 
-/** Every generated element is absolutely positioned within the fixed canvas - the one thing every type shares, so it is computed once here rather than repeated in each branch below. */
-function positionStyle(element: CanvasElement): string {
-  return (
-    `position: 'absolute', left: ${element.x}, top: ${element.y}, ` +
-    `width: ${element.width}, height: ${element.height}`
+/**
+ * The @keyframes for exactly the animations this layout uses, inlined as a
+ * real `<style>` element rather than written to a separate stylesheet: this
+ * feature generates ONE self-contained file, and a second file the consumer
+ * has to remember to import would break that (and `frontendEntryPointFile`
+ * imports pages, not stylesheets). Emits nothing at all - not even an empty
+ * <style> - when no element is animated, so an unanimated page is
+ * byte-identical to what this generated before animations existed.
+ *
+ * Deduplicated and emitted in the catalogue's own fixed order, never the
+ * order elements happen to appear in, so the same layout always produces the
+ * same bytes regardless of how it was assembled.
+ */
+function renderKeyframesBlock(elements: readonly CanvasElement[]): string {
+  const used = new Set(
+    elements.flatMap((element) => (element.animation === undefined ? [] : [element.animation])),
   );
+  if (used.size === 0) return '';
+
+  const rules = ANIMATION_NAMES.filter((name) => used.has(name))
+    .map((name) => `@keyframes ${keyframesIdentifier(name)} { ${ANIMATIONS[name].keyframes} }`)
+    .join('\n');
+
+  return `      <style>{\`\n${rules}\n\`}</style>\n`;
+}
+
+/**
+ * Every generated element is absolutely positioned within the fixed canvas -
+ * the one thing every type shares, so it is computed once here rather than
+ * repeated in each branch below. The animation shorthand rides along in the
+ * same place for the same reason: it applies identically to all twelve types,
+ * and threading it through each branch separately would be twelve chances to
+ * forget one.
+ */
+function positionStyle(element: CanvasElement): string {
+  const base =
+    `position: 'absolute', left: ${element.x}, top: ${element.y}, ` +
+    `width: ${element.width}, height: ${element.height}`;
+
+  if (element.animation === undefined) return base;
+  const spec = ANIMATIONS[element.animation];
+  return `${base}, animation: '${keyframesIdentifier(element.animation)} ${spec.timing}'`;
 }
 
 function renderElement(element: CanvasElement): string {

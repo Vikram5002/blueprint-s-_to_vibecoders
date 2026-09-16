@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ANIMATION_NAMES,
   CANVAS_ELEMENT_TYPES,
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
@@ -193,6 +194,59 @@ describe('layoutToComponentFile', () => {
     it('renders a container as an empty, bordered grouping <div> - never carrying its own text', () => {
       const file = layoutToComponentFile(layoutWith({ elements: [elementOf({ type: 'container', label: '' })] }));
       expect(file.contents).toMatch(/<div data-testid="el-1" style=\{\{[^}]*\}\} \/>/);
+    });
+
+    it('an element with no animation generates exactly as it did before animations existed - no style block, no animation property', () => {
+      const file = layoutToComponentFile(layoutWith({ elements: [elementOf({ type: 'button' })] }));
+      expect(file.contents).not.toContain('<style>');
+      expect(file.contents).not.toContain('animation:');
+      expect(file.contents).not.toContain('@keyframes');
+    });
+
+    it('an animated element gets both the keyframes block and the animation shorthand, with a collision-proof name', () => {
+      const file = layoutToComponentFile(
+        layoutWith({ elements: [elementOf({ type: 'button', animation: 'fade-in' })] }),
+      );
+      expect(file.contents).toContain('@keyframes vb-fade-in { from { opacity: 0; } to { opacity: 1; } }');
+      expect(file.contents).toContain("animation: 'vb-fade-in 600ms ease-out both'");
+    });
+
+    it('emits each used animation once, in catalogue order, and never one that is unused', () => {
+      const file = layoutToComponentFile(
+        layoutWith({
+          elements: [
+            elementOf({ id: 'a', type: 'text', y: 0, animation: 'zoom-in' }),
+            elementOf({ id: 'b', type: 'text', y: 100, animation: 'fade-in' }),
+            elementOf({ id: 'c', type: 'text', y: 200, animation: 'fade-in' }),
+            elementOf({ id: 'd', type: 'text', y: 300 }),
+          ],
+        }),
+      );
+      // Deduplicated: two elements share 'fade-in', one keyframes rule.
+      expect(file.contents.match(/@keyframes vb-fade-in/g)).toHaveLength(1);
+      // Catalogue order, not element order - fade-in is declared before zoom-in.
+      expect(file.contents.indexOf('vb-fade-in {')).toBeLessThan(file.contents.indexOf('vb-zoom-in {'));
+      expect(file.contents).not.toContain('vb-pulse');
+    });
+
+    it('rejects an unrecognized animation rather than dropping it silently', () => {
+      const layout = layoutWith({
+        elements: [elementOf({ type: 'button', animation: 'disco' as never })],
+      });
+      expect(validatePageLayout(layout)).toEqual([
+        { reason: 'unknown-animation', elementId: 'el-1', animation: 'disco' },
+      ]);
+      expect(() => layoutToComponentFile(layout)).toThrow();
+    });
+
+    it('every animation in the catalogue generates real, non-empty keyframes', () => {
+      for (const name of ANIMATION_NAMES) {
+        const file = layoutToComponentFile(
+          layoutWith({ elements: [elementOf({ type: 'container', animation: name })] }),
+        );
+        expect(file.contents).toContain(`@keyframes vb-${name} {`);
+        expect(file.contents).toContain(`animation: 'vb-${name} `);
+      }
     });
 
     it('every declared CanvasElementType actually produces distinct, valid output - none silently falls through to another type\'s markup', () => {

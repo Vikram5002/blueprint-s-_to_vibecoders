@@ -438,7 +438,7 @@ test.describe('Page builder: the Inspector is reachable and usable at a real win
     await cli?.stop();
   });
 
-  test('re-selects, renames and recolours an element - all of it on screen', async ({ page }) => {
+  test('renames, recolours, animates and deletes an element - all of it on screen', async ({ page }) => {
     await page.goto(`${cli.baseUrl}/workspace.html`);
     await page.getByRole('tab', { name: 'Page builder' }).click();
 
@@ -483,16 +483,24 @@ test.describe('Page builder: the Inspector is reachable and usable at a real win
     // Now actually use the controls the user said did not exist.
     await labelInput.fill('Submit');
     await page.getByTestId('color-success').click();
+    await page.getByTestId('animation-select').selectOption('slide-up');
 
     await expect(placed).toHaveText('Submit');
     await expect
       .poll(async () => placed.evaluate((el) => getComputedStyle(el).backgroundColor))
       .toBe('rgb(22, 163, 74)'); // DESIGN_TOKENS.success, #16a34a
 
-    // Both choices must survive into the real generated file.
+    // All three choices must survive into the real generated file.
     await page.getByRole('button', { name: 'Generate', exact: true }).click();
     const code = page.getByTestId('generated-code');
     await expect(code).toBeVisible();
     await expect(code).toContainText('>Submit</button>');
+    await expect(code).toContainText('@keyframes vb-slide-up');
+    await expect(code).toContainText("animation: 'vb-slide-up");
+
+    // Delete removes it for real.
+    await page.mouse.click(placedBox.x + placedBox.width / 2, placedBox.y + placedBox.height / 2);
+    await page.getByTestId('delete-element').click();
+    await expect(page.locator('[data-testid^="placed-"]')).toHaveCount(0);
   });
 });

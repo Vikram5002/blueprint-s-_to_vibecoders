@@ -51,6 +51,58 @@ export const CANVAS_ELEMENT_TYPES: readonly CanvasElementType[] = [
   'container',
 ];
 
+/** Mirrors src/generate/canvas-layout.ts's ANIMATIONS - same names, same keyframes, same timings, so the editor preview animates identically to the generated file. */
+export const ANIMATIONS = {
+  'fade-in': {
+    label: 'Fade in',
+    keyframes: 'from { opacity: 0; } to { opacity: 1; }',
+    timing: '600ms ease-out both',
+  },
+  'slide-up': {
+    label: 'Slide up',
+    keyframes: 'from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); }',
+    timing: '600ms ease-out both',
+  },
+  'slide-down': {
+    label: 'Slide down',
+    keyframes: 'from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: translateY(0); }',
+    timing: '600ms ease-out both',
+  },
+  'slide-left': {
+    label: 'Slide in from right',
+    keyframes: 'from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: translateX(0); }',
+    timing: '600ms ease-out both',
+  },
+  'slide-right': {
+    label: 'Slide in from left',
+    keyframes: 'from { opacity: 0; transform: translateX(-32px); } to { opacity: 1; transform: translateX(0); }',
+    timing: '600ms ease-out both',
+  },
+  'zoom-in': {
+    label: 'Zoom in',
+    keyframes: 'from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); }',
+    timing: '450ms ease-out both',
+  },
+  pulse: {
+    label: 'Pulse (loops)',
+    keyframes: '0%, 100% { opacity: 1; } 50% { opacity: 0.55; }',
+    timing: '1.8s ease-in-out infinite',
+  },
+  bounce: {
+    label: 'Bounce (loops)',
+    keyframes: '0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); }',
+    timing: '1.4s ease-in-out infinite',
+  },
+} as const;
+
+export type AnimationName = keyof typeof ANIMATIONS;
+
+export const ANIMATION_NAMES: readonly AnimationName[] = Object.keys(ANIMATIONS) as AnimationName[];
+
+export function keyframesIdentifier(animation: AnimationName): string {
+  return `vb-${animation}`;
+}
+
 export interface CanvasElement {
   readonly id: string;
   readonly type: CanvasElementType;
@@ -60,6 +112,7 @@ export interface CanvasElement {
   readonly height: number;
   readonly label: string;
   readonly colorToken: DesignToken;
+  readonly animation?: AnimationName;
 }
 
 export const CANVAS_WIDTH = 1280;

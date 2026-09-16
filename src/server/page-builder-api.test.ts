@@ -107,6 +107,43 @@ describe('POST /generate', () => {
     expect(body.errors).toEqual([{ reason: 'unknown-color-token', elementId: 'e1', token: 'not-real' }]);
   });
 
+  it('accepts an element carrying a real animation, and rejects one naming an animation that does not exist', async () => {
+    const app = createPageBuilderRoutes();
+    const accepted = await app.request('/generate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        layout: {
+          id: 'x',
+          pageName: 'Animated',
+          elements: [
+            { id: 'e1', type: 'button', x: 0, y: 0, width: 100, height: 40, label: 'Go', colorToken: 'primary', animation: 'fade-in' },
+          ],
+        },
+      }),
+    });
+    expect(accepted.status).toBe(200);
+    const body = (await accepted.json()) as { file: { contents: string } };
+    expect(body.file.contents).toContain('@keyframes vb-fade-in');
+
+    const rejected = await app.request('/generate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        layout: {
+          id: 'x',
+          pageName: 'Animated',
+          elements: [
+            { id: 'e1', type: 'button', x: 0, y: 0, width: 100, height: 40, label: 'Go', colorToken: 'primary', animation: 'disco' },
+          ],
+        },
+      }),
+    });
+    expect(rejected.status).toBe(400);
+    const errorBody = (await rejected.json()) as { errors: unknown[] };
+    expect(errorBody.errors).toEqual([{ reason: 'unknown-animation', elementId: 'e1', animation: 'disco' }]);
+  });
+
   it('rejects an out-of-bounds element the same way', async () => {
     const app = createPageBuilderRoutes();
     const response = await app.request('/generate', {

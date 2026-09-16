@@ -2,11 +2,15 @@ import { useRef, useState } from 'react';
 import { DndContext, PointerSensor, useDraggable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { generatePageFile } from './page-builder-api-client';
 import {
+  ANIMATION_NAMES,
+  ANIMATIONS,
   CANVAS_ELEMENT_TYPES,
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
   DESIGN_TOKENS,
   DESIGN_TOKEN_NAMES,
+  keyframesIdentifier,
+  type AnimationName,
   type CanvasElement,
   type CanvasElementType,
   type DesignToken,
@@ -45,6 +49,11 @@ const DEFAULT_LABEL: Readonly<Record<CanvasElementType, string>> = {
   divider: '',
   container: '',
 };
+
+/** Every catalogue keyframe, injected once into the canvas so the editor preview animates exactly like the generated file does. Built once at module load - it never varies. */
+const EDITOR_KEYFRAMES = ANIMATION_NAMES.map(
+  (name) => `@keyframes ${keyframesIdentifier(name)} { ${ANIMATIONS[name].keyframes} }`,
+).join('\n');
 
 /** Palette entry labels — separate from DEFAULT_LABEL, which is what gets placed on the canvas, not what names the palette button itself. */
 const PALETTE_LABEL: Readonly<Record<CanvasElementType, string>> = {
@@ -247,6 +256,13 @@ function PlacedElement({ element, selected, onSelect }: PlacedElementProps): JSX
     outlineOffset: 2,
     opacity: isDragging ? 0.6 : 1,
     cursor: 'grab',
+    // Suppressed mid-drag: several catalogue animations drive `transform`,
+    // which is the same property dnd-kit uses to follow the pointer, so an
+    // animating element would fight the drag and visibly jump.
+    animation:
+      element.animation !== undefined && !isDragging
+        ? `${keyframesIdentifier(element.animation)} ${ANIMATIONS[element.animation].timing}`
+        : undefined,
   };
 
   // Selection cannot be wired through onClick: a draggable node's own
@@ -317,6 +333,15 @@ export function PageBuilderCanvas(): JSX.Element {
   const [generated, setGenerated] = useState<GeneratedPageFile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  /**
+   * Bumped to re-run every entry animation. A CSS entry animation plays once
+   * on mount and then never again, so without this you would see each
+   * animation exactly once - when the element is first placed - and never
+   * while actually choosing between them, which is the one moment you need
+   * to see it. Bumping this remounts the placed elements (it is part of
+   * their React key), which replays them.
+   */
+  const [replayTick, setReplayTick] = useState(0);
   /** The fixed 1280x800 element coordinate space. */
   const canvasRef = useRef<HTMLDivElement | null>(null);
   /** The flexible, scrollable window onto it - what is actually visible on screen. */
@@ -406,10 +431,45 @@ export function PageBuilderCanvas(): JSX.Element {
     }
   }
 
-  function updateSelected(patch: Partial<Pick<CanvasElement, 'label' | 'colorToken'>>): void {
+  function deleteSelected(): void {
+    if (selectedId === null) return;
+    setElements((current) => current.filter((element) => element.id !== selectedId));
+    setSelectedId(null);
+  }
+
+  /** Offset so the copy is visibly its own element rather than sitting exactly on top of the original, and clamped so duplicating something at the canvas edge cannot push it out of bounds (which `validatePageLayout` would reject at generate time). */
+  function duplicateSelected(): void {
+    if (selected === null) return;
+    const copy: CanvasElement = {
+      ...selected,
+      id: nextElementId(),
+      x: Math.round(clamp(selected.x + 16, 0, CANVAS_WIDTH - selected.width)),
+      y: Math.round(clamp(selected.y + 16, 0, CANVAS_HEIGHT - selected.height)),
+    };
+    setElements((current) => [...current, copy]);
+    setSelectedId(copy.id);
+  }
+
+  interface ElementPatch {
+    readonly label?: string;
+    readonly colorToken?: DesignToken;
+    /** Explicit `undefined` means "clear it". `exactOptionalPropertyTypes` makes that a different thing from omitting the key, so it has to be spelled out. */
+    readonly animation?: AnimationName | undefined;
+  }
+
+  function updateSelected(patch: ElementPatch): void {
     if (selectedId === null) return;
     setElements((current) =>
-      current.map((element) => (element.id === selectedId ? { ...element, ...patch } : element)),
+      current.map((element) => {
+        if (element.id !== selectedId) return element;
+        // Clearing drops the key entirely rather than setting it to
+        // undefined: canvas-layout.ts's contract is "absent means no
+        // animation", and JSON.stringify would drop an explicit undefined on
+        // the way to the API anyway - so storing one would only create a
+        // shape the rest of the pipeline never sees.
+        const { animation, ...rest } = { ...element, ...patch };
+        return animation === undefined ? rest : { ...rest, animation };
+      }),
     );
   }
 
@@ -509,9 +569,15 @@ export function PageBuilderCanvas(): JSX.Element {
                 style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, position: 'relative' }}
                 className="bg-white"
               >
+                {/*
+                  The same keyframes the generated file carries, by the same
+                  vb-* names - so what you preview here is what that file will
+                  actually do, not an approximation of it.
+                */}
+                <style>{EDITOR_KEYFRAMES}</style>
                 {elements.map((element) => (
                   <PlacedElement
-                    key={element.id}
+                    key={`${element.id}:${replayTick}`}
                     element={element}
                     selected={element.id === selectedId}
                     onSelect={() => setSelectedId(element.id)}
@@ -526,7 +592,7 @@ export function PageBuilderCanvas(): JSX.Element {
               </h4>
               {selected === null ? (
                 <p className="text-xs text-slate-500">
-                  Select a placed element to edit its label and color.
+                  Select a placed element to edit its text, color, and animation.
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -556,6 +622,57 @@ export function PageBuilderCanvas(): JSX.Element {
                         />
                       ))}
                     </div>
+                  </div>
+
+                  <div>
+                    <span className="mb-1 block text-xs text-slate-400">Animation</span>
+                    <select
+                      data-testid="animation-select"
+                      value={selected.animation ?? 'none'}
+                      onChange={(event) =>
+                        updateSelected({
+                          animation:
+                            event.target.value === 'none'
+                              ? undefined
+                              : (event.target.value as AnimationName),
+                        })
+                      }
+                      className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
+                    >
+                      <option value="none">None</option>
+                      {ANIMATION_NAMES.map((name) => (
+                        <option key={name} value={name}>
+                          {ANIMATIONS[name].label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      data-testid="replay-animations"
+                      onClick={() => setReplayTick((tick) => tick + 1)}
+                      className="mt-1.5 w-full rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
+                    >
+                      Replay animations
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2 border-t border-slate-800 pt-3">
+                    <button
+                      type="button"
+                      data-testid="duplicate-element"
+                      onClick={duplicateSelected}
+                      className="flex-1 rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
+                    >
+                      Duplicate
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="delete-element"
+                      onClick={deleteSelected}
+                      className="flex-1 rounded border border-red-800 px-2 py-1 text-[11px] text-red-300 hover:bg-red-950/40"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               )}
