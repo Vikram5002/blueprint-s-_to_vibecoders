@@ -2,10 +2,25 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Covers ui/src/workspace/: WorkspaceShell, Sidebar, ConversationPane,
- * PromptBar, store.ts. No backend — the shell is placeholder content only
- * (see each component's own doc comment), so these tests assert the real
- * current behavior, not an intended future one.
+ * PromptBar, store.ts. No backend — ConversationPane and PromptBar remain
+ * placeholder content only (see each component's own doc comment), so those
+ * assertions still cover the real current behavior, not an intended future
+ * one.
+ *
+ * Sidebar is the one exception: it now fetches `/api/workflow/sessions` on
+ * mount (a real workspace-sessions-store.ts feature, tested against a real
+ * backend in workflow-sessions.e2e.spec.ts). This config's `npm run dev`
+ * webServer has no backend behind it at all (vite.config.ts's own proxy
+ * comment notwithstanding — there is nothing running on the port it points
+ * at here), so that fetch genuinely 500s, and Chromium logs the failed
+ * resource load as a console error regardless of Sidebar's own try/catch —
+ * that part is a real HTTP response, not something app code controls. React
+ * 18 StrictMode mounts Sidebar twice, so this shows up as exactly two
+ * matching console errors. `EXPECTED_SESSIONS_FETCH_NOISE` filters out only
+ * that one known, harmless message so these tests still catch a real
+ * regression anywhere else in the page.
  */
+const EXPECTED_SESSIONS_FETCH_NOISE = 'Failed to load resource: the server responded with a status of 500 (Internal Server Error)';
 
 test.describe('workspace shell — 1280px', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
@@ -29,7 +44,7 @@ test.describe('workspace shell — 1280px', () => {
     await expect(page.getByPlaceholder('Message...')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Send' })).toBeVisible();
 
-    expect(consoleErrors).toEqual([]);
+    expect(consoleErrors.filter((message) => message !== EXPECTED_SESSIONS_FETCH_NOISE)).toEqual([]);
   });
 });
 
@@ -120,7 +135,7 @@ test.describe('tab navigation', () => {
     await expect(conversationTab).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByPlaceholder('Message...')).toBeVisible();
 
-    expect(consoleErrors).toEqual([]);
+    expect(consoleErrors.filter((message) => message !== EXPECTED_SESSIONS_FETCH_NOISE)).toEqual([]);
   });
 });
 

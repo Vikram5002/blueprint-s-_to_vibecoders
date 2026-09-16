@@ -1,12 +1,10 @@
-import { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { ConversationPane } from './ConversationPane';
 import { PromptBar } from './PromptBar';
 import { LayoutDemo } from './LayoutDemo';
 import { VerificationDemo } from './VerificationDemo';
 import { WorkflowDemo } from './WorkflowDemo';
-
-type Tab = 'conversation' | 'layout' | 'verification' | 'workflow';
+import { useWorkspaceStore, type Tab } from './store';
 
 const TABS: readonly { readonly id: Tab; readonly label: string }[] = [
   { id: 'conversation', label: 'Conversation' },
@@ -17,8 +15,7 @@ const TABS: readonly { readonly id: Tab; readonly label: string }[] = [
 
 /**
  * The workspace shell: collapsible sidebar, a tab strip, and one content
- * region below it. Placeholder content only — no API calls, no streaming,
- * no persistence. `min-w-0` on the flex children is load-bearing: without it
+ * region below it. `min-w-0` on the flex children is load-bearing: without it
  * a flex item refuses to shrink below its content's natural width, which is
  * exactly what breaks this layout at 768px.
  *
@@ -27,11 +24,14 @@ const TABS: readonly { readonly id: Tab; readonly label: string }[] = [
  * graph) previously each had their own "temporary" button opening an
  * unrelated modal. Replaced with a single tab strip so there is one coherent
  * way to move between every area of the workspace, not four disconnected
- * entry points. None of the three is part of the shell's real conversational
- * flow yet — they remain mock-data views reached by tab instead of by modal.
+ * entry points. The Conversation tab itself is still an unwired placeholder
+ * (see ConversationPane/PromptBar). `activeTab` lives in the shared
+ * workspace store, not local state, so the Sidebar's session list can switch
+ * this shell to the Workflow graph tab from outside this component.
  */
 export function WorkspaceShell(): JSX.Element {
-  const [activeTab, setActiveTab] = useState<Tab>('conversation');
+  const activeTab = useWorkspaceStore((state) => state.activeTab);
+  const setActiveTab = useWorkspaceStore((state) => state.setActiveTab);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-900 text-slate-100">

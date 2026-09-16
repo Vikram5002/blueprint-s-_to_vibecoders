@@ -8,6 +8,7 @@ import {
   MAX_CONCURRENT_JOBS,
   type WorkflowJob,
 } from './workflow-api.js';
+import type { WorkflowSessionDetail, WorkflowSessionsStore } from '../store/workflow-sessions-store.js';
 import { loadEnvFile } from '../llm/env-file.js';
 import { chooseProvider, createProvider } from '../llm/select-provider.js';
 import { loadLabelCache } from '../llm/cache.js';
@@ -69,6 +70,21 @@ const FIXTURE_SCHEMA = asValidated({
   constraints: [],
   provenance: 'STATED',
 });
+
+/** Same in-memory-map shape as createWorkflowJobStore, for tests that need to inspect what got saved. */
+function memorySessionsStore(): WorkflowSessionsStore {
+  const sessions = new Map<string, WorkflowSessionDetail>();
+  return {
+    save: (session) => {
+      if (!sessions.has(session.id)) sessions.set(session.id, session);
+    },
+    list: () =>
+      [...sessions.values()]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .map(({ id, title, prompt, createdAt }) => ({ id, title, prompt, createdAt })),
+    get: (id) => sessions.get(id),
+  };
+}
 
 async function pollUntilTerminal(
   app: ReturnType<typeof createWorkflowRoutes>,
@@ -206,6 +222,80 @@ describe('createWorkflowRoutes — stubbed LLM (fast, deterministic)', () => {
     expect(overflow.status).toBe(503);
     expect(overflow.headers.get('retry-after')).toBeTruthy();
     expect(jobs.activeCount()).toBe(MAX_CONCURRENT_JOBS);
+  });
+});
+
+describe('workflow sessions — persisted for the Sessions sidebar', () => {
+  it('GET /sessions is an empty list, not an error, when no store was wired in', async () => {
+    const app = createWorkflowRoutes({ llm: { generator: stubGenerator(async () => ok(FIXTURE_SCHEMA)), cache: memoryCache() } });
+    const response = await app.request('/sessions');
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ sessions: [] });
+  });
+
+  it('404s GET /sessions/:id for an unknown id, same as an unknown job', async () => {
+    const app = createWorkflowRoutes({
+      llm: { generator: stubGenerator(async () => ok(FIXTURE_SCHEMA)), cache: memoryCache() },
+      sessions: memorySessionsStore(),
+    });
+    const response = await app.request('/sessions/does-not-exist');
+    expect(response.status).toBe(404);
+  });
+
+  it('a job that reaches succeeded is saved to the sessions store and reappears via both GET routes', async () => {
+    const sessions = memorySessionsStore();
+    const app = createWorkflowRoutes({
+      llm: { generator: stubGenerator(async () => ok(FIXTURE_SCHEMA)), cache: memoryCache() },
+      sessions,
+    });
+
+    const submitted = await app.request('/jobs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ prompt: 'A carpool coordinator app.' }),
+    });
+    const { id: jobId } = (await submitted.json()) as { id: string };
+    await pollUntilTerminal(app, jobId, 5_000);
+
+    // The session is keyed on the schema's own sessionId, not the job id —
+    // the job is this run's transient in-memory handle, the session is what
+    // survives it.
+    const listResponse = await app.request('/sessions');
+    const { sessions: list } = (await listResponse.json()) as {
+      sessions: readonly { id: string; title: string; prompt: string }[];
+    };
+    expect(list).toHaveLength(1);
+    expect(list[0]?.id).toBe(FIXTURE_SCHEMA.sessionId);
+    expect(list[0]?.title).toBe(FIXTURE_SCHEMA.title);
+    expect(list[0]?.prompt).toBe('A carpool coordinator app.');
+
+    const detailResponse = await app.request(`/sessions/${FIXTURE_SCHEMA.sessionId}`);
+    expect(detailResponse.status).toBe(200);
+    const detail = (await detailResponse.json()) as WorkflowSessionDetail;
+    expect(detail.schema.sessionId).toBe(FIXTURE_SCHEMA.sessionId);
+    expect(detail.prohibitions.length).toBe(9);
+    expect(detail.permissions.length).toBe(3);
+  });
+
+  it('a failed job is never saved as a session', async () => {
+    const sessions = memorySessionsStore();
+    const app = createWorkflowRoutes({
+      llm: {
+        generator: stubGenerator(async () => err({ reason: 'provider-error', message: 'simulated failure' })),
+        cache: memoryCache(),
+      },
+      sessions,
+    });
+
+    const submitted = await app.request('/jobs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ prompt: 'A recipe manager.' }),
+    });
+    const { id } = (await submitted.json()) as { id: string };
+    await pollUntilTerminal(app, id, 5_000);
+
+    expect(sessions.list()).toEqual([]);
   });
 });
 

@@ -15,7 +15,7 @@ import { posix } from 'node:path';
 
 export type BlueprintDatabase = Database.Database;
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export function databasePathFor(root: string): string {
   return posix.join(root.replace(/\\/g, '/'), '.vibe', 'blueprint.db');
@@ -114,6 +114,24 @@ function migrate(db: BlueprintDatabase): void {
       body        TEXT NOT NULL,
       created_at  TEXT NOT NULL
     );
+
+    -- v3 -> v4 adds workflow sessions: each successful Layer 2 generation
+    -- (prompt -> ValidatedProjectSchema -> compiled constraints,
+    -- src/server/workflow-api.ts) is recorded here so the workspace's
+    -- Sessions sidebar has something real to list and reopen, instead of
+    -- an in-flight job's in-memory-only result vanishing on the next
+    -- server restart. One row per generation run, never mutated after
+    -- insert (a session is a record of what happened, not a live document).
+    CREATE TABLE IF NOT EXISTS workflow_sessions (
+      id          TEXT PRIMARY KEY,
+      title       TEXT NOT NULL,
+      prompt      TEXT NOT NULL,
+      body        TEXT NOT NULL,
+      created_at  TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS workflow_sessions_by_date
+      ON workflow_sessions (created_at);
   `);
 
   db.pragma(`user_version = ${SCHEMA_VERSION}`);

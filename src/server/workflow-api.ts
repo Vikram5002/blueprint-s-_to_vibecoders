@@ -26,6 +26,7 @@ import type { GenerateFailure, ProjectSchemaGenerator } from '../workflow/genera
 import type { LabelCache } from '../llm/cache.js';
 import type { Constraint } from '../types/constraints.js';
 import type { ValidatedProjectSchema } from '../types/project-schema.js';
+import type { WorkflowSessionsStore } from '../store/workflow-sessions-store.js';
 
 /**
  * Hard cap on jobs counted as `pending` or `running` together.
@@ -118,6 +119,13 @@ export interface WorkflowRouteDeps {
   readonly llm: WorkflowLlmDeps | null;
   /** Defaults to a fresh in-memory store; overridable so tests can inspect or pre-seed job state. */
   readonly jobs?: WorkflowJobStore;
+  /**
+   * Optional: when present, every job that reaches `succeeded` is recorded
+   * here too, so it survives past the in-memory job store's own lifetime
+   * (ADR-002's accepted gap) and shows up in the workspace's Sessions
+   * sidebar. Undefined in tests that only care about job polling.
+   */
+  readonly sessions?: WorkflowSessionsStore;
 }
 
 /**
@@ -128,6 +136,7 @@ export interface WorkflowRouteDeps {
  */
 export function createWorkflowRoutes(deps: WorkflowRouteDeps): Hono {
   const jobs = deps.jobs ?? createWorkflowJobStore();
+  const sessions = deps.sessions;
   const app = new Hono();
 
   app.post('/jobs', async (c) => {
@@ -160,7 +169,7 @@ export function createWorkflowRoutes(deps: WorkflowRouteDeps): Hono {
     // try/catch is what keeps every expected failure out of an unhandled
     // rejection; this .catch() is a defensive backstop for anything that
     // still escapes it, not the primary error path.
-    runJob(jobs, job.id, prompt, llm).catch((cause) => {
+    runJob(jobs, job.id, prompt, llm, sessions).catch((cause) => {
       jobs.set({
         ...job,
         status: 'failed',
@@ -177,6 +186,17 @@ export function createWorkflowRoutes(deps: WorkflowRouteDeps): Hono {
     return job === undefined ? c.json({ error: `unknown job: ${id}` }, 404) : c.json(job);
   });
 
+  // Persisted generation runs (see WorkflowRouteDeps.sessions's own doc
+  // comment) — an empty list, not an error, when no store was wired in
+  // (the workspace's Sessions sidebar just has nothing to show).
+  app.get('/sessions', (c) => c.json({ sessions: sessions?.list() ?? [] }));
+
+  app.get('/sessions/:id', (c) => {
+    const id = c.req.param('id');
+    const session = sessions?.get(id);
+    return session === undefined ? c.json({ error: `unknown session: ${id}` }, 404) : c.json(session);
+  });
+
   return app;
 }
 
@@ -188,7 +208,13 @@ export function createWorkflowRoutes(deps: WorkflowRouteDeps): Hono {
  * revalidation, against generate's multi-second latency — so there is no
  * meaningful intermediate status worth exposing between them, per ADR-002.
  */
-async function runJob(store: WorkflowJobStore, jobId: string, prompt: string, llm: WorkflowLlmDeps): Promise<void> {
+async function runJob(
+  store: WorkflowJobStore,
+  jobId: string,
+  prompt: string,
+  llm: WorkflowLlmDeps,
+  sessions: WorkflowSessionsStore | undefined,
+): Promise<void> {
   const initial = store.get(jobId);
   if (initial === undefined) return; // defensive: the caller always creates the job first
 
@@ -217,6 +243,22 @@ async function runJob(store: WorkflowJobStore, jobId: string, prompt: string, ll
       status: 'succeeded',
       result: { schema: generated.value, prohibitions: compiled.prohibitions, permissions: compiled.permissions },
     });
+    // Best-effort: a session row failing to save must never turn an
+    // otherwise-successful generation into a reported failure — the job
+    // result above is already set and is what the caller actually polls for.
+    try {
+      sessions?.save({
+        id: generated.value.sessionId,
+        title: generated.value.title,
+        prompt,
+        createdAt: initial.createdAt,
+        schema: generated.value,
+        prohibitions: compiled.prohibitions,
+        permissions: compiled.permissions,
+      });
+    } catch {
+      // Swallow — see comment above.
+    }
   } catch (cause) {
     // compileDomainConstraints only throws on the "should never happen"
     // branded-bypass case its own docstring describes — real here only if

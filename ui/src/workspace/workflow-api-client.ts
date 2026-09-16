@@ -19,6 +19,7 @@
 import type { WorkflowJob, WorkflowJobStatus } from './workflow-job-types';
 import type { ApplicationJob, ApplicationJobStatus } from './application-job-types';
 import type { ProjectSchema } from './project-schema-types';
+import type { WorkflowSessionDetail, WorkflowSessionSummary } from './workflow-session-types';
 
 async function readErrorMessage(response: Response, fallback: string): Promise<string> {
   const detail = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -173,6 +174,30 @@ export async function generateApplicationViaApi(
 
     await delay(pollIntervalMs, options.signal);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Persisted sessions (/api/workflow/sessions, src/store/workflow-sessions-store.ts)
+// — every schema-generation run that reached 'succeeded', recorded server-side
+// so the Sessions sidebar has something real to list even after the
+// in-memory job store (ADR-002's accepted gap) has forgotten it.
+// ---------------------------------------------------------------------------
+
+export async function listWorkflowSessions(): Promise<readonly WorkflowSessionSummary[]> {
+  const response = await fetch('/api/workflow/sessions');
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `list sessions failed: ${response.status}`));
+  }
+  const body = (await response.json()) as { sessions: readonly WorkflowSessionSummary[] };
+  return body.sessions;
+}
+
+export async function fetchWorkflowSession(id: string): Promise<WorkflowSessionDetail> {
+  const response = await fetch(`/api/workflow/sessions/${encodeURIComponent(id)}`);
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `fetch session failed: ${response.status}`));
+  }
+  return (await response.json()) as WorkflowSessionDetail;
 }
 
 function delay(ms: number, signal?: AbortSignal): Promise<void> {

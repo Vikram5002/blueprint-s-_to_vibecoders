@@ -33,10 +33,12 @@ import { buildDiffResponse, buildDriftHistoryResponse } from './history-api.js';
 import { buildViolationsResponse, buildSnapshotResponse } from './violations-api.js';
 import { createWorkflowRoutes, type WorkflowRouteDeps } from './workflow-api.js';
 import { createGenerationRoutes, type ApplicationRouteDeps } from './generation-api.js';
+import { createPageBuilderRoutes } from './page-builder-api.js';
 import { ROOT_DIRECTORY, type ViewLevel } from '../graph/aggregate.js';
 import { chooseProvider, createProvider } from '../llm/select-provider.js';
 import { loadLabelCache } from '../llm/cache.js';
 import { createProjectSchemaGenerator } from '../workflow/generate-project-schema.js';
+import { createWorkflowSessionsStore } from '../store/workflow-sessions-store.js';
 import type { AnalysisContext } from './context.js';
 import type { CompletionProvider } from '../llm/provider.js';
 import type { LabelCache } from '../llm/cache.js';
@@ -211,6 +213,11 @@ export function createApp(context: AnalysisContext, workflow?: WorkflowRouteDeps
     app.route('/api/workflow', createGenerationRoutes(application));
   }
 
+  // Page builder (Milestone 1): mounted unconditionally, unlike the two
+  // routes above - layoutToComponentFile makes no LLM call, so this needs
+  // no provider dependency to exist at all.
+  app.route('/api/page-builder', createPageBuilderRoutes());
+
   app.get('*', async (c) => {
     const served = await serveStatic(c.req.path);
     if (served !== null) {
@@ -277,7 +284,11 @@ function generationRootFor(context: AnalysisContext): string {
 
 export async function startServer(context: AnalysisContext): Promise<RunningServer> {
   const llm = await resolveLlm(context);
-  const workflowDeps: WorkflowRouteDeps = llm === null ? { llm: null } : { llm: { generator: createProjectSchemaGenerator(llm), cache: llm.cache } };
+  const sessions = createWorkflowSessionsStore(context.db);
+  const workflowDeps: WorkflowRouteDeps =
+    llm === null
+      ? { llm: null, sessions }
+      : { llm: { generator: createProjectSchemaGenerator(llm), cache: llm.cache }, sessions };
   const applicationDeps: ApplicationRouteDeps = { llm, generationRoot: generationRootFor(context) };
 
   const app = createApp(context, workflowDeps, applicationDeps);

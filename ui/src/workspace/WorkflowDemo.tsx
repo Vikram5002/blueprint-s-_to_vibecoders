@@ -6,11 +6,14 @@ import {
   LARGE_PROJECT_SCHEMA,
   KNOWN_TENSION_SCHEMA,
   SCALE_TEST_SCHEMA,
+  SINGLE_COMPONENT_SCHEMA,
 } from './workflow-mocks';
 import { generateProjectSchemaViaApi } from './workflow-api-client';
+import { useWorkspaceStore } from './store';
 import type { WorkflowJob, WorkflowJobResult, WorkflowJobStatus } from './workflow-job-types';
+import type { WorkflowSessionDetail } from './workflow-session-types';
 
-type Scenario = 'small' | 'large' | 'tension' | 'scale-test';
+type Scenario = 'small' | 'large' | 'tension' | 'scale-test' | 'single-component';
 type Mode = 'mock' | 'live';
 
 /**
@@ -32,6 +35,30 @@ type Mode = 'mock' | 'live';
 export function WorkflowDemo(): JSX.Element {
   const [mode, setMode] = useState<Mode>('mock');
   const [scenario, setScenario] = useState<Scenario>('small');
+  const openedSession = useWorkspaceStore((state) => state.openedSession);
+  const clearOpenedSession = useWorkspaceStore((state) => state.clearOpenedSession);
+  // Captured into local state rather than read directly from the store: the
+  // store's own copy is cleared right below (so reopening the SAME session a
+  // second time still fires this effect), and LiveWorkflow's `key` is
+  // derived from this value — if that key were derived from the store's
+  // copy instead, clearing it out from under an already-open session would
+  // change the key mid-render, unmounting LiveWorkflow and remounting it
+  // with `initialSession=null`, silently dropping right back to the empty
+  // idle view. Found live: clicking a session correctly switched to this
+  // tab but rendered "Enter a prompt above..." instead of the session.
+  const [loadedSession, setLoadedSession] = useState<WorkflowSessionDetail | null>(null);
+
+  // A session opened from the Sidebar always lands on the live view, even if
+  // this tab was last left on a mock scenario — reopening a real past run to
+  // find it silently replaced by an unrelated hand-built fixture would be a
+  // worse surprise than switching modes underneath the user once, here.
+  useEffect(() => {
+    if (openedSession === null) return;
+    setLoadedSession(openedSession);
+    setMode('live');
+    clearOpenedSession();
+  }, [openedSession, clearOpenedSession]);
+
   const mockSchema =
     scenario === 'small'
       ? SMALL_PROJECT_SCHEMA
@@ -39,7 +66,9 @@ export function WorkflowDemo(): JSX.Element {
         ? LARGE_PROJECT_SCHEMA
         : scenario === 'tension'
           ? KNOWN_TENSION_SCHEMA
-          : SCALE_TEST_SCHEMA;
+          : scenario === 'scale-test'
+            ? SCALE_TEST_SCHEMA
+            : SINGLE_COMPONENT_SCHEMA;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -98,6 +127,14 @@ export function WorkflowDemo(): JSX.Element {
               >
                 Scale-test fixture (Milestone 3, TaskRouter hard-fail)
               </button>
+              <button
+                type="button"
+                onClick={() => setScenario('single-component')}
+                data-active={scenario === 'single-component'}
+                className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 data-[active=true]:border-slate-400 data-[active=true]:bg-slate-800 data-[active=true]:text-slate-100"
+              >
+                Single-component fixture (build-failure retry)
+              </button>
             </div>
             <span className="rounded border border-amber-700/50 bg-amber-950/20 px-2 py-1 text-[11px] text-amber-300">
               Hand-built ProjectSchema mock (src/types/project-schema.ts) — no orchestrator run
@@ -116,7 +153,7 @@ export function WorkflowDemo(): JSX.Element {
             <GenerateApplicationPanel key={mockSchema.sessionId} schema={mockSchema} />
           </>
         ) : (
-          <LiveWorkflow />
+          <LiveWorkflow key={loadedSession?.id ?? 'fresh'} initialSession={loadedSession} />
         )}
       </div>
     </div>
@@ -137,9 +174,26 @@ type LiveState =
  */
 const SLOW_PROVIDER_HINT_MS = 12_000;
 
-function LiveWorkflow(): JSX.Element {
+interface LiveWorkflowProps {
+  /** A previously-saved session opened from the Sidebar, or null for a fresh, empty view. */
+  readonly initialSession: WorkflowSessionDetail | null;
+}
+
+function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
+  const notifySessionSaved = useWorkspaceStore((state) => state.notifySessionSaved);
   const [prompt, setPrompt] = useState('');
-  const [state, setState] = useState<LiveState>({ kind: 'idle' });
+  const [state, setState] = useState<LiveState>(() =>
+    initialSession === null
+      ? { kind: 'idle' }
+      : {
+          kind: 'succeeded',
+          result: {
+            schema: initialSession.schema,
+            prohibitions: initialSession.prohibitions,
+            permissions: initialSession.permissions,
+          },
+        },
+  );
   const [elapsedMs, setElapsedMs] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -170,6 +224,10 @@ function LiveWorkflow(): JSX.Element {
         onStatus: (status) => setState({ kind: 'in-flight', status }),
       });
       applyFinishedJob(job, setState);
+      // The server persists a session as part of reaching 'succeeded'
+      // (workflow-api.ts) — this just tells the Sidebar its cached list is
+      // stale, never writes anything itself.
+      if (job.status === 'succeeded') notifySessionSaved();
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === 'AbortError') return;
       setState({ kind: 'failed', message: cause instanceof Error ? cause.message : String(cause) });
