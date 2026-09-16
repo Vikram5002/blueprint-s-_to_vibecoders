@@ -20,3 +20,8 @@ ui/playwright-report/
 # committing them would put a stale measurement under review.
 blueprint.html
 scratch-pipe-schema-to-compiler-log.jsonl
+
+# Fine-tuned LoRA adapter bundle for the local model (~145MB). GitHub hard-rejects
+# files over 100MB, so a single `git add` of this would fail the next push. It is
+# shared out of band (pendrive / Drive) - see docs/HELPER-README.md section 6.
+pdsf/adapter.zip
