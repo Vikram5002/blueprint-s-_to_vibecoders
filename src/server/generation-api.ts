@@ -238,6 +238,11 @@ async function runApplicationJob(
   const generated = await generateAndVerifyProject(schema, {
     provider: llm.provider,
     cache: llm.cache,
+    // Generating a real application is a deliberate, user-triggered action,
+    // not a repeated measurement of an unchanging repo (see skipCache's own
+    // doc comment, component-codegen.ts) - every job asks the provider
+    // fresh for every component, first attempt and retry alike.
+    skipCache: true,
     root,
     onPhase: (phase: GenerationPhase) => {
       const latest = store.get(jobId);
@@ -283,7 +288,7 @@ async function runApplicationJob(
     store.set(current);
     const buildRetry = await regenerateForBuildFailure(
       schema,
-      { provider: llm.provider, cache: llm.cache, root },
+      { provider: llm.provider, cache: llm.cache, skipCache: true, root },
       resultFiles,
       build.output,
     );

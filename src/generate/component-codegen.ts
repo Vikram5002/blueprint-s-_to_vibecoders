@@ -175,6 +175,26 @@ export interface ComponentCodeGenerator {
 export interface CreateComponentCodeGeneratorOptions {
   readonly provider: CompletionProvider;
   readonly cache: LabelCache;
+  /**
+   * Never read or write `cache` for this generator's calls - every call
+   * always asks the provider fresh. Default `false` (cache as normal).
+   *
+   * Found live: a user re-ran "Generate Application" on a schema whose
+   * previous run had already failed `npm run build`. The failing
+   * component's code, its build-failure regeneration, AND the second run's
+   * own regeneration attempt were all byte-identical to the first run's
+   * (same schema -> same prompt -> same cache key), so the cache replayed
+   * the exact same already-broken code three times in a row with zero new
+   * provider calls - a "retry" that could never produce a different
+   * result. `generation-api.ts` sets this `true` for every Layer 3 job:
+   * unlike Layer 1's label/intent caching (a repeated measurement of an
+   * unchanging repository, where a cache hit is exactly correct),
+   * generating an application is a user-triggered action taken specifically
+   * because they want to see what happens this time - serving a stale
+   * answer from an earlier, possibly-failed attempt is never the right
+   * outcome for that action, first attempt or retry alike.
+   */
+  readonly skipCache?: boolean;
 }
 
 const CODE_CACHE_FINGERPRINT = JSON.stringify(COMPONENT_CODE_JSON_SCHEMA);
@@ -190,9 +210,11 @@ export function createComponentCodeGenerator(options: CreateComponentCodeGenerat
         schema: CODE_CACHE_FINGERPRINT,
       });
 
-      const cached = options.cache.get(key);
-      if (cached !== undefined && cached.description !== null) {
-        return ok(cached.description);
+      if (!options.skipCache) {
+        const cached = options.cache.get(key);
+        if (cached !== undefined && cached.description !== null) {
+          return ok(cached.description);
+        }
       }
 
       const completion = await options.provider.complete({
@@ -220,14 +242,16 @@ export function createComponentCodeGenerator(options: CreateComponentCodeGenerat
       const extracted = extractCode(completion.value.text);
       if (!extracted.ok) return extracted;
 
-      options.cache.set(key, {
-        label: 'component-code',
-        description: extracted.value,
-        model: completion.value.model,
-        promptTokens: completion.value.usage.promptTokens,
-        completionTokens: completion.value.usage.completionTokens,
-        createdAt: new Date().toISOString(),
-      });
+      if (!options.skipCache) {
+        options.cache.set(key, {
+          label: 'component-code',
+          description: extracted.value,
+          model: completion.value.model,
+          promptTokens: completion.value.usage.promptTokens,
+          completionTokens: completion.value.usage.completionTokens,
+          createdAt: new Date().toISOString(),
+        });
+      }
 
       return ok(extracted.value);
     },

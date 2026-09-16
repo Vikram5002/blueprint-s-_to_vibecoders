@@ -117,6 +117,62 @@ describe('createComponentCodeGenerator', () => {
 
     expect(provider.calls).toHaveLength(1);
   });
+
+  describe('skipCache', () => {
+    it('calls the provider fresh every time for the same context, never reading a prior cache entry', async () => {
+      let call = 0;
+      const provider = stubProvider(() => {
+        call += 1;
+        return okResult(JSON.stringify({ code: `attempt-${call}` }));
+      });
+      const cache = memoryCache();
+      const generator = createComponentCodeGenerator({ provider, cache, skipCache: true });
+
+      const first = await generator.generate(CONTEXT);
+      const second = await generator.generate(CONTEXT);
+
+      expect(provider.calls).toHaveLength(2);
+      expect(first.ok && first.value).toBe('attempt-1\n');
+      expect(second.ok && second.value).toBe('attempt-2\n');
+    });
+
+    it('never writes to the cache either, so a later non-skipping generator cannot pick up a skipped result', async () => {
+      const provider = stubProvider(() => okResult(JSON.stringify({ code: 'should-not-be-cached' })));
+      const cache = memoryCache();
+      const generator = createComponentCodeGenerator({ provider, cache, skipCache: true });
+
+      await generator.generate(CONTEXT);
+
+      expect(cache.entries.size).toBe(0);
+    });
+
+    it('this is exactly the fix for a real, live bug: a regeneration retry must never replay a known-broken cached attempt', async () => {
+      // The scenario found live: the SAME context (same schema, same
+      // component, same corrective prior-violation text) submitted twice -
+      // once on the first "Generate Application" run, once on a second run
+      // after the user retried. Without skipCache, the second call would
+      // read back the first call's already-broken output verbatim and the
+      // retry could never fix anything.
+      let call = 0;
+      const provider = stubProvider(() => {
+        call += 1;
+        // First call "fails" (simulating the original broken generation);
+        // a real retry mechanism would only resubmit this exact context
+        // if the first attempt's output was already known bad.
+        return okResult(JSON.stringify({ code: call === 1 ? 'still-broken' : 'now-fixed' }));
+      });
+      const cache = memoryCache();
+      const generatorRunOne = createComponentCodeGenerator({ provider, cache, skipCache: true });
+      const generatorRunTwo = createComponentCodeGenerator({ provider, cache, skipCache: true });
+
+      const runOne = await generatorRunOne.generate(CONTEXT);
+      const runTwo = await generatorRunTwo.generate(CONTEXT);
+
+      expect(runOne.ok && runOne.value).toBe('still-broken\n');
+      expect(runTwo.ok && runTwo.value).toBe('now-fixed\n');
+      expect(provider.calls).toHaveLength(2);
+    });
+  });
 });
 
 function constraintNaming(subjectPhrase: string, objectPhrase: string): Constraint {
