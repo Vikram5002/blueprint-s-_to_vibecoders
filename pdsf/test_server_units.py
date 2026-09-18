@@ -136,6 +136,21 @@ def test_cli_parser_accepts_repeatable_model_and_cap_default():
     assert args.port == 8712
 
 
+
+def test_json_structure_rejects_a_markdown_fence_at_the_top_level():
+    # The live failure: "```json" was accepted as an opaque literal, so no '{'
+    # could follow and the reply ended as a bare fence.
+    state = srv._JsonStructure()
+    assert state.feed("`") is False
+    state = srv._JsonStructure()
+    assert state.feed("  ") is True and state.feed("{") is True
+
+
+def test_json_structure_still_accepts_literals_inside_containers():
+    state = srv._JsonStructure()
+    assert state.feed('{"a": 12, "b": true, "c": [null, 3]}') is True
+
+
 if __name__ == "__main__":
     tests = [(name, fn) for name, fn in sorted(globals().items()) if name.startswith("test_") and callable(fn)]
     failed = 0

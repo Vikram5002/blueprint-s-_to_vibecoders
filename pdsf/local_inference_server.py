@@ -359,6 +359,14 @@ class _JsonStructure:
             return True
 
         # Any other character: an opaque literal (number, true/false/null).
+        # Never at the top level: every constrained request asks for a JSON
+        # object, and treating a leading character as a "literal" let the
+        # Coder teacher open with a markdown fence (```json) - which was then
+        # accepted as a literal, after which no '{' could legally follow and
+        # the answer ended as bare "```json". Found live on the first teacher
+        # collection run: 6 of 6 plans failed exactly this way.
+        if not self.stack:
+            return False
         if self.expect in (self.VALUE_OR_CLOSE, self.VALUE_REQUIRED):
             self.expect = self.AFTER_VALUE
             self.in_literal = True
