@@ -22,6 +22,7 @@ import type { Constraint } from '../types/constraints.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 import {
   createComponentCodeGenerator,
+  extractExportedDeclarations,
   extractNamedExports,
   selectRelevantConstraints,
   type ComponentCodeFailure,
@@ -301,14 +302,18 @@ const EXPORT_CONTRACT: Readonly<Record<Exclude<DomainName, 'frontend'>, string>>
     'queries - never string-concatenated SQL. `.all()` and `.get()` return a generic ' +
     '`Record<string, SQLOutputValue>` shape under TypeScript, not your specific row interface, so a direct ' +
     '`as YourType[]` cast will fail to compile - cast through `unknown` first, e.g. ' +
-    '`stmt.all() as unknown as Recipe[]`. Also export one named function per query the purpose describes. ' +
-    'No default export.',
+    '`stmt.all() as unknown as Recipe[]`. `DatabaseSync` has no `.query` method, `db.exec` returns void, and ' +
+    'these calls are synchronous - do not await them. Do not write the `SQLOutputValue` type yourself. Export ' +
+    'an interface for each row shape, and one named function per query the purpose describes, each with ' +
+    'fully typed parameters and an explicit return type. No default export.',
   backend:
-    'Export the Express Router (import { Router } from "express") as a named export literally called ' +
-    '`router` - e.g. `export const router = Router();`. No default export.',
+    'Export the Express Router as a named export literally called `router` - e.g. ' +
+    '`import { Router, type Request, type Response } from "express"; export const router = Router();` - and ' +
+    'type every handler `(req: Request, res: Response) => { ... }`. No default export.',
   security:
-    'Export the Express middleware function (req, res, next) as a named export literally called ' +
-    '`middleware` - e.g. `export function middleware(req, res, next) { ... }`. No default export.',
+    'Export the Express middleware function as a named export literally called `middleware`, fully typed - ' +
+    'e.g. `import type { Request, Response, NextFunction } from "express"; ' +
+    'export function middleware(req: Request, res: Response, next: NextFunction): void { ... }`. No default export.',
 };
 
 /**
@@ -399,7 +404,13 @@ function computeDependencyExports(
 ): readonly DependencyExportInfo[] {
   return dependencies.map((dep) => {
     const file = generatedSoFar.find((f) => f.path === dep.sourceTargetPath);
-    return { importPath: dep.importPath, exportedNames: file === undefined ? [] : extractNamedExports(file.contents) };
+    return file === undefined
+      ? { importPath: dep.importPath, exportedNames: [] }
+      : {
+          importPath: dep.importPath,
+          exportedNames: extractNamedExports(file.contents),
+          declarations: extractExportedDeclarations(file.contents),
+        };
   });
 }
 

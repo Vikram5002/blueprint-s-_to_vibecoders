@@ -58,6 +58,23 @@ which other files you may import from, you will also be told each one's
 REAL exported names - use exactly those identifiers, never a name you
 invent or guess.
 
+The finished project is compiled with tsc in strict mode, and one compile
+error anywhere fails the whole build, so the file must compile on its own:
+- Give every function parameter an explicit type (noImplicitAny is on),
+  including callback parameters such as .map((item: MenuItem) => ...).
+- Every identifier and type you use must be declared in this file or
+  imported. If you need a row/shape interface, declare and export it here.
+- Rename an import only with "as" (import { db as ordersDb } from ...),
+  never with a colon. Prefer calling a database file's exported functions
+  over importing its db instance at all.
+- Any string that spans more than one line must be a template literal
+  (backticks). Open and close every string with the same quote character.
+- When calling a function from an allowed import, match its declared
+  parameter count, parameter types and return type exactly. Express
+  req.params / req.query values are strings - convert with Number(...)
+  before passing them where a number is declared. A function returning
+  void (or Promise<void>) cannot be tested for truthiness.
+
 Reply with exactly one JSON object matching the schema you were given: a
 single "code" field whose string value is the complete, literal contents of
 the file - real newlines and indentation as they would appear on disk, not
@@ -150,6 +167,15 @@ export interface DependencyExportInfo {
   readonly importPath: string;
   /** Every named export `extractNamedExports` found in that file's real, already-generated content. */
   readonly exportedNames: readonly string[];
+  /**
+   * The literal export declarations (function signatures, interfaces, types)
+   * from that same file - see `extractExportedDeclarations`. Names alone
+   * were not enough: live builds failed with a consumer calling a real,
+   * correctly-named function with the wrong argument count or types
+   * (TS2554/TS2345), or testing a `void` return for truthiness (TS1345),
+   * because it had to guess everything past the name.
+   */
+  readonly declarations?: readonly string[];
 }
 
 export interface PriorViolationContext {
@@ -159,6 +185,12 @@ export interface PriorViolationContext {
   readonly explanation: string;
   /** The real offending line(s) from the previous attempt, file + line + literal snippet - never paraphrased. */
   readonly evidence: readonly { readonly file: string; readonly line: number; readonly snippet: string }[];
+  /**
+   * Replaces the default closing instruction ("...WITHOUT that import or
+   * call"), which fits an architecture violation but is wrong for a compile
+   * error - there the call is usually needed and only has to be corrected.
+   */
+  readonly fixInstruction?: string;
 }
 
 export type ComponentCodeFailure =
@@ -292,6 +324,10 @@ function buildUserPrompt(context: ComponentGenerationContext): string {
           ? `- ${dep.importPath} exports: ${dep.exportedNames.join(', ')}`
           : `- ${dep.importPath} exports: (none found - do not import anything from this file)`,
       );
+      if (dep.declarations !== undefined && dep.declarations.length > 0) {
+        lines.push('  Its exact declarations - call these with exactly these parameter counts, types and return types:');
+        lines.push(...dep.declarations.map((declaration) => `    ${declaration}`));
+      }
     }
   }
 
@@ -319,8 +355,9 @@ function buildUserPrompt(context: ComponentGenerationContext): string {
       `  What happened: ${context.priorViolation.explanation}`,
       'The exact offending line(s) from your previous attempt:',
       ...context.priorViolation.evidence.map((e) => `  ${e.file}:${e.line}: ${e.snippet}`),
-      'Write a new version of this file that still fulfils the purpose above WITHOUT that import or call. ' +
-        'Do not repeat the offending line(s) shown above in any form.',
+      context.priorViolation.fixInstruction ??
+        'Write a new version of this file that still fulfils the purpose above WITHOUT that import or call. ' +
+          'Do not repeat the offending line(s) shown above in any form.',
     );
   }
 
@@ -424,6 +461,74 @@ export function extractNamedExports(source: string): readonly string[] {
   }
 
   return [...names].sort();
+}
+
+/** Bounds how much of one dependency file a consumer's prompt carries - signatures, not the implementation. */
+const MAX_DECLARATION_LINES = 60;
+
+/**
+ * The export declarations of a generated file, bodies stripped: a function's
+ * signature up to its opening brace, and an exported interface, type or
+ * enum in full (its fields ARE the contract a consumer has to match).
+ * Line-based, like `extractNamedExports` above, and for the same reason -
+ * every file this runs against is generated to one-export-per-statement.
+ */
+export function extractExportedDeclarations(source: string): readonly string[] {
+  const lines = source.split('\n');
+  const declarations: string[] = [];
+  let emitted = 0;
+
+  for (let i = 0; i < lines.length && emitted < MAX_DECLARATION_LINES; i += 1) {
+    const line = lines[i] ?? '';
+    if (!/^export\s/.test(line)) continue;
+
+    if (/^export\s+(?:interface|type|enum|const\s+enum)\s/.test(line)) {
+      const block = takeBalancedBlock(lines, i);
+      declarations.push(block.text);
+      emitted += block.lineCount;
+      i += block.lineCount - 1;
+      continue;
+    }
+
+    const header = takeSignature(lines, i);
+    declarations.push(header.text);
+    emitted += 1;
+    i += header.lineCount - 1;
+  }
+  return declarations;
+}
+
+/** An interface/type/enum from its `export` line through the line that closes its outermost brace. */
+function takeBalancedBlock(lines: readonly string[], start: number): { readonly text: string; readonly lineCount: number } {
+  let depth = 0;
+  let opened = false;
+  const taken: string[] = [];
+  for (let j = start; j < lines.length && taken.length < MAX_DECLARATION_LINES; j += 1) {
+    const line = lines[j] ?? '';
+    taken.push(line);
+    for (const ch of line) {
+      if (ch === '{') {
+        depth += 1;
+        opened = true;
+      } else if (ch === '}') {
+        depth -= 1;
+      }
+    }
+    if ((opened && depth <= 0) || (!opened && line.trimEnd().endsWith(';'))) break;
+  }
+  return { text: taken.join('\n'), lineCount: taken.length };
+}
+
+/** A function/const declaration up to (not including) its body - joined onto one line when the parameter list wraps. */
+function takeSignature(lines: readonly string[], start: number): { readonly text: string; readonly lineCount: number } {
+  const taken: string[] = [];
+  for (let j = start; j < lines.length && taken.length < 8; j += 1) {
+    const line = lines[j] ?? '';
+    taken.push(line.trim());
+    if (/[{;]\s*$/.test(line) || /=>/.test(line) || /=\s*[^=>]/.test(line)) break;
+  }
+  const text = taken.join(' ').replace(/\s*\{\s*$/, '').replace(/\s*=>\s*\{?\s*$/, ' => ...');
+  return { text, lineCount: taken.length };
 }
 
 export function selectRelevantConstraints(

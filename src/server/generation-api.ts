@@ -24,6 +24,7 @@ import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { Hono } from 'hono';
 import {
+  filesFailingBuild,
   generateAndVerifyProject,
   regenerateForBuildFailure,
   type GenerateAndVerifyFailure,
@@ -98,6 +99,9 @@ export interface ApplicationJobStore {
 export const MAX_CONCURRENT_APPLICATION_JOBS = 4;
 
 const RETRY_AFTER_SECONDS = 60;
+
+/** Build-failure repair passes per job - each regenerates every component file tsc still names, then rebuilds. */
+const MAX_BUILD_FIX_ROUNDS = 2;
 
 export function createApplicationJobStore(): ApplicationJobStore {
   const jobs = new Map<string, ApplicationJob>();
@@ -283,7 +287,10 @@ async function runApplicationJob(
   // succeeded - an install failure is essentially never a single
   // component's own code problem, and there is nothing here to attribute a
   // dependency-resolution or environment failure to.
-  if (install.ok && !build.ok) {
+  // Up to MAX_BUILD_FIX_ROUNDS passes: fixing a file's syntax errors often
+  // only then exposes its type errors, and correcting a dependency can
+  // surface a mismatch in its consumer, so one pass is routinely not enough.
+  for (let round = 0; install.ok && !build.ok && round < MAX_BUILD_FIX_ROUNDS; round += 1) {
     current = { ...current, phase: 'build-regenerating' };
     store.set(current);
     const buildRetry = await regenerateForBuildFailure(
@@ -296,29 +303,24 @@ async function runApplicationJob(
       store.set({ ...current, status: 'failed', error: { phase: 'generate-application', ...buildRetry.error } });
       return;
     }
+    // Nothing attributable to a component (a config-level error, or only the
+    // templated entry point named) - never guess; report the build failure.
+    if (buildRetry.value.attempted.length === 0) break;
 
-    if (buildRetry.value.attempted !== null) {
-      resultFiles = buildRetry.value.files;
-      current = { ...current, phase: 'build-reverifying' };
-      store.set(current);
-      const rebuild = await runCommand('npm', ['run', 'build'], root);
-      regenerationLog = [
-        ...regenerationLog,
-        {
-          component: buildRetry.value.attempted.component,
-          domain: buildRetry.value.attempted.domain,
-          targetPath: buildRetry.value.attempted.targetPath,
-          firstAttemptViolation: buildRetry.value.attempted.firstAttemptViolation,
-          origin: 'build-failure',
-          outcome: rebuild.ok ? 'fixed' : 'still-violating',
-        },
-      ];
-      build = rebuild;
-    }
-    // buildRetry.value.attempted === null: the failure did not attribute
-    // cleanly to one component (zero, or more than one, distinct file named
-    // across the diagnostics) - never guess, leave `build` as the original
-    // failed outcome, reported honestly below as an unretried build failure.
+    resultFiles = buildRetry.value.files;
+    current = { ...current, phase: 'build-reverifying' };
+    store.set(current);
+    const rebuild = await runCommand('npm', ['run', 'build'], root);
+    const stillFailing = filesFailingBuild(rebuild.output);
+    regenerationLog = [
+      ...regenerationLog,
+      ...buildRetry.value.attempted.map((attempt) => ({
+        ...attempt,
+        origin: 'build-failure' as const,
+        outcome: rebuild.ok || !stillFailing.has(attempt.targetPath) ? ('fixed' as const) : ('still-violating' as const),
+      })),
+    ];
+    build = rebuild;
   }
 
   const files: FileSummary[] = resultFiles.map((file: GeneratedFile) => ({

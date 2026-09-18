@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createComponentCodeGenerator,
+  extractExportedDeclarations,
   extractNamedExports,
   selectRelevantConstraints,
   type ComponentGenerationContext,
@@ -255,5 +256,46 @@ describe('selectRelevantConstraints', () => {
     const constraint = constraintNaming('frontend', 'database');
 
     expect(selectRelevantConstraints([constraint], ['security', 'middleware'])).toEqual([]);
+  });
+});
+
+describe('extractExportedDeclarations', () => {
+  it('keeps function signatures without bodies and interfaces in full - enough for a consumer to match argument types', () => {
+    const source = [
+      'import { DatabaseSync } from "node:sqlite";',
+      '',
+      'export interface MenuItem {',
+      '  id: number;',
+      '  name: string;',
+      '}',
+      '',
+      'export const db = new DatabaseSync("./cafe.db");',
+      '',
+      'export function addItem(name: string, price: number): void {',
+      '  db.prepare("INSERT INTO items (name, price) VALUES (?, ?)").run(name, price);',
+      '}',
+      '',
+      'export async function listItems(',
+      '  category: string,',
+      '): Promise<MenuItem[]> {',
+      '  return [];',
+      '}',
+      '',
+      'export const countItems = (): number => {',
+      '  return 0;',
+      '};',
+    ].join('\n');
+
+    expect(extractExportedDeclarations(source)).toEqual([
+      'export interface MenuItem {\n  id: number;\n  name: string;\n}',
+      'export const db = new DatabaseSync("./cafe.db");',
+      'export function addItem(name: string, price: number): void',
+      'export async function listItems( category: string, ): Promise<MenuItem[]>',
+      'export const countItems = (): number => ...',
+    ]);
+  });
+
+  it('never includes non-exported code', () => {
+    expect(extractExportedDeclarations('function helper(a: number): number {\n  return a;\n}\n')).toEqual([]);
   });
 });

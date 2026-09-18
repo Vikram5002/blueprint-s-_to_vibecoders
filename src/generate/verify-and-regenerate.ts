@@ -272,37 +272,60 @@ export function parseTscDiagnostics(output: string): readonly TscDiagnostic[] {
   return diagnostics;
 }
 
-export type BuildFailureAttribution =
-  | {
-      readonly kind: 'attributed';
-      readonly targetPath: string;
-      readonly component: Component;
-      readonly domain: DomainName;
-      readonly diagnostics: readonly TscDiagnostic[];
-    }
-  | { readonly kind: 'ambiguous' };
+export interface AttributedBuildFailure {
+  readonly targetPath: string;
+  readonly component: Component;
+  readonly domain: DomainName;
+  readonly diagnostics: readonly TscDiagnostic[];
+}
+
+export interface BuildFailureAttribution {
+  /** One entry per real component file tsc named, in the order those files were generated (dependencies first). */
+  readonly attributed: readonly AttributedBuildFailure[];
+  /** Files tsc named that map to no schema component (a templated entry point) - never regenerated, never guessed at. */
+  readonly unattributedFiles: readonly string[];
+}
 
 /**
- * The safety rule Part 3's design requires: auto-retry ONLY when every
- * parsed diagnostic names the exact same file, and that file is a real
- * component this loop can regenerate. A `tsc` failure naming zero files (a
- * config-level error, unparseable output), more than one distinct file
- * (which side is actually "wrong" is not decidable from the diagnostic
- * alone - see docs/GENERATION.md's own worked example of a generated file
- * disagreeing with a templated entry point), or a file that maps to no
- * schema component (the templated entry point itself) is never guessed at
- * - it is reported as an unresolved build failure instead, exactly like an
- * unattributable Blueprint violation already is.
+ * Groups `tsc` diagnostics by the file they name, keeping only files that
+ * are real schema components this loop can regenerate.
+ *
+ * Originally this attributed ONLY when every diagnostic named one single
+ * file, on the theory that with two files involved, which side is "wrong"
+ * is not decidable. Live runs showed that rule made the retry almost never
+ * fire: a generated project typically fails in 2-4 files at once, and every
+ * one of those failures went straight to the user unretried. Each file's
+ * own diagnostics are now its own corrective context, and files are retried
+ * dependencies-first so a consumer is regenerated against its dependency's
+ * corrected exports. A file mapping to no component (the templated entry
+ * point) is still never touched.
  */
-export function attributeBuildFailure(schema: ValidatedProjectSchema, diagnostics: readonly TscDiagnostic[]): BuildFailureAttribution {
-  if (diagnostics.length === 0) return { kind: 'ambiguous' };
-  const distinctFiles = new Set(diagnostics.map((d) => d.file));
-  if (distinctFiles.size !== 1) return { kind: 'ambiguous' };
-  const [targetPath] = distinctFiles;
-  if (targetPath === undefined) return { kind: 'ambiguous' };
-  const owner = findComponentByTargetPath(schema, targetPath);
-  if (owner === null) return { kind: 'ambiguous' };
-  return { kind: 'attributed', targetPath, component: owner.component, domain: owner.domain, diagnostics };
+export function attributeBuildFailure(
+  schema: ValidatedProjectSchema,
+  diagnostics: readonly TscDiagnostic[],
+  generationOrder: readonly string[] = [],
+): BuildFailureAttribution {
+  const byFile = new Map<string, TscDiagnostic[]>();
+  for (const diagnostic of diagnostics) {
+    const existing = byFile.get(diagnostic.file);
+    if (existing !== undefined) existing.push(diagnostic);
+    else byFile.set(diagnostic.file, [diagnostic]);
+  }
+
+  const attributed: AttributedBuildFailure[] = [];
+  const unattributedFiles: string[] = [];
+  for (const [targetPath, fileDiagnostics] of byFile) {
+    const owner = findComponentByTargetPath(schema, targetPath);
+    if (owner === null) unattributedFiles.push(targetPath);
+    else attributed.push({ targetPath, component: owner.component, domain: owner.domain, diagnostics: fileDiagnostics });
+  }
+
+  const rank = (path: string): number => {
+    const index = generationOrder.indexOf(path);
+    return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+  };
+  attributed.sort((a, b) => rank(a.targetPath) - rank(b.targetPath));
+  return { attributed, unattributedFiles };
 }
 
 /**
@@ -311,45 +334,54 @@ export function attributeBuildFailure(schema: ValidatedProjectSchema, diagnostic
  * one of the schema's own stated constraints but the basic requirement the
  * whole generated project is held to: it must actually compile. Evidence is
  * the real, unparaphrased `tsc` diagnostic text, one entry per error on this
- * file, never summarised away.
+ * file, with the literal source line it points at - a line number alone
+ * gives the model nothing to look at, since it never sees its earlier reply.
  */
-function toBuildFailurePriorContext(diagnostics: readonly TscDiagnostic[]): PriorViolationContext {
+function toBuildFailurePriorContext(diagnostics: readonly TscDiagnostic[], previousSource: string | undefined): PriorViolationContext {
+  const sourceLines = previousSource?.split('\n') ?? [];
   return {
-    ruleText: 'The generated project must compile cleanly with `npm run build` (tsc).',
+    ruleText: 'The generated project must compile cleanly with `npm run build` (tsc, strict mode).',
     explanation:
       `A previous attempt at this exact file failed to compile - ${diagnostics.length} real tsc error(s). ` +
       "Fix the reported problem(s) directly. Do not change this file's exports or introduce a new import " +
       'unless the error itself requires it.',
-    evidence: diagnostics.map((d) => ({ file: d.file, line: d.line, snippet: `${d.code}: ${d.message}` })),
+    fixInstruction:
+      'Write the complete corrected file: it must still fulfil the purpose above and must fix every error ' +
+      'listed, following the compile rules in your instructions. Keep the same exported names.',
+    evidence: diagnostics.map((d) => {
+      const lineText = sourceLines[d.line - 1]?.trim();
+      return {
+        file: d.file,
+        line: d.line,
+        snippet: lineText === undefined || lineText === '' ? `${d.code}: ${d.message}` : `${lineText}    <- ${d.code}: ${d.message}`,
+      };
+    }),
   };
+}
+
+export interface BuildFailureRetryAttempt {
+  readonly component: Component;
+  readonly domain: DomainName;
+  readonly targetPath: string;
+  readonly firstAttemptViolation: PriorViolationContext;
 }
 
 export interface BuildFailureRegenerationResult {
   readonly files: readonly GeneratedFile[];
-  /** null when the failure could not be cleanly attributed to one component - nothing was regenerated. */
-  readonly attempted: {
-    readonly component: Component;
-    readonly domain: DomainName;
-    readonly targetPath: string;
-    readonly firstAttemptViolation: PriorViolationContext;
-  } | null;
+  /** Every component regenerated in this pass, in the order it was regenerated. Empty means nothing could be attributed - nothing was touched. */
+  readonly attempted: readonly BuildFailureRetryAttempt[];
 }
 
 /**
  * Part 3: extends the retry mechanism to a real `npm run build` failure,
- * not just a Blueprint violation - approved design, implemented exactly as
- * scoped. Deliberately NOT folded into `generateAndVerifyProject` itself:
- * that function's own existing unit tests (and every caller that only
- * cares about the Blueprint/service-locator retry loop) never need a real
- * `npm install`/`npm run build` to run, and baking unconditional real
- * subprocess work into it would make every one of those tests slow and
- * environment-dependent for no reason. Instead, this is a small, separately
- * callable step: given the real `tsc` output from a build a caller (the
- * server's application-generation job) already ran, parse it, attribute it
- * to at most one component, and - only if attribution was clean - generate
- * ONE corrected version and write it to disk. The caller decides whether to
- * rebuild and what outcome to report; this function's only job is "regenerate
- * the one attributable file, or don't touch anything."
+ * not just a Blueprint violation. Deliberately NOT folded into
+ * `generateAndVerifyProject` itself: that function's own existing unit
+ * tests (and every caller that only cares about the Blueprint/service-locator
+ * retry loop) never need a real `npm install`/`npm run build` to run.
+ * Given the real `tsc` output from a build a caller already ran, this
+ * regenerates every attributable component file once, dependencies first,
+ * and writes them to disk. The caller decides whether to rebuild and what
+ * outcome to report.
  */
 export async function regenerateForBuildFailure(
   schema: ValidatedProjectSchema,
@@ -358,36 +390,28 @@ export async function regenerateForBuildFailure(
   buildOutput: string,
 ): Promise<Result<BuildFailureRegenerationResult, GenerateProjectFailure>> {
   const diagnostics = parseTscDiagnostics(buildOutput);
-  const attribution = attributeBuildFailure(schema, diagnostics);
-
-  if (attribution.kind === 'ambiguous') {
-    return ok({ files, attempted: null });
-  }
+  const { attributed } = attributeBuildFailure(schema, diagnostics, files.map((f) => f.path));
+  if (attributed.length === 0) return ok({ files, attempted: [] });
 
   const generator = createComponentCodeGenerator(options);
-  const priorContext = toBuildFailurePriorContext(attribution.diagnostics);
-  const regenerated = await generateComponentFile(
-    generator,
-    schema,
-    attribution.component,
-    attribution.domain,
-    priorContext,
-    files,
-  );
-  if (!regenerated.ok) return err(regenerated.error);
+  let current = files;
+  const attempted: BuildFailureRetryAttempt[] = [];
+  for (const failure of attributed) {
+    const previous = current.find((f) => f.path === failure.targetPath);
+    const priorContext = toBuildFailurePriorContext(failure.diagnostics, previous?.contents);
+    const regenerated = await generateComponentFile(generator, schema, failure.component, failure.domain, priorContext, current);
+    if (!regenerated.ok) return err(regenerated.error);
+    current = current.map((f) => (f.path === failure.targetPath ? regenerated.value : f));
+    attempted.push({ component: failure.component, domain: failure.domain, targetPath: failure.targetPath, firstAttemptViolation: priorContext });
+  }
 
-  const retriedFiles = files.map((f) => (f.path === attribution.targetPath ? regenerated.value : f));
-  await writeProjectFiles(options.root, retriedFiles, false);
+  await writeProjectFiles(options.root, current, false);
+  return ok({ files: current, attempted });
+}
 
-  return ok({
-    files: retriedFiles,
-    attempted: {
-      component: attribution.component,
-      domain: attribution.domain,
-      targetPath: attribution.targetPath,
-      firstAttemptViolation: priorContext,
-    },
-  });
+/** Files still named by a build's diagnostics - what decides a retried file's 'fixed' vs 'still-violating'. */
+export function filesFailingBuild(buildOutput: string): ReadonlySet<string> {
+  return new Set(parseTscDiagnostics(buildOutput).map((d) => d.file));
 }
 
 /**

@@ -120,29 +120,37 @@ describe('parseTscDiagnostics', () => {
 describe('attributeBuildFailure', () => {
   const schema = buildTwoComponentSchema();
 
-  it('attributes cleanly when every diagnostic names the same real component file', () => {
+  it('attributes a single-file failure to its real component', () => {
     const result = attributeBuildFailure(schema, parseTscDiagnostics(REAL_TSC_OUTPUT_SINGLE_FILE));
-    expect(result.kind).toBe('attributed');
-    if (result.kind !== 'attributed') return;
-    expect(result.component.name).toBe('RecipeApiService');
-    expect(result.domain).toBe('backend');
-    expect(result.targetPath).toBe('backend/src/routes/recipe-api-service.ts');
-    expect(result.diagnostics).toHaveLength(1);
+    expect(result.attributed).toHaveLength(1);
+    const [only] = result.attributed;
+    expect(only?.component.name).toBe('RecipeApiService');
+    expect(only?.domain).toBe('backend');
+    expect(only?.targetPath).toBe('backend/src/routes/recipe-api-service.ts');
+    expect(only?.diagnostics).toHaveLength(1);
   });
 
-  it('is ambiguous - never guesses - when diagnostics span more than one file', () => {
+  it('attributes each file separately when diagnostics span several component files', () => {
     const result = attributeBuildFailure(schema, parseTscDiagnostics(REAL_TSC_OUTPUT_MULTI_FILE));
-    expect(result.kind).toBe('ambiguous');
+    expect(result.attributed.map((a) => a.component.name)).toEqual(['RecipeApiService', 'UserApiService']);
+    expect(result.unattributedFiles).toEqual([]);
   });
 
-  it('is ambiguous when the diagnostic names a file that maps to no schema component (a templated entry point)', () => {
+  it('orders attributed files by generation order, dependencies first', () => {
+    const order = ['backend/src/routes/user-api-service.ts', 'backend/src/routes/recipe-api-service.ts'];
+    const result = attributeBuildFailure(schema, parseTscDiagnostics(REAL_TSC_OUTPUT_MULTI_FILE), order);
+    expect(result.attributed.map((a) => a.component.name)).toEqual(['UserApiService', 'RecipeApiService']);
+  });
+
+  it('never attributes a file that maps to no schema component (a templated entry point)', () => {
     const entryPointOutput = "backend/src/index.ts(5,3): error TS2304: Cannot find name 'express'.";
     const result = attributeBuildFailure(schema, parseTscDiagnostics(entryPointOutput));
-    expect(result.kind).toBe('ambiguous');
+    expect(result.attributed).toEqual([]);
+    expect(result.unattributedFiles).toEqual(['backend/src/index.ts']);
   });
 
-  it('is ambiguous when there are no parsed diagnostics at all', () => {
-    expect(attributeBuildFailure(schema, []).kind).toBe('ambiguous');
+  it('attributes nothing when there are no parsed diagnostics at all', () => {
+    expect(attributeBuildFailure(schema, []).attributed).toEqual([]);
   });
 });
 
@@ -200,11 +208,12 @@ describe('regenerateForBuildFailure', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    expect(result.value.attempted).not.toBeNull();
-    expect(result.value.attempted?.component.name).toBe('RecipeApiService');
-    expect(result.value.attempted?.firstAttemptViolation.evidence[0]?.snippet).toContain(
-      "Cannot find name 'parseAndStore'",
-    );
+    expect(result.value.attempted).toHaveLength(1);
+    expect(result.value.attempted[0]?.component.name).toBe('RecipeApiService');
+    const snippet = result.value.attempted[0]?.firstAttemptViolation.evidence[0]?.snippet;
+    expect(snippet).toContain("Cannot find name 'parseAndStore'");
+    // The literal offending source line travels with the diagnostic.
+    expect(snippet).toContain('return parseAndStore(title);');
     // Exactly one call to the provider - one retry, never more.
     expect(provider.calls).toHaveLength(1);
 
@@ -239,8 +248,10 @@ describe('regenerateForBuildFailure', () => {
     }
   }, 15_000);
 
-  it('never regenerates anything when the build failure spans more than one file - hard-fails as a review item instead of guessing', async () => {
-    const provider = providerFrom(() => FIXED_RECIPE_SERVICE);
+  it('regenerates every failing component file once, each with only its own diagnostics, when the failure spans several files', async () => {
+    const provider = providerFrom((request) =>
+      request.user.includes('Component: RecipeApiService') ? FIXED_RECIPE_SERVICE : OTHER_SERVICE,
+    );
 
     const multiFileOutput = [
       "backend/src/routes/recipe-api-service.ts(2,10): error TS2304: Cannot find name 'parseAndStore'.",
@@ -257,10 +268,28 @@ describe('regenerateForBuildFailure', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    expect(result.value.attempted).toBeNull();
-    // The generator was never called - no guessing which file to fix.
+    expect(result.value.attempted.map((a) => a.component.name)).toEqual(['RecipeApiService', 'UserApiService']);
+    expect(provider.calls).toHaveLength(2);
+    // Each retry sees its own file's error, never the other file's.
+    expect(provider.calls[0]?.user).toContain('parseAndStore');
+    expect(provider.calls[0]?.user).not.toContain('somethingUndefined');
+    expect(provider.calls[1]?.user).toContain('somethingUndefined');
+    expect(provider.calls[1]?.user).not.toContain('parseAndStore');
+  });
+
+  it('never regenerates anything when only a templated entry point is named', async () => {
+    const provider = providerFrom(() => FIXED_RECIPE_SERVICE);
+    const result = await regenerateForBuildFailure(
+      schema,
+      { provider, cache: memoryCache(), root },
+      baseFiles(),
+      "backend/src/index.ts(5,3): error TS2304: Cannot find name 'express'.",
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.attempted).toEqual([]);
     expect(provider.calls).toHaveLength(0);
-    // Files returned exactly as given, byte for byte.
     expect(result.value.files).toEqual(baseFiles());
   });
 
@@ -276,7 +305,7 @@ describe('regenerateForBuildFailure', () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.attempted).toBeNull();
+    expect(result.value.attempted).toEqual([]);
     expect(provider.calls).toHaveLength(0);
   });
 });
