@@ -9,15 +9,21 @@ Hyperparameters default to the values the plan adapter was trained with
 3 epochs, batch_size=2, no dropout). docs/LOCAL-CODE-MODEL-PLAN.md section 6:
 "Training settings stay the same as the plan runs."
 
-TODO(train_full.py): the plan adapter's script `train_full.py` is not in the
-repo (LOCAL-CODE-MODEL-PLAN.md section 3, item 5). This file was written from
-the DOCUMENTED values above, not by copying train_full.py. When train_full.py
-is recovered from the pendrive: diff it against this file, in particular
-  - target_modules, gradient accumulation, warmup, scheduler, weight decay,
-    seed, max_seq_length, whether loss was masked on the prompt,
-and record any difference in summary.json's "hparams" of the next run and in
-training/eval/RESULTS-CODE-M1.md. Until then, the comparability of this
-adapter's settings with the plan adapter's is by documentation only.
+Diffed against training/train_full.py (the plan adapters' real script,
+recovered 2026-09-18). Defaults below MIRROR it so the two adapters differ in
+as little as possible - the Config C lesson is that one changed variable can
+quietly change behaviour:
+  - same: r=16, alpha=16, dropout 0, all 7 projection target_modules,
+    lr 2e-4, 3 epochs, batch 2, gradient accumulation 1, seed 42, TRL/HF
+    default optimizer (adamw_torch), no warmup, no weight decay, linear
+    schedule, gradient checkpointing.
+  - same: NO loss masking on the prompt. train_full.py trains SFTTrainer on
+    the full rendered chat text. --mask-prompt turns masking on as an
+    explicit experiment, recorded in summary.json.
+  - different, forced by the data: max_seq_length 6144 (was 2048; code rows
+    are 3-5x longer). Nothing else.
+Every value lands in summary.json, so a later reader never has to rediscover
+this.
 
 What it does:
   1. loads --base in 4-bit through Unsloth's FastLanguageModel
@@ -61,12 +67,15 @@ def parse_args(argv=None):
     p.add_argument("--alpha", type=int, default=16)
     p.add_argument("--dropout", type=float, default=0.0)
     p.add_argument("--batch", type=int, default=2)
-    p.add_argument("--grad-accum", type=int, default=4)
+    p.add_argument("--grad-accum", type=int, default=1)
     p.add_argument("--max-seq-len", type=int, default=6144)
-    p.add_argument("--warmup-steps", type=int, default=5)
-    p.add_argument("--weight-decay", type=float, default=0.01)
+    p.add_argument("--warmup-steps", type=int, default=0)
+    p.add_argument("--weight-decay", type=float, default=0.0)
     p.add_argument("--scheduler", default="linear")
-    p.add_argument("--seed", type=int, default=3407)
+    p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--optim", default="adamw_torch", help="train_full.py used TRL's default; train_sweep.py used adamw_8bit")
+    p.add_argument("--mask-prompt", action="store_true",
+                   help="train on the assistant turn only (train_full.py did NOT mask; off by default to match it)")
     p.add_argument("--save-steps", type=int, default=25, help="checkpoint cadence for --resume")
     p.add_argument("--logging-steps", type=int, default=1)
     p.add_argument("--resume", action="store_true",
@@ -98,12 +107,14 @@ def read_rows(path):
     return rows
 
 
-def encode_row(tokenizer, row, max_seq_len):
+def encode_row(tokenizer, row, max_seq_len, mask_prompt):
     """
-    input_ids for the whole conversation; labels = -100 over the prompt
-    (system + user + the assistant header the generation prompt adds), real
-    ids over the assistant turn. The prompt render must be a strict prefix of
-    the full render, which is checked rather than assumed.
+    input_ids for the whole conversation. With mask_prompt, labels = -100
+    over the prompt (system + user + the assistant header the generation
+    prompt adds) and real ids over the assistant turn; without it (the
+    default, matching train_full.py) labels = input_ids. The prompt render
+    must be a strict prefix of the full render, which is checked rather than
+    assumed.
     """
     prompt_msgs = [
         {"role": "system", "content": row["system"]},
@@ -120,7 +131,7 @@ def encode_row(tokenizer, row, max_seq_len):
             "format-code-dataset.py should have dropped it; never truncate here "
             "(a truncated row teaches the model to stop mid-file)."
         )
-    labels = [-100] * len(prompt_ids) + full_ids[len(prompt_ids):]
+    labels = ([-100] * len(prompt_ids) + full_ids[len(prompt_ids):]) if mask_prompt else list(full_ids)
     return {"input_ids": full_ids, "attention_mask": [1] * len(full_ids), "labels": labels}
 
 
@@ -169,7 +180,7 @@ def main(argv=None):
         random_state=args.seed,
     )
 
-    encoded = [encode_row(tokenizer, row, args.max_seq_len) for row in rows]
+    encoded = [encode_row(tokenizer, row, args.max_seq_len, args.mask_prompt) for row in rows]
     lengths = [len(e["input_ids"]) for e in encoded]
     trained_tokens = [sum(1 for t in e["labels"] if t != -100) for e in encoded]
     # TRAINING-FORMAT.md: re-verify counts look sane in every new environment.
@@ -192,7 +203,7 @@ def main(argv=None):
         logging_steps=args.logging_steps,
         save_steps=args.save_steps,
         save_total_limit=2,
-        optim="adamw_8bit",
+        optim=args.optim,
         bf16=bf16,
         fp16=not bf16,
         seed=args.seed,
@@ -241,12 +252,12 @@ def main(argv=None):
             "warmup_steps": args.warmup_steps,
             "weight_decay": args.weight_decay,
             "lr_scheduler_type": args.scheduler,
-            "optim": "adamw_8bit",
+            "optim": args.optim,
             "seed": args.seed,
             "bf16": bf16,
             "load_in_4bit": True,
             "gradient_checkpointing": "unsloth",
-            "loss_masked_on_prompt": True,
+            "loss_masked_on_prompt": args.mask_prompt,
             "resume": args.resume,
         },
         "tokens": {
@@ -268,7 +279,7 @@ def main(argv=None):
         },
         "git_commit": git_commit(),
         "artifacts": {"adapter_dir": "adapter/", "adapter_zip": "adapter.zip"},
-        "note": "hparams taken from RESULTS-run_20260912_154324.md; TODO diff against train_full.py when recovered",
+        "note": "defaults mirror training/train_full.py (the plan adapters' script); only max_seq_length differs, forced by row length",
     }
     with open(os.path.join(out, "summary.json"), "w", encoding="utf-8", newline="\n") as fh:
         json.dump(summary, fh, indent=2)

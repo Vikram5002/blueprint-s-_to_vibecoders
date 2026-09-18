@@ -6,8 +6,8 @@ one command, copy two files back". Nothing is decided on the desktop.
 What gets trained: a LoRA adapter on **Qwen2.5-Coder-7B-Instruct** (4-bit via
 Unsloth) from `training/code/formatted/dataset.jsonl`. The plan adapter
 (Qwen2.5-7B-Instruct) is unchanged. Same hyperparameters as the plan runs:
-r=16, alpha=16, lr 2e-4, 3 epochs, batch 2, no dropout
-(`training/eval/RESULTS-run_20260912_154324.md`).
+r=16, alpha=16, lr 2e-4, 3 epochs, batch 2, no dropout, no prompt masking
+(`training/train_full.py`).
 
 ## Before you go
 
@@ -107,7 +107,6 @@ model (`docs/LOCAL-CODE-MODEL-PLAN.md` section 4).
 
 - No evaluation. That is the Colab harness over the 94 gold components
   (`docs/LOCAL-CODE-MODEL-PLAN.md` section 7).
-- `train_full.py` (the plan adapter's script) is still missing from the repo.
-  When it is recovered from the pendrive, diff it against `train_code.py`
-  (the TODO at the top of that file) before treating the two adapters'
-  settings as identical.
+- `train_full.py` (the plan adapters' script) is in the repo at
+  `training/train_full.py`; `train_code.py`'s defaults mirror it (the header
+  of `train_code.py` lists the one forced difference, sequence length).
