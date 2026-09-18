@@ -1,0 +1,17 @@
+# Desktop training environment for training/code/train_code.py.
+#
+# Install a CUDA build of torch FIRST, matching the desktop's driver, e.g.
+#   pip install torch --index-url https://download.pytorch.org/whl/cu124
+# then:
+#   pip install -r training/code/requirements-desktop.txt
+#
+# Versions are left open on purpose: unsloth pins compatible transformers/peft/
+# trl/bitsandbytes itself and changes them often. The versions actually used
+# are recorded in the run's summary.json.
+unsloth
+transformers
+peft
+trl
+bitsandbytes
+accelerate
+datasets

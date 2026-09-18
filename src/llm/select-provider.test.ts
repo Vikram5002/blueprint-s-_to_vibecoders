@@ -157,6 +157,7 @@ describe('select-provider — local-code, the same adapter aimed at the code che
 
     expect(result?.ok).toBe(true);
     expect(seenUrl).toBe('http://coder:9000/complete');
-    expect(seenBody.model).toBe(DEFAULT_LOCAL_CODE_MODEL);
+    // The wire carries the served NAME, not the display label - see servedModelName in local.ts.
+    expect(seenBody.model).toBe('local-code');
   });
 });

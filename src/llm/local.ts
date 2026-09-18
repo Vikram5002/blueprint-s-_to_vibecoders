@@ -75,6 +75,12 @@ export const DEFAULT_LOCAL_MODEL = 'local:qwen2.5-7b-instruct+run_20260822_13063
  * the `local-code:` prefix is part of the name, not stripped, so a cached or
  * recorded answer can never be confused with the planner's.
  */
+/** The name the inference server knows a model by: everything before the first ':' of its label. */
+export function servedModelName(label: string): string {
+  const colon = label.indexOf(':');
+  return colon === -1 ? label : label.slice(0, colon);
+}
+
 export const DEFAULT_LOCAL_CODE_MODEL = 'local-code:qwen2.5-coder-7b-instruct+code-adapter';
 
 /**
@@ -184,7 +190,10 @@ export function createLocalProvider(options: LocalOptions = {}): CompletionProvi
           headers: { 'content-type': 'application/json' },
           // `model` picks which served checkpoint answers when the server
           // hosts more than one; a server that predates the field ignores it.
-          body: JSON.stringify({ ...request, model }),
+          // The served NAME is the label's prefix before the first ':' -
+          // 'local', 'local-code', 'teacher' - so the Colab notebook's
+          // --model names and these labels cannot disagree.
+          body: JSON.stringify({ ...request, model: servedModelName(model) }),
           signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         });
       } catch (cause) {
