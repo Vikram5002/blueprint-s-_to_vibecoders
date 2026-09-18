@@ -1,6 +1,6 @@
 # Local code-generation model: plan
 
-**Status:** proposal, approved in direction. No data has been collected and nothing has been trained yet.
+**Status:** approved in direction, **on hold at open question 1** (Gemini terms, see `docs/GEMINI-TERMS-REVIEW.md`). No data has been collected, no model has been evaluated, and nothing has been trained.
 **Date:** 2026-09-18
 **Related:** `training/TRAINING-FORMAT.md`, `training/data/METHODOLOGY.md`, `training/eval/RESULTS*.md`, `docs/GENERATION.md`
 
@@ -121,9 +121,10 @@ Every training example must be built from **what the server actually receives**,
 - **A.** First-attempt pass rate (the build passes and Blueprint is clean, with no repair).
 - **B.** Pass rate after repair, with the real repair loop allowed its normal 2 rounds.
 - **C.** Whole-project build rate, when the local model writes every backend and security file.
-- **D.** Runtime check: start the server and send a GET to each route. `orderGuard` passed both `tsc` and Blueprint but still blocked every GET request.
+- **D.** Runtime check: start the generated server and send a GET to each route the component serves; a route passes if it answers with a non-5xx status and the server stays up. For a security middleware, every route of the project is checked, since it runs on all of them. `orderGuard` passed both `tsc` and Blueprint but still blocked every GET request.
 
 **Ship bar (all must hold):**
+- **D passes on every accepted component** in the final evaluation. A component that passes `tsc` and Blueprint but fails its live route check counts as a failure, not a pass (decided 2026-09-18, per the `orderGuard` finding).
 - A is at least **0.8 × Gemini's A**.
 - B is within **10 points** of Gemini's B.
 - A beats plain Coder's A by at least **15 points**, so the training actually earned its cost.
@@ -181,8 +182,8 @@ The generation pipeline itself isn't changed.
 
 ## 10. Open questions
 
-1. **Gemini's terms of use.** Google's Gemini API terms limit using its outputs to build competing models. Whether a personal or academic fine-tune counts must be checked **before** collecting anything. The alternative, writing the training code by hand, is far slower.
+1. **Gemini's terms of use: checked, NOT CLEARED. Gating.** The Gemini API terms say "You may not use the Services to develop models that compete with the Services", and this model's purpose is to replace Gemini for code in this tool. Full quotes and options are in `docs/GEMINI-TERMS-REVIEW.md`. Section 5 (data collection) and Step 0 are on hold until this is explicitly cleared. Switching to hand-written or other training data is a separate decision, not an automatic fallback.
 2. **Whether both models fit in one T4 session.** Step 0 answers this. If not, the coder needs its own Colab session and tunnel (already supported by the design in section 8), which may need a second Google account or Colab Pro.
-3. **Whether the runtime check (metric D) counts toward the ship bar in round 1,** or is only reported. The `orderGuard` bug is the argument for requiring it.
+3. ~~Whether the runtime check (metric D) counts toward the ship bar.~~ **Decided 2026-09-18: it counts.** D must pass on every accepted component (section 7).
 4. **Changing `pdsf/local_inference_server.py`.** The file is currently untracked and has been left alone until now. The serving changes need it to be edited and committed.
 5. **Whether the borrowed desktop is still available** for training, or training moves to Colab. Colab would take about 4–6 h per run, with saved checkpoints because free sessions end.
