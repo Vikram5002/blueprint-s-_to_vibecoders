@@ -9,6 +9,7 @@ type State =
       readonly current: ProviderName;
       readonly codeProvider: ProviderName | null;
       readonly localBaseUrl: string;
+      readonly localCodeBaseUrl: string;
       readonly providers: readonly ProviderStatus[];
     }
   /** The routes are mounted unconditionally, so a failure here is a real transport problem - not "no provider configured", which is a normal state the ready view reports properly. */
@@ -32,11 +33,16 @@ type State =
  * GPU reached through a tunnel - and a tunnel hands out a new hostname every
  * session, which is exactly the thing that must not require editing a
  * dotfile and restarting the server.
+ *
+ * The Code dropdown has its own origin field for `local-code`, because the
+ * code model may run in the planner's Colab session (same URL) or in a
+ * second one (a second tunnel), and that choice changes per session too.
  */
 export function ProviderPicker(): JSX.Element {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [busy, setBusy] = useState(false);
   const [urlDraft, setUrlDraft] = useState<string | null>(null);
+  const [codeUrlDraft, setCodeUrlDraft] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,6 +55,7 @@ export function ProviderPicker(): JSX.Element {
           current: response.current,
           codeProvider: response.codeProvider ?? null,
           localBaseUrl: response.localBaseUrl,
+          localCodeBaseUrl: response.localCodeBaseUrl,
           providers: response.providers,
         });
       })
@@ -64,6 +71,7 @@ export function ProviderPicker(): JSX.Element {
   async function apply(update: {
     readonly provider?: ProviderName;
     readonly localBaseUrl?: string;
+    readonly localCodeBaseUrl?: string;
     readonly codeProvider?: ProviderName | 'same';
   }): Promise<void> {
     setBusy(true);
@@ -75,14 +83,16 @@ export function ProviderPicker(): JSX.Element {
         current: response.current,
         codeProvider: response.codeProvider ?? null,
         localBaseUrl: response.localBaseUrl,
+        localCodeBaseUrl: response.localCodeBaseUrl,
         providers: response.providers,
       });
       setUrlDraft(null);
+      setCodeUrlDraft(null);
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : String(cause);
       // A rejected URL is a correctable typo, not a broken picker - keep the
       // picker usable and report it next to the field it came from.
-      if (update.localBaseUrl !== undefined) setUrlError(message);
+      if (update.localBaseUrl !== undefined || update.localCodeBaseUrl !== undefined) setUrlError(message);
       else setState({ kind: 'error', message });
     } finally {
       setBusy(false);
@@ -100,6 +110,8 @@ export function ProviderPicker(): JSX.Element {
   const active = state.providers.find((entry) => entry.id === state.current);
   const showUrlField = state.current === 'local';
   const draft = urlDraft ?? state.localBaseUrl;
+  const showCodeUrlField = state.codeProvider === 'local-code';
+  const codeDraft = codeUrlDraft ?? state.localCodeBaseUrl;
 
   return (
     <div className="flex min-w-0 items-center gap-2">
@@ -159,6 +171,35 @@ export function ProviderPicker(): JSX.Element {
             type="submit"
             data-testid="local-base-url-apply"
             disabled={busy || draft === state.localBaseUrl}
+            className="rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+          >
+            {busy ? '…' : 'Connect'}
+          </button>
+        </form>
+      ) : null}
+
+      {showCodeUrlField ? (
+        <form
+          className="flex items-center gap-1"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void apply({ localCodeBaseUrl: codeDraft });
+          }}
+        >
+          <input
+            type="text"
+            data-testid="local-code-base-url"
+            value={codeDraft}
+            disabled={busy}
+            onChange={(event) => setCodeUrlDraft(event.target.value)}
+            placeholder="https://your-tunnel.trycloudflare.com"
+            title="Where the local code model's inference server is reachable. Same URL as Model when both run in one Colab session; a second tunnel when they do not."
+            className="w-48 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200 disabled:opacity-60"
+          />
+          <button
+            type="submit"
+            data-testid="local-code-base-url-apply"
+            disabled={busy || codeDraft === state.localCodeBaseUrl}
             className="rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800 disabled:opacity-40"
           >
             {busy ? '…' : 'Connect'}

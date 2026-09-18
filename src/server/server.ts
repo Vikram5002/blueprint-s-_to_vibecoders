@@ -47,6 +47,7 @@ import {
   CODE_PROVIDER_SETTING_KEY,
   createSwitchableProvider,
   LOCAL_BASE_URL_SETTING_KEY,
+  LOCAL_CODE_BASE_URL_SETTING_KEY,
   PROVIDER_SETTING_KEY,
   type ProviderRegistry,
 } from '../llm/provider-registry.js';
@@ -321,6 +322,8 @@ export async function startServer(context: AnalysisContext): Promise<RunningServ
     initialLocalBaseUrl: settings.get(LOCAL_BASE_URL_SETTING_KEY),
     onSelect: (provider) => settings.set(PROVIDER_SETTING_KEY, provider),
     onLocalBaseUrl: (baseUrl) => settings.set(LOCAL_BASE_URL_SETTING_KEY, baseUrl),
+    initialLocalCodeBaseUrl: settings.get(LOCAL_CODE_BASE_URL_SETTING_KEY),
+    onLocalCodeBaseUrl: (baseUrl) => settings.set(LOCAL_CODE_BASE_URL_SETTING_KEY, baseUrl),
     initialCode: settings.get(CODE_PROVIDER_SETTING_KEY),
     onSelectCode: (provider) => settings.set(CODE_PROVIDER_SETTING_KEY, provider ?? CODE_PROVIDER_SAME),
   });

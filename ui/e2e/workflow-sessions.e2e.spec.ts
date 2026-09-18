@@ -167,7 +167,7 @@ test.describe('Model picker: choosing between a cloud API and the local model', 
     // Every selectable provider is offered, and the ones that cannot serve a
     // request right now say so rather than silently failing later.
     const options = await picker.locator('option').allTextContents();
-    expect(options).toHaveLength(4);
+    expect(options).toHaveLength(5);
     expect(options.some((text) => text.startsWith('Gemini'))).toBe(true);
     expect(options.some((text) => text.startsWith('Local model'))).toBe(true);
 

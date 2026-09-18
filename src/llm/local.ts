@@ -69,6 +69,28 @@ export function readLocalBaseUrl(env: NodeJS.ProcessEnv = process.env): string {
 export const DEFAULT_LOCAL_MODEL = 'local:qwen2.5-7b-instruct+run_20260822_130636';
 
 /**
+ * The code-writing checkpoint (Qwen2.5-Coder + the code adapter; see
+ * docs/LOCAL-CODE-MODEL-PLAN.md). A *served name*, matched verbatim by
+ * `local_inference_server.py` against its `--model name=base:adapter` list -
+ * the `local-code:` prefix is part of the name, not stripped, so a cached or
+ * recorded answer can never be confused with the planner's.
+ */
+export const DEFAULT_LOCAL_CODE_MODEL = 'local-code:qwen2.5-coder-7b-instruct+code-adapter';
+
+/**
+ * Where the code model is served from, when that is not the same server as
+ * the planner. Both adapters can run in one Colab session (one process, two
+ * `--model` flags) or in two sessions with two tunnels; unset, this falls
+ * back to `VIBE_LOCAL_BASE_URL` and so to the single-server case.
+ */
+export const LOCAL_CODE_BASE_URL_ENV = 'VIBE_LOCAL_CODE_BASE_URL';
+
+export function readLocalCodeBaseUrl(env: NodeJS.ProcessEnv = process.env): string {
+  const configured = env[LOCAL_CODE_BASE_URL_ENV]?.trim();
+  return configured === undefined || configured === '' ? readLocalBaseUrl(env) : configured.replace(/\/+$/, '');
+}
+
+/**
  * Wall-clock ceiling on a single request. Node's `fetch` has no default
  * timeout — `gemini.ts`'s own `REQUEST_TIMEOUT_MS` exists because an untimed
  * call once hung a corpus run for over twenty minutes at near-zero CPU, and
@@ -80,15 +102,19 @@ export const DEFAULT_LOCAL_MODEL = 'local:qwen2.5-7b-instruct+run_20260822_13063
  * request had no path to ever reach a terminal state; a caller polling a job
  * (see `server/workflow-api.ts`) would see it sit in `running` forever.
  *
- * 300s is well above the worst single-request latency measured (27s) and
- * gives real headroom for legitimate queuing behind other concurrent
- * requests (bounded server-side by `MAX_CONCURRENT_JOBS`), while still
+ * This was 300s while the only thing served was the planner (worst
+ * single-request latency measured: 27s). The code model changed the
+ * arithmetic: a 4,096-token code file at the ~12 tok/s a T4 manages for a
+ * 7B in 4-bit is ~340s of pure generation, before prompt processing and
+ * before any queuing behind another request on the same GPU - so 300s
+ * would have cut off exactly the requests that were working. 900s covers
+ * a full-length file plus one request queued ahead of it, while still
  * eventually surfacing a genuinely dead connection as a real failure rather
  * than an invisible hang. Not tuned to bound expected contention — like
  * `gemini.ts`'s timeout, it exists to catch the dead-connection case, not to
  * promise a latency ceiling under load.
  */
-export const REQUEST_TIMEOUT_MS = 300_000;
+export const REQUEST_TIMEOUT_MS = 900_000;
 
 export interface LocalOptions {
   readonly baseUrl?: string;
@@ -101,6 +127,45 @@ function isCompletionResult(value: unknown): value is CompletionResult {
   const v = value as { ok: unknown };
   return typeof v.ok === 'boolean';
 }
+
+/** What `GET /models` on the inference server reports: every served checkpoint, and which one a request without `model` gets. */
+export interface ServedModels {
+  readonly models: readonly { readonly name: string; readonly base: string; readonly adapter: string }[];
+  readonly default: string;
+}
+
+function isServedModels(value: unknown): value is ServedModels {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as { models?: unknown; default?: unknown };
+  if (typeof v.default !== 'string' || !Array.isArray(v.models)) return false;
+  return v.models.every((entry: unknown) => {
+    if (typeof entry !== 'object' || entry === null) return false;
+    const e = entry as { name?: unknown; base?: unknown; adapter?: unknown };
+    return typeof e.name === 'string' && typeof e.base === 'string' && typeof e.adapter === 'string';
+  });
+}
+
+/**
+ * Asks the server which models it serves. Null on any failure - transport,
+ * non-2xx, or a server too old to have the route - so a caller can treat
+ * "reachable" and "tells us what it serves" as separate facts.
+ */
+export async function probeModels(
+  baseUrl: string = DEFAULT_LOCAL_BASE_URL,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ServedModels | null> {
+  try {
+    const response = await fetchImpl(`${baseUrl}/models`, { method: 'GET', signal: AbortSignal.timeout(MODELS_PROBE_TIMEOUT_MS) });
+    if (!response.ok) return null;
+    const parsed: unknown = await response.json();
+    return isServedModels(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Short, like the registry's reachability probe: this renders a picker, it does not serve a request. */
+const MODELS_PROBE_TIMEOUT_MS = 4_000;
 
 export function createLocalProvider(options: LocalOptions = {}): CompletionProvider {
   const baseUrl = options.baseUrl ?? DEFAULT_LOCAL_BASE_URL;
@@ -117,7 +182,9 @@ export function createLocalProvider(options: LocalOptions = {}): CompletionProvi
         response = await doFetch(`${baseUrl}/complete`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(request),
+          // `model` picks which served checkpoint answers when the server
+          // hosts more than one; a server that predates the field ignores it.
+          body: JSON.stringify({ ...request, model }),
           signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         });
       } catch (cause) {

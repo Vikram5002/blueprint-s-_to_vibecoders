@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { chooseProvider, createProvider, PROVIDER_ENV, type ProviderChoice } from './select-provider.js';
-import { DEFAULT_LOCAL_MODEL } from './local.js';
+import { DEFAULT_LOCAL_CODE_MODEL, DEFAULT_LOCAL_MODEL } from './local.js';
 
 describe('select-provider — local, the always-constructible branch', () => {
   it("chooseProvider('local', ...) reports no key and no key env, truthfully", () => {
@@ -102,5 +102,61 @@ describe('select-provider — gemini receives every configured key, not just the
 
     expect(result?.ok).toBe(true);
     expect(seenKeys).toEqual(['k1', 'k2']);
+  });
+});
+
+describe('select-provider — local-code, the same adapter aimed at the code checkpoint', () => {
+  it("chooseProvider('local-code') names the code model, no key, and the planner's origin by default", () => {
+    const choice = chooseProvider({ [PROVIDER_ENV]: 'local-code', VIBE_LOCAL_BASE_URL: 'http://planner:8712' });
+    expect(choice.provider).toBe('local-code');
+    expect(choice.model).toBe(DEFAULT_LOCAL_CODE_MODEL);
+    expect(choice.apiKey).toBeNull();
+    expect(choice.keyEnv).toBe('');
+    // No URL of its own configured: same server as the planner.
+    expect(choice.baseUrl).toBe('http://planner:8712');
+  });
+
+  it('prefers VIBE_LOCAL_CODE_BASE_URL over the planner origin when both are set, trimming the trailing slash', () => {
+    const choice = chooseProvider({
+      [PROVIDER_ENV]: 'local-code',
+      VIBE_LOCAL_BASE_URL: 'http://planner:8712',
+      VIBE_LOCAL_CODE_BASE_URL: 'https://coder.trycloudflare.com/',
+    });
+    expect(choice.baseUrl).toBe('https://coder.trycloudflare.com');
+    // And the planner is untouched by the coder's variable.
+    expect(chooseProvider({ [PROVIDER_ENV]: 'local', VIBE_LOCAL_CODE_BASE_URL: 'https://coder.trycloudflare.com' }).baseUrl).toBe(
+      'http://127.0.0.1:8712',
+    );
+  });
+
+  it('honours the VIBE_LLM_MODEL override for local-code too', () => {
+    const choice = chooseProvider({ [PROVIDER_ENV]: 'local-code', VIBE_LLM_MODEL: 'local-code:qwen2.5-coder-7b-instruct+run_x' });
+    expect(choice.model).toBe('local-code:qwen2.5-coder-7b-instruct+run_x');
+  });
+
+  it('createProvider constructs local-code with apiKey: null, sends the served model name in the body, and hits its own origin', async () => {
+    const choice = chooseProvider({ [PROVIDER_ENV]: 'local-code', VIBE_LOCAL_CODE_BASE_URL: 'http://coder:9000' });
+    const provider = await createProvider(choice);
+    expect(provider).not.toBeNull();
+    expect(provider?.name).toBe(`local:${DEFAULT_LOCAL_CODE_MODEL}`);
+
+    let seenUrl = '';
+    let seenBody: { model?: string } = {};
+    vi.stubGlobal('fetch', (async (url: unknown, init?: RequestInit) => {
+      seenUrl = String(url);
+      seenBody = JSON.parse(String(init?.body)) as { model?: string };
+      return new Response(
+        JSON.stringify({ ok: true, value: { text: 'x', model: DEFAULT_LOCAL_CODE_MODEL, usage: { promptTokens: 1, completionTokens: 1, cachedPromptTokens: 0 } } }),
+        { status: 200 },
+      );
+    }) as typeof fetch);
+    // The provider captured the global fetch at construction, so rebuild after stubbing.
+    const rebuilt = await createProvider(choice);
+    const result = await rebuilt?.complete({ system: 's', user: 'u', maxOutputTokens: 8 });
+    vi.unstubAllGlobals();
+
+    expect(result?.ok).toBe(true);
+    expect(seenUrl).toBe('http://coder:9000/complete');
+    expect(seenBody.model).toBe(DEFAULT_LOCAL_CODE_MODEL);
   });
 });

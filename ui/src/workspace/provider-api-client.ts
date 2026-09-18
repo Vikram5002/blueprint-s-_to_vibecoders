@@ -26,6 +26,7 @@ export async function fetchProviders(): Promise<ProvidersResponse> {
 export async function updateProviders(update: {
   readonly provider?: ProviderName;
   readonly localBaseUrl?: string;
+  readonly localCodeBaseUrl?: string;
   /** 'same' clears the override so code generation follows `provider` again. */
   readonly codeProvider?: ProviderName | 'same';
 }): Promise<ProvidersResponse> {

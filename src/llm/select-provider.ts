@@ -5,7 +5,7 @@
  * and `gemini.ts` know how to talk to their vendors; neither knows it is the
  * default, and nothing above this file knows either vendor exists.
  *
- * ## Four providers, with different jobs
+ * ## Five providers, with different jobs
  *
  * - **Gemini** is the default. Free, fast, and measurably better output than
  *   the alternative — see `docs/PROVIDERS.md` for the numbers.
@@ -24,6 +24,10 @@
  *   triggered the failover into the backend guaranteed to degrade fastest.
  *   Static, explicit selection only — see the routing analysis this
  *   decision came from for the full reasoning; not re-litigated here.
+ * - **Local code** (`local-code`) is the same adapter pointed at the
+ *   code-writing checkpoint (Qwen2.5-Coder + code adapter), with its own
+ *   base URL because it may run in the planner's Colab session or in a
+ *   separate one. Everything said about `local` applies to it too.
  *
  * Bluesminds is a *gateway*, and a result from it cannot be attributed to a
  * specific model version with certainty — see `docs/PROVIDERS.md`. That alone
@@ -40,10 +44,21 @@ import {
   readBluesmindsApiKey,
   DEFAULT_BLUESMINDS_MODEL,
 } from './bluesminds.js';
-import { createLocalProvider, DEFAULT_LOCAL_MODEL, readLocalBaseUrl } from './local.js';
+import {
+  createLocalProvider,
+  DEFAULT_LOCAL_CODE_MODEL,
+  DEFAULT_LOCAL_MODEL,
+  readLocalBaseUrl,
+  readLocalCodeBaseUrl,
+} from './local.js';
 import type { CompletionProvider } from './provider.js';
 
-export type ProviderName = 'bluesminds' | 'gemini' | 'anthropic' | 'local';
+export type ProviderName = 'bluesminds' | 'gemini' | 'anthropic' | 'local' | 'local-code';
+
+/** The two providers that talk to a local inference server: no key, an origin the user may move. */
+export function isLocalProvider(provider: ProviderName): provider is 'local' | 'local-code' {
+  return provider === 'local' || provider === 'local-code';
+}
 
 export const PROVIDER_ENV = 'VIBE_LLM_PROVIDER';
 export const MODEL_ENV = 'VIBE_LLM_MODEL';
@@ -59,13 +74,13 @@ export interface ProviderChoice {
   readonly model: string;
   /**
    * Null when the chosen provider has no key configured. Always null for
-   * `local`, which requires no authentication at all — not "no key
+   * `local` and `local-code`, which require no authentication at all — not "no key
    * configured yet", but "there is no key concept here". `createProvider`
    * checks `provider === 'local'` before this field ever gates anything, so
    * `local` is always constructible regardless of its value.
    */
   readonly apiKey: string | null;
-  /** Which environment variable the key would come from. Empty for `local` — no such variable exists. */
+  /** Which environment variable the key would come from. Empty for `local`/`local-code` — no such variable exists. */
   readonly keyEnv: string;
   /**
    * Same-vendor, same-model key rotation (Gemini only - see gemini.ts's own
@@ -76,7 +91,7 @@ export interface ProviderChoice {
    * key is set - "one key" behaves exactly as it always has.
    */
   readonly additionalApiKeys?: readonly string[];
-  /** `local` only: where its inference server is reachable. Absent everywhere else - a vendor API's origin is not the user's to move. */
+  /** `local`/`local-code` only: where its inference server is reachable. Absent everywhere else - a vendor API's origin is not the user's to move. */
   readonly baseUrl?: string;
 }
 
@@ -88,7 +103,11 @@ export interface ProviderChoice {
 export function chooseProvider(env: NodeJS.ProcessEnv = process.env): ProviderChoice {
   const requested = env[PROVIDER_ENV]?.trim().toLowerCase();
   const provider: ProviderName =
-    requested === 'anthropic' || requested === 'gemini' || requested === 'bluesminds' || requested === 'local'
+    requested === 'anthropic' ||
+    requested === 'gemini' ||
+    requested === 'bluesminds' ||
+    requested === 'local' ||
+    requested === 'local-code'
       ? requested
       : DEFAULT_PROVIDER;
   const override = env[MODEL_ENV]?.trim();
@@ -127,6 +146,16 @@ export function chooseProvider(env: NodeJS.ProcessEnv = process.env): ProviderCh
     };
   }
 
+  if (provider === 'local-code') {
+    return {
+      provider,
+      model: pick(DEFAULT_LOCAL_CODE_MODEL),
+      apiKey: null,
+      keyEnv: '',
+      baseUrl: readLocalCodeBaseUrl(env),
+    };
+  }
+
   return {
     provider,
     model: pick(DEFAULT_BLUESMINDS_MODEL),
@@ -142,14 +171,14 @@ export function chooseProvider(env: NodeJS.ProcessEnv = process.env): ProviderCh
  * path is the common one — so nothing is imported, no SDK is loaded and no
  * warning is printed.
  *
- * `local` is checked first and always constructed regardless of `apiKey` —
- * it has no key to be missing, so the shared "no key, return null" gate
+ * `local` and `local-code` are checked first and always constructed
+ * regardless of `apiKey` — they have no key to be missing, so the shared "no key, return null" gate
  * below does not apply to it at all, deliberately, rather than routing it
  * through a check that would misreport "no key configured" for a provider
  * that never had one.
  */
 export async function createProvider(choice: ProviderChoice): Promise<CompletionProvider | null> {
-  if (choice.provider === 'local') {
+  if (isLocalProvider(choice.provider)) {
     return createLocalProvider({
       model: choice.model,
       ...(choice.baseUrl === undefined ? {} : { baseUrl: choice.baseUrl }),

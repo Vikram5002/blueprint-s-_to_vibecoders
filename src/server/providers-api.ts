@@ -39,6 +39,7 @@ async function snapshot(registry: ProviderRegistry) {
     current: registry.current(),
     codeProvider: registry.codeSelection(),
     localBaseUrl: registry.localBaseUrl(),
+    localCodeBaseUrl: registry.localCodeBaseUrl(),
     providers: await registry.status(),
   };
 }
@@ -63,6 +64,14 @@ export function createProviderRoutes(deps: ProviderRouteDeps): Hono {
       }
     }
 
+    const requestedCodeUrl =
+      typeof body === 'object' && body !== null ? (body as { localCodeBaseUrl?: unknown }).localCodeBaseUrl : undefined;
+    if (requestedCodeUrl !== undefined) {
+      if (typeof requestedCodeUrl !== 'string' || !deps.registry.setLocalCodeBaseUrl(requestedCodeUrl)) {
+        return c.json({ error: 'localCodeBaseUrl must be an http(s) URL, e.g. https://something.trycloudflare.com' }, 400);
+      }
+    }
+
     const codeProvider = parseCodeProviderRequest(body);
     if (codeProvider === false) {
       return c.json({ error: `codeProvider must be '${CODE_PROVIDER_SAME}' or one of ${SELECTABLE_PROVIDERS.join(', ')}` }, 400);
@@ -72,7 +81,7 @@ export function createProviderRoutes(deps: ProviderRouteDeps): Hono {
     const provider = parseProviderRequest(body);
     if (provider === null) {
       // A URL-only or code-only update is a complete, valid request on its own.
-      if (requestedUrl !== undefined || codeProvider !== undefined) {
+      if (requestedUrl !== undefined || requestedCodeUrl !== undefined || codeProvider !== undefined) {
         return c.json(await snapshot(deps.registry));
       }
       return c.json(
@@ -95,6 +104,7 @@ export function createProviderRoutes(deps: ProviderRouteDeps): Hono {
       current: deps.registry.current(),
       codeProvider: deps.registry.codeSelection(),
       localBaseUrl: deps.registry.localBaseUrl(),
+      localCodeBaseUrl: deps.registry.localCodeBaseUrl(),
       providers,
       warning: chosen?.available === false ? chosen.detail : undefined,
     });

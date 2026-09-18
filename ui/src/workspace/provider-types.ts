@@ -5,7 +5,7 @@
  * itself: ui/ must not import from src/ directly.
  */
 
-export type ProviderName = 'gemini' | 'local' | 'anthropic' | 'bluesminds';
+export type ProviderName = 'gemini' | 'local' | 'local-code' | 'anthropic' | 'bluesminds';
 
 export interface ProviderStatus {
   readonly id: ProviderName;
@@ -21,6 +21,8 @@ export interface ProvidersResponse {
   readonly codeProvider: ProviderName | null;
   /** Where the local inference server is expected - loopback, a LAN machine, or a cloud-GPU tunnel. */
   readonly localBaseUrl: string;
+  /** Where the local CODE model's server is expected - the same origin as `localBaseUrl`, or a second tunnel. */
+  readonly localCodeBaseUrl: string;
   readonly providers: readonly ProviderStatus[];
   /** Present when the provider just selected is not currently reachable/configured. */
   readonly warning?: string;

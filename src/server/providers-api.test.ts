@@ -27,7 +27,7 @@ describe('GET /api/providers', () => {
       providers: { id: string; available: boolean; detail: string; model: string }[];
     };
     expect(body.current).toBe('gemini');
-    expect(body.providers.map((entry) => entry.id)).toEqual(['gemini', 'local', 'anthropic', 'bluesminds']);
+    expect(body.providers.map((entry) => entry.id)).toEqual(['gemini', 'local', 'local-code', 'anthropic', 'bluesminds']);
     expect(body.providers.find((entry) => entry.id === 'gemini')?.available).toBe(true);
     expect(body.providers.find((entry) => entry.id === 'local')?.available).toBe(false);
     // Every entry names a real model, so the picker can say what it would run.
@@ -176,5 +176,46 @@ describe('code-generation override over /api/providers', () => {
     const { app, registry } = routes('local');
     expect((await post(app, { codeProvider: 'nope' })).status).toBe(400);
     expect(registry.codeSelection()).toBeNull();
+  });
+});
+
+describe('local code base URL over /api/providers', () => {
+  const post = (app: ReturnType<typeof routes>['app'], body: unknown) =>
+    app.request('/', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+  it('reports the coder origin on GET, following the planner origin by default', async () => {
+    const { app } = routes(null);
+    const body = (await (await app.request('/')).json()) as { localBaseUrl: string; localCodeBaseUrl: string };
+    expect(body.localCodeBaseUrl).toBe(body.localBaseUrl);
+  });
+
+  it('points the coder at its own tunnel on its own, leaving the planner origin and selections untouched', async () => {
+    const { app, registry } = routes(null);
+    const response = await post(app, { localCodeBaseUrl: 'https://coder.trycloudflare.com' });
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { localCodeBaseUrl: string; localBaseUrl: string; current: string };
+    expect(body.localCodeBaseUrl).toBe('https://coder.trycloudflare.com');
+    expect(body.localBaseUrl).toBe('http://127.0.0.1:8712');
+    expect(body.current).toBe('gemini');
+    expect(registry.localCodeBaseUrl()).toBe('https://coder.trycloudflare.com');
+  });
+
+  it('accepts the coder URL and the code-provider switch in ONE request', async () => {
+    const { app, registry } = routes(null);
+    const response = await post(app, { codeProvider: 'local-code', localCodeBaseUrl: 'https://coder.trycloudflare.com' });
+
+    expect(response.status).toBe(200);
+    expect(((await response.json()) as { localCodeBaseUrl: string }).localCodeBaseUrl).toBe('https://coder.trycloudflare.com');
+    expect(registry.currentCode()).toBe('local-code');
+    expect(registry.localCodeBaseUrl()).toBe('https://coder.trycloudflare.com');
+  });
+
+  it('rejects a coder URL that is not http(s), or not a string, and changes nothing', async () => {
+    const { app, registry } = routes(null);
+    expect((await post(app, { codeProvider: 'local-code', localCodeBaseUrl: 'localhost:8712' })).status).toBe(400);
+    expect((await post(app, { localCodeBaseUrl: 42 })).status).toBe(400);
+    expect(registry.codeSelection()).toBeNull();
+    expect(registry.localCodeBaseUrl()).toBe('http://127.0.0.1:8712');
   });
 });

@@ -26,8 +26,15 @@
  * deliberate, user-initiated choice, recorded and reported as such. Nothing
  * in this file ever switches on its own.
  */
-import { chooseProvider, createProvider, type ProviderName } from './select-provider.js';
-import { DEFAULT_LOCAL_BASE_URL, LOCAL_BASE_URL_ENV, readLocalBaseUrl } from './local.js';
+import { chooseProvider, createProvider, isLocalProvider, type ProviderName } from './select-provider.js';
+import {
+  DEFAULT_LOCAL_BASE_URL,
+  LOCAL_BASE_URL_ENV,
+  LOCAL_CODE_BASE_URL_ENV,
+  probeModels,
+  readLocalBaseUrl,
+  readLocalCodeBaseUrl,
+} from './local.js';
 import type { CompletionProvider, CompletionRequest, CompletionResult } from './provider.js';
 
 /** The key `settings-store.ts` holds the persisted choice under. */
@@ -45,6 +52,14 @@ export const PROVIDER_SETTING_KEY = 'llm.provider';
 export const LOCAL_BASE_URL_SETTING_KEY = 'llm.localBaseUrl';
 
 /**
+ * Where the local CODE model is served from. A second key, not a reuse of
+ * the first, because the coder may live in the planner's Colab session
+ * (same URL) or in its own (a second tunnel) - and which of the two it is
+ * changes per session, so it has to be editable on its own.
+ */
+export const LOCAL_CODE_BASE_URL_SETTING_KEY = 'llm.localCodeBaseUrl';
+
+/**
  * Which provider writes application CODE, when it should differ from the one
  * that writes the plan. Stored as a provider name, or `CODE_PROVIDER_SAME`.
  *
@@ -59,11 +74,12 @@ export const CODE_PROVIDER_SETTING_KEY = 'llm.codeProvider';
 export const CODE_PROVIDER_SAME = 'same';
 
 /** Every provider a user may pick between, in the order the picker shows them. */
-export const SELECTABLE_PROVIDERS: readonly ProviderName[] = ['gemini', 'local', 'anthropic', 'bluesminds'];
+export const SELECTABLE_PROVIDERS: readonly ProviderName[] = ['gemini', 'local', 'local-code', 'anthropic', 'bluesminds'];
 
 export const PROVIDER_LABELS: Readonly<Record<ProviderName, string>> = {
   gemini: 'Gemini (cloud)',
   local: 'Local model (this machine)',
+  'local-code': 'Local code model (Qwen2.5-Coder)',
   anthropic: 'Anthropic (cloud)',
   bluesminds: 'Bluesminds (cloud)',
 };
@@ -125,7 +141,7 @@ export interface ProviderRegistry {
    * never leave the registry pointing at nothing.
    */
   select(provider: ProviderName): boolean;
-  /** One entry per selectable provider, with real availability. Probes the network only for `local`. */
+  /** One entry per selectable provider, with real availability. Probes the network only for `local` and `local-code`. */
   status(): Promise<readonly ProviderStatus[]>;
   /** The concrete provider for the current selection, or null when it cannot be constructed (no key). */
   resolve(): Promise<CompletionProvider | null>;
@@ -141,6 +157,10 @@ export interface ProviderRegistry {
   localBaseUrl(): string;
   /** Points `local` at a different origin. Returns false for anything that is not a usable http(s) URL. */
   setLocalBaseUrl(baseUrl: string): boolean;
+  /** Where the local code model's inference server is currently expected to be. */
+  localCodeBaseUrl(): string;
+  /** Points `local-code` at a different origin. Same validation as `setLocalBaseUrl`. */
+  setLocalCodeBaseUrl(baseUrl: string): boolean;
 }
 
 export interface ProviderRegistryOptions {
@@ -149,6 +169,8 @@ export interface ProviderRegistryOptions {
   readonly initial?: string | null;
   /** Restores a previously persisted local origin. Falls back to the env var, then loopback. */
   readonly initialLocalBaseUrl?: string | null;
+  /** Restores a persisted local CODE origin. Falls back to its env var, then to the planner's origin. */
+  readonly initialLocalCodeBaseUrl?: string | null;
   /** Restores a persisted code-generation override - a provider name, or `CODE_PROVIDER_SAME`/null for none. */
   readonly initialCode?: string | null;
   /** Called whenever the code-generation override changes; null means it was cleared. */
@@ -157,6 +179,8 @@ export interface ProviderRegistryOptions {
   readonly onSelect?: (provider: ProviderName) => void;
   /** Called whenever the local origin actually changes, so the caller can persist it. */
   readonly onLocalBaseUrl?: (baseUrl: string) => void;
+  /** Called whenever the local CODE origin actually changes, so the caller can persist it. */
+  readonly onLocalCodeBaseUrl?: (baseUrl: string) => void;
   readonly fetchImpl?: typeof fetch;
 }
 
@@ -193,6 +217,15 @@ export function createProviderRegistry(options: ProviderRegistryOptions = {}): P
   let codeSelected: ProviderName | null = isProviderName(options.initialCode) ? options.initialCode : null;
 
   let localBaseUrl = normaliseBaseUrl(options.initialLocalBaseUrl ?? '') ?? readLocalBaseUrl(env);
+  // Null until someone gives the coder an origin of its own (persisted, env
+  // var, or typed in). Until then it FOLLOWS the planner's origin - live, not
+  // captured at startup - so in the single-Colab-session case pasting one
+  // tunnel URL into the Model field moves both, and nobody has to paste it
+  // twice.
+  let explicitCodeBaseUrl: string | null =
+    normaliseBaseUrl(options.initialLocalCodeBaseUrl ?? '') ??
+    normaliseBaseUrl(env[LOCAL_CODE_BASE_URL_ENV] ?? '');
+  const localCodeBaseUrl = (): string => explicitCodeBaseUrl ?? readLocalCodeBaseUrl({ [LOCAL_BASE_URL_ENV]: localBaseUrl });
 
   /** Constructed once each and reused: `createProvider` loads a vendor module, and a picker that rebuilt providers per keystroke would pay that repeatedly. */
   const constructed = new Map<ProviderName, CompletionProvider | null>();
@@ -202,7 +235,12 @@ export function createProviderRegistry(options: ProviderRegistryOptions = {}): P
     // reads, rather than as a second parallel channel, so there is exactly
     // one path a base URL can travel and the runtime setting and the
     // environment cannot disagree about which won.
-    return { ...env, VIBE_LLM_PROVIDER: name, [LOCAL_BASE_URL_ENV]: localBaseUrl };
+    return {
+      ...env,
+      VIBE_LLM_PROVIDER: name,
+      [LOCAL_BASE_URL_ENV]: localBaseUrl,
+      [LOCAL_CODE_BASE_URL_ENV]: localCodeBaseUrl(),
+    };
   }
 
   async function providerFor(name: ProviderName): Promise<CompletionProvider | null> {
@@ -255,24 +293,54 @@ export function createProviderRegistry(options: ProviderRegistryOptions = {}): P
         // dead one, and the picker would show a reachable server while every
         // request still failed.
         constructed.delete('local');
+        // The coder follows the planner while it has no origin of its own.
+        if (explicitCodeBaseUrl === null) constructed.delete('local-code');
         options.onLocalBaseUrl?.(normalised);
       }
       return true;
     },
 
+    localCodeBaseUrl,
+
+    setLocalCodeBaseUrl: (candidate) => {
+      const normalised = normaliseBaseUrl(candidate);
+      if (normalised === null) return false;
+      if (normalised !== localCodeBaseUrl()) {
+        constructed.delete('local-code');
+        options.onLocalCodeBaseUrl?.(normalised);
+      }
+      // Recorded even when equal to the followed value: from here on the
+      // coder is pinned, and a later planner change must not drag it along.
+      explicitCodeBaseUrl = normalised;
+      return true;
+    },
+
     status: async () => {
-      const localUp = await probeLocalServer(localBaseUrl, fetchImpl);
+      const codeUrl = localCodeBaseUrl();
+      const [localUp, codeUp] = await Promise.all([
+        probeLocalServer(localBaseUrl, fetchImpl),
+        probeLocalServer(codeUrl, fetchImpl),
+      ]);
+      // Reachable is one fact; "serves the code model" is another, and a
+      // server too old to have /models answers neither way - so the served
+      // names are reported when known and the detail degrades gracefully.
+      const served = codeUp ? await probeModels(codeUrl, fetchImpl) : null;
       return SELECTABLE_PROVIDERS.map((id) => {
         const choice = chooseProvider(envFor(id));
-        if (id === 'local') {
+        if (isLocalProvider(id)) {
+          const url = id === 'local' ? localBaseUrl : codeUrl;
+          const up = id === 'local' ? localUp : codeUp;
+          const names = id === 'local-code' && served !== null ? served.models.map((entry) => entry.name) : [];
           return {
             id,
             label: PROVIDER_LABELS[id],
             model: choice.model,
-            available: localUp,
-            detail: localUp
-              ? `Reachable at ${localBaseUrl}`
-              : `No server responding at ${localBaseUrl} - start local_inference_server.py first`,
+            available: up,
+            detail: up
+              ? names.length > 0
+                ? `Reachable at ${url} - serving ${names.join(', ')}`
+                : `Reachable at ${url}`
+              : `No server responding at ${url} - start local_inference_server.py first`,
           };
         }
         const available = choice.apiKey !== null;
