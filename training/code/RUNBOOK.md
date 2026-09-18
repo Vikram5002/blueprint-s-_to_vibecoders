@@ -9,6 +9,57 @@ Unsloth) from `training/code/formatted/dataset.jsonl`. The plan adapter
 r=16, alpha=16, lr 2e-4, 3 epochs, batch 2, no dropout, no prompt masking
 (`training/train_full.py`).
 
+## Part 1 on the desktop: collect the training data (32B teacher)
+
+Why here and not Colab: the desktop is an **RTX 4500 Ada, 24 GB, compute 8.9**
+(`SETUP-DESKTOP.md` on the pendrive). That fits **Qwen2.5-Coder-32B-Instruct**
+in 4-bit (~19 GB), which a free T4 cannot, and it has no session timeouts. On
+Colab the 14B teacher passed 1 of 7 plans (2026-09-19).
+
+Everything runs on the desktop. It needs **Node.js 22.5+** (for `node:sqlite`,
+which generated projects use) as well as Python.
+
+1. Clone or pull, then build the TypeScript side once:
+   ```
+   git pull
+   npm install
+   npm --prefix ui install
+   npm run build
+   ```
+2. Python env as in "On the desktop" below (torch for CUDA, then the
+   requirements). bf16 is native on this card - no T4 patch needed.
+3. Start the teacher (first run downloads ~19 GB of pre-quantized weights into
+   `HF_HOME`; set it to a folder on the big drive first, as SETUP-DESKTOP.md does):
+   ```
+   set HF_HOME=D:ǅ72300022\hf_cache
+   python pdsf/local_inference_server.py --port 8712 --max-new-tokens-cap 4096 ^
+     --model teacher=unsloth/Qwen2.5-Coder-32B-Instruct-bnb-4bit
+   ```
+   Wait for `READY`. In a second terminal, check it:
+   ```
+   curl http://127.0.0.1:8712/models
+   ```
+   It must list `teacher`.
+4. Collect (resumable - rerun the same command after any interruption; it
+   continues from the next plan and never repeats a finished one):
+   ```
+   node scripts/capture-code-batch.mjs --local=http://127.0.0.1:8712 --model=teacher ^
+     --out=capture/code/teacher-32b-batch-1.jsonl
+   ```
+   Use a **new** output file, not the Colab 14B one: one teacher per file keeps
+   the provenance of every example obvious.
+5. When it ends (or you have to leave), format and commit the data:
+   ```
+   python training/code/format-code-dataset.py capture/code/teacher-32b-batch-1.jsonl
+   git add capture/code/teacher-32b-batch-1*.jsonl training/code/formatted/dataset.jsonl training/code/formatted/manifest.json
+   git commit -m "data: 32B teacher collection" && git push
+   ```
+   (Or copy those files to `E:\qwen_coder` if the desktop can't push.)
+
+Then go straight on to Part 2 (training) below - same session if time allows.
+
+## Part 2 on the desktop: train the code adapter
+
 ## Before you go
 
 - `dataset.jsonl` and `manifest.json` exist in `training/code/formatted/`
