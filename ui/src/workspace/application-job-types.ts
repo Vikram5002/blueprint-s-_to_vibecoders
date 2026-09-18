@@ -109,12 +109,37 @@ export type ApplicationJobError =
     }
   | { readonly phase: 'unexpected'; readonly message: string };
 
+export type ApplicationRunKind = 'generate' | 'repair';
+
 export interface ApplicationJob {
   readonly id: string;
   readonly createdAt: string;
+  /** The workflow session this job generated for - what a saved run is filed under. */
+  readonly sessionId: string;
+  readonly kind: ApplicationRunKind;
+  /** For a repair: the job whose files it started from. */
+  readonly parentId?: string;
   readonly status: ApplicationJobStatus;
   readonly phase?:
     GenerationPhase | 'installing' | 'building' | 'build-regenerating' | 'build-reverifying';
   readonly result?: ApplicationJobResult;
   readonly error?: ApplicationJobError;
+}
+
+/** One saved run of a session, as `GET /sessions/:id/application-runs` lists them. */
+export interface ApplicationRunSummary {
+  readonly id: string;
+  readonly sessionId: string;
+  readonly kind: ApplicationRunKind;
+  readonly parentId: string | null;
+  readonly status: 'succeeded' | 'failed';
+  readonly createdAt: string;
+}
+
+/** The newest run of one session - what the Sidebar's status dot reads (`GET /application-runs/latest`). */
+export interface LatestRun {
+  readonly sessionId: string;
+  readonly runId: string;
+  readonly status: 'succeeded' | 'failed';
+  readonly buildOk: boolean;
 }

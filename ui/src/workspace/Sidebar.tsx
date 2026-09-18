@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useWorkspaceStore } from './store';
-import { fetchWorkflowSession, listWorkflowSessions } from './workflow-api-client';
+import { fetchLatestRuns, fetchWorkflowSession, listWorkflowSessions } from './workflow-api-client';
 import type { WorkflowSessionSummary } from './workflow-session-types';
+import type { LatestRun } from './application-job-types';
 
 type LoadState = { readonly kind: 'loading' } | { readonly kind: 'error'; readonly message: string } | { readonly kind: 'loaded' };
 
@@ -35,8 +36,11 @@ export function Sidebar(): JSX.Element {
   const sessionsVersion = useWorkspaceStore((state) => state.sessionsVersion);
   const openSession = useWorkspaceStore((state) => state.openSession);
   const openedSessionId = useWorkspaceStore((state) => state.openedSession?.id);
+  const runsVersion = useWorkspaceStore((state) => state.runsVersion);
 
   const [sessions, setSessions] = useState<readonly WorkflowSessionSummary[]>([]);
+  /** The newest generated application per session - a dot next to the title says whether it built. */
+  const [latestRuns, setLatestRuns] = useState<ReadonlyMap<string, LatestRun>>(new Map());
   const [loadState, setLoadState] = useState<LoadState>({ kind: 'loading' });
   const [openingId, setOpeningId] = useState<string | null>(null);
 
@@ -57,6 +61,20 @@ export function Sidebar(): JSX.Element {
       cancelled = true;
     };
   }, [sessionsVersion]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchLatestRuns()
+      .then((runs) => {
+        if (!cancelled) setLatestRuns(new Map(runs.map((run) => [run.sessionId, run])));
+      })
+      .catch(() => {
+        // Without this the list still works; the dots just stay absent.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionsVersion, runsVersion]);
 
   async function handleOpen(id: string): Promise<void> {
     setOpeningId(id);
@@ -110,7 +128,10 @@ export function Sidebar(): JSX.Element {
                     aria-current={openedSessionId === session.id ? 'true' : undefined}
                     className="w-full rounded px-2 py-1.5 text-left hover:bg-slate-900 disabled:cursor-wait aria-[current=true]:bg-slate-900 aria-[current=true]:text-slate-200"
                   >
-                    <div className="truncate text-slate-300">{session.title}</div>
+                    <div className="flex items-center gap-1.5">
+                      <RunDot run={latestRuns.get(session.id)} />
+                      <span className="truncate text-slate-300">{session.title}</span>
+                    </div>
                     <div className="text-xs text-slate-500">
                       {openingId === session.id ? 'Opening…' : formatSessionDate(session.createdAt)}
                     </div>
@@ -122,5 +143,19 @@ export function Sidebar(): JSX.Element {
         </div>
       )}
     </aside>
+  );
+}
+
+/** Green: the last generated application built. Red: it did not (open the session to fix it). Nothing: never generated. */
+function RunDot({ run }: { readonly run: LatestRun | undefined }): JSX.Element | null {
+  if (run === undefined) return null;
+  const built = run.status === 'succeeded' && run.buildOk;
+  return (
+    <span
+      data-testid="run-dot"
+      data-built={built}
+      title={built ? 'Last generated application built successfully' : 'Last generated application failed to build - open to fix'}
+      className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${built ? 'bg-emerald-400' : 'bg-red-400'}`}
+    />
   );
 }

@@ -33,31 +33,27 @@ type Mode = 'mock' | 'live';
  *   WorkflowGraph's prohibitions prop (docs/ADR-001, Option C).
  */
 export function WorkflowDemo(): JSX.Element {
-  const [mode, setMode] = useState<Mode>('mock');
-  const [scenario, setScenario] = useState<Scenario>('small');
   const openedSession = useWorkspaceStore((state) => state.openedSession);
-  const clearOpenedSession = useWorkspaceStore((state) => state.clearOpenedSession);
-  // Captured into local state rather than read directly from the store: the
-  // store's own copy is cleared right below (so reopening the SAME session a
-  // second time still fires this effect), and LiveWorkflow's `key` is
-  // derived from this value — if that key were derived from the store's
-  // copy instead, clearing it out from under an already-open session would
-  // change the key mid-render, unmounting LiveWorkflow and remounting it
-  // with `initialSession=null`, silently dropping right back to the empty
-  // idle view. Found live: clicking a session correctly switched to this
-  // tab but rendered "Enter a prompt above..." instead of the session.
-  const [loadedSession, setLoadedSession] = useState<WorkflowSessionDetail | null>(null);
+  // The store keeps the opened session across tab switches (this panel
+  // unmounts whenever another tab is shown), so mounting with one already
+  // set means "come back to where you were": the live view, that session.
+  const [mode, setMode] = useState<Mode>(openedSession === null ? 'mock' : 'live');
+  const [scenario, setScenario] = useState<Scenario>('small');
+  // Captured into local state rather than read directly from the store:
+  // LiveWorkflow's `key` is derived from this value, and a fresh generation
+  // inside LiveWorkflow updates the store's copy (rememberSession) - if the
+  // key followed the store, that update would remount LiveWorkflow mid-flow.
+  const [loadedSession, setLoadedSession] = useState<WorkflowSessionDetail | null>(openedSession);
 
   // A session opened from the Sidebar always lands on the live view, even if
   // this tab was last left on a mock scenario — reopening a real past run to
   // find it silently replaced by an unrelated hand-built fixture would be a
   // worse surprise than switching modes underneath the user once, here.
   useEffect(() => {
-    if (openedSession === null) return;
+    if (openedSession === null || openedSession.id === loadedSession?.id) return;
     setLoadedSession(openedSession);
     setMode('live');
-    clearOpenedSession();
-  }, [openedSession, clearOpenedSession]);
+  }, [openedSession, loadedSession]);
 
   const mockSchema =
     scenario === 'small'
@@ -181,6 +177,7 @@ interface LiveWorkflowProps {
 
 function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
   const notifySessionSaved = useWorkspaceStore((state) => state.notifySessionSaved);
+  const rememberSession = useWorkspaceStore((state) => state.rememberSession);
   const [prompt, setPrompt] = useState('');
   const [state, setState] = useState<LiveState>(() =>
     initialSession === null
@@ -227,7 +224,20 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
       // The server persists a session as part of reaching 'succeeded'
       // (workflow-api.ts) — this just tells the Sidebar its cached list is
       // stale, never writes anything itself.
-      if (job.status === 'succeeded') notifySessionSaved();
+      if (job.status === 'succeeded') {
+        notifySessionSaved();
+        if (job.result !== undefined) {
+          rememberSession({
+            id: job.result.schema.sessionId,
+            title: job.result.schema.title,
+            prompt,
+            createdAt: job.createdAt,
+            schema: job.result.schema,
+            prohibitions: job.result.prohibitions,
+            permissions: job.result.permissions,
+          });
+        }
+      }
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === 'AbortError') return;
       setState({ kind: 'failed', message: cause instanceof Error ? cause.message : String(cause) });

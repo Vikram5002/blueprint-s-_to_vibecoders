@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import { DndContext, PointerSensor, useDraggable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { generatePageFile } from './page-builder-api-client';
+import { applicationJobDownloadUrl, restoreRunPage, saveRunPage } from './workflow-api-client';
+import { useWorkspaceStore } from './store';
 import {
   ANIMATION_NAMES,
   ANIMATIONS,
@@ -75,10 +77,14 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-let idCounter = 0;
-function nextElementId(): string {
-  idCounter += 1;
-  return `el-${idCounter}`;
+/** One past the highest `el-N` already on the canvas - so ids never collide with a layout loaded from a generated page, whose elements are numbered by the server. */
+function nextElementId(elements: readonly CanvasElement[]): string {
+  let highest = 0;
+  for (const element of elements) {
+    const match = /^el-(\d+)$/.exec(element.id);
+    if (match?.[1] !== undefined) highest = Math.max(highest, Number(match[1]));
+  }
+  return `el-${highest + 1}`;
 }
 
 interface PaletteItemProps {
@@ -327,12 +333,23 @@ function PlacedElement({ element, selected, onSelect }: PlacedElementProps): JSX
  * palette.
  */
 export function PageBuilderCanvas(): JSX.Element {
-  const [pageName, setPageName] = useState('Landing Page');
-  const [elements, setElements] = useState<readonly CanvasElement[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // The canvas lives in the workspace store, not here: this component
+  // unmounts on every tab switch, and a half-edited page must survive that.
+  const pageName = useWorkspaceStore((state) => state.pageBuilder.pageName);
+  const elements = useWorkspaceStore((state) => state.pageBuilder.elements);
+  const selectedId = useWorkspaceStore((state) => state.pageBuilder.selectedId);
+  const origin = useWorkspaceStore((state) => state.pageBuilder.origin);
+  const setPageName = useWorkspaceStore((state) => state.setPageName);
+  const setElements = useWorkspaceStore((state) => state.setElements);
+  const setSelectedId = useWorkspaceStore((state) => state.setSelectedId);
+  const setPageOrigin = useWorkspaceStore((state) => state.setPageOrigin);
+  const setActiveTab = useWorkspaceStore((state) => state.setActiveTab);
+  const notifyRunSaved = useWorkspaceStore((state) => state.notifyRunSaved);
   const [generated, setGenerated] = useState<GeneratedPageFile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedNote, setSavedNote] = useState<string | null>(null);
   /**
    * Bumped to re-run every entry animation. A CSS entry animation plays once
    * on mount and then never again, so without this you would see each
@@ -400,7 +417,7 @@ export function PageBuilderCanvas(): JSX.Element {
       const dropY = finalRect.top - canvasRect.top;
 
       const newElement: CanvasElement = {
-        id: nextElementId(),
+        id: nextElementId(elements),
         type,
         x: Math.round(clamp(dropX, 0, CANVAS_WIDTH - size.width)),
         y: Math.round(clamp(dropY, 0, CANVAS_HEIGHT - size.height)),
@@ -442,7 +459,7 @@ export function PageBuilderCanvas(): JSX.Element {
     if (selected === null) return;
     const copy: CanvasElement = {
       ...selected,
-      id: nextElementId(),
+      id: nextElementId(elements),
       x: Math.round(clamp(selected.x + 16, 0, CANVAS_WIDTH - selected.width)),
       y: Math.round(clamp(selected.y + 16, 0, CANVAS_HEIGHT - selected.height)),
     };
@@ -487,9 +504,101 @@ export function PageBuilderCanvas(): JSX.Element {
     }
   }
 
+  /** Writes this design back as the page's real file in the run it came from - the zip download then includes it. */
+  async function handleSaveToProject(): Promise<void> {
+    if (origin === null) return;
+    setSaving(true);
+    setError(null);
+    setSavedNote(null);
+    try {
+      await saveRunPage(origin.runId, { id: `${origin.runId}:${origin.path}`, pageName, elements });
+      setPageOrigin({ ...origin, edited: true });
+      setSavedNote(`Saved to ${origin.path} - the zip download now includes this design.`);
+      notifyRunSaved();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRestoreOriginal(): Promise<void> {
+    if (origin === null) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await restoreRunPage(origin.runId, origin.path);
+      setPageOrigin({ ...origin, edited: false });
+      setSavedNote(`Restored the model's original ${origin.path}. Your design stays on the canvas until you save it again.`);
+      notifyRunSaved();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="min-h-0 flex-1 overflow-y-auto p-6">
       <div className="mx-auto max-w-[1700px] space-y-4">
+        {origin !== null && (
+          <div
+            data-testid="page-origin-bar"
+            className="flex flex-wrap items-center gap-2 rounded-lg border border-sky-800 bg-sky-950/30 px-3 py-2 text-xs text-sky-200"
+          >
+            <span>
+              Editing <span className="font-semibold">{pageName}</span> from{' '}
+              <span className="font-semibold">{origin.sessionTitle}</span>
+              <span className="ml-1 font-mono text-[11px] text-sky-400">{origin.path}</span>
+              {origin.edited && <span className="ml-2 rounded border border-sky-700 px-1.5 py-0.5 text-[10px]">saved edit</span>}
+            </span>
+            <button
+              type="button"
+              data-testid="save-to-project"
+              onClick={() => void handleSaveToProject()}
+              disabled={saving || elements.length === 0}
+              className="ml-auto rounded border border-emerald-700 bg-emerald-950/40 px-2 py-1 text-[11px] font-medium text-emerald-300 hover:bg-emerald-900/40 disabled:opacity-50"
+            >
+              {saving ? 'Saving…' : 'Save to project'}
+            </button>
+            <a
+              href={applicationJobDownloadUrl(origin.runId)}
+              className="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-[11px] font-medium text-slate-100 hover:bg-slate-700"
+            >
+              Download project (.zip)
+            </a>
+            {origin.edited && (
+              <button
+                type="button"
+                onClick={() => void handleRestoreOriginal()}
+                disabled={saving}
+                className="rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+              >
+                Restore original
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setActiveTab('workflow')}
+              className="rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
+            >
+              Back to Workflow graph
+            </button>
+            <button
+              type="button"
+              onClick={() => setPageOrigin(null)}
+              title="Keep the canvas as a scratch page no longer tied to the run"
+              className="rounded border border-slate-800 px-2 py-1 text-[11px] text-slate-500 hover:bg-slate-800"
+            >
+              Detach
+            </button>
+          </div>
+        )}
+
+        {savedNote !== null && (
+          <div className="rounded-lg border border-emerald-800/60 bg-emerald-950/20 px-3 py-2 text-xs text-emerald-200">{savedNote}</div>
+        )}
+
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-xs text-slate-400">
             Page name
@@ -497,7 +606,9 @@ export function PageBuilderCanvas(): JSX.Element {
               type="text"
               value={pageName}
               onChange={(event) => setPageName(event.target.value)}
-              className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100"
+              disabled={origin !== null}
+              title={origin !== null ? "A run's page keeps its component name, so the saved file replaces the right one." : undefined}
+              className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 disabled:opacity-60"
             />
           </label>
           <button

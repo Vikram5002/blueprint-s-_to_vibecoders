@@ -17,7 +17,8 @@
  * JSON API api.ts otherwise wraps.
  */
 import type { WorkflowJob, WorkflowJobStatus } from './workflow-job-types';
-import type { ApplicationJob, ApplicationJobStatus } from './application-job-types';
+import type { ApplicationJob, ApplicationJobStatus, ApplicationRunSummary, LatestRun } from './application-job-types';
+import type { PageLayout } from './page-builder-types';
 import type { ProjectSchema } from './project-schema-types';
 import type { WorkflowSessionDetail, WorkflowSessionSummary } from './workflow-session-types';
 
@@ -173,6 +174,108 @@ export async function generateApplicationViaApi(
     }
 
     await delay(pollIntervalMs, options.signal);
+  }
+}
+
+/**
+ * Repairs a saved run: a NEW job that starts from that run's files and
+ * regenerates only what `npm run build` still rejects, with the person's own
+ * words about what to change passed through. Same poll loop as a fresh
+ * generation - the job is the same shape, it just costs far fewer calls.
+ */
+export async function repairApplicationViaApi(
+  jobId: string,
+  instruction: string,
+  options: GenerateApplicationViaApiOptions = {},
+): Promise<ApplicationJob> {
+  const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/repair`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ instruction }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `repair failed: ${response.status}`));
+  }
+  const submitted = (await response.json()) as SubmittedApplicationJob;
+
+  for (;;) {
+    if (options.signal?.aborted) {
+      throw new DOMException('application repair cancelled', 'AbortError');
+    }
+    const job = await fetchApplicationJob(submitted.id);
+    options.onStatus?.(job);
+    if (APPLICATION_TERMINAL_STATUSES.has(job.status)) {
+      return job;
+    }
+    await delay(pollIntervalMs, options.signal);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Saved runs (/api/workflow/sessions/:id/application-runs and
+// /application-jobs/:id/pages, src/server/generation-api.ts) - every finished
+// Generate Application job, filed under its session, with its frontend pages
+// exposed as Page Builder layouts.
+// ---------------------------------------------------------------------------
+
+export interface SessionRuns {
+  readonly runs: readonly ApplicationRunSummary[];
+  /** The newest run's full job, or null when the session was never generated. */
+  readonly latest: ApplicationJob | null;
+}
+
+export async function fetchSessionRuns(sessionId: string): Promise<SessionRuns> {
+  const response = await fetch(`/api/workflow/sessions/${encodeURIComponent(sessionId)}/application-runs`);
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `fetch session runs failed: ${response.status}`));
+  }
+  return (await response.json()) as SessionRuns;
+}
+
+export async function fetchLatestRuns(): Promise<readonly LatestRun[]> {
+  const response = await fetch('/api/workflow/application-runs/latest');
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `fetch latest runs failed: ${response.status}`));
+  }
+  return ((await response.json()) as { runs: readonly LatestRun[] }).runs;
+}
+
+export interface RunPage {
+  readonly path: string;
+  readonly pageName: string;
+  readonly layout: PageLayout;
+  /** True when a Page Builder save has replaced the model's file. */
+  readonly edited: boolean;
+}
+
+export async function fetchRunPages(jobId: string): Promise<readonly RunPage[]> {
+  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/pages`);
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `fetch run pages failed: ${response.status}`));
+  }
+  return ((await response.json()) as { pages: readonly RunPage[] }).pages;
+}
+
+export async function saveRunPage(jobId: string, layout: PageLayout): Promise<void> {
+  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/pages`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ layout }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `save page failed: ${response.status}`));
+  }
+}
+
+export async function restoreRunPage(jobId: string, path: string): Promise<void> {
+  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/pages/restore`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ path }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `restore page failed: ${response.status}`));
   }
 }
 

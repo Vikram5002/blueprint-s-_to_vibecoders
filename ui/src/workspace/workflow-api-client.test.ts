@@ -211,6 +211,8 @@ describe('fetchApplicationJob', () => {
     const job: ApplicationJob = {
       id: 'app-1',
       createdAt: 'now',
+      sessionId: 's',
+      kind: 'generate',
       status: 'running',
       phase: 'generating',
     };
@@ -242,18 +244,24 @@ describe('generateApplicationViaApi', () => {
     const running: ApplicationJob = {
       id: 'app-1',
       createdAt: 'now',
+      sessionId: 's',
+      kind: 'generate',
       status: 'running',
       phase: 'generating',
     };
     const installing: ApplicationJob = {
       id: 'app-1',
       createdAt: 'now',
+      sessionId: 's',
+      kind: 'generate',
       status: 'running',
       phase: 'installing',
     };
     const succeeded: ApplicationJob = {
       id: 'app-1',
       createdAt: 'now',
+      sessionId: 's',
+      kind: 'generate',
       status: 'succeeded',
       result: {
         files: [{ path: 'package.json', bytes: 10 }],
@@ -287,6 +295,8 @@ describe('generateApplicationViaApi', () => {
     const failed: ApplicationJob = {
       id: 'app-2',
       createdAt: 'now',
+      sessionId: 's',
+      kind: 'generate',
       status: 'failed',
       error: {
         phase: 'generate-application',
@@ -315,6 +325,8 @@ describe('generateApplicationViaApi', () => {
     const failed: ApplicationJob = {
       id: 'app-3',
       createdAt: 'now',
+      sessionId: 's',
+      kind: 'generate',
       status: 'failed',
       error: {
         phase: 'generate-application',
