@@ -375,15 +375,59 @@ const SNIPPET_LENGTH = 300;
  * its own JSON.parse, rather than regex-scraping the raw text for a fence
  * that a schema-constrained response is not expected to contain at all.
  */
+/** The characters JSON allows after a backslash inside a string. */
+const VALID_JSON_ESCAPES = new Set(['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']);
+
+/**
+ * Escapes every backslash inside a JSON string that does not start a valid
+ * JSON escape, so `"a\d+"` (invalid JSON) becomes `"a\\d+"` - parseable with the
+ * meaning the model plainly intended (a literal backslash). Only ever applied
+ * AFTER a plain `JSON.parse` has already failed, so text that parses is never
+ * touched. Found live: a Qwen2.5-Coder teacher wrote a regex with `\d`
+ * inside the "code" string, which failed the whole project on one character.
+ */
+export function repairInvalidJsonEscapes(text: string): string {
+  let out = '';
+  let inString = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i] ?? '';
+    if (!inString) {
+      if (ch === '"') inString = true;
+      out += ch;
+      continue;
+    }
+    if (ch === '\\') {
+      const next = text[i + 1] ?? '';
+      if (VALID_JSON_ESCAPES.has(next)) {
+        out += ch + next;
+        i += 1;
+      } else {
+        out += '\\\\';
+      }
+      continue;
+    }
+    if (ch === '"') inString = false;
+    out += ch;
+  }
+  return out;
+}
+
 function extractCode(text: string): Result<string, ComponentCodeFailure> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
-  } catch (cause) {
-    return err({
+  } catch {
+    parsed = undefined;
+  }
+  if (parsed === undefined) {
+    try {
+      parsed = JSON.parse(repairInvalidJsonEscapes(text));
+    } catch (cause) {
+      return err({
       reason: 'unparseable-json',
       message: `response was not valid JSON (${String(cause)}); first ${SNIPPET_LENGTH} chars: ${text.slice(0, SNIPPET_LENGTH)}`,
-    });
+      });
+    }
   }
 
   const code = typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>)['code'] : undefined;

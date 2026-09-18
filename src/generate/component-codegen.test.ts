@@ -3,6 +3,7 @@ import {
   createComponentCodeGenerator,
   extractExportedDeclarations,
   extractNamedExports,
+  repairInvalidJsonEscapes,
   selectRelevantConstraints,
   type ComponentGenerationContext,
 } from './component-codegen.js';
@@ -297,5 +298,24 @@ describe('extractExportedDeclarations', () => {
 
   it('never includes non-exported code', () => {
     expect(extractExportedDeclarations('function helper(a: number): number {\n  return a;\n}\n')).toEqual([]);
+  });
+});
+
+describe('repairInvalidJsonEscapes', () => {
+  // String.raw keeps every backslash literal, so each fixture is exactly the
+  // text a model would put on the wire.
+  it('escapes a stray backslash inside a string so the live teacher failure parses with its intended meaning', () => {
+    // The live case: a regex written with a single backslash inside the JSON "code" string.
+    const raw = String.raw`{"code": "const re = /\d+/;\nexport const x = re;"}`;
+    expect(() => JSON.parse(raw)).toThrow();
+    const parsed = JSON.parse(repairInvalidJsonEscapes(raw)) as { code: string };
+    expect(parsed.code).toBe(String.raw`const re = /\d+/;` + '\nexport const x = re;');
+  });
+
+  it('leaves every valid escape, and text outside strings, exactly as it was', () => {
+    // Built by JSON.stringify, so it can only contain valid escapes: quote,
+    // backslash, newline, tab, and a \u escape for a control character.
+    const valid = JSON.stringify({ code: 'a"b\\c\n\t/' });
+    expect(repairInvalidJsonEscapes(valid)).toBe(valid);
   });
 });
