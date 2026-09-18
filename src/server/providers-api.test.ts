@@ -146,3 +146,35 @@ describe('POST /api/providers', () => {
     expect(response.status).toBe(400);
   });
 });
+
+describe('code-generation override over /api/providers', () => {
+  const post = (app: ReturnType<typeof routes>['app'], body: unknown) =>
+    app.request('/', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+  it('reports no override (null) by default', async () => {
+    const { app } = routes('local');
+    expect(((await (await app.request('/')).json()) as { codeProvider: unknown }).codeProvider).toBeNull();
+  });
+
+  it('sets the override on its own, without touching the plan provider', async () => {
+    const { app, registry } = routes('local');
+    const response = await post(app, { codeProvider: 'gemini' });
+    expect(response.status).toBe(200);
+    expect(((await response.json()) as { codeProvider: string }).codeProvider).toBe('gemini');
+    expect(registry.current()).toBe('local');
+    expect(registry.currentCode()).toBe('gemini');
+  });
+
+  it("clears the override with 'same'", async () => {
+    const { app, registry } = routes('local');
+    await post(app, { codeProvider: 'gemini' });
+    await post(app, { codeProvider: 'same' });
+    expect(registry.codeSelection()).toBeNull();
+  });
+
+  it('rejects an unknown code provider and changes nothing', async () => {
+    const { app, registry } = routes('local');
+    expect((await post(app, { codeProvider: 'nope' })).status).toBe(400);
+    expect(registry.codeSelection()).toBeNull();
+  });
+});

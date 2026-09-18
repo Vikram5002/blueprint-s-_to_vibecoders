@@ -42,6 +42,8 @@ import { createWorkflowSessionsStore } from '../store/workflow-sessions-store.js
 import { createSettingsStore } from '../store/settings-store.js';
 import {
   createProviderRegistry,
+  CODE_PROVIDER_SAME,
+  CODE_PROVIDER_SETTING_KEY,
   createSwitchableProvider,
   LOCAL_BASE_URL_SETTING_KEY,
   PROVIDER_SETTING_KEY,
@@ -318,6 +320,8 @@ export async function startServer(context: AnalysisContext): Promise<RunningServ
     initialLocalBaseUrl: settings.get(LOCAL_BASE_URL_SETTING_KEY),
     onSelect: (provider) => settings.set(PROVIDER_SETTING_KEY, provider),
     onLocalBaseUrl: (baseUrl) => settings.set(LOCAL_BASE_URL_SETTING_KEY, baseUrl),
+    initialCode: settings.get(CODE_PROVIDER_SETTING_KEY),
+    onSelectCode: (provider) => settings.set(CODE_PROVIDER_SETTING_KEY, provider ?? CODE_PROVIDER_SAME),
   });
   const llm = await resolveLlm(context, registry);
   const sessions = createWorkflowSessionsStore(context.db);
@@ -325,7 +329,10 @@ export async function startServer(context: AnalysisContext): Promise<RunningServ
     llm === null
       ? { llm: null, sessions }
       : { llm: { generator: createProjectSchemaGenerator(llm), cache: llm.cache }, sessions };
-  const applicationDeps: ApplicationRouteDeps = { llm, generationRoot: generationRootFor(context) };
+  // Same shared cache, but a proxy that follows the code-generation choice
+  // rather than the plan one - see CODE_PROVIDER_SETTING_KEY.
+  const codeLlm = llm === null ? null : { provider: createSwitchableProvider(registry, llm.provider.model, 'code'), cache: llm.cache };
+  const applicationDeps: ApplicationRouteDeps = { llm: codeLlm, generationRoot: generationRootFor(context) };
 
   const app = createApp(context, workflowDeps, applicationDeps, { registry });
 

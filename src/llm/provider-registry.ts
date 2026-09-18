@@ -44,6 +44,20 @@ export const PROVIDER_SETTING_KEY = 'llm.provider';
  */
 export const LOCAL_BASE_URL_SETTING_KEY = 'llm.localBaseUrl';
 
+/**
+ * Which provider writes application CODE, when it should differ from the one
+ * that writes the plan. Stored as a provider name, or `CODE_PROVIDER_SAME`.
+ *
+ * Exists because the two jobs need different models: the fine-tuned local
+ * checkpoint was trained on ProjectSchema output only (zero code rows), and
+ * live runs showed it failing `npm run build` on plans Gemini built cleanly
+ * first time. Planning locally and generating code with a vendor model is
+ * the working combination - and flipping one dropdown between the two steps
+ * every time is exactly the kind of step people forget.
+ */
+export const CODE_PROVIDER_SETTING_KEY = 'llm.codeProvider';
+export const CODE_PROVIDER_SAME = 'same';
+
 /** Every provider a user may pick between, in the order the picker shows them. */
 export const SELECTABLE_PROVIDERS: readonly ProviderName[] = ['gemini', 'local', 'anthropic', 'bluesminds'];
 
@@ -115,6 +129,14 @@ export interface ProviderRegistry {
   status(): Promise<readonly ProviderStatus[]>;
   /** The concrete provider for the current selection, or null when it cannot be constructed (no key). */
   resolve(): Promise<CompletionProvider | null>;
+  /** The provider chosen for code generation, or null when it follows `current()`. */
+  codeSelection(): ProviderName | null;
+  /** Sets (or, with null, clears) the code-generation override. Returns false for an unrecognised provider. */
+  selectCode(provider: ProviderName | null): boolean;
+  /** The concrete provider code generation should use right now. */
+  resolveCode(): Promise<CompletionProvider | null>;
+  /** The provider name code generation resolves to right now - the override, or the plan provider. */
+  currentCode(): ProviderName;
   /** Where the local inference server is currently expected to be. */
   localBaseUrl(): string;
   /** Points `local` at a different origin. Returns false for anything that is not a usable http(s) URL. */
@@ -127,6 +149,10 @@ export interface ProviderRegistryOptions {
   readonly initial?: string | null;
   /** Restores a previously persisted local origin. Falls back to the env var, then loopback. */
   readonly initialLocalBaseUrl?: string | null;
+  /** Restores a persisted code-generation override - a provider name, or `CODE_PROVIDER_SAME`/null for none. */
+  readonly initialCode?: string | null;
+  /** Called whenever the code-generation override changes; null means it was cleared. */
+  readonly onSelectCode?: (provider: ProviderName | null) => void;
   /** Called whenever the selection actually changes, so the caller can persist it. */
   readonly onSelect?: (provider: ProviderName) => void;
   /** Called whenever the local origin actually changes, so the caller can persist it. */
@@ -164,6 +190,8 @@ export function createProviderRegistry(options: ProviderRegistryOptions = {}): P
     ? options.initial
     : chooseProvider(env).provider;
 
+  let codeSelected: ProviderName | null = isProviderName(options.initialCode) ? options.initialCode : null;
+
   let localBaseUrl = normaliseBaseUrl(options.initialLocalBaseUrl ?? '') ?? readLocalBaseUrl(env);
 
   /** Constructed once each and reused: `createProvider` loads a vendor module, and a picker that rebuilt providers per keystroke would pay that repeatedly. */
@@ -199,6 +227,21 @@ export function createProviderRegistry(options: ProviderRegistryOptions = {}): P
       }
       return true;
     },
+
+    codeSelection: () => codeSelected,
+
+    selectCode: (provider) => {
+      if (provider !== null && !SELECTABLE_PROVIDERS.includes(provider)) return false;
+      if (provider !== codeSelected) {
+        codeSelected = provider;
+        options.onSelectCode?.(provider);
+      }
+      return true;
+    },
+
+    currentCode: () => codeSelected ?? selected,
+
+    resolveCode: () => providerFor(codeSelected ?? selected),
 
     localBaseUrl: () => localBaseUrl,
 
@@ -258,24 +301,29 @@ export function createProviderRegistry(options: ProviderRegistryOptions = {}): P
  * the whole call - switching provider mid-request cannot retarget a request
  * that is already in flight.
  */
-export function createSwitchableProvider(registry: ProviderRegistry, fallbackModel: string): CompletionProvider {
+export function createSwitchableProvider(
+  registry: ProviderRegistry,
+  fallbackModel: string,
+  role: 'plan' | 'code' = 'plan',
+): CompletionProvider {
   let lastKnown: CompletionProvider | null = null;
+  const currentName = (): ProviderName => (role === 'code' ? registry.currentCode() : registry.current());
 
   return {
     get name(): string {
-      return lastKnown?.name ?? `${registry.current()}:${fallbackModel}`;
+      return lastKnown?.name ?? `${currentName()}:${fallbackModel}`;
     },
     get model(): string {
       return lastKnown?.model ?? fallbackModel;
     },
     complete: async (request: CompletionRequest): Promise<CompletionResult> => {
-      const target = await registry.resolve();
+      const target = role === 'code' ? await registry.resolveCode() : await registry.resolve();
       if (target === null) {
         return {
           ok: false,
           error: {
             kind: 'unavailable',
-            message: `no credentials configured for the selected provider '${registry.current()}'`,
+            message: `no credentials configured for the selected provider '${currentName()}'`,
             // Retrying cannot help: this is a configuration problem, and the
             // same gap key rotation deliberately refuses to paper over.
             retryable: false,

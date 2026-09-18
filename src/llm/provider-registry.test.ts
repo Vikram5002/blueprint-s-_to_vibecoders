@@ -242,3 +242,46 @@ describe('createSwitchableProvider', () => {
     expect(result.error.retryable).toBe(false);
   });
 });
+
+describe('code-generation provider override', () => {
+  it('follows the plan provider until an override is chosen', () => {
+    const registry = createProviderRegistry({ env: GEMINI_ENV, initial: 'local' });
+    expect(registry.codeSelection()).toBeNull();
+    expect(registry.currentCode()).toBe('local');
+  });
+
+  it('uses the override for code while the plan provider stays put, and persists both set and clear', () => {
+    const saved: (string | null)[] = [];
+    const registry = createProviderRegistry({ env: GEMINI_ENV, initial: 'local', onSelectCode: (p) => saved.push(p) });
+
+    expect(registry.selectCode('gemini')).toBe(true);
+    expect(registry.current()).toBe('local');
+    expect(registry.currentCode()).toBe('gemini');
+
+    registry.selectCode('gemini'); // no-op - never persisted twice
+    registry.selectCode(null);
+    expect(registry.currentCode()).toBe('local');
+    expect(saved).toEqual(['gemini', null]);
+  });
+
+  it('restores a persisted override, and treats "same" or an unknown value as no override', () => {
+    expect(createProviderRegistry({ env: GEMINI_ENV, initial: 'local', initialCode: 'gemini' }).currentCode()).toBe('gemini');
+    expect(createProviderRegistry({ env: GEMINI_ENV, initial: 'local', initialCode: 'same' }).codeSelection()).toBeNull();
+    expect(createProviderRegistry({ env: GEMINI_ENV, initial: 'local', initialCode: 'nope' }).codeSelection()).toBeNull();
+  });
+
+  it("a 'code' switchable provider dispatches to the code choice, a 'plan' one to the plan choice", async () => {
+    const registry = createProviderRegistry({ env: GEMINI_ENV, initial: 'local', initialCode: 'gemini' });
+    const answer = (name: string) => async () =>
+      stubProvider(name, () => ({ ok: true, value: { text: name, model: name, usage: { promptTokens: 0, completionTokens: 0, cachedPromptTokens: 0 } } }));
+    vi.spyOn(registry, 'resolve').mockImplementation(answer('plan-target'));
+    vi.spyOn(registry, 'resolveCode').mockImplementation(answer('code-target'));
+
+    const plan = await createSwitchableProvider(registry, 'm').complete({ system: 's', user: 'u', maxOutputTokens: 8 });
+    const code = await createSwitchableProvider(registry, 'm', 'code').complete({ system: 's', user: 'u', maxOutputTokens: 8 });
+
+    expect(plan.ok && plan.value.text).toBe('plan-target');
+    expect(code.ok && code.value.text).toBe('code-target');
+    vi.restoreAllMocks();
+  });
+});

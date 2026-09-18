@@ -7,6 +7,7 @@ type State =
   | {
       readonly kind: 'ready';
       readonly current: ProviderName;
+      readonly codeProvider: ProviderName | null;
       readonly localBaseUrl: string;
       readonly providers: readonly ProviderStatus[];
     }
@@ -46,6 +47,7 @@ export function ProviderPicker(): JSX.Element {
         setState({
           kind: 'ready',
           current: response.current,
+          codeProvider: response.codeProvider ?? null,
           localBaseUrl: response.localBaseUrl,
           providers: response.providers,
         });
@@ -59,7 +61,11 @@ export function ProviderPicker(): JSX.Element {
     };
   }, []);
 
-  async function apply(update: { readonly provider?: ProviderName; readonly localBaseUrl?: string }): Promise<void> {
+  async function apply(update: {
+    readonly provider?: ProviderName;
+    readonly localBaseUrl?: string;
+    readonly codeProvider?: ProviderName | 'same';
+  }): Promise<void> {
     setBusy(true);
     setUrlError(null);
     try {
@@ -67,6 +73,7 @@ export function ProviderPicker(): JSX.Element {
       setState({
         kind: 'ready',
         current: response.current,
+        codeProvider: response.codeProvider ?? null,
         localBaseUrl: response.localBaseUrl,
         providers: response.providers,
       });
@@ -112,6 +119,24 @@ export function ProviderPicker(): JSX.Element {
         ))}
       </select>
 
+      <span className="whitespace-nowrap text-[11px] uppercase tracking-wide text-slate-500">Code</span>
+      <select
+        data-testid="code-provider-select"
+        value={state.codeProvider ?? 'same'}
+        disabled={busy}
+        onChange={(event) => void apply({ codeProvider: event.target.value as ProviderName | 'same' })}
+        title="Which model writes the application's code on Generate Application. The plan is still made by Model."
+        className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200 disabled:opacity-60"
+      >
+        <option value="same">Same as Model</option>
+        {state.providers.map((entry) => (
+          <option key={entry.id} value={entry.id}>
+            {entry.label}
+            {entry.available ? '' : ' — unavailable'}
+          </option>
+        ))}
+      </select>
+
       {showUrlField ? (
         <form
           className="flex items-center gap-1"
@@ -128,7 +153,7 @@ export function ProviderPicker(): JSX.Element {
             onChange={(event) => setUrlDraft(event.target.value)}
             placeholder="https://your-tunnel.trycloudflare.com"
             title="Where the local inference server is reachable. Paste a new tunnel URL here each Colab session."
-            className="w-64 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200 disabled:opacity-60"
+            className="w-48 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200 disabled:opacity-60"
           />
           <button
             type="submit"
@@ -150,7 +175,7 @@ export function ProviderPicker(): JSX.Element {
           <span
             data-testid="provider-detail"
             title={`${active.model} — ${active.detail}`}
-            className={`max-w-[240px] truncate text-[11px] ${active.available ? 'text-slate-500' : 'text-amber-300'}`}
+            className={`max-w-[160px] truncate text-[11px] ${active.available ? 'text-slate-500' : 'text-amber-300'}`}
           >
             {active.available ? active.model : active.detail}
           </span>

@@ -11,7 +11,7 @@
  * could never tell you which ones you are missing.
  */
 import { Hono } from 'hono';
-import { SELECTABLE_PROVIDERS, type ProviderRegistry } from '../llm/provider-registry.js';
+import { CODE_PROVIDER_SAME, SELECTABLE_PROVIDERS, type ProviderRegistry } from '../llm/provider-registry.js';
 import type { ProviderName } from '../llm/select-provider.js';
 
 export interface ProviderRouteDeps {
@@ -25,16 +25,28 @@ function parseProviderRequest(body: unknown): ProviderName | null {
   return SELECTABLE_PROVIDERS.includes(value as ProviderName) ? (value as ProviderName) : null;
 }
 
+/** `undefined`: the field was absent. `null`: clear the override (`'same'`). `false`: present but invalid. */
+function parseCodeProviderRequest(body: unknown): ProviderName | null | undefined | false {
+  if (typeof body !== 'object' || body === null || !('codeProvider' in body)) return undefined;
+  const value = (body as { codeProvider?: unknown }).codeProvider;
+  if (value === CODE_PROVIDER_SAME || value === null) return null;
+  if (typeof value === 'string' && SELECTABLE_PROVIDERS.includes(value as ProviderName)) return value as ProviderName;
+  return false;
+}
+
+async function snapshot(registry: ProviderRegistry) {
+  return {
+    current: registry.current(),
+    codeProvider: registry.codeSelection(),
+    localBaseUrl: registry.localBaseUrl(),
+    providers: await registry.status(),
+  };
+}
+
 export function createProviderRoutes(deps: ProviderRouteDeps): Hono {
   const app = new Hono();
 
-  app.get('/', async (c) =>
-    c.json({
-      current: deps.registry.current(),
-      localBaseUrl: deps.registry.localBaseUrl(),
-      providers: await deps.registry.status(),
-    }),
-  );
+  app.get('/', async (c) => c.json(await snapshot(deps.registry)));
 
   app.post('/', async (c) => {
     const body: unknown = await c.req.json().catch(() => null);
@@ -51,15 +63,17 @@ export function createProviderRoutes(deps: ProviderRouteDeps): Hono {
       }
     }
 
+    const codeProvider = parseCodeProviderRequest(body);
+    if (codeProvider === false) {
+      return c.json({ error: `codeProvider must be '${CODE_PROVIDER_SAME}' or one of ${SELECTABLE_PROVIDERS.join(', ')}` }, 400);
+    }
+    if (codeProvider !== undefined) deps.registry.selectCode(codeProvider);
+
     const provider = parseProviderRequest(body);
     if (provider === null) {
-      // A URL-only update is a complete, valid request on its own.
-      if (requestedUrl !== undefined) {
-        return c.json({
-          current: deps.registry.current(),
-          localBaseUrl: deps.registry.localBaseUrl(),
-          providers: await deps.registry.status(),
-        });
+      // A URL-only or code-only update is a complete, valid request on its own.
+      if (requestedUrl !== undefined || codeProvider !== undefined) {
+        return c.json(await snapshot(deps.registry));
       }
       return c.json(
         { error: `expected { provider: one of ${SELECTABLE_PROVIDERS.join(', ')} }` },
@@ -79,6 +93,7 @@ export function createProviderRoutes(deps: ProviderRouteDeps): Hono {
     const chosen = providers.find((entry) => entry.id === provider);
     return c.json({
       current: deps.registry.current(),
+      codeProvider: deps.registry.codeSelection(),
       localBaseUrl: deps.registry.localBaseUrl(),
       providers,
       warning: chosen?.available === false ? chosen.detail : undefined,

@@ -17,6 +17,8 @@ export interface ProviderStatus {
 
 export interface ProvidersResponse {
   readonly current: ProviderName;
+  /** Who writes application code, when that differs from `current` (who writes the plan). null = same as `current`. */
+  readonly codeProvider: ProviderName | null;
   /** Where the local inference server is expected - loopback, a LAN machine, or a cloud-GPU tunnel. */
   readonly localBaseUrl: string;
   readonly providers: readonly ProviderStatus[];
