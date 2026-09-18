@@ -92,6 +92,21 @@ if (localUrl === undefined) {
 // in every request body by the local adapter.
 const provider = createLocalProvider({ ...(localUrl ? { baseUrl: localUrl.replace(/\/+$/, '') } : {}), ...(modelName ? { model: modelName } : {}) });
 
+/**
+ * A provider-error from the teacher means the Colab server or its tunnel is
+ * gone (a session ended, a URL changed), not that this plan is bad. Recording
+ * it as a failed plan would make the resume logic skip it forever - found
+ * live: 12 plans were marked failed in the minute after a session died. So
+ * the run stops instead, and the plan is retried on the next run.
+ */
+function stopIfTeacherUnreachable(error, sessionId) {
+  if (error?.failure?.reason !== 'provider-error') return;
+  console.error(`
+teacher unreachable while generating ${sessionId}: ${error.failure.message ?? ''}`);
+  console.error('Stopping without recording this plan. Restart the Colab server, then rerun with the new --local URL; the run resumes here.');
+  process.exit(3);
+}
+
 // ---- output files ----------------------------------------------------------
 
 mkdirSync(dirname(outPath), { recursive: true });
@@ -243,6 +258,7 @@ for (const { sourceFile, pair } of plans) {
 
   const generated = await generateAndVerifyProject(schema, { provider: teacher, cache: nullCache, skipCache: true, root });
   if (!generated.ok) {
+    stopIfTeacherUnreachable(generated.error, sessionId);
     summary.projects.generationFailed += 1;
     writeLine(projectsPath, { sessionId, sourceFile, startedAt, status: 'generation-failed', error: generated.error, teacher: provider.name });
     console.log(`   generation failed: ${JSON.stringify(generated.error).slice(0, 200)}`);
@@ -252,6 +268,7 @@ for (const { sourceFile, pair } of plans) {
 
   const built = await installBuildAndRepair({ schema, llm: { provider: teacher, cache: nullCache }, root, files: generated.value.files });
   if (!built.ok) {
+    stopIfTeacherUnreachable(built.error, sessionId);
     summary.projects.generationFailed += 1;
     writeLine(projectsPath, { sessionId, sourceFile, startedAt, status: 'repair-failed', error: built.error, teacher: provider.name });
     console.log(`   build repair failed: ${JSON.stringify(built.error).slice(0, 200)}`);
