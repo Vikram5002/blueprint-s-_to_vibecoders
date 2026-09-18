@@ -312,6 +312,13 @@ describe('repairInvalidJsonEscapes', () => {
     expect(parsed.code).toBe(String.raw`const re = /\d+/;` + '\nexport const x = re;');
   });
 
+  it("reads a JavaScript-style \\' as a plain quote - the live split(\\'.\\') case", () => {
+    const raw = String.raw`{"code": "const t = name.split(\'.\')[0];"}`;
+    expect(() => JSON.parse(raw)).toThrow();
+    const parsed = JSON.parse(repairInvalidJsonEscapes(raw)) as { code: string };
+    expect(parsed.code).toBe("const t = name.split('.')[0];");
+  });
+
   it('leaves every valid escape, and text outside strings, exactly as it was', () => {
     // Built by JSON.stringify, so it can only contain valid escapes: quote,
     // backslash, newline, tab, and a \u escape for a control character.

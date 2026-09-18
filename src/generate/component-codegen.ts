@@ -401,6 +401,12 @@ export function repairInvalidJsonEscapes(text: string): string {
       if (VALID_JSON_ESCAPES.has(next)) {
         out += ch + next;
         i += 1;
+      } else if (next === "'") {
+        // JavaScript-style quote escaping carried into JSON: `\'` meant a
+        // plain quote (found live: split(\'.\') for split('.')). Keeping the
+        // backslash would put an invalid token into the source file.
+        out += "'";
+        i += 1;
       } else {
         out += '\\\\';
       }
