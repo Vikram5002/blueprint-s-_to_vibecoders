@@ -73,6 +73,19 @@ describe('extractLayoutFromComponent', () => {
     expect(layout.elements.length).toBeLessThan(40);
   });
 
+  it('is not fooled by a `>` inside an attribute arrow function - the live cart-view.tsx case', () => {
+    const source = [
+      '<button ',
+      "  onClick={() => setCheckoutStatus('idle')} ",
+      "  style={{ marginTop: '16px', padding: '8px 16px' }}",
+      '>',
+      '  Continue Shopping',
+      '</button>',
+    ].join('\n');
+    const layout = extractLayoutFromComponent(source, 'Cart', 'x');
+    expect(layout.elements.map((e) => [e.type, e.label])).toEqual([['button', 'Continue Shopping']]);
+  });
+
   it('returns an empty layout for a page with nothing the canvas can represent', () => {
     expect(extractLayoutFromComponent('export function X() { return null; }', 'X', 'x').elements).toEqual([]);
   });

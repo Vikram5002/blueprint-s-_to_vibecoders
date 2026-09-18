@@ -62,9 +62,43 @@ interface Found {
 const TAG_PATTERN =
   /<(h[1-6]|p|button|a|label|img|input|textarea|select|hr)\b([^>]*?)(?:\/>|>([\s\S]*?)<\/\1>)/g;
 
+/**
+ * Blanks every `{...}` attribute expression (balanced, so `onClick={() =>
+ * f('x')}` and `style={{ a: 1 }}` both go) before tag matching: a `>` inside
+ * an arrow function otherwise ends the opening tag early and its remainder
+ * leaks into the element's text. Text-position `{expr}` placeholders are
+ * handled separately by `visibleText`, so only expressions preceded by `=`
+ * are blanked here.
+ */
+function blankAttributeExpressions(source: string): string {
+  let out = '';
+  let i = 0;
+  while (i < source.length) {
+    if (source[i] === '=' && source[i + 1] === '{') {
+      let depth = 0;
+      let j = i + 1;
+      for (; j < source.length; j += 1) {
+        if (source[j] === '{') depth += 1;
+        else if (source[j] === '}') {
+          depth -= 1;
+          if (depth === 0) break;
+        }
+      }
+      // A readable expression (`alt={product.name}`) keeps its placeholder so
+      // `attribute()` still sees it; a handler or style object becomes "".
+      out += `="${placeholderFor(source.slice(i + 2, j)).replace(/["']/g, '')}"`;
+      i = j + 1;
+      continue;
+    }
+    out += source[i];
+    i += 1;
+  }
+  return out;
+}
+
 export function extractLayoutFromComponent(source: string, pageName: string, id: string): PageLayout {
   const found: Found[] = [];
-  for (const match of source.matchAll(TAG_PATTERN)) {
+  for (const match of blankAttributeExpressions(source).matchAll(TAG_PATTERN)) {
     const [, tag, attributes = '', inner = ''] = match;
     if (tag === undefined) continue;
     const element = classify(tag, attributes, inner);
