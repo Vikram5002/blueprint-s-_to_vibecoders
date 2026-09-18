@@ -37,20 +37,18 @@
  *   file back.
  */
 import { randomUUID } from 'node:crypto';
-import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Hono } from 'hono';
 import {
-  filesFailingBuild,
   generateAndVerifyProject,
-  regenerateForBuildFailure,
   verifyGeneratedProject,
   writeProjectFiles,
   type GenerateAndVerifyFailure,
   type GenerationPhase,
   type RegenerationAttempt,
 } from '../generate/verify-and-regenerate.js';
+import { installBuildAndRepair, summarise, type BuildOutcome, type BuildPhase, type FileSummary } from '../generate/build-and-repair.js';
 import { detectServiceLocatorEvasion } from '../generate/detect-service-locator-evasion.js';
 import { findComponentByTargetPath } from '../generate/generate-project.js';
 import { extractLayoutFromComponent } from '../generate/extract-layout.js';
@@ -61,24 +59,14 @@ import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 import type { ApplicationRunsStore, ApplicationRunKind } from '../store/application-runs-store.js';
 import type { CompletionProvider } from '../llm/provider.js';
 import type { LabelCache } from '../llm/cache.js';
-import type { GeneratedFile } from '../generate/assemble.js';
 import type { ValidatedProjectSchema } from '../types/project-schema.js';
 import type { Violation } from '../types/violations.js';
 import type { SuspectedServiceLocatorEvasion } from '../generate/detect-service-locator-evasion.js';
 
 export type ApplicationJobStatus = 'pending' | 'running' | 'succeeded' | 'failed';
 
-export interface FileSummary {
-  readonly path: string;
-  readonly bytes: number;
-}
-
-export interface BuildOutcome {
-  readonly installOk: boolean;
-  readonly buildOk: boolean;
-  /** Last ~4000 chars of combined stdout+stderr for whichever step failed first. Never populated on a clean pass. */
-  readonly failureOutput?: string;
-}
+/** Defined next to the code that produces them (src/generate/build-and-repair.ts); re-exported so this module's API surface is unchanged. */
+export type { BuildOutcome, FileSummary };
 
 export interface ApplicationJobResult {
   readonly files: readonly FileSummary[];
@@ -115,7 +103,7 @@ export interface ApplicationJob {
   /** For a repair: the job whose files it started from. */
   readonly parentId?: string;
   readonly status: ApplicationJobStatus;
-  readonly phase?: GenerationPhase | 'installing' | 'building' | 'build-regenerating' | 'build-reverifying';
+  readonly phase?: GenerationPhase | BuildPhase;
   readonly result?: ApplicationJobResult;
   readonly error?: ApplicationJobError;
 }
@@ -139,9 +127,6 @@ export type GenerationRunsStore = ApplicationRunsStore<ApplicationRunPayload, Pa
 export const MAX_CONCURRENT_APPLICATION_JOBS = 4;
 
 const RETRY_AFTER_SECONDS = 60;
-
-/** Build-failure repair passes per job - each regenerates every component file tsc still names, then rebuilds. */
-const MAX_BUILD_FIX_ROUNDS = 2;
 
 export function createApplicationJobStore(): ApplicationJobStore {
   const jobs = new Map<string, ApplicationJob>();
@@ -444,112 +429,9 @@ async function readGeneratedFile(root: string, relativePath: string): Promise<st
   return readFile(join(root, ...relativePath.split('/')), 'utf8');
 }
 
-/** Trimmed to keep a failed job's payload bounded - a full npm log can run to tens of KB, and only the tail is ever the actionable part. */
-const MAX_FAILURE_OUTPUT_CHARS = 4_000;
-
-function runCommand(command: string, args: readonly string[], cwd: string): Promise<{ readonly ok: boolean; readonly output: string }> {
-  return new Promise((resolve) => {
-    let output = '';
-    const child = spawn(command, args, { cwd, shell: true });
-    child.stdout.on('data', (chunk: Buffer) => (output += chunk.toString()));
-    child.stderr.on('data', (chunk: Buffer) => (output += chunk.toString()));
-    child.on('close', (code) => resolve({ ok: code === 0, output: output.slice(-MAX_FAILURE_OUTPUT_CHARS) }));
-    child.on('error', (cause) => resolve({ ok: false, output: String(cause) }));
-  });
-}
-
 function setPhase(store: ApplicationJobStore, jobId: string, phase: NonNullable<ApplicationJob['phase']>): void {
   const latest = store.get(jobId);
   if (latest !== undefined) store.set({ ...latest, phase });
-}
-
-interface BuildStepResult {
-  readonly files: readonly GeneratedFile[];
-  readonly regenerationLog: readonly RegenerationAttempt[];
-  readonly build: BuildOutcome;
-}
-
-/**
- * npm install, npm run build, then up to MAX_BUILD_FIX_ROUNDS repair passes:
- * fixing a file's syntax errors often only then exposes its type errors,
- * and correcting a dependency can surface a mismatch in its consumer, so
- * one pass is routinely not enough. Shared by a fresh generation and a
- * repair of a saved run - the only difference between the two is where the
- * files came from.
- */
-async function installBuildAndRepair(
-  store: ApplicationJobStore,
-  jobId: string,
-  schema: ValidatedProjectSchema,
-  llm: Llm,
-  root: string,
-  initialFiles: readonly GeneratedFile[],
-  instruction: string | undefined,
-): Promise<{ readonly ok: true; readonly value: BuildStepResult } | { readonly ok: false; readonly error: ApplicationJobError }> {
-  setPhase(store, jobId, 'installing');
-  const install = await runCommand('npm', ['install', '--no-audit', '--no-fund'], root);
-
-  let build = { ok: false, output: '' };
-  if (install.ok) {
-    setPhase(store, jobId, 'building');
-    build = await runCommand('npm', ['run', 'build'], root);
-  }
-
-  let files = initialFiles;
-  let regenerationLog: RegenerationAttempt[] = [];
-
-  for (let round = 0; install.ok && !build.ok && round < MAX_BUILD_FIX_ROUNDS; round += 1) {
-    setPhase(store, jobId, 'build-regenerating');
-    const buildRetry = await regenerateForBuildFailure(
-      schema,
-      {
-        provider: llm.provider,
-        cache: llm.cache,
-        skipCache: true,
-        root,
-        ...(instruction === undefined ? {} : { repairInstruction: instruction }),
-      },
-      files,
-      build.output,
-    );
-    if (!buildRetry.ok) {
-      return { ok: false, error: { phase: 'generate-application', ...buildRetry.error } };
-    }
-    // Nothing attributable to a component (a config-level error, or only the
-    // templated entry point named) - never guess; report the build failure.
-    if (buildRetry.value.attempted.length === 0) break;
-
-    files = buildRetry.value.files;
-    setPhase(store, jobId, 'build-reverifying');
-    const rebuild = await runCommand('npm', ['run', 'build'], root);
-    const stillFailing = filesFailingBuild(rebuild.output);
-    regenerationLog = [
-      ...regenerationLog,
-      ...buildRetry.value.attempted.map((attempt) => ({
-        ...attempt,
-        origin: 'build-failure' as const,
-        outcome: rebuild.ok || !stillFailing.has(attempt.targetPath) ? ('fixed' as const) : ('still-violating' as const),
-      })),
-    ];
-    build = rebuild;
-  }
-
-  return {
-    ok: true,
-    value: {
-      files,
-      regenerationLog,
-      build: {
-        installOk: install.ok,
-        buildOk: install.ok && build.ok,
-        ...(install.ok && build.ok ? {} : { failureOutput: install.ok ? build.output : install.output }),
-      },
-    },
-  };
-}
-
-function summarise(files: readonly GeneratedFile[]): FileSummary[] {
-  return files.map((file) => ({ path: file.path, bytes: Buffer.byteLength(file.contents, 'utf8') }));
 }
 
 function finish(store: ApplicationJobStore, jobId: string, result: ApplicationJobResult): void {
@@ -594,9 +476,15 @@ async function runApplicationJob(
     return;
   }
 
-  const built = await installBuildAndRepair(store, jobId, schema, llm, root, generated.value.files, undefined);
+  const built = await installBuildAndRepair({
+    schema,
+    llm,
+    root,
+    files: generated.value.files,
+    onPhase: (phase) => setPhase(store, jobId, phase),
+  });
   if (!built.ok) {
-    fail(store, jobId, built.error);
+    fail(store, jobId, { phase: 'generate-application', ...built.error });
     return;
   }
 
@@ -632,15 +520,22 @@ async function runRepairJob(
   if (current === undefined) return;
   store.set({ ...current, status: 'running', phase: 'generating' });
 
-  const files: GeneratedFile[] = await Promise.all(
+  const files = await Promise.all(
     source.parentFiles.map(async (file) => ({ path: file.path, contents: await readGeneratedFile(source.parentRoot, file.path) })),
   );
   await writeProjectFiles(source.root, files, true);
 
-  const built = await installBuildAndRepair(store, jobId, schema, llm, source.root, files, source.instruction);
+  const built = await installBuildAndRepair({
+    schema,
+    llm,
+    root: source.root,
+    files,
+    ...(source.instruction === undefined ? {} : { instruction: source.instruction }),
+    onPhase: (phase) => setPhase(store, jobId, phase),
+  });
   await llm.cache.flush();
   if (!built.ok) {
-    fail(store, jobId, built.error);
+    fail(store, jobId, { phase: 'generate-application', ...built.error });
     return;
   }
 
