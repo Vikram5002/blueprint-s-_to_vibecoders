@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-08-24T15:15:10.289723",
+  "label": "configC-epochs5",
+  "rows": 91,
+  "r": 16,
+  "lora_alpha": 16,
+  "learning_rate": 0.0002,
+  "epochs": 5.0,
+  "elapsed_seconds": 404.0297293000003,
+  "final_loss": 0.7411380270253057,
+  "peak_vram_gb": 7.779580593109131,
+  "output_dir": "D:\\70572300022\\training\\runs\\run_20260824_150823"
+}

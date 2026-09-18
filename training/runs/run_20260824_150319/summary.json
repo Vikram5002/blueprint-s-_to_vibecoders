@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-08-24T15:07:26.807713",
+  "label": "configB-lr1e-4",
+  "rows": 91,
+  "r": 16,
+  "lora_alpha": 16,
+  "learning_rate": 0.0001,
+  "epochs": 3.0,
+  "elapsed_seconds": 244.04737609999938,
+  "final_loss": 1.0360849180083345,
+  "peak_vram_gb": 7.779580593109131,
+  "output_dir": "D:\\70572300022\\training\\runs\\run_20260824_150319"
+}
