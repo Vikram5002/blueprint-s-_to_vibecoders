@@ -313,7 +313,12 @@ const EXPORT_CONTRACT: Readonly<Record<Exclude<DomainName, 'frontend'>, string>>
   security:
     'Export the Express middleware function as a named export literally called `middleware`, fully typed - ' +
     'e.g. `import type { Request, Response, NextFunction } from "express"; ' +
-    'export function middleware(req: Request, res: Response, next: NextFunction): void { ... }`. No default export.',
+    'export function middleware(req: Request, res: Response, next: NextFunction): void { ... }`. No default export. ' +
+    'IMPORTANT: this middleware is mounted globally with app.use(middleware), so it runs on EVERY request to ' +
+    'the server - every route, every method, including plain GET requests that carry no body. Unless the ' +
+    'purpose says it protects every request (e.g. authentication), first check req.method and req.path and ' +
+    'call next() immediately for any request the purpose does not cover; only validate or reject the ' +
+    'requests it is actually about.',
 };
 
 /**

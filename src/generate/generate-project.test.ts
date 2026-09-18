@@ -118,6 +118,12 @@ describe('generateMilestone1Project', () => {
 
     // And it is shown the one constraint that governs its own directory.
     expect(provider.calls[2]?.user).toContain(MILESTONE_1_CONSTRAINT_DSL);
+
+    // Regression: a generated order guard rejected every GET, because the
+    // entry point mounts security middleware globally and its prompt never
+    // said so. It must be told, and told to pass unrelated requests through.
+    expect(provider.calls[2]?.user).toContain('runs on EVERY request');
+    expect(provider.calls[2]?.user).toContain('call next() immediately');
   });
 
   it('surfaces which component and domain failed, without silently continuing', async () => {
