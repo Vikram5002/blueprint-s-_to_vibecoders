@@ -15,7 +15,7 @@ import { posix } from 'node:path';
 
 export type BlueprintDatabase = Database.Database;
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export function databasePathFor(root: string): string {
   return posix.join(root.replace(/\\/g, '/'), '.vibe', 'blueprint.db');
@@ -144,6 +144,40 @@ function migrate(db: BlueprintDatabase): void {
       key         TEXT PRIMARY KEY,
       value       TEXT NOT NULL,
       updated_at  TEXT NOT NULL
+    );
+
+    -- v5 -> v6 adds application runs: each Layer 3 "Generate Application"
+    -- job (src/server/generation-api.ts) is recorded against the workflow
+    -- session it was generated from, with its full result JSON, so a run's
+    -- badges, audit log and download survive a tab switch and a restart -
+    -- the job store itself is in-memory only, and the generated files on
+    -- disk were otherwise orphaned the moment the process exited. One row
+    -- per job; the row is written once, when the job reaches a terminal
+    -- state.
+    CREATE TABLE IF NOT EXISTS application_runs (
+      id          TEXT PRIMARY KEY,
+      session_id  TEXT NOT NULL,
+      kind        TEXT NOT NULL,
+      parent_id   TEXT,
+      status      TEXT NOT NULL,
+      body        TEXT NOT NULL,
+      created_at  TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS application_runs_by_session
+      ON application_runs (session_id, created_at);
+
+    -- Page layouts edited in the Page Builder for one generated page of one
+    -- run. The generated .tsx on disk is replaced by the layout's compiled
+    -- output on save; original_source keeps the model-written file so the
+    -- edit can be undone. One row per (run, page).
+    CREATE TABLE IF NOT EXISTS page_layouts (
+      run_id           TEXT NOT NULL,
+      path             TEXT NOT NULL,
+      layout           TEXT NOT NULL,
+      original_source  TEXT NOT NULL,
+      updated_at       TEXT NOT NULL,
+      PRIMARY KEY (run_id, path)
     );
   `);
 

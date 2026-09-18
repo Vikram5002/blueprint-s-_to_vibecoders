@@ -38,6 +38,7 @@ import { createProviderRoutes, type ProviderRouteDeps } from './providers-api.js
 import { ROOT_DIRECTORY, type ViewLevel } from '../graph/aggregate.js';
 import { loadLabelCache } from '../llm/cache.js';
 import { createProjectSchemaGenerator } from '../workflow/generate-project-schema.js';
+import { createApplicationRunsStore } from '../store/application-runs-store.js';
 import { createWorkflowSessionsStore } from '../store/workflow-sessions-store.js';
 import { createSettingsStore } from '../store/settings-store.js';
 import {
@@ -332,7 +333,11 @@ export async function startServer(context: AnalysisContext): Promise<RunningServ
   // Same shared cache, but a proxy that follows the code-generation choice
   // rather than the plan one - see CODE_PROVIDER_SETTING_KEY.
   const codeLlm = llm === null ? null : { provider: createSwitchableProvider(registry, llm.provider.model, 'code'), cache: llm.cache };
-  const applicationDeps: ApplicationRouteDeps = { llm: codeLlm, generationRoot: generationRootFor(context) };
+  const applicationDeps: ApplicationRouteDeps = {
+    llm: codeLlm,
+    generationRoot: generationRootFor(context),
+    runs: createApplicationRunsStore(context.db),
+  };
 
   const app = createApp(context, workflowDeps, applicationDeps, { registry });
 

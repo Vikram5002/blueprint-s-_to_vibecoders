@@ -42,7 +42,7 @@ function isCanvasElement(value: unknown): value is CanvasElement {
 }
 
 /** Structural shape check only - `validatePageLayout` (canvas-layout.ts) does the real semantic validation (bounds, known color tokens). This just refuses a body that is not even shaped like a PageLayout, before anything downstream has to guess. */
-function parsePageLayout(body: unknown): PageLayout | null {
+export function parsePageLayout(body: unknown): PageLayout | null {
   if (typeof body !== 'object' || body === null) return null;
   const record = body as Record<string, unknown>;
   const layout = record['layout'];

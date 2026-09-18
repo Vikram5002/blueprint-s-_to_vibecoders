@@ -103,6 +103,13 @@ export interface GenerateAndVerifyOptions extends CreateComponentCodeGeneratorOp
   /** Directory the project is written to and verified in. Cleared and recreated on every call. */
   readonly root: string;
   readonly onPhase?: (phase: GenerationPhase) => void;
+  /**
+   * A person's own words about what to change, passed through verbatim to
+   * every file regenerated for a build failure (the "Fix build errors"
+   * action on a saved run). Never applied to a file that is not already
+   * being regenerated: this is context for a repair, not a trigger for one.
+   */
+  readonly repairInstruction?: string;
 }
 
 /**
@@ -142,6 +149,19 @@ async function writeBlueprintFile(root: string, schema: ValidatedProjectSchema):
   const text = schema.constraints.map((constraint) => constraint.rawText).join('\n');
   await writeFile(path, `${text}\n`, 'utf8');
   return path;
+}
+
+/**
+ * Re-checks a project that is already on disk - a saved run being repaired
+ * or edited - against its schema's constraints, exactly as the first
+ * generation was checked: same blueprint file, same unmodified pipeline.
+ */
+export async function verifyGeneratedProject(
+  root: string,
+  schema: ValidatedProjectSchema,
+): Promise<Result<readonly Violation[], { readonly reason: 'pipeline-error'; readonly message: string }>> {
+  const blueprintFile = await writeBlueprintFile(root, schema);
+  return verify(root, blueprintFile);
 }
 
 async function verify(root: string, blueprintFile: string): Promise<Result<readonly Violation[], { readonly reason: 'pipeline-error'; readonly message: string }>> {
@@ -337,14 +357,20 @@ export function attributeBuildFailure(
  * file, with the literal source line it points at - a line number alone
  * gives the model nothing to look at, since it never sees its earlier reply.
  */
-function toBuildFailurePriorContext(diagnostics: readonly TscDiagnostic[], previousSource: string | undefined): PriorViolationContext {
+function toBuildFailurePriorContext(
+  diagnostics: readonly TscDiagnostic[],
+  previousSource: string | undefined,
+  instruction?: string,
+): PriorViolationContext {
   const sourceLines = previousSource?.split('\n') ?? [];
+  const asked = instruction?.trim() ?? '';
   return {
     ruleText: 'The generated project must compile cleanly with `npm run build` (tsc, strict mode).',
     explanation:
       `A previous attempt at this exact file failed to compile - ${diagnostics.length} real tsc error(s). ` +
       "Fix the reported problem(s) directly. Do not change this file's exports or introduce a new import " +
-      'unless the error itself requires it.',
+      'unless the error itself requires it.' +
+      (asked === '' ? '' : ` The person reviewing this project also asks: ${asked}`),
     fixInstruction:
       'Write the complete corrected file: it must still fulfil the purpose above and must fix every error ' +
       'listed, following the compile rules in your instructions. Keep the same exported names.',
@@ -398,7 +424,7 @@ export async function regenerateForBuildFailure(
   const attempted: BuildFailureRetryAttempt[] = [];
   for (const failure of attributed) {
     const previous = current.find((f) => f.path === failure.targetPath);
-    const priorContext = toBuildFailurePriorContext(failure.diagnostics, previous?.contents);
+    const priorContext = toBuildFailurePriorContext(failure.diagnostics, previous?.contents, options.repairInstruction);
     const regenerated = await generateComponentFile(generator, schema, failure.component, failure.domain, priorContext, current);
     if (!regenerated.ok) return err(regenerated.error);
     current = current.map((f) => (f.path === failure.targetPath ? regenerated.value : f));
