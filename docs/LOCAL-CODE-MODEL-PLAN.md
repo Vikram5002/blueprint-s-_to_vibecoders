@@ -1,6 +1,6 @@
 # Local code-generation model: plan
 
-**Status:** approved in direction, **on hold at open question 1** (Gemini terms, see `docs/GEMINI-TERMS-REVIEW.md`). No data has been collected, no model has been evaluated, and nothing has been trained.
+**Status:** approved in direction. **Decided 2026-09-18: training data comes from an open-weight teacher model, not Gemini** (the Gemini terms were not cleared, see `docs/GEMINI-TERMS-REVIEW.md`). Preparation phase: the desktop is not yet available, so every script is being finished and tested here first. No data has been collected, no model has been evaluated, and nothing has been trained.
 **Date:** 2026-09-18
 **Related:** `training/TRAINING-FORMAT.md`, `training/data/METHODOLOGY.md`, `training/eval/RESULTS*.md`, `docs/GENERATION.md`
 
@@ -22,7 +22,8 @@ This is a gap in the training data, not a bug in the prompt or the pipeline. On 
 | Model for **code** | **Qwen2.5-Coder-7B-Instruct** + a new code adapter. It's the same size as Instruct but trained much more heavily on source code. |
 | Who picks the code model | **The user**, from the **Code** dropdown in the workspace: Gemini, Local code model, Anthropic, Bluesminds, or "Same as Model". Nothing switches models automatically. |
 | One adapter or two | **Two separate adapters.** Config C showed that one change can quietly make a working behaviour worse. Separate adapters can be tested and rolled back on their own. |
-| Where training runs | The borrowed desktop, as for the plan adapter. |
+| Where the training **data** comes from | **An open-weight teacher model, Qwen2.5-Coder-14B-Instruct (Apache-2.0), served from Colab** through the same server and the same pipeline. Gemini output is never used for training. |
+| Where training runs | The borrowed desktop, as for the plan adapter. It's only needed for the GPU hours; everything else is prepared and tested on the laptop first and moved by git (adapters by pendrive). |
 | Where serving runs | Google Colab (T4), as today. |
 
 ## 3. What the reading found
@@ -72,17 +73,19 @@ The workspace supports **both** setups, because the local code model gets its **
 
 The plan is a fresh collection run: `scripts/capture-code-batch.mjs`, built in the same style as `capture-schema-batch.mjs`.
 
-1. For each of the **241 non-gold plans**, run the real `generateAndVerifyProject`, then `npm install`, `npm run build`, and the build-repair loop, with **Code = Gemini** and the cache switched off. This is exactly what the server does.
-2. **Accept a component only if** the whole project builds, Blueprint reports no violations, and the auth-bypass detector finds nothing.
+**Teacher:** Qwen2.5-Coder-14B-Instruct, no adapter, served from Colab by `local_inference_server.py` in `teacher` mode. It's Apache-2.0 licensed, so its output can be used for training. It takes about 9.5 GB in 4-bit, so it fits a T4; the 32B version does not.
+
+1. For each of the **241 non-gold plans**, run the real `generateAndVerifyProject`, then `npm install`, `npm run build`, and the build-repair loop, with the **teacher as the code provider** and the cache switched off. This is exactly what the server does.
+2. **Accept a component only if** the whole project builds, Blueprint reports no violations, the auth-bypass detector finds nothing, **and the live route check (metric D) passes for that component**. The training data is held to the same bar as the ship bar.
 3. **Rebuild each accepted component's prompt from the final files.** Call the real `generateComponentFile` again, giving it the final files as context and a recording stub provider that returns the final code. `component-codegen.ts` runs unmodified. The prompt then describes exactly the dependency code the example is paired with, even if a dependency was rewritten during repair.
 4. Save every attempt, failures included, one JSON line per record, written to disk immediately.
 
-**Size of round 1:** 300–450 backend and security examples, drawn from 548 candidates minus projects that don't build.
+**Size of round 1:** 300–450 backend and security examples, drawn from 548 candidates minus projects that don't build. A 14B teacher will fail more often than Gemini did, so the yield is uncertain; the repair loop raises it. If the yield is under about 250, a second pass over the failed plans (with the repair instruction) is the first thing to try before changing the plan.
 - That's the same count range that worked for plans: 91 examples taught the format, and 288 fixed the empty-constraint problem.
 - Each code example is 3–5 times longer, so it's much more text to learn from, for a harder task.
 - Frontend and database examples come out of the same run and are stored for later rounds.
 
-**Collection cost:** about 2,500 Gemini calls. With the free-tier limits across the 7 keys, that's about 1–3 days of waiting and a few hours of active work.
+**Collection cost:** about 2,500 teacher calls on a Colab T4. A 14B model on a T4 writes roughly 8 tokens a second, so a typical component takes 1–3 minutes and a full plan (with install, build and repairs) about 15–30 minutes. Over 241 plans that's about **60–120 hours of Colab time**, spread over many sessions, since free sessions end after a few hours. The collection script is resumable for exactly this reason: it skips plans already recorded and can be restarted with each new tunnel URL. Colab Pro would cut this to a few long sessions.
 
 ## 6. Training data format
 
@@ -169,8 +172,8 @@ The generation pipeline itself isn't changed.
 | Step | What | Estimate |
 |---|---|---|
 | **0** | On Colab, measure plain Instruct and plain Coder on the 94 gold components, plus Gemini. Also check whether both models fit in one T4 session. | about half a day |
-| 1 | Write the collection, formatting and evaluation scripts; commit `train_full.py` | 2–3 days |
-| 2 | Gemini collection over the 241 non-gold plans | 1–3 days of waiting, a few hours of active work |
+| 1 | Write the collection, formatting and evaluation scripts; commit `train_full.py` | 2–3 days (in progress on the laptop) |
+| 2 | Teacher collection over the 241 non-gold plans (Colab) | 60–120 h of Colab time across many sessions; a few minutes of your time per session to paste the new URL |
 | 3 | Train the code adapter on Coder (borrowed desktop) | about 1.5–3 h of GPU time |
 | 4 | Evaluate all 5 setups on the 94 components (Colab T4) | about 8–12 h of GPU time |
 | 5 | Serving changes (section 8) | 1–2 days |
@@ -182,7 +185,7 @@ The generation pipeline itself isn't changed.
 
 ## 10. Open questions
 
-1. **Gemini's terms of use: checked, NOT CLEARED. Gating.** The Gemini API terms say "You may not use the Services to develop models that compete with the Services", and this model's purpose is to replace Gemini for code in this tool. Full quotes and options are in `docs/GEMINI-TERMS-REVIEW.md`. Section 5 (data collection) and Step 0 are on hold until this is explicitly cleared. Switching to hand-written or other training data is a separate decision, not an automatic fallback.
+1. ~~Gemini's terms of use.~~ **Checked, not cleared, and resolved by decision (2026-09-18): no Gemini output is used for training.** The teacher is Qwen2.5-Coder-14B-Instruct (section 5). Gemini still appears in the evaluation (section 7) as the comparison baseline only, which the terms don't restrict. Full quotes in `docs/GEMINI-TERMS-REVIEW.md`.
 2. **Whether both models fit in one T4 session.** Step 0 answers this. If not, the coder needs its own Colab session and tunnel (already supported by the design in section 8), which may need a second Google account or Colab Pro.
 3. ~~Whether the runtime check (metric D) counts toward the ship bar.~~ **Decided 2026-09-18: it counts.** D must pass on every accepted component (section 7).
 4. **Changing `pdsf/local_inference_server.py`.** The file is currently untracked and has been left alone until now. The serving changes need it to be edited and committed.

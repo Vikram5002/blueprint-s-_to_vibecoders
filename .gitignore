@@ -25,3 +25,13 @@ scratch-pipe-schema-to-compiler-log.jsonl
 # files over 100MB, so a single `git add` of this would fail the next push. It is
 # shared out of band (pendrive / Drive) - see docs/HELPER-README.md section 6.
 pdsf/adapter.zip
+
+# Local code-model pipeline outputs (docs/LOCAL-CODE-MODEL-PLAN.md). Work
+# directories hold full generated projects with node_modules; adapters are
+# >100MB. Capture JSONL and eval JSON ARE committed - only these are not.
+capture/code/work/
+capture/code/gold-reference/
+training/runs/
+training/code/formatted/*.zip
+pdsf/code_adapter.zip
+pdsf/hf_cache/
