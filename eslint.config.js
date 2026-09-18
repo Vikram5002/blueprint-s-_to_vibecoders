@@ -18,6 +18,10 @@ export const config = tseslint.config(
       // disk and verified against the Blueprint CLI, not source this project
       // owns or wants linted with its own rules (see src/generate/).
       'generated/**',
+      // Same thing, written by the code-model collection and evaluation
+      // scripts (scripts/capture-code-batch.mjs, eval-code-model.mjs).
+      'capture/code/work/**',
+      'capture/code/gold-reference/**',
       'ui/**',
       'coverage/**',
       'src/parser/fixtures/**',

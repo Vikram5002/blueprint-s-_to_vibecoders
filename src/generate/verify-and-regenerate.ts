@@ -165,7 +165,12 @@ export async function verifyGeneratedProject(
 }
 
 async function verify(root: string, blueprintFile: string): Promise<Result<readonly Violation[], { readonly reason: 'pipeline-error'; readonly message: string }>> {
-  const run = await runPipeline({ root, blueprintFile } satisfies RunOptions);
+  // No model: every constraint here comes from the blueprint DSL file whose
+  // subjects are real paths, and a generated project carries no prose to
+  // read intent from - so labelling and intent extraction would spend one
+  // vendor call per module for nothing (found live: a collection run against
+  // a local teacher was still rotating Gemini keys, from this call).
+  const run = await runPipeline({ root, blueprintFile, useModel: false } satisfies RunOptions);
   if (!run.ok) {
     return err({ reason: 'pipeline-error', message: run.error.message });
   }

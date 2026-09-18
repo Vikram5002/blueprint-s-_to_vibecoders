@@ -366,7 +366,8 @@ for (const { sourceFile, pair } of plans) {
     build: built.value.build,
     violations: violations.length,
     locatorFindings: locatorFindings.length,
-    runtime: { started: runtime.started, ok: runtime.ok, routes: runtime.routes },
+    // serverOutput kept: without it a 'not started' is undiagnosable from the log alone.
+    runtime: { started: runtime.started, ok: runtime.ok, routes: runtime.routes, serverOutput: runtime.serverOutput },
     regenerations: regenerationLog.length,
     teacher: teacherLabel,
   });

@@ -25,7 +25,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { access } from 'node:fs/promises';
 import { createServer, connect } from 'node:net';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import type { Component, DomainName, ValidatedProjectSchema } from '../types/project-schema.js';
 import { componentSlug, componentTargetPath } from './assemble.js';
 
@@ -83,6 +83,11 @@ export async function runRuntimeCheck(
   schema: ValidatedProjectSchema,
   options: RuntimeCheckOptions = {},
 ): Promise<RuntimeCheckResult> {
+  // Resolved once: a relative root (scripts pass 'capture/code/work/<id>')
+  // would otherwise be joined into the entry path AND used as the child's
+  // cwd, so node resolved the entry relative to the root twice and the
+  // server "never started". Found live on the first collection dry run.
+  root = resolve(root);
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   // Loopback only, to a child process this function itself spawned and kills
   // before returning - the same "own loopback server" reasoning
