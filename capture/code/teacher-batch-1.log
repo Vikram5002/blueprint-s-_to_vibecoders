@@ -1,0 +1,70 @@
+capturing code from 241 plan(s) -> capture/code/teacher-batch-1.jsonl
+teacher: local:teacher (teacher); raw text -> capture\code\teacher-batch-1.raw.jsonl; per-project log -> capture\code\teacher-batch-1.projects.jsonl
+work directory: capture/code/work; already done: 0
+
+-- session-real-001 (Document Archive System) [1]
+(node:1776) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+   build repair failed: {"component":{"id":"59b66236c75dd6f2","name":"Document Processing Service","purpose":"Scans, OCRs, and indexes uploaded documents for full-text search."},"domain":"backend","failure":{"reason":"unpars
+-- session-real-002 (Self-Hosted Web Analytics) [2]
+!!  build=false violations=0 locator=0 runtime=false records=8 build-failed
+-- session-real-003 (Headless Publishing Platform) [3]
+capturing code from 241 plan(s) -> capture/code/teacher-batch-1.jsonl
+teacher: local:teacher (teacher); raw text -> capture\code\teacher-batch-1.raw.jsonl; per-project log -> capture\code\teacher-batch-1.projects.jsonl
+work directory: capture/code/work; already done: 1
+
+-- session-real-001 (Document Archive System) [1]
+(node:26956) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+!!  build=false violations=0 locator=0 runtime=false records=12 build-failed
+-- session-real-003 (Headless Publishing Platform) [2]
+capturing code from 241 plan(s) -> capture/code/teacher-batch-1.jsonl
+teacher: local:teacher (teacher); raw text -> capture\code\teacher-batch-1.raw.jsonl; per-project log -> capture\code\teacher-batch-1.projects.jsonl
+work directory: capture/code/work; already done: 1
+
+-- session-real-001 (Document Archive System) [1]
+(node:25284) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+!!  build=false violations=0 locator=0 runtime=false records=12 build-failed
+-- session-real-003 (Headless Publishing Platform) [2]
+!!  build=false violations=0 locator=0 runtime=false records=5 build-failed
+-- session-real-004 (Self-Hosted Photo Backup) [3]
+   generation failed: {"component":{"id":"ff060a5c676a44f2","name":"Read-Only Share Mode","purpose":"Lets an owner share an album publicly or with specific people in a restricted read-only view."},"domain":"security","fail
+-- session-real-005 (Self-Hosted Uptime Monitor) [4]
+   generation failed: {"component":{"id":"2070990b7d23815c","name":"monitor_results table","purpose":"Stores historical up/down check results per monitored target."},"domain":"database","failure":{"reason":"provider-error"
+-- session-real-006 (Self-Hosted Scheduling Platform) [5]
+   generation failed: {"component":{"id":"9e3fd82bf35139ed","name":"bookings table","purpose":"Stores event types, availability rules, and confirmed bookings."},"domain":"database","failure":{"reason":"provider-error","mes
+-- session-real-007 (Self-Hosted Note Timeline) [6]
+   generation failed: {"component":{"id":"67497d56e749f66a","name":"notes table","purpose":"Stores note content, timestamps, and visibility setting, in SQLite/MySQL/Postgres depending on deployment."},"domain":"database","
+-- session-real-008 (Self-Hosted PDF Toolkit) [7]
+   generation failed: {"component":{"id":"0385aa2cb3a3f780","name":"PDF Processing API","purpose":"Performs PDF operations server-side and exposes them as a REST API; supports chaining tools into pipelines."},"domain":"bac
+-- session-real-009 (Customisable Open-Source CRM) [8]
+   generation failed: {"component":{"id":"d0428be4997bcfcc","name":"crm_records table","purpose":"Stores CRM records for both built-in and user-defined object types."},"domain":"database","failure":{"reason":"provider-erro
+-- session-real-010 (Headless Commerce Backend) [9]
+   generation failed: {"component":{"id":"d78a6284f59547a0","name":"commerce_records table","purpose":"Stores products, orders, and business-model-specific commerce data."},"domain":"database","failure":{"reason":"provider
+-- session-real-011 (Network-Wide Ad-Blocking DNS) [10]
+   generation failed: {"component":{"id":"09d9a4078c28df92","name":"DNS Filtering Server","purpose":"Resolves DNS for the network, blocking ad/tracker/phishing domains and supporting encrypted DNS (DoH/DoT/DNSCrypt)."},"do
+-- session-real-012 (Encrypted Scheduled Backup Tool) [11]
+   generation failed: {"component":{"id":"5d855f17f9991bcd","name":"Backup Scheduler","purpose":"Runs backups on a schedule, computing incremental changes since the last backup to save bandwidth."},"domain":"backend","fail
+-- session-real-013 (Self-Hosted Password Vault) [12]
+   generation failed: {"component":{"id":"44481c6b96fabb27","name":"vault_items table","purpose":"Stores encrypted credentials, attachments, and organisation collections."},"domain":"database","failure":{"reason":"provider
+-- session-real-014 (Self-Hosted File Sync Platform) [13]
+   generation failed: {"component":{"id":"ddc385d4e1b502f7","name":"files_metadata table","purpose":"Stores file ownership, sharing permissions, and sync state."},"domain":"database","failure":{"reason":"provider-error","m
+-- session-real-015 (Self-Hosted Media Streaming Server) [14]
+   generation failed: {"component":{"id":"1789743e22c3d987","name":"Media Server","purpose":"Organises the media library and transcodes/streams content to client apps."},"domain":"backend","failure":{"reason":"provider-err
+-- session-real-016 (Team Documentation Platform) [15]
+capturing code from 197 plan(s) -> capture/code/teacher-batch-1.jsonl
+teacher: local:teacher (teacher); raw text -> capture\code\teacher-batch-1.raw.jsonl; per-project log -> capture\code\teacher-batch-1.projects.jsonl
+work directory: capture/code/work; already done: 3
+
+-- 2d020ff0-22df-4eb8-b731-8730a2bba1fc (Personal Budget Tracker) [1]
+(node:18996) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ok  build=true violations=0 locator=0 runtime=true records=6
+-- 16cd4076-3c38-4765-8811-a4fd6020c973 (Team Chat App) [2]
+!!  build=false violations=0 locator=0 runtime=false records=11 build-failed
+-- d290736e-e426-4999-8935-d489ee611c35 (Local Weather Dashboard) [3]
+!!  build=false violations=0 locator=0 runtime=false records=3 build-failed
+-- f2e69aa4-8432-481f-838e-0401d1c1ad0c (Public Library Catalog) [4]
+!!  build=false violations=0 locator=0 runtime=false records=9 build-failed
+-- 96e2250f-3745-4ff4-b05e-d1bc4523b791 (Family Photo Album) [5]
