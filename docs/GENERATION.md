@@ -766,3 +766,64 @@ a real `string`-vs-`number` argument mismatch) is a concrete, previously
 -observed example of the kind of single-file failure that would exercise
 the untested branch, worth trying to reproduce again live rather than a
 fresh, unrelated schema.
+
+**Falsified, 2026-09-14 — the recipe-box prompt is NOT a usable
+reproduction case for this branch; do not retry it for this purpose.**
+Three separate live attempts (this session, twice, plus the earlier Part 4
+session) all produced a build failure spanning at least two files every
+single time: whatever real bug occurred in `recipe-api-service.ts` (a
+`string`/`number` mismatch on one attempt, an unrelated `TS2353`/`TS2339`
+object-shape mismatch plus a `TS1345` void-truthiness error on another) was
+**always** accompanied by the exact same, independent
+`frontend/src/main.tsx(17,8): error TS2741: Property 'recipeId' is
+missing...` error. The cause is structural, not luck:
+`frontendEntryPointFile` (`assemble.ts`) mounts every frontend page with
+zero props, unconditionally — any schema (like this prompt's) whose
+frontend includes a detail/edit-style page needing an id prop will name
+that gap essentially every time, regardless of what the backend does.
+`attributeBuildFailure` correctly recognizes the resulting 2-distinct-file
+diagnostic set as ambiguous and declines to retry, every time — this is
+the safety rule working exactly as designed, not a gap in it, but it means
+this specific prompt can never reach the `attributed` branch and should not
+be retried for that purpose again. (This prop-mismatch gap is itself a
+real, separate, undocumented-until-now limitation of
+`frontendEntryPointFile` — out of scope to fix here, noted for whoever
+picks it up.)
+
+**A new, purpose-built fixture was constructed instead, live-attempted
+twice, and did not yet reach the branch — for an honest reason, not a
+bug.** `SINGLE_COMPONENT_SCHEMA` (`ui/src/workspace/workflow-mocks.ts`,
+wired to a new "Single-component fixture (build-failure retry)" scenario
+button) populates ONLY the backend domain with one component
+(`InventoryService`) — no frontend, database, or security — so the only
+LLM-generated file in the whole project is that one component's own file;
+`package.json`/`tsconfig.json`/`backend/src/index.ts` are templated,
+non-LLM code that has never produced a compile error. This makes a
+single-file failure structurally reachable: if `tsc` fails at all, it can
+only ever name this one file — verified as reasoning before spending any
+quota on it, not after. `InventoryService`'s purpose deliberately mirrors
+the real, previously-observed `string`/`number` bug class (reading a value
+from `req.query`, always a string, and using it in numeric arithmetic),
+without scripting or injecting an actual bug.
+
+Ran live twice (`ui/e2e/single-component-build-failure.e2e.spec.ts`,
+driving the real browser): both times the real, single live model call
+wrote CORRECT code — the second attempt explicitly type-narrowed
+`req.query.delta` with `typeof deltaStr === "string"` before calling
+`Number(deltaStr)`, avoiding the exact bug class the fixture was designed
+to make plausible. `npm run build` genuinely passed on the first attempt
+both times; there was nothing for the build-failure retry to attribute,
+correctly reported as zero retry entries. This is not a divergence or a
+bug — the pipeline behaved exactly as it should when no failure occurs —
+but it means the `attributed` branch still has not fired live. A third
+attempt was blocked by the Gemini free-tier daily quota exhausting
+immediately after the second attempt completed; per this project's own
+standing rule, it was not retried further this session.
+
+**Net result: the reproduction case is now real and structurally sound,
+verified by actual live behavior twice, not just once by construction —
+the fixture only needs an attempt where the model happens to write the
+bug it was designed to make plausible.** A future session should reuse
+`SINGLE_COMPONENT_SCHEMA` and its scenario button directly (no
+reconstruction needed) once quota allows, and may need several attempts
+given the model correctly avoided the bug on both tries so far.
