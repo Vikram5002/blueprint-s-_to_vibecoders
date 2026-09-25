@@ -29,7 +29,9 @@ import modal
 TEACHER_REPO = "unsloth/Qwen2.5-Coder-32B-Instruct-bnb-4bit"
 PORT = 8712
 HF_DIR = "/hf"
-SERVER = Path(__file__).resolve().parents[2] / "pdsf" / "local_inference_server.py"
+# Resolved on the MSI only: inside the container this module sits at /root/
+# and the repo is not there (the server file arrives via add_local_file).
+SERVER = Path(__file__).resolve().parents[2] / "pdsf" / "local_inference_server.py" if modal.is_local() else Path("/app/local_inference_server.py")
 
 app = modal.App("vibe-teacher")
 hf_cache = modal.Volume.from_name("vibe-hf-cache", create_if_missing=True)
