@@ -87,10 +87,13 @@ markdown, not a fenced code block, and no text outside that one field.`;
  * grouping/rendering logic ("the answer was cut off at the output token
  * limit"), a real generation failure, not a design flaw. Raised to 4,096 to
  * match `workflow/generate-project-schema.ts`'s own budget for a whole
- * multi-domain ProjectSchema - one moderately complex page or route should
- * comfortably fit in what that module allows for an entire schema.
+ * multi-domain ProjectSchema, then to 8,192 on 2026-09-25 when a live
+ * frontend page (a baker profile dashboard) was cut off at 4,096 and failed
+ * the whole application. Gemini's thinking has its own separate allowance
+ * (gemini.ts), so this is room for the file itself. The local server clamps
+ * to its own `--max-new-tokens-cap`, so a local model is unaffected.
  */
-const MAX_OUTPUT_TOKENS = 4_096;
+const MAX_OUTPUT_TOKENS = 8_192;
 
 const COMPONENT_CODE_JSON_SCHEMA = {
   type: 'object',
