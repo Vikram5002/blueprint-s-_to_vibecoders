@@ -35,7 +35,8 @@ import { createLocalProvider } from '../dist/llm/local.js';
 import { loadEnvFile } from '../dist/llm/env-file.js';
 import { validateProjectSchema } from '../dist/workflow/validate-project-schema.js';
 import { generateAndVerifyProject, verifyGeneratedProject } from '../dist/generate/verify-and-regenerate.js';
-import { installBuildAndRepair } from '../dist/generate/build-and-repair.js';
+import { installBuildAndRepair, MAX_FAILURE_OUTPUT_CHARS } from '../dist/generate/build-and-repair.js';
+import { createFileJudge } from '../dist/generate/file-acceptance.js';
 import { runRuntimeCheck, routeResultsFor } from '../dist/generate/runtime-check.js';
 import { detectServiceLocatorEvasion } from '../dist/generate/detect-service-locator-evasion.js';
 import { createComponentCodeGenerator } from '../dist/generate/component-codegen.js';
@@ -295,6 +296,20 @@ for (const { sourceFile, pair } of plans) {
   if (runtime.ok) summary.projects.runtimeOk += 1;
   const perComponent = new Map(routeResultsFor(schema, runtime).map((entry) => [entry.targetPath, entry]));
 
+  // Per-file acceptance (docs/GPU-COMPUTE-PROPOSAL.md A1): a file is
+  // rejected only for a failure pinned on it; anything unattributable still
+  // rejects every file. See src/generate/file-acceptance.ts.
+  const buildOutput = built.value.build.failureOutput ?? '';
+  const reasonsFor = createFileJudge({
+    installOk: built.value.build.installOk,
+    buildOk,
+    buildOutput,
+    buildOutputTruncated: buildOutput.length >= MAX_FAILURE_OUTPUT_CHARS,
+    violations,
+    locatorFindings,
+    runtimeStarted: runtime.started,
+    routeResults: [...perComponent.values()],
+  });
   const projectReasons = [];
   if (!buildOk) projectReasons.push(built.value.build.installOk ? 'build-failed' : 'install-failed');
   if (violations.length > 0) projectReasons.push('blueprint-violation');
@@ -304,19 +319,12 @@ for (const { sourceFile, pair } of plans) {
   const regenerationLog = [...generated.value.regenerationLog, ...built.value.regenerationLog];
   const teacherLabel = provider.name;
 
-  function reasonsFor(targetPath) {
-    const reasons = [...projectReasons];
-    const routeCheck = perComponent.get(targetPath);
-    if (routeCheck !== undefined && runtime.started && !routeCheck.passed) reasons.push('runtime-route-failed');
-    return reasons;
-  }
-
   let written = 0;
   for (const file of finalFiles) {
     const owner = findComponentByTargetPath(schema, file.path);
     if (owner === null) continue;
     if (domainFilter !== null && !domainFilter.has(owner.domain)) continue;
-    const reasons = reasonsFor(file.path);
+    const reasons = [...reasonsFor(file.path)];
     const request = await rebuildRequest(schema, owner.component, owner.domain, undefined, finalFiles, file.contents);
     const record = {
       recordId: `${sessionId}:first:${owner.component.id}`,
@@ -331,6 +339,7 @@ for (const { sourceFile, pair } of plans) {
       accepted: reasons.length === 0,
       reasons,
       teacher: teacherLabel,
+      acceptance: 'per-file',
       capturedAt: new Date().toISOString(),
     };
     writeLine(outPath, record);
@@ -349,7 +358,7 @@ for (const { sourceFile, pair } of plans) {
     if (finalFile === undefined) continue;
     const n = (correctionCounts.get(attempt.targetPath) ?? 0) + 1;
     correctionCounts.set(attempt.targetPath, n);
-    const reasons = reasonsFor(attempt.targetPath);
+    const reasons = [...reasonsFor(attempt.targetPath)];
     const request = await rebuildRequest(schema, attempt.component, attempt.domain, attempt.firstAttemptViolation, finalFiles, finalFile.contents);
     const record = {
       recordId: `${sessionId}:correction:${attempt.component.id}:${n}`,
@@ -364,6 +373,7 @@ for (const { sourceFile, pair } of plans) {
       accepted: reasons.length === 0,
       reasons,
       teacher: teacherLabel,
+      acceptance: 'per-file',
       capturedAt: new Date().toISOString(),
       // Extra provenance beyond the contract's keys, never used for training: which retry produced this prompt.
       correctionOrigin: attempt.origin,
