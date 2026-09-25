@@ -106,6 +106,10 @@ These are the constraints this project would enforce on itself. Do not violate t
    and formats output. Nothing else.
 
 6. **No network calls outside `llm/`.** Everything else is local.
+   **One named exception (approved 2026-09-25):** `src/ingest/git-source.ts` may
+   run `git clone` over HTTPS, and only when a person pastes a repository URL in
+   the UI and asks for it. It never prompts for or stores credentials. No other
+   module may add a network call under this exception.
 
 ---
 
