@@ -8,6 +8,8 @@ import { WorkspaceShell } from './workspace/WorkspaceShell';
 // the exact failure class this project has hit before with ReactFlow.
 import '@xyflow/react/dist/base.css';
 import './workspace/workspace.css';
+// After Tailwind, so its preflight reset does not undo the shared base styles.
+import './design/theme.css';
 
 const container = document.getElementById('root');
 if (container === null) {

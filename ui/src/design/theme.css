@@ -1,0 +1,417 @@
+/*
+ * One design system for both pages (the Blueprint dashboard and the
+ * workspace), modelled on Apple's dark appearance: neutral layered greys
+ * rather than navy, hairline separators, translucent "glass" bars, the
+ * system accent colours, generous radii, and one easing curve everywhere so
+ * every movement feels like it belongs to the same app.
+ *
+ * Motion is CSS-only (no animation library): transitions on state changes,
+ * short enter animations on things that appear, and all of it switched off
+ * for anyone who has asked their OS to reduce motion.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces, darkest to lightest. */
+  --bg-0: #0c0c0e;
+  --bg-1: #151517;
+  --bg-2: #1d1d20;
+  --bg-3: #26262a;
+  --bg-4: #303035;
+
+  /* Separators: hairlines, never solid grey rules. */
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.14);
+
+  /* Labels. */
+  --label-1: rgba(255, 255, 255, 0.94);
+  --label-2: rgba(235, 235, 245, 0.62);
+  --label-3: rgba(235, 235, 245, 0.4);
+
+  /* Apple system colours, dark variants. */
+  --blue: #0a84ff;
+  --green: #30d158;
+  --red: #ff453a;
+  --orange: #ff9f0a;
+  --yellow: #ffd60a;
+  --purple: #bf5af2;
+  --indigo: #5e5ce6;
+  --teal: #64d2ff;
+
+  --blue-tint: rgba(10, 132, 255, 0.16);
+  --green-tint: rgba(48, 209, 88, 0.14);
+  --red-tint: rgba(255, 69, 58, 0.14);
+  --orange-tint: rgba(255, 159, 10, 0.14);
+  --purple-tint: rgba(191, 90, 242, 0.14);
+
+  /* Glass: translucent fill plus a blur of whatever scrolls beneath it. */
+  --glass: rgba(24, 24, 27, 0.72);
+  --glass-strong: rgba(28, 28, 31, 0.86);
+  --glass-filter: saturate(180%) blur(22px);
+
+  --radius-xs: 6px;
+  --radius-s: 8px;
+  --radius-m: 10px;
+  --radius-l: 14px;
+  --radius-xl: 20px;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 6px 18px -6px rgba(0, 0, 0, 0.55), 0 0 0 0.5px var(--hairline);
+  --shadow-pop: 0 28px 70px -12px rgba(0, 0, 0, 0.7), 0 0 0 0.5px var(--hairline-strong);
+
+  /* iOS's sheet curve: fast out, long gentle settle. */
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-1: 140ms;
+  --dur-2: 240ms;
+  --dur-3: 380ms;
+
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI', Inter,
+    Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-family: var(--font-ui);
+  background: var(--bg-0);
+}
+
+::selection {
+  background: rgba(10, 132, 255, 0.4);
+}
+
+/* Keyboard focus is always visible, mouse focus never is. */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* Thin, quiet scrollbars that only show a thumb. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.26);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Every interactive element eases between states instead of snapping. */
+button,
+a,
+input,
+select,
+textarea,
+summary,
+[role='tab'],
+[role='button'] {
+  transition:
+    background-color var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out),
+    opacity var(--dur-2) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
+}
+
+/* The small press-in that makes a button feel physical. */
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* Native dropdown arrows differ per OS; one quiet chevron everywhere instead. */
+select:not([multiple]) {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 26px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='rgba(235,235,245,0.6)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+
+select option {
+  background: var(--bg-2);
+  color: var(--label-1);
+}
+
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'] {
+  accent-color: var(--blue);
+}
+
+/* ---------- enter animations ---------- */
+
+@keyframes vb-view-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes vb-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes vb-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes vb-shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes vb-pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* A view that has just been switched to settles in. */
+.anim-view {
+  animation: vb-view-in var(--dur-3) var(--ease) both;
+}
+
+/* A dialog or popover that has just opened. */
+.anim-pop {
+  animation: vb-pop-in var(--dur-3) var(--ease) both;
+}
+
+.anim-fade {
+  animation: vb-fade-in var(--dur-2) var(--ease-out) both;
+}
+
+/* Placeholder for content that is still loading. */
+.skeleton {
+  border-radius: var(--radius-s);
+  background: linear-gradient(90deg, var(--bg-2) 25%, var(--bg-3) 37%, var(--bg-2) 63%);
+  background-size: 400% 100%;
+  animation: vb-shimmer 1.6s ease-in-out infinite;
+}
+
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+}
+
+.live-dot {
+  animation: vb-pulse-dot 1.4s ease-in-out infinite;
+}
+
+/* ---------- segmented control (SegmentedControl.tsx) ---------- */
+
+.seg {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  padding: 2px;
+  gap: 2px;
+  border-radius: calc(var(--radius-s) + 2px);
+  background: rgba(118, 118, 128, 0.24);
+  isolation: isolate;
+}
+
+.seg-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 0;
+  z-index: -1;
+  border-radius: var(--radius-s);
+  background: rgba(99, 99, 102, 0.95);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.28),
+    0 0 0 0.5px rgba(255, 255, 255, 0.06);
+  transition:
+    transform var(--dur-3) var(--ease),
+    width var(--dur-3) var(--ease),
+    opacity var(--dur-2) var(--ease-out);
+}
+
+.seg-item {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--label-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  padding: 4px 12px;
+  border-radius: var(--radius-s);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.seg-item:hover:not([aria-selected='true']):not([aria-checked='true']):not([aria-pressed='true']) {
+  color: var(--label-1);
+}
+
+.seg-item[aria-selected='true'],
+.seg-item[aria-checked='true'],
+.seg-item[aria-pressed='true'] {
+  color: var(--label-1);
+}
+
+.seg-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* The press-in scales the label, not the whole pill, so the thumb stays put. */
+.seg-item:not(:disabled):active {
+  transform: scale(0.95);
+}
+
+.seg[data-size='small'] .seg-item {
+  font-size: 11px;
+  padding: 3px 10px;
+}
+
+/* ---------- React Flow, dark ---------- */
+
+/*
+ * React Flow's full stylesheet (the dashboard loads it) colours its controls
+ * and minimap through these variables, light by default - so they are set
+ * here rather than fought with selectors. React Flow sets its own defaults on
+ * `.react-flow.dark` / `.react-flow.light`, so this matches that specificity.
+ */
+html .react-flow.dark,
+html .react-flow.light {
+  --xy-controls-button-background-color-default: transparent;
+  --xy-controls-button-background-color-hover-default: rgba(255, 255, 255, 0.08);
+  --xy-controls-button-color-default: var(--label-2);
+  --xy-controls-button-color-hover-default: var(--label-1);
+  --xy-controls-button-border-color-default: var(--hairline);
+  --xy-controls-box-shadow-default: var(--shadow-2);
+  --xy-minimap-background-color-default: var(--bg-1);
+  --xy-minimap-mask-background-color-default: rgba(12, 12, 14, 0.72);
+  --xy-minimap-node-background-color-default: #48484a;
+  --xy-edge-label-background-color-default: var(--bg-1);
+  --xy-edge-label-color-default: var(--label-2);
+  --xy-selection-background-color-default: rgba(10, 132, 255, 0.1);
+  --xy-background-color-default: transparent;
+}
+
+.react-flow__controls {
+  border-radius: var(--radius-m);
+  overflow: hidden;
+  box-shadow: var(--shadow-2);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+}
+
+.react-flow__controls-button {
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: 0;
+  border-bottom: 0.5px solid var(--hairline);
+  color: var(--label-2);
+  fill: var(--label-2);
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: 0;
+}
+
+.react-flow__controls-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--label-1);
+  fill: var(--label-1);
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor;
+  max-width: 12px;
+  max-height: 12px;
+}
+
+.react-flow__minimap {
+  border-radius: var(--radius-m);
+  overflow: hidden;
+  box-shadow: var(--shadow-2);
+}
+
+.react-flow__edge-path {
+  transition:
+    stroke var(--dur-2) var(--ease-out),
+    stroke-width var(--dur-2) var(--ease-out),
+    opacity var(--dur-2) var(--ease-out);
+}
+
+.react-flow__node {
+  transition: filter var(--dur-2) var(--ease-out);
+}
+
+/* Smooth zoom / fit-view instead of a jump (React Flow animates the transform when asked). */
+.react-flow__viewport {
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
