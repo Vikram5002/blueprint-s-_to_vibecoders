@@ -10,6 +10,7 @@
  */
 import { readFile } from 'node:fs/promises';
 import { serve, type ServerType } from '@hono/node-server';
+import { join } from 'node:path';
 import { Hono } from 'hono';
 import {
   buildEdgeResponse,
@@ -53,6 +54,7 @@ import {
 } from '../llm/provider-registry.js';
 import type { AnalysisContext } from './context.js';
 import { createContextHolder, type ContextHolder } from './context-holder.js';
+import { createProjectRoutes, type ProjectRouteDeps } from './projects-api.js';
 import type { CompletionProvider } from '../llm/provider.js';
 import type { LabelCache } from '../llm/cache.js';
 
@@ -94,12 +96,17 @@ export function createApp(
   workflow?: WorkflowRouteDeps,
   application?: ApplicationRouteDeps,
   providers?: ProviderRouteDeps,
+  projects?: Omit<ProjectRouteDeps, 'holder'>,
 ): Hono {
   const app = new Hono();
   // Every analysis route reads the project on each request, so the UI can
   // switch projects without restarting the server (see context-holder.ts).
   const holder = 'current' in project ? project : createContextHolder(project);
   const context = (): AnalysisContext => holder.current();
+
+  if (projects !== undefined) {
+    app.route('/api/projects', createProjectRoutes({ ...projects, holder }));
+  }
 
   app.get('/api/summary', (c) => c.json(buildSummaryResponse(context())));
 
@@ -347,7 +354,12 @@ export async function startServer(context: AnalysisContext): Promise<RunningServ
     runs: createApplicationRunsStore(context.db),
   };
 
-  const app = createApp(context, workflowDeps, applicationDeps, { registry });
+  const app = createApp(createContextHolder(context), workflowDeps, applicationDeps, { registry }, {
+    // Clones live inside this tool's own .vibe folder, which ingest never
+    // walks, so analysing this repository never analyses the clones too.
+    cloneRoot: join(context.root, '.vibe', 'repos'),
+    settings,
+  });
 
   const server: ServerType = await new Promise((resolve) => {
     const created = serve({ fetch: app.fetch, hostname: LOOPBACK_HOST, port: 0 }, () => resolve(created));
