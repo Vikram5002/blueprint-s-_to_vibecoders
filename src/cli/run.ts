@@ -33,7 +33,7 @@ import { writeExports, currentCommit } from '../export/write.js';
 import { writeFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 import { renderBlueprintSpec, blueprintConstraintsJson } from '../blueprint/spec.js';
-import { createBlueprintStore } from '../store/blueprint-store.js';
+import { toAnalysisContext } from '../server/analysis-context.js';
 import type { CompileBlueprintResult } from '../blueprint/dsl.js';
 
 export interface CliIo {
@@ -103,7 +103,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     return EXIT_FAILURE;
   }
 
-  const { analysis, labels, correctionOutcomes, intent, conformance, db, store, blueprintCompile } = run.value;
+  const { analysis, labels, correctionOutcomes, intent, conformance, db, blueprintCompile } = run.value;
   const { walk: result, ingest: summary, parse, parseSummary, graph, clustering } = analysis;
 
   if (blueprintCompile !== null) {
@@ -137,21 +137,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     return EXIT_OK;
   }
 
-  const analysisContext = {
-    root: result.root,
-    graph,
-    ingest: summary,
-    parse: parseSummary,
-    parseFailures: parse.failures,
-    clustering,
-    labels,
-    correctionOutcomes,
-    intent,
-    conformance,
-    store,
-    db,
-    blueprintStore: createBlueprintStore(db),
-  };
+  const analysisContext = toAnalysisContext(run.value);
 
   /**
    * Exports are written before the MCP branch, so `--mcp --export` produces
@@ -292,29 +278,14 @@ async function runMcp(
     });
     if (!run.ok) throw new Error(run.error.message);
 
-    const { analysis: parsed, labels, correctionOutcomes, intent, conformance, db, store, blueprintCompile } =
-      run.value;
+    const { analysis: parsed, blueprintCompile } = run.value;
 
     if (blueprintCompile !== null) {
       const written = await writeBlueprintOutputs(parsed.walk.root, blueprintCompile);
       for (const file of written) io.writeErr(`  wrote ${file.path} (${file.bytes} bytes)`);
     }
 
-    const context = {
-      root: parsed.walk.root,
-      graph: parsed.graph,
-      ingest: parsed.ingest,
-      parse: parsed.parseSummary,
-      parseFailures: parsed.parse.failures,
-      clustering: parsed.clustering,
-      labels,
-      correctionOutcomes,
-      intent,
-      conformance,
-      store,
-      db,
-      blueprintStore: createBlueprintStore(db),
-    };
+    const context = toAnalysisContext(run.value);
 
     if (options.exportFiles) {
       const written = await writeExports(context, {

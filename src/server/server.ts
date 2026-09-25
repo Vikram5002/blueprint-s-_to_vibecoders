@@ -52,6 +52,7 @@ import {
   type ProviderRegistry,
 } from '../llm/provider-registry.js';
 import type { AnalysisContext } from './context.js';
+import { createContextHolder, type ContextHolder } from './context-holder.js';
 import type { CompletionProvider } from '../llm/provider.js';
 import type { LabelCache } from '../llm/cache.js';
 
@@ -89,49 +90,53 @@ const CONTENT_TYPES: ReadonlyMap<string, string> = new Map([
  * resolves and passes it.
  */
 export function createApp(
-  context: AnalysisContext,
+  project: AnalysisContext | ContextHolder,
   workflow?: WorkflowRouteDeps,
   application?: ApplicationRouteDeps,
   providers?: ProviderRouteDeps,
 ): Hono {
   const app = new Hono();
+  // Every analysis route reads the project on each request, so the UI can
+  // switch projects without restarting the server (see context-holder.ts).
+  const holder = 'current' in project ? project : createContextHolder(project);
+  const context = (): AnalysisContext => holder.current();
 
-  app.get('/api/summary', (c) => c.json(buildSummaryResponse(context)));
+  app.get('/api/summary', (c) => c.json(buildSummaryResponse(context())));
 
   app.get('/api/graph', (c) => {
     const level: ViewLevel = c.req.query('level') === 'file' ? 'file' : 'directory';
     // Repeated ?expand= params, so several directories can be open at once.
     const expanded = c.req.queries('expand') ?? [];
-    return c.json(buildGraphResponse(context, level, expanded));
+    return c.json(buildGraphResponse(context(), level, expanded));
   });
 
   app.get('/api/node/*', (c) => {
     const id = decodeIdFromPath(c.req.path, '/api/node/');
-    const payload = buildNodeResponse(context, id);
+    const payload = buildNodeResponse(context(), id);
     return payload === null ? c.json({ error: `unknown node: ${id}` }, 404) : c.json(payload);
   });
 
   app.get('/api/edge/*', (c) => {
     const id = decodeIdFromPath(c.req.path, '/api/edge/');
-    const payload = buildEdgeResponse(context, id);
+    const payload = buildEdgeResponse(context(), id);
     return payload === null ? c.json({ error: `unknown edge: ${id}` }, 404) : c.json(payload);
   });
 
-  app.get('/api/modules', (c) => c.json(buildModuleViewResponse(context)));
+  app.get('/api/modules', (c) => c.json(buildModuleViewResponse(context())));
 
-  app.get('/api/intent', (c) => c.json(buildIntentResponse(context)));
+  app.get('/api/intent', (c) => c.json(buildIntentResponse(context())));
 
-  app.get('/api/violations', (c) => c.json(buildViolationsResponse(context)));
+  app.get('/api/violations', (c) => c.json(buildViolationsResponse(context())));
 
   app.get('/api/snapshot', (c) => {
-    const response = buildSnapshotResponse(context, c.req.query('commit') ?? '');
+    const response = buildSnapshotResponse(context(), c.req.query('commit') ?? '');
     return c.json(response, response.ok ? 200 : 404);
   });
 
   app.get('/api/diff', (c) => {
     const from = c.req.query('from') ?? '';
     const to = c.req.query('to') ?? '';
-    const response = buildDiffResponse(context, from, to);
+    const response = buildDiffResponse(context(), from, to);
     // 404 rather than 400: the request is well formed, the snapshot is absent.
     return c.json(response, response.ok ? 200 : 404);
   });
@@ -145,18 +150,18 @@ export function createApp(
    * an entirely normal first visit. Asking for a *specific* commit that was
    * never snapshotted is a genuine 404 and stays one.
    */
-  app.get('/api/drift-history', (c) => c.json(buildDriftHistoryResponse(context)));
+  app.get('/api/drift-history', (c) => c.json(buildDriftHistoryResponse(context())));
 
-  app.get('/api/corrections', (c) => c.json(buildCorrectionsResponse(context)));
+  app.get('/api/corrections', (c) => c.json(buildCorrectionsResponse(context())));
 
   app.post('/api/corrections', async (c) => {
     const body: unknown = await c.req.json().catch(() => null);
-    const parsed = parseCorrectionRequest(context, body);
+    const parsed = parseCorrectionRequest(context(), body);
     if (!parsed.ok) {
       return c.json({ error: parsed.message }, 400);
     }
 
-    const saved = context.store.save(parsed.correction);
+    const saved = context().store.save(parsed.correction);
     // Deliberately not re-clustered here: a correction changes membership, and
     // moving the graph under the user mid-session is worse than waiting.
     return c.json({ correction: saved, appliesOn: 'next-run' }, 201);
@@ -164,7 +169,7 @@ export function createApp(
 
   app.delete('/api/corrections/*', (c) => {
     const id = decodeIdFromPath(c.req.path, '/api/corrections/');
-    return context.store.remove(id)
+    return context().store.remove(id)
       ? c.json({ removed: id, appliesOn: 'next-run' })
       : c.json({ error: `unknown correction: ${id}` }, 404);
   });
@@ -172,23 +177,23 @@ export function createApp(
   // Registered before /api/module/* so the more specific path wins.
   app.get('/api/module-edge/*', (c) => {
     const id = decodeIdFromPath(c.req.path, '/api/module-edge/');
-    const payload = buildModuleEdgeResponse(context, id);
+    const payload = buildModuleEdgeResponse(context(), id);
     return payload === null ? c.json({ error: `unknown module edge: ${id}` }, 404) : c.json(payload);
   });
 
   app.get('/api/module/*', (c) => {
     const id = decodeIdFromPath(c.req.path, '/api/module/');
-    const payload = buildModuleDetailResponse(context, id);
+    const payload = buildModuleDetailResponse(context(), id);
     return payload === null ? c.json({ error: `unknown module: ${id}` }, 404) : c.json(payload);
   });
 
-  app.get('/api/blueprint', (c) => c.json(buildBlueprintResponse(context)));
+  app.get('/api/blueprint', (c) => c.json(buildBlueprintResponse(context())));
 
-  app.get('/api/blueprint/seeds', (c) => c.json(buildSeedsResponse(context)));
+  app.get('/api/blueprint/seeds', (c) => c.json(buildSeedsResponse(context())));
 
   app.post('/api/blueprint/accept-seeds', async (c) => {
     const body: unknown = await c.req.json().catch(() => null);
-    const result = acceptSeeds(context, body);
+    const result = acceptSeeds(context(), body);
     return result.ok ? c.json({ accepted: result.accepted }, 201) : c.json({ error: result.message }, 400);
   });
 
@@ -197,7 +202,7 @@ export function createApp(
   // before deciding to save.
   app.post('/api/blueprint/compile', async (c) => {
     const body: unknown = await c.req.json().catch(() => null);
-    const result = compileRequest(context, body);
+    const result = compileRequest(context(), body);
     if (!result.ok) {
       return c.json({ error: result.message }, 400);
     }
@@ -210,7 +215,7 @@ export function createApp(
 
   app.post('/api/blueprint/save', async (c) => {
     const body: unknown = await c.req.json().catch(() => null);
-    const result = saveRequest(context, body);
+    const result = saveRequest(context(), body);
     return result.ok ? c.json(result, 201) : c.json({ error: result.message }, 400);
   });
 
