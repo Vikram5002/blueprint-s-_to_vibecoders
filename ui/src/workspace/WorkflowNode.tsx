@@ -17,43 +17,49 @@ export interface WorkflowNodeData extends Record<string, unknown> {
  * describes something in progress rather than a settled outcome.
  */
 const STATUS_STYLE: Readonly<
-  Record<GenerationStatus, { border: string; bg: string; text: string; dot: string }>
+  Record<GenerationStatus, { border: string; bg: string; text: string; dot: string; pill: string }>
 > = {
   'not-started': {
-    border: 'border-slate-600',
-    bg: 'bg-slate-800',
+    border: 'border-white/[0.12]',
+    bg: 'bg-slate-800/90',
     text: 'text-slate-400',
     dot: 'bg-slate-500',
+    pill: 'bg-white/[0.06]',
   },
   'layout-selected': {
-    border: 'border-sky-500',
-    bg: 'bg-sky-950',
+    border: 'border-sky-500/50',
+    bg: 'bg-sky-950/80',
     text: 'text-sky-300',
     dot: 'bg-sky-400',
+    pill: 'bg-sky-500/[0.14]',
   },
   generating: {
-    border: 'border-amber-500',
-    bg: 'bg-amber-950',
+    border: 'border-amber-500/50',
+    bg: 'bg-amber-950/80',
     text: 'text-amber-300',
     dot: 'bg-amber-400',
+    pill: 'bg-amber-500/[0.14]',
   },
   generated: {
-    border: 'border-indigo-500',
-    bg: 'bg-indigo-950',
+    border: 'border-indigo-500/50',
+    bg: 'bg-indigo-950/80',
     text: 'text-indigo-300',
     dot: 'bg-indigo-400',
+    pill: 'bg-indigo-500/[0.14]',
   },
   verified: {
-    border: 'border-emerald-600',
-    bg: 'bg-emerald-950',
+    border: 'border-emerald-500/50',
+    bg: 'bg-emerald-950/80',
     text: 'text-emerald-300',
     dot: 'bg-emerald-400',
+    pill: 'bg-emerald-500/[0.14]',
   },
   'violation-detected': {
-    border: 'border-red-600',
-    bg: 'bg-red-950',
+    border: 'border-red-500/60',
+    bg: 'bg-red-950/80',
     text: 'text-red-300',
     dot: 'bg-red-400',
+    pill: 'bg-red-500/[0.14]',
   },
 };
 
@@ -81,7 +87,7 @@ export function WorkflowNode({ data, selected }: NodeProps): JSX.Element {
 
   return (
     <div
-      className={`min-w-[200px] rounded-xl border-2 ${style.border} ${style.bg} p-3 shadow-lg`}
+      className={`min-w-[210px] rounded-2xl border ${style.border} ${style.bg} p-3.5 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.8)] backdrop-blur transition-shadow duration-300 ease-apple hover:shadow-[0_14px_36px_-10px_rgba(0,0,0,0.9)] ${selected ? 'ring-2 ring-sky-500/70 ring-offset-2 ring-offset-slate-900' : ''}`}
       data-domain={node.domain}
       data-status={node.status}
       data-selected={selected ? 'true' : 'false'}
@@ -89,9 +95,9 @@ export function WorkflowNode({ data, selected }: NodeProps): JSX.Element {
       <Handle type="target" position={Position.Top} />
 
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-slate-100">{DOMAIN_LABEL[node.domain]}</span>
+        <span className="text-[15px] font-semibold tracking-tight text-slate-50">{DOMAIN_LABEL[node.domain]}</span>
         <span
-          className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${style.text}`}
+          className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${style.text} ${style.pill}`}
         >
           <span
             className={`h-1.5 w-1.5 rounded-full ${style.dot} ${node.status === 'generating' ? 'animate-pulse' : ''}`}
@@ -110,7 +116,7 @@ export function WorkflowNode({ data, selected }: NodeProps): JSX.Element {
           event.stopPropagation();
           node.onViewComponents(node.domain);
         }}
-        className="w-full rounded-lg border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+        className="w-full rounded-lg bg-white/[0.08] px-2 py-1.5 text-xs font-medium text-slate-200 hover:bg-white/[0.14]"
       >
         View components
       </button>

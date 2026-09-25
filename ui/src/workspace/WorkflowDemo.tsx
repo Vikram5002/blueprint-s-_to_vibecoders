@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { SegmentedControl } from '../design/SegmentedControl';
 import { WorkflowGraph } from './WorkflowGraph';
 import { GenerateApplicationPanel } from './GenerateApplicationPanel';
 import {
@@ -68,34 +69,27 @@ export function WorkflowDemo(): JSX.Element {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-slate-800 bg-slate-950 px-4 py-2">
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setMode('mock')}
-            data-active={mode === 'mock'}
-            className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 data-[active=true]:border-slate-400 data-[active=true]:bg-slate-800 data-[active=true]:text-slate-100"
-          >
-            Mock data
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('live')}
-            data-active={mode === 'live'}
-            className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 data-[active=true]:border-slate-400 data-[active=true]:bg-slate-800 data-[active=true]:text-slate-100"
-          >
-            Generate from prompt
-          </button>
-        </div>
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-white/[0.08] bg-slate-950/60 px-4 py-2.5">
+        <SegmentedControl<Mode>
+          ariaLabel="Where the schema comes from"
+          kind="toggles"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: 'mock', label: 'Mock data' },
+            { value: 'live', label: 'Generate from prompt' },
+          ]}
+        />
 
         {mode === 'mock' && (
           <>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-1.5">
               <button
                 type="button"
                 onClick={() => setScenario('small')}
                 data-active={scenario === 'small'}
-                className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 data-[active=true]:border-slate-400 data-[active=true]:bg-slate-800 data-[active=true]:text-slate-100"
+                aria-pressed={scenario === 'small'}
+                className="rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-xs font-medium text-slate-400 hover:bg-white/[0.08] hover:text-slate-100 data-[active=true]:border-sky-500/40 data-[active=true]:bg-sky-500/[0.16] data-[active=true]:text-sky-200"
               >
                 Small project
               </button>
@@ -103,7 +97,8 @@ export function WorkflowDemo(): JSX.Element {
                 type="button"
                 onClick={() => setScenario('large')}
                 data-active={scenario === 'large'}
-                className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 data-[active=true]:border-slate-400 data-[active=true]:bg-slate-800 data-[active=true]:text-slate-100"
+                aria-pressed={scenario === 'large'}
+                className="rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-xs font-medium text-slate-400 hover:bg-white/[0.08] hover:text-slate-100 data-[active=true]:border-sky-500/40 data-[active=true]:bg-sky-500/[0.16] data-[active=true]:text-sky-200"
               >
                 Large project (350-component scale test)
               </button>
@@ -111,7 +106,8 @@ export function WorkflowDemo(): JSX.Element {
                 type="button"
                 onClick={() => setScenario('tension')}
                 data-active={scenario === 'tension'}
-                className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 data-[active=true]:border-slate-400 data-[active=true]:bg-slate-800 data-[active=true]:text-slate-100"
+                aria-pressed={scenario === 'tension'}
+                className="rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-xs font-medium text-slate-400 hover:bg-white/[0.08] hover:text-slate-100 data-[active=true]:border-sky-500/40 data-[active=true]:bg-sky-500/[0.16] data-[active=true]:text-sky-200"
               >
                 Known-tension fixture (Milestone 1)
               </button>
@@ -119,7 +115,8 @@ export function WorkflowDemo(): JSX.Element {
                 type="button"
                 onClick={() => setScenario('scale-test')}
                 data-active={scenario === 'scale-test'}
-                className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 data-[active=true]:border-slate-400 data-[active=true]:bg-slate-800 data-[active=true]:text-slate-100"
+                aria-pressed={scenario === 'scale-test'}
+                className="rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-xs font-medium text-slate-400 hover:bg-white/[0.08] hover:text-slate-100 data-[active=true]:border-sky-500/40 data-[active=true]:bg-sky-500/[0.16] data-[active=true]:text-sky-200"
               >
                 Scale-test fixture (Milestone 3, TaskRouter hard-fail)
               </button>
@@ -127,12 +124,13 @@ export function WorkflowDemo(): JSX.Element {
                 type="button"
                 onClick={() => setScenario('single-component')}
                 data-active={scenario === 'single-component'}
-                className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 data-[active=true]:border-slate-400 data-[active=true]:bg-slate-800 data-[active=true]:text-slate-100"
+                aria-pressed={scenario === 'single-component'}
+                className="rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-xs font-medium text-slate-400 hover:bg-white/[0.08] hover:text-slate-100 data-[active=true]:border-sky-500/40 data-[active=true]:bg-sky-500/[0.16] data-[active=true]:text-sky-200"
               >
                 Single-component fixture (build-failure retry)
               </button>
             </div>
-            <span className="rounded border border-amber-700/50 bg-amber-950/20 px-2 py-1 text-[11px] text-amber-300">
+            <span className="rounded-full bg-amber-500/[0.12] px-2.5 py-1 text-[11px] text-amber-300">
               Hand-built ProjectSchema mock (src/types/project-schema.ts) — no orchestrator run
               produced it.
             </span>

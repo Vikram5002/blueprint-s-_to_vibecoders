@@ -164,19 +164,19 @@ export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX
           strokeWidth: 1 + (edge.weight / maxWeight) * 6,
           stroke:
             edge.id === selectedEdgeId
-              ? '#b98cff'
+              ? '#d08df7'
               : edge.constraint !== null
-                ? '#7a5aa8'
-                : '#4a5568',
+                ? '#9c43cc'
+                : 'rgba(235, 235, 245, 0.22)',
         },
         label: edge.constraint !== null ? 'rule stated' : undefined,
-        labelStyle: { fill: '#e2d4ff', fontSize: 10, pointerEvents: 'none' },
+        labelStyle: { fill: '#e7c3fb', fontSize: 10, pointerEvents: 'none' },
         // pointerEvents: 'none' so the label's background rect never
         // intercepts a click meant for the edge underneath it — found while
         // browser-testing edge inspection: the label sits, by React Flow's
         // own default, in a layer above the edge's interaction hit-path, and
         // captures the click instead of passing it through.
-        labelBgStyle: { fill: '#241a38', pointerEvents: 'none' },
+        labelBgStyle: { fill: '#2a1a33', pointerEvents: 'none' },
       })),
     [edges, selectedEdgeId, maxWeight],
   );
@@ -189,6 +189,7 @@ export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX
       <div className="flex min-h-0 flex-1">
         <div className="min-w-0 flex-1">
           <ReactFlow
+            colorMode="dark"
             nodes={flowNodes}
             edges={flowEdges}
             nodeTypes={NODE_TYPES}
@@ -213,15 +214,15 @@ export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX
             }}
             proOptions={{ hideAttribution: true }}
           >
-            <Background color="#1c212b" gap={22} />
+            <Background color="#2a2a2e" gap={22} />
             <Controls showInteractive={false} />
             <MiniMap
               pannable
               zoomable
-              nodeColor="#4a5568"
+              nodeColor="#48484a"
               nodeStrokeWidth={0}
-              maskColor="rgba(15,17,21,0.75)"
-              bgColor="#11141a"
+              maskColor="rgba(12, 12, 14, 0.72)"
+              bgColor="#151517"
             />
           </ReactFlow>
         </div>

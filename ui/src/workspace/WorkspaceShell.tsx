@@ -7,6 +7,7 @@ import { WorkflowDemo } from './WorkflowDemo';
 import { PageBuilderCanvas } from './PageBuilderCanvas';
 import { ProviderPicker } from './ProviderPicker';
 import { useWorkspaceStore, type Tab } from './store';
+import { SegmentedControl } from '../design/SegmentedControl';
 
 const TABS: readonly { readonly id: Tab; readonly label: string }[] = [
   { id: 'conversation', label: 'Conversation' },
@@ -40,40 +41,35 @@ export function WorkspaceShell(): JSX.Element {
     <div className="flex h-screen w-screen overflow-hidden bg-slate-900 text-slate-100">
       <Sidebar />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div
-          role="tablist"
-          aria-label="Workspace sections"
-          className="flex flex-shrink-0 gap-1 border-b border-slate-800 bg-slate-950 px-3 py-1.5"
-        >
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="whitespace-nowrap rounded px-2.5 py-1 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-100 aria-selected:bg-slate-800 aria-selected:text-slate-100"
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="glass relative z-10 flex flex-shrink-0 items-center gap-3 border-b border-white/[0.08] px-3 py-2">
+          <SegmentedControl<Tab>
+            ariaLabel="Workspace sections"
+            kind="tabs"
+            value={activeTab}
+            onChange={setActiveTab}
+            options={TABS.map((tab) => ({ value: tab.id, label: tab.label }))}
+            className="flex-shrink-0"
+          />
 
           {/* Not inside any one tab: the choice decides who serves BOTH schema generation and the application generation that follows it. */}
-          <div className="ml-auto flex items-center pr-1">
+          <div className="ml-auto flex min-w-0 items-center">
             <ProviderPicker />
           </div>
         </div>
 
-        {activeTab === 'conversation' && (
-          <>
-            <ConversationPane />
-            <PromptBar />
-          </>
-        )}
-        {activeTab === 'layout' && <LayoutDemo />}
-        {activeTab === 'page-builder' && <PageBuilderCanvas />}
-        {activeTab === 'verification' && <VerificationDemo />}
-        {activeTab === 'workflow' && <WorkflowDemo />}
+        {/* Keyed on the tab so each view fades in when it is switched to. Opacity only: a moving parent would shift the page builder's drop maths and React Flow's fit-to-view while it settles (caught by the page-builder e2e tests). */}
+        <div key={activeTab} className="anim-fade flex min-h-0 min-w-0 flex-1 flex-col">
+          {activeTab === 'conversation' && (
+            <>
+              <ConversationPane />
+              <PromptBar />
+            </>
+          )}
+          {activeTab === 'layout' && <LayoutDemo />}
+          {activeTab === 'page-builder' && <PageBuilderCanvas />}
+          {activeTab === 'verification' && <VerificationDemo />}
+          {activeTab === 'workflow' && <WorkflowDemo />}
+        </div>
       </div>
     </div>
   );

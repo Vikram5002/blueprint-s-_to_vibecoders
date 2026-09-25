@@ -115,13 +115,13 @@ export function ProviderPicker(): JSX.Element {
 
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <span className="whitespace-nowrap text-[11px] uppercase tracking-wide text-slate-500">Model</span>
+      <span className="hidden whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider text-slate-500 xl:inline">Model</span>
       <select
         data-testid="provider-select"
         value={state.current}
         disabled={busy}
         onChange={(event) => void apply({ provider: event.target.value as ProviderName })}
-        className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200 disabled:opacity-60"
+        className="max-w-[170px] truncate rounded-md border border-white/[0.08] bg-white/[0.06] py-1 pl-2.5 text-xs font-medium text-slate-100 hover:bg-white/[0.1] disabled:opacity-60"
       >
         {state.providers.map((entry) => (
           <option key={entry.id} value={entry.id}>
@@ -131,14 +131,14 @@ export function ProviderPicker(): JSX.Element {
         ))}
       </select>
 
-      <span className="whitespace-nowrap text-[11px] uppercase tracking-wide text-slate-500">Code</span>
+      <span className="hidden whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider text-slate-500 xl:inline">Code</span>
       <select
         data-testid="code-provider-select"
         value={state.codeProvider ?? 'same'}
         disabled={busy}
         onChange={(event) => void apply({ codeProvider: event.target.value as ProviderName | 'same' })}
         title="Which model writes the application's code on Generate Application. The plan is still made by Model."
-        className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200 disabled:opacity-60"
+        className="max-w-[170px] truncate rounded-md border border-white/[0.08] bg-white/[0.06] py-1 pl-2.5 text-xs font-medium text-slate-100 hover:bg-white/[0.1] disabled:opacity-60"
       >
         <option value="same">Same as Model</option>
         {state.providers.map((entry) => (
@@ -165,13 +165,13 @@ export function ProviderPicker(): JSX.Element {
             onChange={(event) => setUrlDraft(event.target.value)}
             placeholder="https://your-tunnel.trycloudflare.com"
             title="Where the local inference server is reachable. Paste a new tunnel URL here each Colab session."
-            className="w-48 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200 disabled:opacity-60"
+            className="w-44 rounded-md border border-white/[0.08] bg-black/30 px-2.5 py-1 text-xs text-slate-100 placeholder:text-slate-500 disabled:opacity-60"
           />
           <button
             type="submit"
             data-testid="local-base-url-apply"
             disabled={busy || draft === state.localBaseUrl}
-            className="rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+            className="rounded-md bg-sky-500 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-sky-400 disabled:bg-white/[0.06] disabled:text-slate-500"
           >
             {busy ? '…' : 'Connect'}
           </button>
@@ -194,13 +194,13 @@ export function ProviderPicker(): JSX.Element {
             onChange={(event) => setCodeUrlDraft(event.target.value)}
             placeholder="https://your-tunnel.trycloudflare.com"
             title="Where the local code model's inference server is reachable. Same URL as Model when both run in one Colab session; a second tunnel when they do not."
-            className="w-48 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200 disabled:opacity-60"
+            className="w-44 rounded-md border border-white/[0.08] bg-black/30 px-2.5 py-1 text-xs text-slate-100 placeholder:text-slate-500 disabled:opacity-60"
           />
           <button
             type="submit"
             data-testid="local-code-base-url-apply"
             disabled={busy || codeDraft === state.localCodeBaseUrl}
-            className="rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+            className="rounded-md bg-sky-500 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-sky-400 disabled:bg-white/[0.06] disabled:text-slate-500"
           >
             {busy ? '…' : 'Connect'}
           </button>

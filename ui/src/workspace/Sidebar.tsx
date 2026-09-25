@@ -91,16 +91,16 @@ export function Sidebar(): JSX.Element {
 
   return (
     <aside
-      className={`flex h-full flex-shrink-0 flex-col border-r border-slate-800 bg-slate-950 transition-[width] duration-150 ${
+      className={`flex h-full flex-shrink-0 flex-col border-r border-white/[0.08] bg-slate-950 transition-[width] duration-300 ease-apple ${
         collapsed ? 'w-14' : 'w-60'
       }`}
     >
-      <div className="flex items-center justify-between border-b border-slate-800 px-3 py-3">
-        {!collapsed && <span className="text-sm font-semibold text-slate-200">Sessions</span>}
+      <div className="flex items-center justify-between px-3 pb-2 pt-3.5">
+        {!collapsed && <span className="text-[13px] font-semibold tracking-tight text-slate-100">Sessions</span>}
         <button
           type="button"
           onClick={toggleSidebar}
-          className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+          className="rounded-md p-1 text-slate-400 hover:bg-white/[0.08] hover:text-slate-100"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           aria-expanded={!collapsed}
         >
@@ -109,7 +109,7 @@ export function Sidebar(): JSX.Element {
       </div>
 
       {!collapsed && (
-        <div className="flex-1 overflow-y-auto px-3 py-4 text-sm text-slate-500">
+        <div className="flex-1 overflow-y-auto px-2 py-2 text-sm text-slate-500">
           {loadState.kind === 'error' ? (
             <p className="text-red-300">Could not load sessions: {loadState.message}</p>
           ) : loadState.kind === 'loading' && sessions.length === 0 ? (
@@ -117,7 +117,7 @@ export function Sidebar(): JSX.Element {
           ) : sessions.length === 0 ? (
             <p>No sessions yet.</p>
           ) : (
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {sessions.map((session) => (
                 <li key={session.id}>
                   <button
@@ -126,11 +126,11 @@ export function Sidebar(): JSX.Element {
                     onClick={() => void handleOpen(session.id)}
                     disabled={openingId === session.id}
                     aria-current={openedSessionId === session.id ? 'true' : undefined}
-                    className="w-full rounded px-2 py-1.5 text-left hover:bg-slate-900 disabled:cursor-wait aria-[current=true]:bg-slate-900 aria-[current=true]:text-slate-200"
+                    className="w-full rounded-lg px-2.5 py-2 text-left hover:bg-white/[0.05] disabled:cursor-wait aria-[current=true]:bg-sky-500/[0.16] aria-[current=true]:text-slate-100"
                   >
                     <div className="flex items-center gap-1.5">
                       <RunDot run={latestRuns.get(session.id)} />
-                      <span className="truncate text-slate-300">{session.title}</span>
+                      <span className="truncate text-[13px] font-medium text-slate-200">{session.title}</span>
                     </div>
                     <div className="text-xs text-slate-500">
                       {openingId === session.id ? 'Opening…' : formatSessionDate(session.createdAt)}
