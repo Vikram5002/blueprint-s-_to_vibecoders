@@ -99,6 +99,12 @@ async function dragTo(
   }
   await page.waitForTimeout(50);
   await page.mouse.up();
+  // dnd-kit swallows every click for 50ms after a drag ends (PointerSensor's
+  // detach() removes its capture-phase click blocker on a 50ms timer), so a
+  // drop is never also read as a click. A test that clicks sooner than any
+  // person could loses that race and sees its click ignored - this one did,
+  // intermittently, once re-rendering after a drop got slower.
+  await page.waitForTimeout(120);
 }
 
 function runCommand(command: string, args: readonly string[], cwd: string): Promise<{ readonly ok: boolean; readonly output: string }> {
