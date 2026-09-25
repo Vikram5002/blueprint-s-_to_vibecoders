@@ -820,6 +820,8 @@ def build_arg_parser():
     parser.add_argument("--model-name", default=DEFAULT_MODEL_NAME,
                         help="name of the single model when using --adapter")
     parser.add_argument("--port", type=int, default=8712)
+    parser.add_argument("--host", default="127.0.0.1",
+                        help="bind address; 0.0.0.0 only inside a container (Modal) whose own proxy is the only way in")
     parser.add_argument("--max-new-tokens-cap", type=int, default=4096,
                         help="upper bound applied to every request's maxOutputTokens")
     return parser
@@ -841,10 +843,10 @@ def main():
         print(f"  serving {spec.name}{marker}: base={spec.base} adapter={spec.adapter or '-'}")
 
     server = ThreadingHTTPServer(
-        ("127.0.0.1", args.port),
+        (args.host, args.port),
         make_handler(registry, max_new_tokens_cap=args.max_new_tokens_cap),
     )
-    print(f"READY: serving POST /complete and GET /models on http://127.0.0.1:{args.port} "
+    print(f"READY: serving POST /complete and GET /models on http://{args.host}:{args.port} "
           f"(max_new_tokens cap {args.max_new_tokens_cap})")
     server.serve_forever()
 
