@@ -57,7 +57,7 @@ const outPath = argValue('out');
 if (!outPath) {
   console.error(
     'Usage: node scripts/capture-code-batch.mjs [--local=<url>] [--model=<served name>] --out=<path.jsonl> ' +
-      '[--sources=dir1,dir2] [--limit=N] [--domains=backend,security] [--work=capture/code/work]',
+      '[--sources=dir1,dir2] [--limit=N] [--domains=backend,security] [--work=capture/code/work] [--teacher-host=modal-L40S]',
   );
   process.exit(1);
 }
@@ -68,6 +68,9 @@ const limit = argValue('limit') ? Number(argValue('limit')) : Infinity;
 const domainFilter = argValue('domains') ? new Set(argValue('domains').split(',').map((d) => d.trim())) : null;
 const sources = (argValue('sources') ?? 'training/data/real-project,training/data/synthetic').split(',').map((s) => s.trim()).filter(Boolean);
 const workRoot = argValue('work') ?? 'capture/code/work';
+// Where the teacher ran, e.g. 'modal-L40S' or 'desktop-4500Ada' (docs/GPU-COMPUTE-PROPOSAL.md s5):
+// mixed-host data must stay traceable. Recorded on every record and project line.
+const teacherHost = argValue('teacher-host') ?? 'unspecified';
 
 const GOLD_DIR = resolve('training/data/gold');
 for (const source of sources) {
@@ -340,6 +343,7 @@ for (const { sourceFile, pair } of plans) {
       reasons,
       teacher: teacherLabel,
       acceptance: 'per-file',
+      teacherHost,
       capturedAt: new Date().toISOString(),
     };
     writeLine(outPath, record);
@@ -374,6 +378,7 @@ for (const { sourceFile, pair } of plans) {
       reasons,
       teacher: teacherLabel,
       acceptance: 'per-file',
+      teacherHost,
       capturedAt: new Date().toISOString(),
       // Extra provenance beyond the contract's keys, never used for training: which retry produced this prompt.
       correctionOrigin: attempt.origin,
@@ -397,6 +402,7 @@ for (const { sourceFile, pair } of plans) {
     runtime: { started: runtime.started, ok: runtime.ok, routes: runtime.routes, serverOutput: runtime.serverOutput },
     regenerations: regenerationLog.length,
     teacher: teacherLabel,
+    teacherHost,
   });
   const marker = projectReasons.length === 0 && runtime.ok ? 'ok ' : '!! ';
   console.log(`${marker} build=${buildOk} violations=${violations.length} locator=${locatorFindings.length} runtime=${runtime.ok} records=${written}${projectReasons.length ? ' ' + projectReasons.join(',') : ''}`);

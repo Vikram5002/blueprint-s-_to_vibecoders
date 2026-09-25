@@ -146,6 +146,7 @@ def _entry(record, extra=None):
         "componentId": record["component"]["id"],
         "targetPath": record["targetPath"],
         "teacher": record["teacher"],
+        "teacherHost": record.get("teacherHost", "unspecified"),
     }
     if extra:
         out.update(extra)
