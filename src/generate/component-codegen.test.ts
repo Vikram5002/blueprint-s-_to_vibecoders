@@ -322,7 +322,8 @@ describe('repairInvalidJsonEscapes', () => {
   it('leaves every valid escape, and text outside strings, exactly as it was', () => {
     // Built by JSON.stringify, so it can only contain valid escapes: quote,
     // backslash, newline, tab, and a \u escape for a control character.
-    const valid = JSON.stringify({ code: 'a"b\\c\n\t/' });
+    const valid = JSON.stringify({ code: `a"b\c
+	${String.fromCharCode(1)}/` });
     expect(repairInvalidJsonEscapes(valid)).toBe(valid);
   });
 });
