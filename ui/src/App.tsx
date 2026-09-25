@@ -25,6 +25,9 @@ import { EvidencePanel } from './EvidencePanel';
 import { NodePanel } from './NodePanel';
 import { ModulePanel } from './ModulePanel';
 import { SummaryPanel } from './SummaryPanel';
+import { ProjectPicker } from './ProjectPicker';
+import { fetchCurrentProject } from './projects-api-client';
+import type { CurrentProject } from './projects-types';
 import type {
   CorrectionsResponse,
   EdgeResponse,
@@ -72,6 +75,13 @@ export function App(): JSX.Element {
   const [selectedNode, setSelectedNode] = useState<NodeResponse | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<EdgeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [project, setProject] = useState<CurrentProject | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  useEffect(() => {
+    // Older servers have no /api/projects; the header then simply has no source badge.
+    fetchCurrentProject().then(setProject).catch(() => setProject(null));
+  }, []);
 
   useEffect(() => {
     fetchSummary().then(setSummary).catch((cause: unknown) => setError(String(cause)));
@@ -182,8 +192,16 @@ export function App(): JSX.Element {
       <header className="topbar">
         <h1>Vibe-Code Blueprint</h1>
         <span className="root" title={summary?.root ?? ''}>
-          {summary?.root ?? ''}
+          {project?.source.kind === 'git' ? project.source.url.replace(/^https:\/\//, '') : (summary?.root ?? '')}
         </span>
+        {project !== null && !project.isHome && (
+          <span className="source-badge" data-kind={project.source.kind}>
+            {project.source.kind === 'git' ? 'Git' : 'Other folder'}
+          </span>
+        )}
+        <button type="button" className="control" data-testid="change-project" onClick={() => setPickerOpen(true)}>
+          Change project
+        </button>
         <span className="spacer" />
 
         {grouping === 'directory' && graph && (
@@ -254,6 +272,16 @@ export function App(): JSX.Element {
           </button>
         )}
       </header>
+
+      {pickerOpen && (
+        <ProjectPicker
+          current={project}
+          onClose={() => setPickerOpen(false)}
+          // Every view fetches on mount, so a reload is the one way to be sure
+          // nothing from the previous project lingers in any panel.
+          onSwitched={() => window.location.reload()}
+        />
+      )}
 
       {grouping === 'blueprint' ? (
         <BlueprintCanvas />
