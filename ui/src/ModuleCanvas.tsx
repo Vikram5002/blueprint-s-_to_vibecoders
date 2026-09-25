@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useMeasuredNodes } from './useMeasuredNodes';
 import { Background, Controls, MiniMap, ReactFlow, type Edge, type Node } from '@xyflow/react';
 import { ModuleNode, type ModuleNodeData } from './ModuleNode';
 import type { ModuleViewResponse } from './api-types';
@@ -17,7 +18,7 @@ export interface ModuleCanvasProps {
 export function ModuleCanvas(props: ModuleCanvasProps): JSX.Element {
   const { view, selectedModuleId, selectedEdgeId } = props;
 
-  const nodes = useMemo<Node[]>(
+  const builtNodes = useMemo<Node[]>(
     () =>
       view.nodes.map((node) => ({
         id: node.id,
@@ -48,17 +49,21 @@ export function ModuleCanvas(props: ModuleCanvasProps): JSX.Element {
       interactionWidth: 24,
       style: {
         strokeWidth: 1 + (Math.log(1 + edge.importCount) / Math.log(1 + heaviest)) * 5,
-        stroke: edge.id === selectedEdgeId ? '#6ea8fe' : '#4a5568',
+        stroke: edge.id === selectedEdgeId ? '#0a84ff' : 'rgba(235, 235, 245, 0.24)',
       },
       label: edge.importCount > 1 ? String(edge.importCount) : undefined,
-      labelStyle: { fill: '#9aa4b6', fontSize: 10 },
-      labelBgStyle: { fill: '#161a22' },
+      labelStyle: { fill: 'rgba(235, 235, 245, 0.62)', fontSize: 10 },
+      labelBgStyle: { fill: '#151517' },
     }));
   }, [view, selectedEdgeId]);
 
+  const measured = useMeasuredNodes(builtNodes);
+
   return (
     <ReactFlow
-      nodes={nodes}
+      colorMode="dark"
+      nodes={measured.nodes}
+      onNodesChange={measured.onNodesChange}
       edges={edges}
       nodeTypes={NODE_TYPES}
       fitView
@@ -72,16 +77,15 @@ export function ModuleCanvas(props: ModuleCanvasProps): JSX.Element {
       onNodeClick={(_event, node) => props.onSelectModule(node.id)}
       onEdgeClick={(_event, edge) => props.onSelectEdge(edge.id)}
     >
-      <Background color="#222834" gap={22} />
+      <Background color="#2a2a2e" gap={22} />
       <Controls showInteractive={false} />
       <MiniMap
         pannable
         zoomable
-        nodeColor="#4a5568"
+        nodeColor="#48484a"
         nodeStrokeWidth={0}
-        maskColor="rgba(15,17,21,0.75)"
-        bgColor="#11141a"
-        style={{ border: '1px solid #2a3140', borderRadius: 6 }}
+        maskColor="rgba(12, 12, 14, 0.72)"
+        bgColor="#151517"
       />
     </ReactFlow>
   );

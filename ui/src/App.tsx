@@ -26,6 +26,7 @@ import { NodePanel } from './NodePanel';
 import { ModulePanel } from './ModulePanel';
 import { SummaryPanel } from './SummaryPanel';
 import { ProjectPicker } from './ProjectPicker';
+import { SegmentedControl } from './design/SegmentedControl';
 import { fetchCurrentProject } from './projects-api-client';
 import type { CurrentProject } from './projects-types';
 import type {
@@ -222,49 +223,36 @@ export function App(): JSX.Element {
           </span>
         )}
 
-        <div className="toggle" title="Group by folder, or by import coupling">
-          <button
-            type="button"
-            data-active={grouping === 'directory'}
-            onClick={() => {
-              setGrouping('directory');
-              clearSelection();
-            }}
-          >
-            Folders
-          </button>
-          <button
-            type="button"
-            data-active={grouping === 'module'}
-            onClick={() => {
-              setGrouping('module');
-              clearSelection();
-            }}
-          >
-            Modules
-          </button>
-          <button
-            type="button"
-            data-active={grouping === 'blueprint'}
-            onClick={() => {
-              setGrouping('blueprint');
-              clearSelection();
-            }}
-            title="Author STATED rules — a proposal, never applied to the graph itself"
-          >
-            Blueprint
-          </button>
-        </div>
+        <SegmentedControl<Grouping>
+          ariaLabel="Group the graph by"
+          kind="tabs"
+          value={grouping}
+          onChange={(next) => {
+            setGrouping(next);
+            clearSelection();
+          }}
+          options={[
+            { value: 'directory', label: 'Folders', title: 'Group by folder on disk' },
+            { value: 'module', label: 'Modules', title: 'Group by import coupling' },
+            {
+              value: 'blueprint',
+              label: 'Blueprint',
+              title: 'Author STATED rules — a proposal, never applied to the graph itself',
+            },
+          ]}
+        />
 
         {grouping === 'directory' && (
-          <div className="toggle">
-            <button type="button" data-active={level === 'directory'} onClick={() => setLevel('directory')}>
-              Grouped
-            </button>
-            <button type="button" data-active={level === 'file'} onClick={() => setLevel('file')}>
-              Files
-            </button>
-          </div>
+          <SegmentedControl<ViewLevel>
+            ariaLabel="Detail level"
+            size="small"
+            value={level}
+            onChange={setLevel}
+            options={[
+              { value: 'directory', label: 'Grouped' },
+              { value: 'file', label: 'Files' },
+            ]}
+          />
         )}
         {grouping === 'directory' && expanded.length > 0 && (
           <button type="button" className="link" onClick={() => setExpanded([])}>

@@ -252,9 +252,9 @@ export function BlueprintCanvas(): JSX.Element {
         target: edge.to,
         selected: edge.id === selectedEdgeId,
         label: RELATION_LABEL[edge.relation],
-        labelStyle: { fill: '#e2d4ff', fontSize: 10 },
-        labelBgStyle: { fill: '#241a38' },
-        style: { stroke: edge.id === selectedEdgeId ? '#b98cff' : '#7a5aa8', strokeWidth: 2 },
+        labelStyle: { fill: '#e7c3fb', fontSize: 10 },
+        labelBgStyle: { fill: '#2a1a33' },
+        style: { stroke: edge.id === selectedEdgeId ? '#d08df7' : '#9c43cc', strokeWidth: 2 },
       })),
     [edges, selectedEdgeId],
   );
@@ -269,6 +269,7 @@ export function BlueprintCanvas(): JSX.Element {
     <Fragment>
       <div className="canvas blueprint-canvas-wrapper">
         <ReactFlow
+          colorMode="dark"
           nodes={flowNodes}
           edges={flowEdges}
           nodeTypes={NODE_TYPES}
@@ -284,9 +285,9 @@ export function BlueprintCanvas(): JSX.Element {
           elementsSelectable
           proOptions={{ hideAttribution: true }}
         >
-          <Background color="#241a38" gap={22} />
+          <Background color="#3a2548" gap={22} />
           <Controls showInteractive={false} />
-          <MiniMap pannable zoomable nodeColor="#7a5aa8" nodeStrokeWidth={0} maskColor="rgba(15,17,21,0.75)" bgColor="#11141a" />
+          <MiniMap pannable zoomable nodeColor="#9c43cc" nodeStrokeWidth={0} maskColor="rgba(12, 12, 14, 0.72)" bgColor="#151517" />
         </ReactFlow>
       </div>
 
@@ -310,7 +311,7 @@ export function BlueprintCanvas(): JSX.Element {
           compiler a typed file uses.
         </div>
 
-        <button type="button" onClick={addNode} style={{ marginBottom: 12 }}>
+        <button type="button" className="control" onClick={addNode} style={{ marginBottom: 12 }}>
           + add node
         </button>
 
@@ -391,6 +392,7 @@ export function BlueprintCanvas(): JSX.Element {
 
         <button
           type="button"
+          className="control primary"
           onClick={save}
           disabled={saving || graph.edges.length === 0}
           style={{ marginTop: 14, marginBottom: 18 }}

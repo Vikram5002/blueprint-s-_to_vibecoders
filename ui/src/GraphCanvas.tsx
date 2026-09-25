@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useMeasuredNodes } from './useMeasuredNodes';
 import {
   Background,
   Controls,
@@ -39,7 +40,7 @@ export function GraphCanvas(props: GraphCanvasProps): JSX.Element {
   const { graph, selectedNodeId, selectedEdgeId } = props;
   const implicated = props.implicatedFiles ?? [];
 
-  const nodes = useMemo<Node[]>(() => {
+  const builtNodes = useMemo<Node[]>(() => {
     const expandable = new Set(graph.expandable);
 
     return graph.nodes.map((node) => ({
@@ -79,17 +80,21 @@ export function GraphCanvas(props: GraphCanvasProps): JSX.Element {
       interactionWidth: 24,
       style: {
         strokeWidth: thickness(edge.importCount, heaviest),
-        stroke: edge.id === selectedEdgeId ? '#6ea8fe' : '#4a5568',
+        stroke: edge.id === selectedEdgeId ? '#0a84ff' : 'rgba(235, 235, 245, 0.24)',
       },
       label: edge.importCount > 1 ? String(edge.importCount) : undefined,
-      labelStyle: { fill: '#9aa4b6', fontSize: 10 },
-      labelBgStyle: { fill: '#161a22' },
+      labelStyle: { fill: 'rgba(235, 235, 245, 0.62)', fontSize: 10 },
+      labelBgStyle: { fill: '#151517' },
     }));
   }, [graph, selectedEdgeId]);
 
+  const measured = useMeasuredNodes(builtNodes);
+
   return (
     <ReactFlow
-      nodes={nodes}
+      colorMode="dark"
+      nodes={measured.nodes}
+      onNodesChange={measured.onNodesChange}
       edges={edges}
       nodeTypes={NODE_TYPES}
       fitView
@@ -105,18 +110,17 @@ export function GraphCanvas(props: GraphCanvasProps): JSX.Element {
       onNodeClick={(_event, node) => props.onSelectNode(node.id)}
       onEdgeClick={(_event, edge) => props.onSelectEdge(edge.id)}
     >
-      <Background color="#222834" gap={22} />
+      <Background color="#2a2a2e" gap={22} />
       <Controls showInteractive={false} />
       <MiniMap
         pannable
         zoomable
-        nodeColor="#4a5568"
+        nodeColor="#48484a"
         nodeStrokeWidth={0}
-        maskColor="rgba(15,17,21,0.75)"
+        maskColor="rgba(12, 12, 14, 0.72)"
         // The minimap's own background defaults to light and renders as a
         // white slab over the canvas otherwise.
-        bgColor="#11141a"
-        style={{ border: '1px solid #2a3140', borderRadius: 6 }}
+        bgColor="#151517"
       />
     </ReactFlow>
   );

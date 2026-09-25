@@ -117,7 +117,7 @@ export function BlueprintSeedsPanel(): JSX.Element {
               </label>
             ))}
           </div>
-          <button type="button" onClick={acceptSelected} disabled={busy || selected.size === 0} style={{ marginTop: 10 }}>
+          <button className="control primary" type="button" onClick={acceptSelected} disabled={busy || selected.size === 0} style={{ marginTop: 10 }}>
             {busy ? 'adding…' : `add ${selected.size || ''} to blueprint`}
           </button>
         </>

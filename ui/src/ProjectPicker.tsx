@@ -7,6 +7,7 @@ import {
   startAnalysis,
   switchToHomeProject,
 } from './projects-api-client';
+import { SegmentedControl } from './design/SegmentedControl';
 import type { BrowseResponse, CurrentProject, ProjectJob, RecentProject } from './projects-types';
 
 type Tab = 'local' | 'git';
@@ -177,28 +178,17 @@ export function ProjectPicker({ current, onClose, onSwitched }: ProjectPickerPro
           </p>
         )}
 
-        <div className="toggle modal-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            data-active={tab === 'local'}
-            aria-selected={tab === 'local'}
-            onClick={() => setTab('local')}
-            disabled={running}
-          >
-            Local folder
-          </button>
-          <button
-            type="button"
-            role="tab"
-            data-active={tab === 'git'}
-            aria-selected={tab === 'git'}
-            onClick={() => setTab('git')}
-            disabled={running}
-          >
-            Git repository
-          </button>
-        </div>
+        <SegmentedControl<Tab>
+          ariaLabel="Project source"
+          kind="tabs"
+          className="modal-tabs"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: 'local', label: 'Local folder', disabled: running },
+            { value: 'git', label: 'Git repository', disabled: running },
+          ]}
+        />
 
         {tab === 'local' ? (
           <div className="form">
