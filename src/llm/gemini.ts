@@ -51,6 +51,7 @@
  * exact line the two are drawn on).
  */
 import { estimateCostUsd } from './pricing.js';
+import type { KeyRotationState } from './gemini-key-state.js';
 import type { CompletionProvider, CompletionRequest, CompletionResult } from './provider.js';
 
 export const GEMINI_API_KEY_ENV = 'GEMINI_API_KEY';
@@ -135,6 +136,12 @@ export interface GeminiOptions {
    * exactly today's behaviour - one key, fail immediately on exhaustion.
    */
   readonly additionalApiKeys?: readonly string[];
+  /**
+   * Which keys already hit today's daily quota, remembered across restarts
+   * (gemini-key-state.ts). Absent means in-memory only; select-provider.ts
+   * supplies the real, file-backed state.
+   */
+  readonly keyState?: KeyRotationState;
   readonly model?: string;
   /**
    * Injected in tests so retry behaviour can be exercised without real
@@ -329,7 +336,12 @@ export function createGeminiProvider(options: GeminiOptions): CompletionProvider
    * process (`server.ts`'s `startServer`), so this closure already lives as
    * long as the daily quota window does in practice.
    */
-  let activeKeyIndex = 0;
+  const keyState = options.keyState ?? null;
+  // Start at the first key not already used up today, so a restart does not
+  // spend its first calls rediscovering an exhausted key. When every key is
+  // marked, start at key 1 anyway - the quota may have been raised or reset.
+  const exhaustedAtStart = keyState?.exhaustedToday() ?? new Set<number>();
+  let activeKeyIndex = Math.max(0, keys.findIndex((_key, index) => !exhaustedAtStart.has(index)));
 
   /** One key's worth of the original attempt loop, unchanged in behaviour, now tagging its own outcome for the rotation loop below to act on. */
   async function attemptWithKey(apiKey: string, request: CompletionRequest): Promise<AttemptOutcome> {
@@ -460,6 +472,9 @@ export function createGeminiProvider(options: GeminiOptions): CompletionProvider
         console.error(
           `[gemini] key ${activeKeyIndex + 1}/${keys.length} exhausted (${rotationReason}) - rotating to key ${activeKeyIndex + 2}/${keys.length}`,
         );
+        // Only true daily-quota exhaustion is remembered across restarts; a
+        // transient run of failures must not keep a healthy key out of use.
+        if (outcome.tag === 'daily-quota-exhausted') keyState?.markExhausted(activeKeyIndex);
         activeKeyIndex += 1;
       }
     },

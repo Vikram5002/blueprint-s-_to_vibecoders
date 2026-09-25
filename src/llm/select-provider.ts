@@ -39,6 +39,7 @@
  */
 import { createAnthropicProvider, readApiKey, DEFAULT_MODEL as DEFAULT_ANTHROPIC_MODEL } from './anthropic.js';
 import { createGeminiProvider, readGeminiApiKeys, DEFAULT_GEMINI_MODEL } from './gemini.js';
+import { createFileKeyRotationState, DEFAULT_KEY_STATE_PATH } from './gemini-key-state.js';
 import {
   createBluesmindsProvider,
   readBluesmindsApiKey,
@@ -91,6 +92,12 @@ export interface ProviderChoice {
    * key is set - "one key" behaves exactly as it always has.
    */
   readonly additionalApiKeys?: readonly string[];
+  /**
+   * `gemini` only: where "key N ran out of today's quota" is remembered across
+   * restarts (gemini-key-state.ts). Null turns it off (VIBE_GEMINI_KEY_STATE_PATH=off,
+   * which the test suite sets so tests never touch the real file).
+   */
+  readonly keyStatePath?: string | null;
   /** `local`/`local-code` only: where its inference server is reachable. Absent everywhere else - a vendor API's origin is not the user's to move. */
   readonly baseUrl?: string;
 }
@@ -131,6 +138,7 @@ export function chooseProvider(env: NodeJS.ProcessEnv = process.env): ProviderCh
       apiKey: keys[0] ?? null,
       keyEnv: 'GEMINI_API_KEY',
       additionalApiKeys: keys.slice(1),
+      keyStatePath: readKeyStatePath(env),
     };
   }
 
@@ -197,7 +205,21 @@ export async function createProvider(choice: ProviderChoice): Promise<Completion
       ...(choice.additionalApiKeys !== undefined && choice.additionalApiKeys.length > 0
         ? { additionalApiKeys: choice.additionalApiKeys }
         : {}),
+      ...(choice.keyStatePath === null || choice.keyStatePath === undefined || (choice.additionalApiKeys ?? []).length === 0
+        ? {}
+        : { keyState: createFileKeyRotationState([choice.apiKey, ...(choice.additionalApiKeys ?? [])], choice.keyStatePath) }),
     });
   }
   return createBluesmindsProvider({ apiKey: choice.apiKey, model: choice.model });
+}
+
+export const KEY_STATE_PATH_ENV = 'VIBE_GEMINI_KEY_STATE_PATH';
+
+function readKeyStatePath(env: NodeJS.ProcessEnv): string | null {
+  // The process's own environment is consulted too: callers (and tests)
+  // often pass a hand-built env holding only the API keys, and the test
+  // suite's "off" must still reach them.
+  const configured = (env[KEY_STATE_PATH_ENV] ?? process.env[KEY_STATE_PATH_ENV])?.trim();
+  if (configured === undefined || configured === '') return DEFAULT_KEY_STATE_PATH;
+  return configured.toLowerCase() === 'off' ? null : configured;
 }

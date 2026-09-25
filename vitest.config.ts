@@ -6,6 +6,8 @@ export const config = defineConfig({
     environment: 'node',
     // Walker tests touch the real filesystem; keep them off a shared fake timer.
     restoreMocks: true,
+    // Never read or write the real "which Gemini key is used up today" file.
+    env: { VIBE_GEMINI_KEY_STATE_PATH: 'off' },
   },
 });
 
