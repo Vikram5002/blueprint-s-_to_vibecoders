@@ -65,7 +65,16 @@ export interface WorkspaceState {
   /** Loads one of a run's pages into the canvas and switches to the Page Builder tab. */
   readonly openPageInBuilder: (origin: PageOrigin, layout: PageLayout) => void;
   readonly setPageOrigin: (origin: PageOrigin | null) => void;
+  /** Canvas undo/redo: element lists before (past) and after (future) the current one. */
+  readonly pageHistory: { readonly past: readonly (readonly CanvasElement[])[]; readonly future: readonly (readonly CanvasElement[])[] };
+  readonly undoPage: () => void;
+  readonly redoPage: () => void;
 }
+
+/** Changes closer together than this (typing a label, nudging with arrows) undo as one step. */
+const HISTORY_COALESCE_MS = 600;
+const HISTORY_LIMIT = 100;
+let lastHistoryPush = 0;
 
 const EMPTY_CANVAS: PageBuilderState = { pageName: 'Landing Page', elements: [], selectedId: null, origin: null };
 
@@ -84,12 +93,45 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
 
   pageBuilder: EMPTY_CANVAS,
   setPageName: (pageName) => set((state) => ({ pageBuilder: { ...state.pageBuilder, pageName } })),
-  setElements: (update) => set((state) => ({ pageBuilder: { ...state.pageBuilder, elements: update(state.pageBuilder.elements) } })),
+  setElements: (update) =>
+    set((state) => {
+      const before = state.pageBuilder.elements;
+      const after = update(before);
+      if (after === before) return {};
+      const now = Date.now();
+      const coalesce = now - lastHistoryPush < HISTORY_COALESCE_MS && state.pageHistory.past.length > 0;
+      lastHistoryPush = now;
+      const past = coalesce ? state.pageHistory.past : [...state.pageHistory.past, before].slice(-HISTORY_LIMIT);
+      return { pageBuilder: { ...state.pageBuilder, elements: after }, pageHistory: { past, future: [] } };
+    }),
   setSelectedId: (selectedId) => set((state) => ({ pageBuilder: { ...state.pageBuilder, selectedId } })),
   openPageInBuilder: (origin, layout) =>
     set({
       activeTab: 'page-builder',
       pageBuilder: { pageName: layout.pageName, elements: layout.elements, selectedId: null, origin },
+      pageHistory: { past: [], future: [] },
     }),
   setPageOrigin: (origin) => set((state) => ({ pageBuilder: { ...state.pageBuilder, origin } })),
+  pageHistory: { past: [], future: [] },
+  undoPage: () =>
+    set((state) => {
+      const previous = state.pageHistory.past.at(-1);
+      if (previous === undefined) return {};
+      lastHistoryPush = 0;
+      const stillThere = previous.some((element) => element.id === state.pageBuilder.selectedId);
+      return {
+        pageBuilder: { ...state.pageBuilder, elements: previous, selectedId: stillThere ? state.pageBuilder.selectedId : null },
+        pageHistory: { past: state.pageHistory.past.slice(0, -1), future: [state.pageBuilder.elements, ...state.pageHistory.future] },
+      };
+    }),
+  redoPage: () =>
+    set((state) => {
+      const next = state.pageHistory.future[0];
+      if (next === undefined) return {};
+      lastHistoryPush = 0;
+      return {
+        pageBuilder: { ...state.pageBuilder, elements: next },
+        pageHistory: { past: [...state.pageHistory.past, state.pageBuilder.elements], future: state.pageHistory.future.slice(1) },
+      };
+    }),
 }));
