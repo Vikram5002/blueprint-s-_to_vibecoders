@@ -10,6 +10,7 @@ import {
   type GenerationRunsStore,
 } from './generation-api.js';
 import { createApplicationRunsStore } from '../store/application-runs-store.js';
+import { createWorkflowSessionsStore, type WorkflowSessionsStore } from '../store/workflow-sessions-store.js';
 import { databasePathFor, openDatabase, type BlueprintDatabase } from '../store/database.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 import { componentId, type ValidatedProjectSchema } from '../types/project-schema.js';
@@ -236,6 +237,56 @@ describe('saved application runs', () => {
         body: JSON.stringify({ layout: { id: 'x', pageName: 'Something Else', elements: [] } }),
       });
       expect(response.status).toBe(400);
+    });
+  });
+
+  describe('import a project and edit its components', () => {
+    let sessions: WorkflowSessionsStore;
+    let importing: ReturnType<typeof createGenerationRoutes>;
+    beforeEach(() => {
+      sessions = createWorkflowSessionsStore(db);
+      importing = createGenerationRoutes({ llm: { provider: neverCalled, cache: memoryCache() }, generationRoot: join(root, 'generated'), jobs, runs, sessions });
+    });
+    const post = (path: string, body: unknown): Promise<Response> =>
+      Promise.resolve(importing.request(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }));
+
+    it('refuses a path that is not a folder, and a body that names no source', async () => {
+      expect((await post('/import', { kind: 'local', path: join(root, 'missing') })).status).toBe(400);
+      expect((await post('/import', { nothing: true })).status).toBe(400);
+    });
+
+    it("imports a local folder as a session and a run, keeping the person's own files", async () => {
+      const project = join(root, 'my-shop');
+      await mkdir(join(project, 'frontend', 'src', 'pages'), { recursive: true });
+      await mkdir(join(project, 'backend', 'src', 'lib'), { recursive: true });
+      await writeFile(join(project, 'frontend', 'src', 'pages', 'product-list.tsx'), 'export function ProductList() { return null; }\n');
+      await writeFile(join(project, 'backend', 'src', 'lib', 'money.ts'), 'export const cents = 1;\n');
+      const response = await post('/import', { kind: 'local', path: project });
+      expect(response.status).toBe(202);
+      const { id, sessionId } = (await response.json()) as { id: string; sessionId: string };
+      for (let i = 0; i < 600 && !['succeeded', 'failed'].includes(jobs.get(id)?.status ?? ''); i += 1) await new Promise((r) => setTimeout(r, 100));
+      const job = jobs.get(id);
+      expect(job?.kind).toBe('import');
+      expect(job?.status).toBe('succeeded');
+      expect(job?.result?.files.map((f) => f.path)).toEqual(expect.arrayContaining(['backend/src/lib/money.ts', 'frontend/src/pages/product-list.tsx']));
+      expect(sessions.get(sessionId)?.schema.domains.frontend.components.map((c) => c.name)).toEqual(['Product List']);
+      expect(runs.get(id)).toBeDefined();
+    }, 120_000);
+
+    it("edits a run's components: validates the change and updates the session plan", async () => {
+      const job = await finishedRun(jobs, runs, join(root, 'generated'), { installOk: true, buildOk: true });
+      expect((await post(`/application-jobs/${job.id}/components`, {})).status).toBe(400);
+      expect((await post(`/application-jobs/${job.id}/components`, { add: [{ domain: 'frontend', name: 'Product Catalog', purpose: 'dup' }] })).status).toBe(400);
+      const response = await post(`/application-jobs/${job.id}/components`, {
+        add: [{ domain: 'frontend', name: 'Checkout', purpose: 'Lets a shopper pay for their cart.' }],
+        remove: [{ domain: 'frontend', name: 'Product Catalog' }],
+      });
+      expect(response.status).toBe(202);
+      const started = (await response.json()) as { id: string };
+      expect(jobs.get(started.id)?.kind).toBe('edit');
+      const plan = sessions.get(job.sessionId)?.schema.domains.frontend.components.map((c) => c.name);
+      expect(plan).toEqual(['Checkout']);
+      for (let i = 0; i < 100 && jobs.get(started.id)?.status !== 'failed'; i += 1) await new Promise((r) => setTimeout(r, 20));
     });
   });
 

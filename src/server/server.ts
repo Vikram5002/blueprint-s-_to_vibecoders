@@ -352,6 +352,8 @@ export async function startServer(context: AnalysisContext): Promise<RunningServ
     llm: codeLlm,
     generationRoot: generationRootFor(context),
     runs: createApplicationRunsStore(context.db),
+    sessions,
+    cloneRoot: join(context.root, '.vibe', 'repos'),
   };
 
   const app = createApp(createContextHolder(context), workflowDeps, applicationDeps, { registry }, {

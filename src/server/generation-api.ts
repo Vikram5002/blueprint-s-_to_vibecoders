@@ -56,7 +56,15 @@ import { layoutToComponentFile, pageLayoutTargetPath, validatePageLayout, type P
 import { parsePageLayout } from './page-builder-api.js';
 import { buildZipArchive } from '../export/zip.js';
 import { withRunScaffold } from '../export/runnable-project.js';
-import type { GeneratedFile } from '../generate/assemble.js';
+import { componentTargetPath, type GeneratedFile } from '../generate/assemble.js';
+import { readProjectFiles, schemaFromProjectFiles } from '../generate/import-project.js';
+import { cloneDirectoryFor, cloneRepository, parseGitUrl, validateBranch } from '../ingest/git-source.js';
+import { compileDomainConstraints } from '../workflow/compile-constraints.js';
+import type { WorkflowSessionsStore } from '../store/workflow-sessions-store.js';
+import { componentId, DOMAIN_NAMES, type DomainName } from '../types/project-schema.js';
+import { runCommand } from '../generate/build-and-repair.js';
+import { stat } from 'node:fs/promises';
+import { basename } from 'node:path';
 import { generatePageSyncFiles, planPageSync, type PageSyncPlan } from '../generate/page-sync.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 import type { ApplicationRunsStore, ApplicationRunKind } from '../store/application-runs-store.js';
@@ -171,6 +179,10 @@ export interface ApplicationRouteDeps {
   readonly jobs?: ApplicationJobStore;
   /** Where finished jobs are saved. Optional so the routes work (without memory) in tests and without a database. */
   readonly runs?: GenerationRunsStore;
+  /** Workflow sessions, so an imported project gets a session of its own. Import is unavailable without it. */
+  readonly sessions?: WorkflowSessionsStore;
+  /** Where an imported Git repository is cloned (inside this tool's .vibe folder). */
+  readonly cloneRoot?: string;
 }
 
 type Llm = { readonly provider: CompletionProvider; readonly cache: LabelCache };
@@ -240,6 +252,80 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
       });
 
     return c.json({ id: job.id, status: job.status }, 202);
+  });
+
+  // Import a project a person has been building (a local folder or a Git
+  // repository in this tool's layout) as a session with a run of its own - no
+  // model call: its plan is read from its folders, then it is installed,
+  // built and checked, so every edit afterwards starts from the truth.
+  app.post('/import', async (c) => {
+    if (runs === undefined || deps.sessions === undefined) return c.json({ error: 'import needs the local database' }, 503);
+    const body: unknown = await c.req.json().catch(() => null);
+    const source = parseImportSource(body);
+    if (typeof source === 'string') return c.json({ error: source }, 400);
+    if (source.kind === 'local') {
+      const info = await stat(source.path).catch(() => null);
+      if (info === null || !info.isDirectory()) return c.json({ error: `not a folder: ${source.path}` }, 400);
+    }
+    if (source.kind === 'git' && deps.cloneRoot === undefined) return c.json({ error: 'git import is not configured' }, 503);
+
+    const capacity = atCapacity(jobs, c);
+    if (capacity !== null) return capacity;
+    const sessionId = randomUUID();
+    const job = jobs.create({ sessionId, kind: 'import' });
+    const root = join(deps.generationRoot, job.id);
+    const sessions = deps.sessions;
+    runImportJob(jobs, job.id, source, { sessionId, root, cloneRoot: deps.cloneRoot ?? '', sessions })
+      .then((schema) => {
+        const finished = jobs.get(job.id);
+        if (finished !== undefined && schema !== null) persist(finished, schema);
+      })
+      .catch((cause) => {
+        jobs.set({ ...(jobs.get(job.id) ?? job), status: 'failed', error: { phase: 'unexpected', message: `unexpected: ${String(cause)}` } });
+      });
+    return c.json({ id: job.id, status: job.status, sessionId }, 202);
+  });
+
+  // Add or remove components on a run: removed components' files go, new
+  // ones are generated with the existing files as context, and every other
+  // file - generated or hand-written - is kept as it is.
+  app.post('/application-jobs/:id/components', async (c) => {
+    if (deps.llm === null) return c.json({ error: 'no LLM provider configured (missing API key)' }, 503);
+    const llm = deps.llm;
+    const id = c.req.param('id');
+    const parent = findJob(id);
+    const schema = runs?.get(id)?.job.schema;
+    if (parent?.result === undefined || schema === undefined) return c.json({ error: `application job ${id} is not a saved, finished run` }, 404);
+    const edit = parseComponentEdit(await c.req.json().catch(() => null));
+    if (typeof edit === 'string') return c.json({ error: edit }, 400);
+    const edited = editSchemaComponents(schema, edit);
+    if (typeof edited === 'string') return c.json({ error: edited }, 400);
+
+    const capacity = atCapacity(jobs, c);
+    if (capacity !== null) return capacity;
+    const parentRoot = join(deps.generationRoot, parent.id);
+    const all = await Promise.all(parent.result.files.map(async (file) => ({ path: file.path, contents: await readGeneratedFile(parentRoot, file.path) })));
+    const gone = removedPaths(schema, edit);
+    const kept = all.filter((file) => !gone.has(file.path));
+    const componentPaths = new Set(DOMAIN_NAMES.flatMap((domain) => edited.domains[domain].components.map((component) => componentTargetPath(domain, component))));
+    const existing = kept.filter((file) => componentPaths.has(file.path));
+    const carried = kept.filter((file) => !componentPaths.has(file.path));
+
+    const job = jobs.create({ sessionId: parent.sessionId, kind: 'edit', parentId: parent.id });
+    const root = join(deps.generationRoot, job.id);
+    for (const page of runs?.listPageLayouts(id) ?? []) if (componentPaths.has(page.path)) runs?.savePageLayout({ ...page, runId: job.id });
+    saveSessionSchema(deps.sessions, edited);
+    runApplicationJob(jobs, job.id, edited, llm, root, existing, carried)
+      .then(() => {
+        const finished = jobs.get(job.id);
+        if (finished !== undefined) persist(finished, edited);
+      })
+      .catch((cause) => {
+        const failed: ApplicationJob = { ...(jobs.get(job.id) ?? job), status: 'failed', error: { phase: 'unexpected', message: `unexpected: ${String(cause)}` } };
+        jobs.set(failed);
+        persist(failed, edited);
+      });
+    return c.json({ id: job.id, status: job.status, added: edit.add.length, removed: edit.remove.length }, 202);
   });
 
   // Continue a half-built project: a run that failed during generation keeps
@@ -567,6 +653,7 @@ async function runApplicationJob(
   llm: Llm,
   root: string,
   existingFiles: readonly GeneratedFile[] = [],
+  carriedFiles: readonly GeneratedFile[] = [],
 ): Promise<void> {
   const current = store.get(jobId);
   if (current === undefined) return;
@@ -592,6 +679,7 @@ async function runApplicationJob(
     skipCache: true,
     root,
     existingFiles,
+    carriedFiles,
     onComponentFile,
     onPhase: (phase: GenerationPhase) => setPhase(store, jobId, phase),
   });
@@ -734,4 +822,144 @@ async function runPageSyncJob(
     unresolvedServiceLocatorFindings: detectServiceLocatorEvasion(built.value.files, plan.schema.constraints),
     build: built.value.build,
   });
+}
+
+// ---- import and component edits ---------------------------------------------
+
+type ImportSource = { readonly kind: 'local'; readonly path: string } | { readonly kind: 'git'; readonly url: string; readonly branch: string };
+
+function parseImportSource(body: unknown): ImportSource | string {
+  if (typeof body !== 'object' || body === null) return 'expected { kind: "local", path } or { kind: "git", url, branch? }';
+  const record = body as Record<string, unknown>;
+  if (record['kind'] === 'local' && typeof record['path'] === 'string' && record['path'].trim() !== '') return { kind: 'local', path: record['path'].trim() };
+  if (record['kind'] === 'git' && typeof record['url'] === 'string') {
+    const branch = typeof record['branch'] === 'string' ? record['branch'].trim() : '';
+    const validBranch = validateBranch(branch);
+    if (!validBranch.ok) return validBranch.error;
+    return { kind: 'git', url: record['url'].trim(), branch: validBranch.value };
+  }
+  return 'expected { kind: "local", path } or { kind: "git", url, branch? }';
+}
+
+interface ImportContext {
+  readonly sessionId: string;
+  readonly root: string;
+  readonly cloneRoot: string;
+  readonly sessions: WorkflowSessionsStore;
+}
+
+/** Clone or read, rebuild the plan, save the session, then install, build and check - no model involved. */
+async function runImportJob(store: ApplicationJobStore, jobId: string, source: ImportSource, context: ImportContext): Promise<ValidatedProjectSchema | null> {
+  const current = store.get(jobId);
+  if (current === undefined) return null;
+  store.set({ ...current, status: 'running', phase: 'generating' });
+  const pipelineError = (message: string): null => {
+    fail(store, jobId, { phase: 'generate-application', reason: 'pipeline-error', message });
+    return null;
+  };
+
+  let directory = source.kind === 'local' ? source.path : '';
+  let title = source.kind === 'local' ? basename(source.path) : '';
+  if (source.kind === 'git') {
+    const parsed = parseGitUrl(source.url);
+    if (!parsed.ok) return pipelineError(parsed.error);
+    directory = cloneDirectoryFor(context.cloneRoot, parsed.value);
+    const cloned = await cloneRepository(parsed.value.url, directory, source.branch === '' ? {} : { branch: source.branch });
+    if (!cloned.ok) return pipelineError(cloned.error);
+    title = parsed.value.url.replace(/\.git$/, '').split('/').pop() ?? 'Imported project';
+  }
+
+  const files = await readProjectFiles(directory);
+  const where = source.kind === 'local' ? source.path : source.url;
+  const imported = schemaFromProjectFiles(files, { sessionId: context.sessionId, title, prompt: `Imported from ${where}` });
+  if (!imported.ok) return pipelineError(imported.error);
+  const schema = imported.value.schema;
+  saveSessionSchema(context.sessions, schema, `Imported from ${where}`);
+
+  await writeProjectFiles(context.root, files, true);
+  setPhase(store, jobId, 'installing');
+  const install = await runCommand('npm', ['install', '--no-audit', '--no-fund'], context.root);
+  let build = { ok: false, output: '' };
+  if (install.ok) {
+    setPhase(store, jobId, 'building');
+    build = await runCommand('npm', ['run', 'build'], context.root);
+  }
+  setPhase(store, jobId, 'reverifying');
+  const verified = await verifyGeneratedProject(context.root, schema);
+  finish(store, jobId, {
+    files: summarise(files),
+    regenerationLog: [],
+    unresolvedViolations: verified.ok ? verified.value : [],
+    unresolvedServiceLocatorFindings: detectServiceLocatorEvasion(files, schema.constraints),
+    build: { installOk: install.ok, buildOk: install.ok && build.ok, ...(install.ok && build.ok ? {} : { failureOutput: install.ok ? build.output : install.output }) },
+  });
+  return schema;
+}
+
+/** The session is what the sidebar and Workflow graph show - kept in step with the plan a run was made from. */
+function saveSessionSchema(sessions: WorkflowSessionsStore | undefined, schema: ValidatedProjectSchema, prompt?: string): void {
+  if (sessions === undefined) return;
+  const existing = sessions.get(schema.sessionId);
+  const compiled = compileDomainConstraints(schema);
+  sessions.save({
+    id: schema.sessionId,
+    title: existing?.title ?? schema.title,
+    prompt: existing?.prompt ?? prompt ?? schema.originalPrompt,
+    createdAt: existing?.createdAt ?? new Date().toISOString(),
+    schema,
+    prohibitions: compiled.prohibitions,
+    permissions: compiled.permissions,
+  });
+}
+
+interface ComponentEdit {
+  readonly add: readonly { readonly domain: DomainName; readonly name: string; readonly purpose: string }[];
+  readonly remove: readonly { readonly domain: DomainName; readonly name: string }[];
+}
+
+function parseComponentEdit(body: unknown): ComponentEdit | string {
+  if (typeof body !== 'object' || body === null) return 'expected { add: [{ domain, name, purpose }], remove: [{ domain, name }] }';
+  const record = body as { add?: unknown; remove?: unknown };
+  const isDomain = (value: unknown): value is DomainName => typeof value === 'string' && (DOMAIN_NAMES as readonly string[]).includes(value);
+  const add: { domain: DomainName; name: string; purpose: string }[] = [];
+  const remove: { domain: DomainName; name: string }[] = [];
+  for (const item of Array.isArray(record.add) ? record.add : []) {
+    const entry = item as Record<string, unknown>;
+    if (!isDomain(entry['domain']) || typeof entry['name'] !== 'string' || entry['name'].trim() === '' || typeof entry['purpose'] !== 'string' || entry['purpose'].trim() === '') {
+      return 'every added component needs a domain, a name and a purpose';
+    }
+    add.push({ domain: entry['domain'], name: entry['name'].trim(), purpose: entry['purpose'].trim() });
+  }
+  for (const item of Array.isArray(record.remove) ? record.remove : []) {
+    const entry = item as Record<string, unknown>;
+    if (!isDomain(entry['domain']) || typeof entry['name'] !== 'string') return 'every removed component needs a domain and a name';
+    remove.push({ domain: entry['domain'], name: entry['name'] });
+  }
+  if (add.length === 0 && remove.length === 0) return 'nothing to change';
+  return { add, remove };
+}
+
+/** The files the removed components occupied. */
+function removedPaths(schema: ValidatedProjectSchema, edit: ComponentEdit): ReadonlySet<string> {
+  const paths = new Set<string>();
+  for (const { domain, name } of edit.remove) {
+    const component = schema.domains[domain].components.find((c) => c.name.toLowerCase() === name.toLowerCase());
+    if (component !== undefined) paths.add(componentTargetPath(domain, component));
+  }
+  return paths;
+}
+
+function editSchemaComponents(schema: ValidatedProjectSchema, edit: ComponentEdit): ValidatedProjectSchema | string {
+  const domains = { ...schema.domains };
+  for (const domain of DOMAIN_NAMES) {
+    const removing = new Set(edit.remove.filter((r) => r.domain === domain).map((r) => r.name.toLowerCase()));
+    let components = schema.domains[domain].components.filter((component) => !removing.has(component.name.toLowerCase()));
+    for (const added of edit.add.filter((a) => a.domain === domain)) {
+      if (components.some((component) => component.name.toLowerCase() === added.name.toLowerCase())) return `${domain} already has a component called "${added.name}"`;
+      components = [...components, { id: componentId(domain, added.name, added.purpose), name: added.name, purpose: added.purpose }];
+    }
+    domains[domain] = { ...schema.domains[domain], components };
+  }
+  const validated = validateProjectSchema({ ...schema, domains });
+  return validated.ok ? validated.value : `the edited plan is not valid: ${JSON.stringify(validated.error.slice(0, 3))}`;
 }
