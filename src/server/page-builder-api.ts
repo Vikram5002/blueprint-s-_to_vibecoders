@@ -37,7 +37,9 @@ function isCanvasElement(value: unknown): value is CanvasElement {
     // Optional, so absent is valid - but present-and-not-a-string is not.
     // Whether the string names a REAL animation is `validatePageLayout`'s
     // call, same split this function already keeps for colorToken.
-    (record['animation'] === undefined || typeof record['animation'] === 'string')
+    (record['animation'] === undefined || typeof record['animation'] === 'string') &&
+    // Same split again: a string here; a valid, unique name is validatePageLayout's call.
+    (record['field'] === undefined || typeof record['field'] === 'string')
   );
 }
 

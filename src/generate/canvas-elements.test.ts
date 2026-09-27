@@ -81,9 +81,9 @@ describe('extended page-builder elements', () => {
 
   it('uses real form controls with the right input types', () => {
     for (const type of ['email', 'password', 'number', 'date', 'search'] as const) {
-      expect(render({ type, label: 'Field' })).toContain(`<input type="${type}"`);
+      expect(render({ type, label: 'Field' })).toContain(`<input name="field" type="${type}"`);
     }
-    expect(render({ type: 'slider' })).toContain('<input type="range"');
+    expect(render({ type: 'slider' })).toContain('<input name="content" type="range"');
     expect(render({ type: 'toggle' })).toContain('role="switch"');
     expect(render({ type: 'file' })).toContain('<input type="file"');
   });

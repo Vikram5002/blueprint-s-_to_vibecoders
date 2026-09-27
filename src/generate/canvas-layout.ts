@@ -36,6 +36,15 @@ import {
   type ElementContext,
   type ExtendedElementType,
 } from './canvas-elements.js';
+import {
+  FIELD_NAME_PATTERN,
+  asSubmitButton,
+  formFields,
+  pageApiPath,
+  submitHandlerSource,
+  withFieldName,
+  type FormField,
+} from './canvas-form.js';
 
 /**
  * Fixed, closed palette - a lookup, never free-form CSS or an arbitrary hex
@@ -186,6 +195,12 @@ export interface CanvasElement {
   readonly colorToken: DesignToken;
   /** Absent means no animation at all - the element generates exactly as it did before animations existed. */
   readonly animation?: AnimationName;
+  /**
+   * The form field name this input's value is sent under (canvas-form.ts).
+   * Absent means "derive it from the label". Only meaningful on input-like
+   * elements; ignored on the rest.
+   */
+  readonly field?: string;
 }
 
 /** Fixed 1280x800 canvas per the approved v1 scope - responsive/breakpoint support is explicitly deferred, not reconciled with LayoutSchema's own breakpoints concept in this pass. */
@@ -203,7 +218,9 @@ export type LayoutValidationError =
   | { readonly reason: 'empty-page-name' }
   | { readonly reason: 'unknown-color-token'; readonly elementId: string; readonly token: string }
   | { readonly reason: 'unknown-animation'; readonly elementId: string; readonly animation: string }
-  | { readonly reason: 'out-of-bounds'; readonly elementId: string };
+  | { readonly reason: 'out-of-bounds'; readonly elementId: string }
+  | { readonly reason: 'invalid-field-name'; readonly elementId: string; readonly field: string }
+  | { readonly reason: 'duplicate-field-name'; readonly elementId: string; readonly field: string };
 
 /**
  * Validates before generating anything - never silently clamp an
@@ -234,6 +251,17 @@ export function validatePageLayout(layout: PageLayout): readonly LayoutValidatio
     }
   }
 
+  const named = new Set<string>();
+  for (const element of layout.elements) {
+    if (element.field === undefined) continue;
+    if (!FIELD_NAME_PATTERN.test(element.field)) {
+      errors.push({ reason: 'invalid-field-name', elementId: element.id, field: element.field });
+    } else if (named.has(element.field)) {
+      errors.push({ reason: 'duplicate-field-name', elementId: element.id, field: element.field });
+    }
+    named.add(element.field);
+  }
+
   return errors;
 }
 
@@ -257,6 +285,8 @@ export function layoutToComponentFile(layout: PageLayout): GeneratedFile {
   }
 
   const componentName = pascalIdentifier(componentSlug(layout.pageName));
+  const fields = formFields(layout);
+  if (fields.length > 0) return { path: pageLayoutTargetPath(layout), contents: formPageSource(layout, componentName, fields) };
 
   const elementsJsx = layout.elements
     .map((element) => renderElement(element))
@@ -276,6 +306,37 @@ export function layoutToComponentFile(layout: PageLayout): GeneratedFile {
     '};\n';
 
   return { path: pageLayoutTargetPath(layout), contents };
+}
+
+/**
+ * A page with inputs is a real form: every input carries its field name, the
+ * Button submits, and the handler POSTs the fields to the page's own API
+ * (canvas-form.ts), showing the outcome in a status line.
+ */
+function formPageSource(layout: PageLayout, componentName: string, fields: readonly FormField[]): string {
+  const nameOf = new Map(fields.map((field) => [field.elementId, field.name] as const));
+  const elementsJsx = layout.elements
+    .map((element) => {
+      const markup = asSubmitButton(element, renderElement(element));
+      const name = nameOf.get(element.id);
+      return `      ${name === undefined ? markup : withFieldName(markup, name)}`;
+    })
+    .join('\n');
+
+  return (
+    "import { useState, type FC, type FormEvent } from 'react';\n" +
+    '\n' +
+    `export const ${componentName}: FC = () => {\n` +
+    submitHandlerSource(fields, pageApiPath(layout.pageName)) +
+    '  return (\n' +
+    `    <form onSubmit={(event) => void handleSubmit(event)} style={{ position: 'relative', width: ${CANVAS_WIDTH}, height: ${CANVAS_HEIGHT} }}>\n` +
+    renderKeyframesBlock(layout.elements) +
+    `${elementsJsx}\n` +
+    "      <p role=\"status\" style={{ position: 'absolute', left: 16, bottom: 8, margin: 0, fontSize: 14, color: '#475569' }}>{status}</p>\n" +
+    '    </form>\n' +
+    '  );\n' +
+    '};\n'
+  );
 }
 
 /**

@@ -159,29 +159,29 @@ describe('layoutToComponentFile', () => {
 
     it('renders an input as a real, uncontrolled <input> with the label as its placeholder', () => {
       const file = layoutToComponentFile(layoutWith({ elements: [elementOf({ type: 'input', label: 'Email address' })] }));
-      expect(file.contents).toContain('<input type="text" data-testid="el-1" placeholder="Email address"');
+      expect(file.contents).toContain('<input name="emailAddress" type="text" data-testid="el-1" placeholder="Email address"');
     });
 
     it('renders a textarea as a real <textarea> with the label as its placeholder', () => {
       const file = layoutToComponentFile(layoutWith({ elements: [elementOf({ type: 'textarea', label: 'Your message' })] }));
-      expect(file.contents).toContain('<textarea data-testid="el-1" placeholder="Your message"');
+      expect(file.contents).toContain('<textarea name="yourMessage" data-testid="el-1" placeholder="Your message"');
     });
 
     it('renders a checkbox as a labelled real <input type="checkbox">', () => {
       const file = layoutToComponentFile(layoutWith({ elements: [elementOf({ type: 'checkbox', label: 'Subscribe' })] }));
-      expect(file.contents).toContain('<input type="checkbox" />');
+      expect(file.contents).toContain('<input name="subscribe" type="checkbox" />');
       expect(file.contents).toContain('>Subscribe</label>');
     });
 
     it('renders a radio as a labelled real <input type="radio">, distinct from a checkbox', () => {
       const file = layoutToComponentFile(layoutWith({ elements: [elementOf({ type: 'radio', label: 'Option A' })] }));
-      expect(file.contents).toContain('<input type="radio" />');
+      expect(file.contents).toContain('<input name="optionA" type="radio" />');
       expect(file.contents).toContain('>Option A</label>');
     });
 
     it('renders a select as a real <select> with the label as its one <option>', () => {
       const file = layoutToComponentFile(layoutWith({ elements: [elementOf({ type: 'select', label: 'United States' })] }));
-      expect(file.contents).toContain('<select data-testid="el-1"');
+      expect(file.contents).toContain('<select name="unitedStates" data-testid="el-1"');
       expect(file.contents).toContain('<option>United States</option></select>');
     });
 
