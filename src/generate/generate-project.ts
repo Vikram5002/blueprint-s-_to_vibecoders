@@ -20,6 +20,7 @@ import {
 import { compileBlueprint } from '../blueprint/dsl.js';
 import { endpointsFor } from './backend-routes.js';
 import { publicRoutesFor } from './canvas-form.js';
+import { mergePackageJson } from './import-project.js';
 import type { Constraint } from '../types/constraints.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 import {
@@ -533,6 +534,32 @@ export interface GenerationProgressOptions {
   readonly existingFiles?: readonly GeneratedFile[];
   /** Called once per component file, reused or new, the moment it is available. */
   readonly onComponentFile?: (file: GeneratedFile) => void | Promise<void>;
+  /**
+   * Every other file of a project a person has worked on (helpers, README,
+   * their package.json). Kept as they are, except the templated wiring the
+   * plan owns - entry points and tsconfig - and package.json, which is merged
+   * so nothing the person added is lost.
+   */
+  readonly carriedFiles?: readonly GeneratedFile[];
+}
+
+/** Files the plan itself defines - always re-derived from the plan, never carried over. */
+const PLAN_OWNED_FILES = new Set(['backend/src/index.ts', 'frontend/src/main.tsx', 'tsconfig.json']);
+
+function withCarriedFiles(generated: readonly GeneratedFile[], carried: readonly GeneratedFile[]): GeneratedFile[] {
+  const files = [...generated];
+  const paths = new Set(files.map((file) => file.path));
+  for (const file of carried) {
+    if (PLAN_OWNED_FILES.has(file.path)) continue;
+    if (file.path === 'package.json') {
+      const index = files.findIndex((f) => f.path === 'package.json');
+      const template = files[index];
+      if (template !== undefined) files[index] = { path: 'package.json', contents: mergePackageJson(file.contents, template.contents) };
+      continue;
+    }
+    if (!paths.has(file.path)) files.push(file);
+  }
+  return files;
 }
 
 export async function generateProject(
@@ -570,7 +597,7 @@ export async function generateProject(
     files.push(frontendEntryPointFile([...schema.domains.frontend.components]));
   }
 
-  return { ok: true, value: { files } };
+  return { ok: true, value: { files: withCarriedFiles(files, options.carriedFiles ?? []) } };
 }
 
 const RECIPE_STORE: Component = {

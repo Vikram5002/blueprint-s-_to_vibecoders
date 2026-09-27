@@ -64,3 +64,22 @@ describe('generateProject - continuing a half-built project', () => {
     expect(result.value.files.filter((f) => f.path === existing.path)).toEqual([existing]);
   });
 });
+
+describe('generateProject - carrying a person\'s own files', () => {
+  it('keeps their helpers and dependencies, but re-derives the plan-owned wiring', async () => {
+    const schema = todoSchema();
+    const carried: GeneratedFile[] = [
+      { path: 'backend/src/lib/money.ts', contents: 'export const cents = 1;\n' },
+      { path: 'package.json', contents: '{"name":"mine","dependencies":{"zod":"^3.23.0"}}' },
+      { path: 'backend/src/index.ts', contents: '// hand-edited entry point\n' },
+    ];
+    const result = await generateProject(schema, { provider: countingProvider().provider, cache, skipCache: true, carriedFiles: carried });
+    if (!result.ok) throw new Error('failed');
+    const byPath = new Map(result.value.files.map((f) => [f.path, f.contents]));
+    expect(byPath.get('backend/src/lib/money.ts')).toBe('export const cents = 1;\n');
+    const pkg = JSON.parse(byPath.get('package.json') ?? '{}') as { name: string; dependencies: Record<string, string> };
+    expect(pkg.name).toBe('mine');
+    expect(pkg.dependencies).toMatchObject({ zod: '^3.23.0', express: expect.any(String) });
+    expect(byPath.get('backend/src/index.ts')).not.toContain('hand-edited');
+  });
+});
