@@ -22,7 +22,7 @@ export const DESIGN_TOKEN_NAMES: readonly DesignToken[] = Object.keys(
   DESIGN_TOKENS,
 ) as DesignToken[];
 
-export type CanvasElementType =
+export type BasicElementType =
   | 'heading'
   | 'text'
   | 'button'
@@ -36,7 +36,22 @@ export type CanvasElementType =
   | 'divider'
   | 'container';
 
-export const CANVAS_ELEMENT_TYPES: readonly CanvasElementType[] = [
+/** Mirrors src/generate/canvas-elements.ts's EXTENDED_ELEMENT_TYPES, same order. */
+export const EXTENDED_ELEMENT_TYPES = [
+  'section', 'card', 'navbar', 'hero', 'footer',
+  'paragraph', 'quote', 'code', 'list', 'badge',
+  'video', 'icon', 'avatar',
+  'email', 'password', 'number', 'date', 'search', 'toggle', 'slider', 'file', 'rating',
+  'table', 'stat', 'progress', 'pricing', 'testimonial',
+  'tabs', 'breadcrumb', 'pagination',
+  'alert', 'accordion', 'spinner',
+] as const;
+
+export type ExtendedElementType = (typeof EXTENDED_ELEMENT_TYPES)[number];
+
+export type CanvasElementType = BasicElementType | ExtendedElementType;
+
+export const BASIC_ELEMENT_TYPES: readonly BasicElementType[] = [
   'heading',
   'text',
   'button',
@@ -50,6 +65,8 @@ export const CANVAS_ELEMENT_TYPES: readonly CanvasElementType[] = [
   'divider',
   'container',
 ];
+
+export const CANVAS_ELEMENT_TYPES: readonly CanvasElementType[] = [...BASIC_ELEMENT_TYPES, ...EXTENDED_ELEMENT_TYPES];
 
 /** Mirrors src/generate/canvas-layout.ts's ANIMATIONS - same names, same keyframes, same timings, so the editor preview animates identically to the generated file. */
 export const ANIMATIONS = {

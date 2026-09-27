@@ -3,10 +3,12 @@ import { DndContext, PointerSensor, useDraggable, useSensor, useSensors, type Dr
 import { generatePageFile } from './page-builder-api-client';
 import { applicationJobDownloadUrl, restoreRunPage, saveRunPage } from './workflow-api-client';
 import { useWorkspaceStore } from './store';
+import { ELEMENT_CATEGORIES, ELEMENT_SPECS } from './page-builder-catalogue';
+import { SPIN_KEYFRAMES, extendedPreview } from './page-builder-previews';
 import {
   ANIMATION_NAMES,
   ANIMATIONS,
-  CANVAS_ELEMENT_TYPES,
+  EXTENDED_ELEMENT_TYPES,
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
   DESIGN_TOKENS,
@@ -16,62 +18,25 @@ import {
   type CanvasElement,
   type CanvasElementType,
   type DesignToken,
+  type ExtendedElementType,
   type GeneratedPageFile,
 } from './page-builder-types';
-
-/** Default size for a freshly-placed element, per type - a button and a text label are not the same shape, and this is the one place that decides it, never a guess made per-drop. */
-const DEFAULT_SIZE: Readonly<
-  Record<CanvasElementType, { readonly width: number; readonly height: number }>
-> = {
-  heading: { width: 320, height: 40 },
-  text: { width: 200, height: 24 },
-  button: { width: 160, height: 40 },
-  link: { width: 140, height: 24 },
-  image: { width: 240, height: 160 },
-  input: { width: 220, height: 36 },
-  textarea: { width: 220, height: 96 },
-  checkbox: { width: 160, height: 24 },
-  radio: { width: 160, height: 24 },
-  select: { width: 200, height: 36 },
-  divider: { width: 400, height: 2 },
-  container: { width: 320, height: 200 },
-};
-
-const DEFAULT_LABEL: Readonly<Record<CanvasElementType, string>> = {
-  heading: 'Heading',
-  text: 'Text label',
-  button: 'Click me',
-  link: 'Learn more',
-  image: 'Image',
-  input: 'Enter text...',
-  textarea: 'Enter a longer message...',
-  checkbox: 'Checkbox option',
-  radio: 'Radio option',
-  select: 'Option one',
-  divider: '',
-  container: '',
-};
 
 /** Every catalogue keyframe, injected once into the canvas so the editor preview animates exactly like the generated file does. Built once at module load - it never varies. */
 const EDITOR_KEYFRAMES = ANIMATION_NAMES.map(
   (name) => `@keyframes ${keyframesIdentifier(name)} { ${ANIMATIONS[name].keyframes} }`,
-).join('\n');
+).join('\n') + `\n${SPIN_KEYFRAMES}`;
 
-/** Palette entry labels — separate from DEFAULT_LABEL, which is what gets placed on the canvas, not what names the palette button itself. */
-const PALETTE_LABEL: Readonly<Record<CanvasElementType, string>> = {
-  heading: 'Heading',
-  text: 'Text',
-  button: 'Button',
-  link: 'Link',
-  image: 'Image',
-  input: 'Input',
-  textarea: 'Textarea',
-  checkbox: 'Checkbox',
-  radio: 'Radio',
-  select: 'Dropdown',
-  divider: 'Divider',
-  container: 'Container',
-};
+const EXTENDED: ReadonlySet<string> = new Set(EXTENDED_ELEMENT_TYPES);
+
+function isExtended(type: CanvasElementType): type is ExtendedElementType {
+  return EXTENDED.has(type);
+}
+
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\/\S+$/i.test(value.trim());
+}
+
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
@@ -129,6 +94,16 @@ function placedElementVisual(
   color: string,
 ): { readonly style: React.CSSProperties; readonly content: React.ReactNode } {
   const base: React.CSSProperties = { fontSize: 13, boxSizing: 'border-box' };
+  if (isExtended(element.type)) {
+    const preview = extendedPreview(element.type, element, color);
+    return { style: { ...base, ...preview.style }, content: preview.content };
+  }
+  if (element.type === 'image' && isHttpUrl(element.label)) {
+    return {
+      style: { ...base, backgroundImage: `url("${element.label.trim()}")`, backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: 4 },
+      content: null,
+    };
+  }
 
   switch (element.type) {
     case 'heading':
@@ -359,6 +334,7 @@ export function PageBuilderCanvas(): JSX.Element {
    * their React key), which replays them.
    */
   const [replayTick, setReplayTick] = useState(0);
+  const [paletteQuery, setPaletteQuery] = useState('');
   /** The fixed 1280x800 element coordinate space. */
   const canvasRef = useRef<HTMLDivElement | null>(null);
   /** The flexible, scrollable window onto it - what is actually visible on screen. */
@@ -384,7 +360,7 @@ export function PageBuilderCanvas(): JSX.Element {
 
     if (activeId.startsWith('palette:')) {
       const type = activeId.slice('palette:'.length) as CanvasElementType;
-      const size = DEFAULT_SIZE[type];
+      const size = ELEMENT_SPECS[type];
 
       // The dragged item's final on-screen rect, real and tracked by
       // dnd-kit's own drag state - not a guess. Whether this counts as "a
@@ -423,7 +399,7 @@ export function PageBuilderCanvas(): JSX.Element {
         y: Math.round(clamp(dropY, 0, CANVAS_HEIGHT - size.height)),
         width: size.width,
         height: size.height,
-        label: DEFAULT_LABEL[type],
+        label: ELEMENT_SPECS[type].label,
         colorToken: 'primary',
       };
       setElements((current) => [...current, newElement]);
@@ -472,6 +448,27 @@ export function PageBuilderCanvas(): JSX.Element {
     readonly colorToken?: DesignToken;
     /** Explicit `undefined` means "clear it". `exactOptionalPropertyTypes` makes that a different thing from omitting the key, so it has to be spelled out. */
     readonly animation?: AnimationName | undefined;
+  }
+
+  /** Position and size from the Inspector, clamped so the element always stays on the canvas - the server rejects anything outside it. */
+  function updateGeometry(field: 'x' | 'y' | 'width' | 'height', raw: string): void {
+    const value = Math.round(Number(raw));
+    if (selectedId === null || !Number.isFinite(value)) return;
+    setElements((current) =>
+      current.map((element) => {
+        if (element.id !== selectedId) return element;
+        const next = { ...element, [field]: value };
+        const width = clamp(next.width, 1, CANVAS_WIDTH);
+        const height = clamp(next.height, 1, CANVAS_HEIGHT);
+        return {
+          ...next,
+          width,
+          height,
+          x: clamp(next.x, 0, CANVAS_WIDTH - width),
+          y: clamp(next.y, 0, CANVAS_HEIGHT - height),
+        };
+      }),
+    );
   }
 
   function updateSelected(patch: ElementPatch): void {
@@ -623,13 +620,31 @@ export function PageBuilderCanvas(): JSX.Element {
 
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[160px_1fr_260px]">
-            <aside className="space-y-2 rounded-lg border border-slate-800 bg-slate-900 p-3">
+            <aside className="max-h-[800px] space-y-2 overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 p-3">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                 Elements
               </h4>
-              {CANVAS_ELEMENT_TYPES.map((type) => (
-                <PaletteItem key={type} type={type} label={PALETTE_LABEL[type]} />
-              ))}
+              <input
+                type="search"
+                value={paletteQuery}
+                onChange={(event) => setPaletteQuery(event.target.value)}
+                placeholder="Search elements"
+                data-testid="palette-filter"
+                className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
+              />
+              {ELEMENT_CATEGORIES.map((category) => {
+                const query = paletteQuery.trim().toLowerCase();
+                const types = category.types.filter((type) => query === '' || ELEMENT_SPECS[type].palette.toLowerCase().includes(query));
+                if (types.length === 0) return null;
+                return (
+                  <section key={category.name} className="space-y-1.5 pt-1">
+                    <h5 className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{category.name}</h5>
+                    {types.map((type) => (
+                      <PaletteItem key={type} type={type} label={ELEMENT_SPECS[type].palette} />
+                    ))}
+                  </section>
+                );
+              })}
               <p className="pt-2 text-[10px] text-slate-500">Drag any element onto the canvas.</p>
             </aside>
 
@@ -715,7 +730,26 @@ export function PageBuilderCanvas(): JSX.Element {
                       onChange={(event) => updateSelected({ label: event.target.value })}
                       className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
                     />
+                    {ELEMENT_SPECS[selected.type].hint !== undefined && (
+                      <span data-testid="label-hint" className="mt-1 block text-[10px] text-slate-500">
+                        {ELEMENT_SPECS[selected.type].hint}
+                      </span>
+                    )}
                   </label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(['x', 'y', 'width', 'height'] as const).map((field) => (
+                      <label key={field} className="block text-[10px] uppercase text-slate-500">
+                        {field === 'width' ? 'W' : field === 'height' ? 'H' : field}
+                        <input
+                          type="number"
+                          data-testid={`geometry-${field}`}
+                          value={selected[field]}
+                          onChange={(event) => updateGeometry(field, event.target.value)}
+                          className="mt-0.5 w-full rounded border border-slate-700 bg-slate-950 px-1 py-1 text-xs text-slate-100"
+                        />
+                      </label>
+                    ))}
+                  </div>
                   <div>
                     <span className="mb-1 block text-xs text-slate-400">Color</span>
                     <div className="flex flex-wrap gap-1.5">
