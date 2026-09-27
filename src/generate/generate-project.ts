@@ -19,6 +19,7 @@ import {
 } from '../types/project-schema.js';
 import { compileBlueprint } from '../blueprint/dsl.js';
 import { endpointsFor } from './backend-routes.js';
+import { publicRoutesFor } from './canvas-form.js';
 import type { Constraint } from '../types/constraints.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 import {
@@ -319,7 +320,11 @@ const EXPORT_CONTRACT: Readonly<Record<Exclude<DomainName, 'frontend'>, string>>
     'the server - every route, every method, including plain GET requests that carry no body. Unless the ' +
     'purpose says it protects every request (e.g. authentication), first check req.method and req.path and ' +
     'call next() immediately for any request the purpose does not cover; only validate or reject the ' +
-    'requests it is actually about.',
+    'requests it is actually about. ' +
+    'If it checks tokens (e.g. a JWT), it MUST verify the signature before trusting anything in the token: ' +
+    'HMAC-SHA256 with createHmac and timingSafeEqual from "node:crypto", keyed by process.env.JWT_SECRET, and reject ' +
+    'every token when JWT_SECRET is unset. Decoding a token without verifying its signature is not authentication - ' +
+    'anyone could forge one.',
 };
 
 /**
@@ -544,7 +549,7 @@ export async function generateProject(
     }
   }
 
-  files.push(backendEntryPointFile([...schema.domains.backend.components], [...schema.domains.security.components]));
+  files.push(backendEntryPointFile([...schema.domains.backend.components], [...schema.domains.security.components], publicRoutesFor(schema)));
   if (hasFrontend) {
     files.push(frontendEntryPointFile([...schema.domains.frontend.components]));
   }

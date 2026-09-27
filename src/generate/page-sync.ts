@@ -23,7 +23,16 @@ import {
   tsconfigFile,
   type GeneratedFile,
 } from './assemble.js';
-import { describeFields, formFields, pageApiComponentName, pageApiPath, pageStoreComponentName, type FormField } from './canvas-form.js';
+import {
+  PAGE_FORM_API_PURPOSE_PREFIX,
+  describeFields,
+  formFields,
+  pageApiComponentName,
+  pageApiPath,
+  pageStoreComponentName,
+  publicRoutesFor,
+  type FormField,
+} from './canvas-form.js';
 import type { PageLayout } from './canvas-layout.js';
 import { createComponentCodeGenerator, type CreateComponentCodeGeneratorOptions } from './component-codegen.js';
 import { generateComponentFile, schemaImpliesDatabase, type GenerateProjectFailure } from './generate-project.js';
@@ -63,7 +72,8 @@ function storePurpose(pageName: string, fields: readonly FormField[]): string {
 function apiPurpose(pageName: string, fields: readonly FormField[]): string {
   const secret = fields.filter((field) => field.kind === 'password').map((field) => field.name);
   return [
-    `HTTP API behind the "${pageName}" page's form, mounted at ${pageApiPath(pageName)}.`,
+    `${PAGE_FORM_API_PURPOSE_PREFIX}${pageName}" page's form, mounted at ${pageApiPath(pageName)}.`,
+    "POST / is public - anyone who opens the page may submit it, so it needs no login; GET / is for the app's signed-in users.",
     `POST / accepts a JSON body with exactly these fields: ${describeFields(fields)}.`,
     'It validates each one (text and password must be non-empty strings, email must be a string containing @, number must be a finite number, date must be a YYYY-MM-DD string, boolean must be true or false),',
     `responds 400 with { error } naming the first invalid field, otherwise stores the submission through the "${pageStoreComponentName(pageName)}" database component and responds 201 with { id }.`,
@@ -133,7 +143,7 @@ export async function generatePageSyncFiles(
   const hasFrontend = schema.domains.frontend.components.length > 0;
   current = replace(current, packageJsonFile({ database: schemaImpliesDatabase(schema), frontend: hasFrontend }));
   current = replace(current, tsconfigFile({ frontend: hasFrontend }));
-  current = replace(current, backendEntryPointFile([...schema.domains.backend.components], [...schema.domains.security.components]));
+  current = replace(current, backendEntryPointFile([...schema.domains.backend.components], [...schema.domains.security.components], publicRoutesFor(schema)));
   if (hasFrontend) current = replace(current, frontendEntryPointFile([...schema.domains.frontend.components]));
   return { ok: true, value: current };
 }

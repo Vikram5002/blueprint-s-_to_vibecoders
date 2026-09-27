@@ -125,3 +125,27 @@ describe('backendEntryPointFile', () => {
     expect(file.contents).not.toContain('middleware');
   });
 });
+
+describe('backendEntryPointFile - public routes', () => {
+  const RATE_LIMITER: Component = { id: '5', name: 'Rate Limiter', purpose: 'Limits requests per IP.' };
+  const publicRoute = [{ method: 'POST', path: '/api/sign-up-api' }];
+
+  it('lets a public route past the authentication middleware only', () => {
+    const { contents } = backendEntryPointFile([USER_ROUTER], [RATE_LIMITER, AUTH_MIDDLEWARE], publicRoute);
+    expect(contents).toContain('const PUBLIC_ROUTES');
+    expect(contents).toContain('"method":"POST","path":"/api/sign-up-api"');
+    expect(contents).toContain('app.use(unlessPublic(authMiddleware));');
+    expect(contents).toContain('app.use(rateLimiter);');
+  });
+
+  it('is unchanged when there are no public routes', () => {
+    const { contents } = backendEntryPointFile([USER_ROUTER], [AUTH_MIDDLEWARE]);
+    expect(contents).not.toContain('PUBLIC_ROUTES');
+    expect(contents).toContain('app.use(authMiddleware);');
+  });
+
+  it('adds nothing when no security component authenticates', () => {
+    const { contents } = backendEntryPointFile([USER_ROUTER], [RATE_LIMITER], publicRoute);
+    expect(contents).not.toContain('unlessPublic');
+  });
+});

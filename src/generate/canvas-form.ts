@@ -14,7 +14,8 @@
  * submit handler are all derived from the layout by fixed rules, never by a
  * model. A page with no inputs generates exactly as it did before.
  */
-import { componentSlug } from './assemble.js';
+import { componentSlug, type PublicRoute } from './assemble.js';
+import type { ValidatedProjectSchema } from '../types/project-schema.js';
 import type { CanvasElement, CanvasElementType, PageLayout } from './canvas-layout.js';
 
 export type FieldKind = 'text' | 'email' | 'password' | 'number' | 'date' | 'boolean';
@@ -130,4 +131,18 @@ export function submitHandlerSource(fields: readonly FormField[], apiPath: strin
 /** Plain-language field list for the plan's component purposes - what the model is told to accept and store. */
 export function describeFields(fields: readonly FormField[]): string {
   return fields.map((field) => `${field.name} (${field.kind}${field.label.trim() === '' ? '' : `, "${field.label.trim()}"`})`).join(', ');
+}
+
+/** How a page-sync API's purpose begins - what marks a backend component as a page form's receiver. */
+export const PAGE_FORM_API_PURPOSE_PREFIX = 'HTTP API behind the "';
+
+/**
+ * A page form is filled in by anyone who opens the page, so its POST is
+ * public: the entry point lets it past the authentication middleware (rate
+ * limiting and validation still apply). Listing submissions stays protected.
+ */
+export function publicRoutesFor(schema: ValidatedProjectSchema): readonly PublicRoute[] {
+  return schema.domains.backend.components
+    .filter((component) => component.purpose.startsWith(PAGE_FORM_API_PURPOSE_PREFIX))
+    .map((component) => ({ method: 'POST', path: `/api/${componentSlug(component.name)}` }));
 }

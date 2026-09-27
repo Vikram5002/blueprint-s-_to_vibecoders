@@ -141,9 +141,21 @@ export function componentTargetPath(domain: DomainName, component: Component): s
  * generated file's export shape does not match, `tsc` fails to build and
  * that failure is reported honestly rather than patched around here.
  */
+export interface PublicRoute {
+  readonly method: string;
+  /** Full mounted path, e.g. /api/sign-up-api */
+  readonly path: string;
+}
+
+/** A security component that checks who the caller is (vs rate limiting or input validation). */
+export function isAuthenticationComponent(component: Component): boolean {
+  return /\b(auth\w*|jwt|tokens?|login|session|guard)\b/i.test(`${component.name} ${component.purpose}`);
+}
+
 export function backendEntryPointFile(
   backendComponents: readonly Component[],
   securityComponents: readonly Component[],
+  publicRoutes: readonly PublicRoute[] = [],
 ): GeneratedFile {
   const lines: string[] = [
     "import express from 'express';",
@@ -161,9 +173,23 @@ export function backendEntryPointFile(
 
   lines.push('', 'const app = express();', 'app.use(express.json());', '');
 
+  // Public routes (a page form anyone may submit) skip the AUTHENTICATION
+  // middleware only - rate limiting and input validation still run on them.
+  const skipsPublic = publicRoutes.length > 0 && securityComponents.some(isAuthenticationComponent);
+  if (skipsPublic) {
+    lines.push(
+      `const PUBLIC_ROUTES: ReadonlyArray<{ method: string; path: string }> = ${JSON.stringify(publicRoutes)};`,
+      'function unlessPublic(guard: express.RequestHandler): express.RequestHandler {',
+      '  return (req, res, next) =>',
+      "    PUBLIC_ROUTES.some((route) => route.method === req.method && (req.path === route.path || req.path === `${route.path}/`)) ? next() : guard(req, res, next);",
+      '}',
+      '',
+    );
+  }
   for (const component of securityComponents) {
     const slug = componentSlug(component.name);
-    lines.push(`app.use(${importIdentifier(slug)});`);
+    const identifier = importIdentifier(slug);
+    lines.push(`app.use(${skipsPublic && isAuthenticationComponent(component) ? `unlessPublic(${identifier})` : identifier});`);
   }
   lines.push('');
   for (const component of backendComponents) {
