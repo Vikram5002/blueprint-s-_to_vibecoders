@@ -20,14 +20,22 @@
  * real `ProjectSchema` (still deliberately stand-alone here, generating
  * one file with no entry point or package.json of its own).
  *
- * Element set covers the common building blocks of a page's static
- * structure and content - headings, text, links, images, buttons, the
- * standard form controls, a divider, and a grouping container - not every
- * HTML element that exists (a `<table>`, `<video>`, `<canvas>` etc. are
- * out of scope: each would need real data or an asset pipeline this
- * feature doesn't have, not just a position and a color).
+ * Element set: the twelve basic controls below (headings, text, links,
+ * images, buttons, the standard form controls, a divider, a container), plus
+ * the website-builder catalogue in canvas-elements.ts - sections, navbar,
+ * hero, cards, pricing, tables, tabs, media, and more form controls. Data a
+ * table or list shows is the static text the person typed, never fetched.
  */
 import { componentSlug, pascalIdentifier, type GeneratedFile } from './assemble.js';
+import {
+  EXTENDED_ELEMENT_TYPES,
+  SPIN_KEYFRAMES,
+  isExtendedElementType,
+  renderExtendedElement,
+  renderImageFromUrl,
+  type ElementContext,
+  type ExtendedElementType,
+} from './canvas-elements.js';
 
 /**
  * Fixed, closed palette - a lookup, never free-form CSS or an arbitrary hex
@@ -125,7 +133,7 @@ export function keyframesIdentifier(animation: AnimationName): string {
   return `vb-${animation}`;
 }
 
-export type CanvasElementType =
+export type BasicElementType =
   | 'heading'
   | 'text'
   | 'button'
@@ -139,8 +147,10 @@ export type CanvasElementType =
   | 'divider'
   | 'container';
 
+export type CanvasElementType = BasicElementType | ExtendedElementType;
+
 /** Every type this feature can place - kept in one array so the server-side shape check (page-builder-api.ts) and the UI palette can both derive from a single source of truth rather than two hand-kept lists drifting apart. */
-export const CANVAS_ELEMENT_TYPES: readonly CanvasElementType[] = [
+export const BASIC_ELEMENT_TYPES: readonly BasicElementType[] = [
   'heading',
   'text',
   'button',
@@ -154,6 +164,8 @@ export const CANVAS_ELEMENT_TYPES: readonly CanvasElementType[] = [
   'divider',
   'container',
 ];
+
+export const CANVAS_ELEMENT_TYPES: readonly CanvasElementType[] = [...BASIC_ELEMENT_TYPES, ...EXTENDED_ELEMENT_TYPES];
 
 export interface CanvasElement {
   /** Content-derived would be ideal, but placement is inherently orderless/mutable during editing - a plain client-generated id is honest about that, unlike componentId's content-derived guarantee for a stated purpose. */
@@ -283,11 +295,16 @@ function renderKeyframesBlock(elements: readonly CanvasElement[]): string {
   const used = new Set(
     elements.flatMap((element) => (element.animation === undefined ? [] : [element.animation])),
   );
-  if (used.size === 0) return '';
+  // The spinner spins whatever the animation picker says, so its keyframes ride along too.
+  const spins = elements.some((element) => element.type === 'spinner');
+  if (used.size === 0 && !spins) return '';
 
-  const rules = ANIMATION_NAMES.filter((name) => used.has(name))
-    .map((name) => `@keyframes ${keyframesIdentifier(name)} { ${ANIMATIONS[name].keyframes} }`)
-    .join('\n');
+  const rules = [
+    ...ANIMATION_NAMES.filter((name) => used.has(name)).map(
+      (name) => `@keyframes ${keyframesIdentifier(name)} { ${ANIMATIONS[name].keyframes} }`,
+    ),
+    ...(spins ? [SPIN_KEYFRAMES] : []),
+  ].join('\n');
 
   return `      <style>{\`\n${rules}\n\`}</style>\n`;
 }
@@ -313,7 +330,24 @@ function positionStyle(element: CanvasElement): string {
 function renderElement(element: CanvasElement): string {
   const color = DESIGN_TOKENS[element.colorToken];
   const position = positionStyle(element);
+  const context: ElementContext = {
+    id: element.id,
+    position,
+    color,
+    label: element.label,
+    width: element.width,
+    height: element.height,
+    text: escapeJsxText,
+    attr: escapeJsxAttribute,
+  };
+  if (isExtendedElementType(element.type)) return renderExtendedElement(element.type, context);
+  return renderBasicElement({ ...element, type: element.type }, context);
+}
+
+function renderBasicElement(element: CanvasElement & { readonly type: BasicElementType }, context: ElementContext): string {
+  const { color, position } = context;
   const text = escapeJsxText(element.label);
+  const attr = escapeJsxAttribute(element.label);
 
   switch (element.type) {
     case 'heading':
@@ -337,26 +371,30 @@ function renderElement(element: CanvasElement): string {
         `textDecoration: 'underline' }}>${text}</a>`
       );
 
-    case 'image':
-      // No real asset pipeline exists here - a labelled, dashed-border
+    case 'image': {
+      // A real http(s) URL in the label is a real image the person chose.
+      const real = renderImageFromUrl(context);
+      if (real !== null) return real;
+      // Otherwise no real asset pipeline exists here - a labelled, dashed-border
       // placeholder box is the honest representation of "an image goes
       // here", never a fabricated <img src> pointing at a file that does
       // not exist.
       return (
-        `<div data-testid="${element.id}" role="img" aria-label="${text}" style={{ ${position}, ` +
+        `<div data-testid="${element.id}" role="img" aria-label="${attr}" style={{ ${position}, ` +
         `border: '2px dashed ${color}', borderRadius: 4, display: 'flex', alignItems: 'center', ` +
         `justifyContent: 'center', color: '${color}', boxSizing: 'border-box' }}>${text}</div>`
       );
+    }
 
     case 'input':
       return (
-        `<input type="text" data-testid="${element.id}" placeholder="${text}" style={{ ${position}, ` +
+        `<input type="text" data-testid="${element.id}" placeholder="${attr}" style={{ ${position}, ` +
         `border: '1px solid ${color}', borderRadius: 4, boxSizing: 'border-box', padding: '0 8px' }} />`
       );
 
     case 'textarea':
       return (
-        `<textarea data-testid="${element.id}" placeholder="${text}" style={{ ${position}, ` +
+        `<textarea data-testid="${element.id}" placeholder="${attr}" style={{ ${position}, ` +
         `border: '1px solid ${color}', borderRadius: 4, boxSizing: 'border-box', padding: 8, resize: 'none' }} />`
       );
 
@@ -385,6 +423,11 @@ function renderElement(element: CanvasElement): string {
         `borderRadius: 8, boxSizing: 'border-box' }} />`
       );
   }
+}
+
+/** A double-quoted JSX attribute value: JSX decodes HTML entities there, so `&quot;` keeps a quote from ending the string early. */
+function escapeJsxAttribute(text: string): string {
+  return escapeJsxText(text).replace(/"/g, '&quot;');
 }
 
 /** JSX text content - only the characters that would otherwise break out of the tag or the string need escaping, since this text is never itself an attribute value. */

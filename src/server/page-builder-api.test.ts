@@ -57,7 +57,7 @@ describe('POST /generate', () => {
         layout: {
           id: 'x',
           pageName: 'X',
-          elements: [{ id: 'e1', type: 'video', x: 0, y: 0, width: 10, height: 10, label: 'x', colorToken: 'primary' }],
+          elements: [{ id: 'e1', type: 'hologram', x: 0, y: 0, width: 10, height: 10, label: 'x', colorToken: 'primary' }],
         },
       }),
     });

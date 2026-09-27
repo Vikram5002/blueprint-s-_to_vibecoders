@@ -15,14 +15,14 @@
  * from the expression's last identifier ("Name"), so a list page still
  * shows one representative row rather than an empty canvas.
  */
-import { CANVAS_HEIGHT, CANVAS_WIDTH, type CanvasElement, type CanvasElementType, type PageLayout } from './canvas-layout.js';
+import { CANVAS_HEIGHT, CANVAS_WIDTH, type BasicElementType, type CanvasElement, type PageLayout } from './canvas-layout.js';
 
 const COLUMN_WIDTH = 560;
 const COLUMN_GAP = 40;
 const MARGIN = 40;
 const ROW_GAP = 16;
 
-const HEIGHT: Readonly<Record<CanvasElementType, number>> = {
+const HEIGHT: Readonly<Record<BasicElementType, number>> = {
   heading: 56,
   text: 48,
   button: 44,
@@ -37,7 +37,7 @@ const HEIGHT: Readonly<Record<CanvasElementType, number>> = {
   container: 120,
 };
 
-const WIDTH: Readonly<Record<CanvasElementType, number>> = {
+const WIDTH: Readonly<Record<BasicElementType, number>> = {
   heading: COLUMN_WIDTH,
   text: COLUMN_WIDTH,
   button: 200,
@@ -54,7 +54,7 @@ const WIDTH: Readonly<Record<CanvasElementType, number>> = {
 
 interface Found {
   readonly index: number;
-  readonly type: CanvasElementType;
+  readonly type: BasicElementType;
   readonly label: string;
 }
 
