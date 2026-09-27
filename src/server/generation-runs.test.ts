@@ -238,4 +238,47 @@ describe('saved application runs', () => {
       expect(response.status).toBe(400);
     });
   });
+
+  describe('page sync', () => {
+    const sync = (jobId: string, path = PAGE_PATH): Promise<Response> =>
+      Promise.resolve(app.request(`/application-jobs/${jobId}/pages/sync`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path }) }));
+    const save = (jobId: string, elements: PageLayout['elements']): Promise<Response> =>
+      Promise.resolve(
+        app.request(`/application-jobs/${jobId}/pages`, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ layout: { id: 'x', pageName: 'Product Catalog', elements } }),
+        }),
+      );
+
+    it('refuses a page that was never saved from the builder', async () => {
+      const job = await finishedRun(jobs, runs, join(root, 'generated'), { installOk: true, buildOk: true });
+      expect((await sync(job.id)).status).toBe(409);
+    });
+
+    it('refuses a saved page with no inputs - there is no data to store', async () => {
+      const job = await finishedRun(jobs, runs, join(root, 'generated'), { installOk: true, buildOk: true });
+      await save(job.id, [{ id: 'el-1', type: 'heading', x: 0, y: 0, width: 200, height: 40, label: 'Hi', colorToken: 'primary' }]);
+      expect((await sync(job.id)).status).toBe(400);
+    });
+
+    it('starts a page-sync run from a saved form, naming its parent and the fields it will store', async () => {
+      const job = await finishedRun(jobs, runs, join(root, 'generated'), { installOk: true, buildOk: true });
+      await save(job.id, [
+        { id: 'el-1', type: 'email', x: 0, y: 0, width: 200, height: 40, label: 'Email', colorToken: 'primary', field: 'email' },
+        { id: 'el-2', type: 'button', x: 0, y: 60, width: 200, height: 40, label: 'Send', colorToken: 'primary' },
+      ]);
+      const response = await sync(job.id);
+      expect(response.status).toBe(202);
+      const started = (await response.json()) as { id: string; fields: { name: string; kind: string }[] };
+      expect(started.fields).toEqual([expect.objectContaining({ name: 'email', kind: 'email' })]);
+      const child = jobs.get(started.id);
+      expect(child?.kind).toBe('page-sync');
+      expect(child?.parentId).toBe(job.id);
+      expect(runs.getPageLayout(started.id, PAGE_PATH)).toBeDefined();
+      // The stub provider throws, so the job fails fast; wait for it before cleanup.
+      for (let i = 0; i < 100 && jobs.get(started.id)?.status !== 'failed'; i += 1) await new Promise((r) => setTimeout(r, 20));
+      expect(jobs.get(started.id)?.status).toBe('failed');
+    });
+  });
 });

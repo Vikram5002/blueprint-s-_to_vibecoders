@@ -56,6 +56,7 @@ import { layoutToComponentFile, pageLayoutTargetPath, validatePageLayout, type P
 import { parsePageLayout } from './page-builder-api.js';
 import { buildZipArchive } from '../export/zip.js';
 import { withRunScaffold } from '../export/runnable-project.js';
+import { generatePageSyncFiles, planPageSync, type PageSyncPlan } from '../generate/page-sync.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 import type { ApplicationRunsStore, ApplicationRunKind } from '../store/application-runs-store.js';
 import type { CompletionProvider } from '../llm/provider.js';
@@ -384,6 +385,57 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
     return c.json({ file });
   });
 
+  // Page sync: after a page's form is saved from the Page Builder, generate the
+  // backend API and database store that receive it (page-sync.ts), then build,
+  // repair and verify - saved as a new run, the parent left untouched.
+  app.post('/application-jobs/:id/pages/sync', async (c) => {
+    if (deps.llm === null) {
+      return c.json({ error: 'no LLM provider configured (missing API key)' }, 503);
+    }
+    const llm = deps.llm;
+    const id = c.req.param('id');
+    const parent = findJob(id);
+    const schema = runs?.get(id)?.job.schema;
+    if (runs === undefined || parent?.result === undefined || schema === undefined) {
+      return c.json({ error: `application job ${id} is not a saved, finished run` }, 404);
+    }
+    const body: unknown = await c.req.json().catch(() => null);
+    const path = typeof body === 'object' && body !== null ? (body as { path?: unknown }).path : undefined;
+    if (typeof path !== 'string') return c.json({ error: 'expected { path }' }, 400);
+    const stored = runs.getPageLayout(id, path);
+    const layout = stored === undefined ? null : parsePageLayout({ layout: stored.layout });
+    if (layout === null) {
+      return c.json({ error: `save ${path} from the Page Builder first - only a saved design can be synced` }, 409);
+    }
+    const planned = planPageSync(schema, layout);
+    if (!planned.ok) {
+      const message = planned.error.reason === 'no-form-fields' ? 'this page has no inputs, so there is no data to store' : planned.error.message;
+      return c.json({ error: message }, 400);
+    }
+
+    const capacity = atCapacity(jobs, c);
+    if (capacity !== null) return capacity;
+
+    const job = jobs.create({ sessionId: parent.sessionId, kind: 'page-sync', parentId: parent.id });
+    const root = join(deps.generationRoot, job.id);
+    const source = { parentRoot: join(deps.generationRoot, parent.id), parentFiles: parent.result.files, root };
+    // Edited pages stay editable in the new run.
+    for (const page of runs.listPageLayouts(id)) runs.savePageLayout({ ...page, runId: job.id });
+
+    runPageSyncJob(jobs, job.id, planned.value, llm, source)
+      .then(() => {
+        const finished = jobs.get(job.id);
+        if (finished !== undefined) persist(finished, planned.value.schema);
+      })
+      .catch((cause) => {
+        const failed: ApplicationJob = { ...job, status: 'failed', error: { phase: 'unexpected', message: `unexpected: ${String(cause)}` } };
+        jobs.set(failed);
+        persist(failed, planned.value.schema);
+      });
+
+    return c.json({ id: job.id, status: job.status, fields: planned.value.fields }, 202);
+  });
+
   app.post('/application-jobs/:id/pages/restore', async (c) => {
     const id = c.req.param('id');
     const body: unknown = await c.req.json().catch(() => null);
@@ -554,6 +606,61 @@ async function runRepairJob(
     regenerationLog: built.value.regenerationLog,
     unresolvedViolations: verified.value,
     unresolvedServiceLocatorFindings: detectServiceLocatorEvasion(built.value.files, schema.constraints),
+    build: built.value.build,
+  });
+}
+
+/**
+ * Page sync's worker: the parent run's files, plus the page's store and API
+ * generated from its form (page-sync.ts), then the same build-repair and
+ * Blueprint verification every generation gets.
+ */
+async function runPageSyncJob(
+  store: ApplicationJobStore,
+  jobId: string,
+  plan: PageSyncPlan,
+  llm: Llm,
+  source: { readonly parentRoot: string; readonly parentFiles: readonly FileSummary[]; readonly root: string },
+): Promise<void> {
+  const current = store.get(jobId);
+  if (current === undefined) return;
+  store.set({ ...current, status: 'running', phase: 'generating' });
+
+  const parentFiles = await Promise.all(
+    source.parentFiles.map(async (file) => ({ path: file.path, contents: await readGeneratedFile(source.parentRoot, file.path) })),
+  );
+  const synced = await generatePageSyncFiles(plan, parentFiles, { provider: llm.provider, cache: llm.cache, skipCache: true });
+  await llm.cache.flush();
+  if (!synced.ok) {
+    fail(store, jobId, { phase: 'generate-application', ...synced.error });
+    return;
+  }
+  await writeProjectFiles(source.root, synced.value, true);
+
+  const built = await installBuildAndRepair({
+    schema: plan.schema,
+    llm,
+    root: source.root,
+    files: synced.value,
+    onPhase: (phase) => setPhase(store, jobId, phase),
+  });
+  if (!built.ok) {
+    fail(store, jobId, { phase: 'generate-application', ...built.error });
+    return;
+  }
+
+  setPhase(store, jobId, 'reverifying');
+  const verified = await verifyGeneratedProject(source.root, plan.schema);
+  if (!verified.ok) {
+    fail(store, jobId, { phase: 'generate-application', ...verified.error });
+    return;
+  }
+
+  finish(store, jobId, {
+    files: summarise(built.value.files),
+    regenerationLog: built.value.regenerationLog,
+    unresolvedViolations: verified.value,
+    unresolvedServiceLocatorFindings: detectServiceLocatorEvasion(built.value.files, plan.schema.constraints),
     build: built.value.build,
   });
 }
