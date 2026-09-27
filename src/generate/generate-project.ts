@@ -18,6 +18,7 @@ import {
   type ValidatedProjectSchema,
 } from '../types/project-schema.js';
 import { compileBlueprint } from '../blueprint/dsl.js';
+import { endpointsFor } from './backend-routes.js';
 import type { Constraint } from '../types/constraints.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 import {
@@ -429,13 +430,20 @@ function computeDependencyExports(
  * have nothing to compute here and gets an empty list, same as
  * allowedImportsForDomain would for an unsupported relationship.
  */
-function httpEndpointsForDomain(schema: ValidatedProjectSchema, domain: DomainName): string[] {
+function httpEndpointsForDomain(
+  schema: ValidatedProjectSchema,
+  domain: DomainName,
+  generatedSoFar: readonly GeneratedFile[],
+): string[] {
   if (domain !== 'frontend') return [];
   const endpoints: string[] = [];
   for (const dep of schema.domains[domain].dependsOn) {
     if (dep !== 'backend') continue;
     for (const component of schema.domains[dep].components) {
-      endpoints.push(`/api/${componentSlug(component.name)}`);
+      // The router's real routes when its file already exists (backend is
+      // generated before frontend), so pages call paths that exist.
+      const source = generatedSoFar.find((file) => file.path === componentTargetPath('backend', component))?.contents;
+      endpoints.push(...endpointsFor(`/api/${componentSlug(component.name)}`, source));
     }
   }
   return endpoints;
@@ -465,7 +473,7 @@ export async function generateComponentFile(
     domain,
     targetPath,
     allowedImportPaths: dependencies.map((dep) => dep.importPath),
-    httpEndpoints: httpEndpointsForDomain(schema, domain),
+    httpEndpoints: httpEndpointsForDomain(schema, domain, generatedSoFar),
     availablePackages: AVAILABLE_PACKAGES[domain],
     exportContract: exportContractFor(domain, component),
     relevantConstraints: selectRelevantConstraints(schema.constraints, domainKeywords(domain)),

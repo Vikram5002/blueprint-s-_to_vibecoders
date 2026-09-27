@@ -336,7 +336,8 @@ function buildUserPrompt(context: ComponentGenerationContext): string {
 
   if (context.httpEndpoints !== undefined && context.httpEndpoints.length > 0) {
     lines.push(
-      `Real backend HTTP endpoints you may call over the network (fetch by URL, never import as a file): ${context.httpEndpoints.join(', ')}`,
+      `Real backend HTTP endpoints you may call over the network (fetch by URL, never import as a file): ${context.httpEndpoints.join(', ')}. ` +
+        'Call only these exact paths with these methods - never invent another path; a path not listed does not exist and returns 404.',
     );
   }
 
