@@ -124,6 +124,8 @@ export interface ApplicationJob {
     GenerationPhase | 'installing' | 'building' | 'build-regenerating' | 'build-reverifying';
   readonly result?: ApplicationJobResult;
   readonly error?: ApplicationJobError;
+  /** Component files written before the run stopped - what "Continue generation" reuses. Mirrors generation-api.ts. */
+  readonly partialFiles?: readonly FileSummary[];
 }
 
 /** One saved run of a session, as `GET /sessions/:id/application-runs` lists them. */

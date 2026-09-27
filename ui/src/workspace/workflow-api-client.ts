@@ -212,6 +212,31 @@ export async function repairApplicationViaApi(
   }
 }
 
+/**
+ * Continues a run that stopped during generation (a provider quota, a crash):
+ * the server reuses the component files it had saved and generates only the
+ * rest, then builds and verifies as usual. Resolves with the finished job.
+ */
+export async function continueApplicationViaApi(jobId: string, options: GenerateApplicationViaApiOptions = {}): Promise<ApplicationJob> {
+  const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/continue`, { method: 'POST' });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `continue failed: ${response.status}`));
+  }
+  const submitted = (await response.json()) as SubmittedApplicationJob;
+  for (;;) {
+    if (options.signal?.aborted) {
+      throw new DOMException('application continue cancelled', 'AbortError');
+    }
+    const job = await fetchApplicationJob(submitted.id);
+    options.onStatus?.(job);
+    if (APPLICATION_TERMINAL_STATUSES.has(job.status)) {
+      return job;
+    }
+    await delay(pollIntervalMs, options.signal);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Saved runs (/api/workflow/sessions/:id/application-runs and
 // /application-jobs/:id/pages, src/server/generation-api.ts) - every finished

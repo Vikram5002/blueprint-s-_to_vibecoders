@@ -5,6 +5,7 @@ import {
   fetchSessionRuns,
   generateApplicationViaApi,
   repairApplicationViaApi,
+  continueApplicationViaApi,
   restoreRunPage,
   type RunPage,
 } from './workflow-api-client';
@@ -46,7 +47,7 @@ type Phase =
 
 type PanelState =
   | { readonly kind: 'idle' }
-  | { readonly kind: 'in-flight'; readonly action: 'generate' | 'repair'; readonly phase?: Phase }
+  | { readonly kind: 'in-flight'; readonly action: 'generate' | 'repair' | 'continue'; readonly phase?: Phase }
   | { readonly kind: 'done'; readonly job: ApplicationJob; readonly restored: boolean }
   | { readonly kind: 'error'; readonly message: string };
 
@@ -112,7 +113,7 @@ export function GenerateApplicationPanel({
     };
   }, [schema.sessionId]);
 
-  function trackProgress(action: 'generate' | 'repair'): (job: ApplicationJob) => void {
+  function trackProgress(action: 'generate' | 'repair' | 'continue'): (job: ApplicationJob) => void {
     return (j) => {
       if (j.status === 'pending' || j.status === 'running') {
         setState(j.phase === undefined ? { kind: 'in-flight', action } : { kind: 'in-flight', action, phase: j.phase });
@@ -153,6 +154,29 @@ export function GenerateApplicationPanel({
     }
   }
 
+  async function handleContinue(jobId: string): Promise<void> {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setState({ kind: 'in-flight', action: 'continue' });
+    try {
+      const job = await continueApplicationViaApi(jobId, { signal: controller.signal, onStatus: trackProgress('continue') });
+      setState({ kind: 'done', job, restored: false });
+      notifyRunSaved();
+    } catch (cause) {
+      if (cause instanceof DOMException && cause.name === 'AbortError') return;
+      setState({ kind: 'error', message: cause instanceof Error ? cause.message : String(cause) });
+    }
+  }
+
+  const totalComponents = (['frontend', 'backend', 'database', 'security'] as const).reduce(
+    (count, domain) => count + schema.domains[domain].components.length,
+    0,
+  );
+  const savedComponents = state.kind === 'done' ? (state.job.partialFiles?.length ?? 0) : 0;
+  const canContinue = state.kind === 'done' && state.job.status === 'failed' && state.job.result === undefined && savedComponents > 0;
+
   const canRepair =
     state.kind === 'done' &&
     state.job.status === 'succeeded' &&
@@ -174,7 +198,7 @@ export function GenerateApplicationPanel({
           </button>
           {state.kind === 'done' && state.restored && (
             <span data-testid="restored-run-note" className="text-[11px] text-slate-500">
-              Showing this session&apos;s last saved run ({state.job.kind === 'repair' ? 'repair' : state.job.kind === 'page-sync' ? 'page sync' : 'generation'},{' '}
+              Showing this session&apos;s last saved run ({state.job.kind === 'repair' ? 'repair' : state.job.kind === 'page-sync' ? 'page sync' : state.job.kind === 'continue' ? 'continued generation' : 'generation'},{' '}
               {new Date(state.job.createdAt).toLocaleString()})
             </span>
           )}
@@ -199,6 +223,26 @@ export function GenerateApplicationPanel({
         <div className="mt-3 rounded-lg border border-red-700/50 bg-red-950/20 p-3 text-sm">
           <div className="mb-1 font-semibold text-red-300">Application generation failed</div>
           <p className="text-red-200">{state.message}</p>
+        </div>
+      )}
+
+      {canContinue && state.kind === 'done' && (
+        <div data-testid="continue-panel" className="mt-3 rounded-lg border border-sky-700/50 bg-sky-950/10 p-3">
+          <div className="mb-1 text-xs font-semibold text-sky-300">
+            This run stopped partway - {savedComponents} of {totalComponents} components were already written.
+          </div>
+          <p className="mb-2 text-[11px] text-sky-200/80">
+            Continue from where it stopped: the saved components are kept as they are and only the rest are generated, then the project is
+            built and verified as usual.
+          </p>
+          <button
+            type="button"
+            data-testid="continue-run"
+            onClick={() => void handleContinue(state.job.id)}
+            className="rounded-lg border border-sky-600 bg-sky-950/40 px-3 py-1.5 text-xs font-medium text-sky-200 hover:bg-sky-900/40"
+          >
+            Continue generation ({totalComponents - savedComponents} left)
+          </button>
         </div>
       )}
 
