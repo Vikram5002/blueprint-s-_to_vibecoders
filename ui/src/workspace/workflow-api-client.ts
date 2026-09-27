@@ -359,3 +359,48 @@ export async function syncRunPage(jobId: string, path: string): Promise<{ readon
   }
   return (await response.json()) as { id: string; fields: readonly SyncedField[] };
 }
+
+async function pollJob(id: string, options: GenerateApplicationViaApiOptions): Promise<ApplicationJob> {
+  const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+  for (;;) {
+    if (options.signal?.aborted) throw new DOMException('cancelled', 'AbortError');
+    const job = await fetchApplicationJob(id);
+    options.onStatus?.(job);
+    if (APPLICATION_TERMINAL_STATUSES.has(job.status)) return job;
+    await delay(pollIntervalMs, options.signal);
+  }
+}
+
+export type ImportSource = { readonly kind: 'local'; readonly path: string } | { readonly kind: 'git'; readonly url: string; readonly branch: string };
+
+/** Imports a project a person has been building (local folder or Git) as a new session; resolves once it is built and checked. */
+export async function importProjectViaApi(
+  source: ImportSource,
+  options: GenerateApplicationViaApiOptions = {},
+): Promise<{ readonly job: ApplicationJob; readonly sessionId: string }> {
+  const response = await fetch('/api/workflow/import', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(source),
+  });
+  if (!response.ok) throw new Error(await readErrorMessage(response, `import failed: ${response.status}`));
+  const submitted = (await response.json()) as { id: string; sessionId: string };
+  return { job: await pollJob(submitted.id, options), sessionId: submitted.sessionId };
+}
+
+export interface ComponentEditRequest {
+  readonly add: readonly { readonly domain: string; readonly name: string; readonly purpose: string }[];
+  readonly remove: readonly { readonly domain: string; readonly name: string }[];
+}
+
+/** Adds and removes components on a run - existing code is kept, only new components are generated. */
+export async function editComponentsViaApi(jobId: string, edit: ComponentEditRequest, options: GenerateApplicationViaApiOptions = {}): Promise<ApplicationJob> {
+  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/components`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(edit),
+  });
+  if (!response.ok) throw new Error(await readErrorMessage(response, `edit failed: ${response.status}`));
+  const submitted = (await response.json()) as SubmittedApplicationJob;
+  return pollJob(submitted.id, options);
+}

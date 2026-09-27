@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useWorkspaceStore } from './store';
 import { fetchLatestRuns, fetchWorkflowSession, listWorkflowSessions } from './workflow-api-client';
+import { ImportProjectDialog } from './ImportProjectDialog';
 import type { WorkflowSessionSummary } from './workflow-session-types';
 import type { LatestRun } from './application-job-types';
 
@@ -35,6 +36,7 @@ export function Sidebar(): JSX.Element {
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
   const sessionsVersion = useWorkspaceStore((state) => state.sessionsVersion);
   const openSession = useWorkspaceStore((state) => state.openSession);
+  const [importing, setImporting] = useState(false);
   const openedSessionId = useWorkspaceStore((state) => state.openedSession?.id);
   const runsVersion = useWorkspaceStore((state) => state.runsVersion);
 
@@ -97,6 +99,18 @@ export function Sidebar(): JSX.Element {
     >
       <div className="flex items-center justify-between px-3 pb-2 pt-3.5">
         {!collapsed && <span className="text-[13px] font-semibold tracking-tight text-slate-100">Sessions</span>}
+        {!collapsed && (
+          <button
+            type="button"
+            data-testid="open-import"
+            onClick={() => setImporting(true)}
+            title="Continue a project you have been building - from a folder or Git"
+            className="ml-auto mr-1 rounded-md border border-slate-700 px-2 py-0.5 text-[11px] text-slate-300 hover:bg-white/[0.06]"
+          >
+            ⇪ Import
+          </button>
+        )}
+        {importing && <ImportProjectDialog onClose={() => setImporting(false)} />}
         <button
           type="button"
           onClick={toggleSidebar}

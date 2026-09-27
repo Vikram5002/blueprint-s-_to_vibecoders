@@ -901,11 +901,15 @@ function saveSessionSchema(sessions: WorkflowSessionsStore | undefined, schema: 
   if (sessions === undefined) return;
   const existing = sessions.get(schema.sessionId);
   const compiled = compileDomainConstraints(schema);
+  if (existing !== undefined) {
+    sessions.updatePlan(schema.sessionId, { schema, prohibitions: compiled.prohibitions, permissions: compiled.permissions });
+    return;
+  }
   sessions.save({
     id: schema.sessionId,
-    title: existing?.title ?? schema.title,
-    prompt: existing?.prompt ?? prompt ?? schema.originalPrompt,
-    createdAt: existing?.createdAt ?? new Date().toISOString(),
+    title: schema.title,
+    prompt: prompt ?? schema.originalPrompt,
+    createdAt: new Date().toISOString(),
     schema,
     prohibitions: compiled.prohibitions,
     permissions: compiled.permissions,

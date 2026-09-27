@@ -3,6 +3,7 @@ import {
   applicationJobDownloadUrl,
   fetchRunPages,
   fetchSessionRuns,
+  fetchWorkflowSession,
   generateApplicationViaApi,
   repairApplicationViaApi,
   continueApplicationViaApi,
@@ -10,6 +11,7 @@ import {
   type RunPage,
 } from './workflow-api-client';
 import { useWorkspaceStore } from './store';
+import { ComponentEditor } from './ComponentEditor';
 import type { ApplicationJob, ApplicationJobError, GenerationPhase } from './application-job-types';
 import type { ProjectSchema } from './project-schema-types';
 
@@ -73,6 +75,7 @@ export function GenerateApplicationPanel({
   readonly schema: ProjectSchema;
 }): JSX.Element {
   const notifyRunSaved = useWorkspaceStore((state) => state.notifyRunSaved);
+  const rememberSession = useWorkspaceStore((state) => state.rememberSession);
   const [state, setState] = useState<PanelState>({ kind: 'idle' });
   const [elapsedMs, setElapsedMs] = useState(0);
   const [instruction, setInstruction] = useState('');
@@ -198,7 +201,7 @@ export function GenerateApplicationPanel({
           </button>
           {state.kind === 'done' && state.restored && (
             <span data-testid="restored-run-note" className="text-[11px] text-slate-500">
-              Showing this session&apos;s last saved run ({state.job.kind === 'repair' ? 'repair' : state.job.kind === 'page-sync' ? 'page sync' : state.job.kind === 'continue' ? 'continued generation' : 'generation'},{' '}
+              Showing this session&apos;s last saved run ({state.job.kind === 'repair' ? 'repair' : state.job.kind === 'page-sync' ? 'page sync' : state.job.kind === 'continue' ? 'continued generation' : state.job.kind === 'import' ? 'imported project' : state.job.kind === 'edit' ? 'component edit' : 'generation'},{' '}
               {new Date(state.job.createdAt).toLocaleString()})
             </span>
           )}
@@ -272,6 +275,19 @@ export function GenerateApplicationPanel({
             </button>
           </div>
         </div>
+      )}
+
+      {state.kind === 'done' && state.job.status === 'succeeded' && state.job.result !== undefined && (
+        <ComponentEditor
+          job={state.job}
+          schema={schema}
+          onDone={(finished) => {
+            setState({ kind: 'done', job: finished, restored: false });
+            notifyRunSaved();
+            // The plan changed server-side; show it in the graph too.
+            fetchWorkflowSession(schema.sessionId).then(rememberSession).catch(() => {});
+          }}
+        />
       )}
 
       {state.kind === 'done' && <ApplicationJobReport job={state.job} schema={schema} />}

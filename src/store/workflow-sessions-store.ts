@@ -45,6 +45,12 @@ export interface WorkflowSessionsStore {
   /** Newest first — the order the sidebar renders them in. */
   list(): WorkflowSessionSummary[];
   get(id: string): WorkflowSessionDetail | undefined;
+  /**
+   * Replaces an existing session's plan - when a person adds or removes
+   * components. `save` never overwrites (a session's first record is kept);
+   * this is the one deliberate way its plan changes afterwards.
+   */
+  updatePlan(id: string, plan: { readonly schema: ValidatedProjectSchema; readonly prohibitions: readonly Constraint[]; readonly permissions: readonly WorkflowPermission[] }): void;
 }
 
 export function createWorkflowSessionsStore(db: BlueprintDatabase): WorkflowSessionsStore {
@@ -65,6 +71,10 @@ export function createWorkflowSessionsStore(db: BlueprintDatabase): WorkflowSess
         } satisfies StoredBody),
         createdAt: session.createdAt,
       });
+    },
+
+    updatePlan: (id, plan) => {
+      db.prepare('UPDATE workflow_sessions SET body = @body WHERE id = @id').run({ id, body: JSON.stringify(plan) });
     },
 
     list: () =>

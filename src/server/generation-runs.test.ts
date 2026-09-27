@@ -275,6 +275,10 @@ describe('saved application runs', () => {
 
     it("edits a run's components: validates the change and updates the session plan", async () => {
       const job = await finishedRun(jobs, runs, join(root, 'generated'), { installOk: true, buildOk: true });
+      // An existing session: its plan must be updated in place, not left as it was.
+      const original = runs.get(job.id)?.job.schema;
+      if (original === undefined) throw new Error('fixture run missing');
+      sessions.save({ id: job.sessionId, title: 'Runs test', prompt: 'p', createdAt: new Date().toISOString(), schema: original, prohibitions: [], permissions: [] });
       expect((await post(`/application-jobs/${job.id}/components`, {})).status).toBe(400);
       expect((await post(`/application-jobs/${job.id}/components`, { add: [{ domain: 'frontend', name: 'Product Catalog', purpose: 'dup' }] })).status).toBe(400);
       const response = await post(`/application-jobs/${job.id}/components`, {
