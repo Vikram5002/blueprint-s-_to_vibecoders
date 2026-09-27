@@ -34,6 +34,7 @@ import {
   generateComponentFile,
   generateProject,
   type GenerateProjectFailure,
+  type GenerationProgressOptions,
 } from './generate-project.js';
 import type { GeneratedFile } from './assemble.js';
 import {
@@ -99,7 +100,7 @@ export type GenerateAndVerifyFailure =
  */
 export type GenerationPhase = 'generating' | 'verifying' | 'regenerating' | 'reverifying';
 
-export interface GenerateAndVerifyOptions extends CreateComponentCodeGeneratorOptions {
+export interface GenerateAndVerifyOptions extends CreateComponentCodeGeneratorOptions, GenerationProgressOptions {
   /** Directory the project is written to and verified in. Cleared and recreated on every call. */
   readonly root: string;
   readonly onPhase?: (phase: GenerationPhase) => void;

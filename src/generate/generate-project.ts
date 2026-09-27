@@ -527,9 +527,17 @@ export function findComponentByTargetPath(
  * `dependsOn`-only import rule. Still no auto-regeneration retry - deferred
  * to Milestone 3 per the approved scope.
  */
+/** Resuming a half-built project: what was already generated, and a hook to save each new file as soon as it exists. */
+export interface GenerationProgressOptions {
+  /** Component files from an earlier, interrupted run - reused as they are, never regenerated. */
+  readonly existingFiles?: readonly GeneratedFile[];
+  /** Called once per component file, reused or new, the moment it is available. */
+  readonly onComponentFile?: (file: GeneratedFile) => void | Promise<void>;
+}
+
 export async function generateProject(
   schema: ValidatedProjectSchema,
-  options: CreateComponentCodeGeneratorOptions,
+  options: CreateComponentCodeGeneratorOptions & GenerationProgressOptions,
 ): Promise<{ readonly ok: true; readonly value: GenerateProjectResult } | { readonly ok: false; readonly error: GenerateProjectFailure }> {
   const generator = createComponentCodeGenerator(options);
   const includeDatabase = schemaImpliesDatabase(schema);
@@ -543,9 +551,17 @@ export async function generateProject(
   for (const domain of DOMAIN_PROCESSING_ORDER) {
     if (domain === 'database' && !includeDatabase) continue;
     for (const component of schema.domains[domain].components) {
+      const targetPath = componentTargetPath(domain, component);
+      const reused = options.existingFiles?.find((file) => file.path === targetPath);
+      if (reused !== undefined) {
+        files.push(reused);
+        await options.onComponentFile?.(reused);
+        continue;
+      }
       const generated = await generateComponentFile(generator, schema, component, domain, undefined, files);
       if (!generated.ok) return generated;
       files.push(generated.value);
+      await options.onComponentFile?.(generated.value);
     }
   }
 
