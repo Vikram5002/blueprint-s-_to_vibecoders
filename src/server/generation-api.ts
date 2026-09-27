@@ -55,6 +55,7 @@ import { extractLayoutFromComponent } from '../generate/extract-layout.js';
 import { layoutToComponentFile, pageLayoutTargetPath, validatePageLayout, type PageLayout } from '../generate/canvas-layout.js';
 import { parsePageLayout } from './page-builder-api.js';
 import { buildZipArchive } from '../export/zip.js';
+import { withRunScaffold } from '../export/runnable-project.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 import type { ApplicationRunsStore, ApplicationRunKind } from '../store/application-runs-store.js';
 import type { CompletionProvider } from '../llm/provider.js';
@@ -298,7 +299,9 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
         contents: await readGeneratedFile(root, file.path),
       })),
     );
-    const zip = buildZipArchive(entries);
+    // The verified project plus what a person needs to open its UI (index.html, Vite, README).
+    const title = runs?.get(id)?.job.schema.title;
+    const zip = buildZipArchive(withRunScaffold(entries, title));
 
     c.header('content-type', 'application/zip');
     c.header('content-disposition', `attachment; filename="generated-${id}.zip"`);
