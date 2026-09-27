@@ -13,6 +13,7 @@ import {
 import { generatePageFile } from './page-builder-api-client';
 import { applicationJobDownloadUrl, restoreRunPage, saveRunPage } from './workflow-api-client';
 import { useWorkspaceStore } from './store';
+import { PageSwitcher } from './PageSwitcher';
 import { ELEMENT_CATEGORIES, ELEMENT_SPECS } from './page-builder-catalogue';
 import { SPIN_KEYFRAMES, extendedPreview } from './page-builder-previews';
 import {
@@ -661,17 +662,19 @@ export function PageBuilderCanvas(): JSX.Element {
         )}
 
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-xs text-slate-400">
-            Page name
-            <input
-              type="text"
-              value={pageName}
-              onChange={(event) => setPageName(event.target.value)}
-              disabled={origin !== null}
-              title={origin !== null ? "A run's page keeps its component name, so the saved file replaces the right one." : undefined}
-              className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 disabled:opacity-60"
-            />
-          </label>
+          {origin !== null ? (
+            <PageSwitcher origin={origin} elements={elements} />
+          ) : (
+            <label className="flex items-center gap-2 text-xs text-slate-400">
+              Page name
+              <input
+                type="text"
+                value={pageName}
+                onChange={(event) => setPageName(event.target.value)}
+                className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100"
+              />
+            </label>
+          )}
           <button
             type="button"
             onClick={() => void handleGenerate()}
