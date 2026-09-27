@@ -130,6 +130,8 @@ export interface CanvasElement {
   readonly label: string;
   readonly colorToken: DesignToken;
   readonly animation?: AnimationName;
+  /** Form field name (mirrors canvas-layout.ts); absent means derived from the label. */
+  readonly field?: string;
 }
 
 export const CANVAS_WIDTH = 1280;

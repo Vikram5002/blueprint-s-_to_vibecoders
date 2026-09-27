@@ -174,7 +174,7 @@ export function GenerateApplicationPanel({
           </button>
           {state.kind === 'done' && state.restored && (
             <span data-testid="restored-run-note" className="text-[11px] text-slate-500">
-              Showing this session&apos;s last saved run ({state.job.kind === 'repair' ? 'repair' : 'generation'},{' '}
+              Showing this session&apos;s last saved run ({state.job.kind === 'repair' ? 'repair' : state.job.kind === 'page-sync' ? 'page sync' : 'generation'},{' '}
               {new Date(state.job.createdAt).toLocaleString()})
             </span>
           )}

@@ -14,7 +14,8 @@ import { generatePageFile } from './page-builder-api-client';
 import { applicationJobDownloadUrl, restoreRunPage, saveRunPage } from './workflow-api-client';
 import { useWorkspaceStore } from './store';
 import { PageSwitcher } from './PageSwitcher';
-import { ELEMENT_CATEGORIES, ELEMENT_SPECS } from './page-builder-catalogue';
+import { PageSyncButton } from './PageSyncButton';
+import { ELEMENT_CATEGORIES, ELEMENT_SPECS, FIELD_TYPES, derivedFieldName } from './page-builder-catalogue';
 import { SPIN_KEYFRAMES, extendedPreview } from './page-builder-previews';
 import {
   ANIMATION_NAMES,
@@ -513,6 +514,8 @@ export function PageBuilderCanvas(): JSX.Element {
     readonly colorToken?: DesignToken;
     /** Explicit `undefined` means "clear it". `exactOptionalPropertyTypes` makes that a different thing from omitting the key, so it has to be spelled out. */
     readonly animation?: AnimationName | undefined;
+    /** Explicit `undefined` clears it, back to the label-derived name. */
+    readonly field?: string | undefined;
   }
 
   /** Position and size from the Inspector, clamped so the element always stays on the canvas - the server rejects anything outside it. */
@@ -546,8 +549,8 @@ export function PageBuilderCanvas(): JSX.Element {
         // animation", and JSON.stringify would drop an explicit undefined on
         // the way to the API anyway - so storing one would only create a
         // shape the rest of the pipeline never sees.
-        const { animation, ...rest } = { ...element, ...patch };
-        return animation === undefined ? rest : { ...rest, animation };
+        const { animation, field, ...rest } = { ...element, ...patch };
+        return { ...rest, ...(animation === undefined ? {} : { animation }), ...(field === undefined ? {} : { field }) };
       }),
     );
   }
@@ -654,6 +657,7 @@ export function PageBuilderCanvas(): JSX.Element {
             >
               Detach
             </button>
+            <PageSyncButton origin={origin} pageName={pageName} elements={elements} />
           </div>
         )}
 
@@ -803,6 +807,23 @@ export function PageBuilderCanvas(): JSX.Element {
                       </span>
                     )}
                   </label>
+                  {FIELD_TYPES.has(selected.type) && (
+                    <label className="block text-xs text-slate-400">
+                      Field name
+                      <input
+                        type="text"
+                        data-testid="field-name"
+                        value={selected.field ?? ''}
+                        placeholder={derivedFieldName(selected.label, selected.type)}
+                        onChange={(event) => {
+                          const value = event.target.value.replace(/[^A-Za-z0-9_]/g, '');
+                          updateSelected({ field: value === '' ? undefined : value });
+                        }}
+                        className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-xs text-slate-100"
+                      />
+                      <span className="mt-1 block text-[10px] text-slate-500">Sent to the backend and stored under this name. Empty = derived from the label.</span>
+                    </label>
+                  )}
                   <div className="grid grid-cols-4 gap-1.5">
                     {(['x', 'y', 'width', 'height'] as const).map((field) => (
                       <label key={field} className="block text-[10px] uppercase text-slate-500">

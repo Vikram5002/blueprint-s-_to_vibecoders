@@ -93,3 +93,16 @@ export const ELEMENT_CATEGORIES: readonly ElementCategory[] = [
 export function labelParts(label: string): string[] {
   return label.split('|').map((part) => part.trim()).filter((part) => part !== '');
 }
+
+/** Element types that are form fields - mirrors FIELD_KINDS in src/generate/canvas-form.ts. */
+export const FIELD_TYPES: ReadonlySet<CanvasElementType> = new Set<CanvasElementType>([
+  'input', 'textarea', 'select', 'search', 'email', 'password', 'number', 'slider', 'date', 'checkbox', 'radio', 'toggle',
+]);
+
+/** The field name the generator derives from a label when none is set - same rule as canvas-form.ts. */
+export function derivedFieldName(label: string, type: CanvasElementType): string {
+  const words = label.replace(/[^A-Za-z0-9]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return type;
+  const joined = words.map((word, index) => (index === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())).join('');
+  return (/^[A-Za-z]/.test(joined) ? joined : `field${joined}`).slice(0, 40);
+}

@@ -316,3 +316,21 @@ function delay(ms: number, signal?: AbortSignal): Promise<void> {
     signal?.addEventListener('abort', onAbort, { once: true });
   });
 }
+
+export interface SyncedField {
+  readonly name: string;
+  readonly kind: string;
+}
+
+/** Starts a page-sync run: the page's backend API and database store, generated from its saved form. */
+export async function syncRunPage(jobId: string, path: string): Promise<{ readonly id: string; readonly fields: readonly SyncedField[] }> {
+  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/pages/sync`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ path }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `sync failed: ${response.status}`));
+  }
+  return (await response.json()) as { id: string; fields: readonly SyncedField[] };
+}
