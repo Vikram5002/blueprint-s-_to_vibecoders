@@ -16,7 +16,7 @@
  */
 import type { BlueprintDatabase } from './database.js';
 
-export type ApplicationRunKind = 'generate' | 'repair' | 'page-sync';
+export type ApplicationRunKind = 'generate' | 'repair' | 'page-sync' | 'continue';
 
 export interface ApplicationRunRecord<TJob = unknown> {
   /** The application job id - also the name of the run's directory on disk. */

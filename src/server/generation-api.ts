@@ -56,6 +56,7 @@ import { layoutToComponentFile, pageLayoutTargetPath, validatePageLayout, type P
 import { parsePageLayout } from './page-builder-api.js';
 import { buildZipArchive } from '../export/zip.js';
 import { withRunScaffold } from '../export/runnable-project.js';
+import type { GeneratedFile } from '../generate/assemble.js';
 import { generatePageSyncFiles, planPageSync, type PageSyncPlan } from '../generate/page-sync.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 import type { ApplicationRunsStore, ApplicationRunKind } from '../store/application-runs-store.js';
@@ -108,6 +109,12 @@ export interface ApplicationJob {
   readonly phase?: GenerationPhase | BuildPhase;
   readonly result?: ApplicationJobResult;
   readonly error?: ApplicationJobError;
+  /**
+   * Component files written so far, updated as each one lands. A run that
+   * fails mid-generation keeps them on disk, and "Continue generation"
+   * reuses them instead of starting over.
+   */
+  readonly partialFiles?: readonly FileSummary[];
 }
 
 export interface ApplicationJobStore {
@@ -225,12 +232,59 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
         if (finished !== undefined) persist(finished, validated.value);
       })
       .catch((cause) => {
-        const failed: ApplicationJob = { ...job, status: 'failed', error: { phase: 'unexpected', message: `unexpected: ${String(cause)}` } };
+        // From the job's latest state, not its starting one: that keeps the
+        // partialFiles a crash would otherwise throw away.
+        const failed: ApplicationJob = { ...(jobs.get(job.id) ?? job), status: 'failed', error: { phase: 'unexpected', message: `unexpected: ${String(cause)}` } };
         jobs.set(failed);
         persist(failed, validated.value);
       });
 
     return c.json({ id: job.id, status: job.status }, 202);
+  });
+
+  // Continue a half-built project: a run that failed during generation keeps
+  // the component files it had written (partialFiles); this starts a new run
+  // that reuses them and generates only the rest.
+  app.post('/application-jobs/:id/continue', async (c) => {
+    if (deps.llm === null) {
+      return c.json({ error: 'no LLM provider configured (missing API key)' }, 503);
+    }
+    const llm = deps.llm;
+    const id = c.req.param('id');
+    const parent = findJob(id);
+    const schema = runs?.get(id)?.job.schema;
+    if (parent === undefined || schema === undefined) {
+      return c.json({ error: `application job ${id} is not a saved run` }, 404);
+    }
+    if (parent.status !== 'failed' || parent.result !== undefined) {
+      return c.json({ error: 'only a run that stopped during generation can be continued' }, 409);
+    }
+    const partial = parent.partialFiles ?? [];
+    if (partial.length === 0) {
+      return c.json({ error: 'this run saved no components before it stopped - use Generate Application to start again' }, 409);
+    }
+
+    const capacity = atCapacity(jobs, c);
+    if (capacity !== null) return capacity;
+
+    const parentRoot = join(deps.generationRoot, parent.id);
+    const existing = await Promise.all(partial.map(async (file) => ({ path: file.path, contents: await readGeneratedFile(parentRoot, file.path) })));
+    const job = jobs.create({ sessionId: parent.sessionId, kind: 'continue', parentId: parent.id });
+    const root = join(deps.generationRoot, job.id);
+    runApplicationJob(jobs, job.id, schema, llm, root, existing)
+      .then(() => {
+        const finished = jobs.get(job.id);
+        if (finished !== undefined) persist(finished, schema);
+      })
+      .catch((cause) => {
+        // From the job's latest state, not its starting one: that keeps the
+        // partialFiles a crash would otherwise throw away.
+        const failed: ApplicationJob = { ...(jobs.get(job.id) ?? job), status: 'failed', error: { phase: 'unexpected', message: `unexpected: ${String(cause)}` } };
+        jobs.set(failed);
+        persist(failed, schema);
+      });
+
+    return c.json({ id: job.id, status: job.status, reused: existing.length }, 202);
   });
 
   app.post('/application-jobs/:id/repair', async (c) => {
@@ -269,7 +323,9 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
         if (finished !== undefined) persist(finished, schema);
       })
       .catch((cause) => {
-        const failed: ApplicationJob = { ...job, status: 'failed', error: { phase: 'unexpected', message: `unexpected: ${String(cause)}` } };
+        // From the job's latest state, not its starting one: that keeps the
+        // partialFiles a crash would otherwise throw away.
+        const failed: ApplicationJob = { ...(jobs.get(job.id) ?? job), status: 'failed', error: { phase: 'unexpected', message: `unexpected: ${String(cause)}` } };
         jobs.set(failed);
         persist(failed, schema);
       });
@@ -428,7 +484,9 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
         if (finished !== undefined) persist(finished, planned.value.schema);
       })
       .catch((cause) => {
-        const failed: ApplicationJob = { ...job, status: 'failed', error: { phase: 'unexpected', message: `unexpected: ${String(cause)}` } };
+        // From the job's latest state, not its starting one: that keeps the
+        // partialFiles a crash would otherwise throw away.
+        const failed: ApplicationJob = { ...(jobs.get(job.id) ?? job), status: 'failed', error: { phase: 'unexpected', message: `unexpected: ${String(cause)}` } };
         jobs.set(failed);
         persist(failed, planned.value.schema);
       });
@@ -508,10 +566,21 @@ async function runApplicationJob(
   schema: ValidatedProjectSchema,
   llm: Llm,
   root: string,
+  existingFiles: readonly GeneratedFile[] = [],
 ): Promise<void> {
   const current = store.get(jobId);
   if (current === undefined) return;
   store.set({ ...current, status: 'running' });
+
+  // Every component file is written the moment it exists, so a run that
+  // stops halfway (a provider's daily quota, a crash) keeps what it made.
+  const saved: GeneratedFile[] = [];
+  const onComponentFile = async (file: GeneratedFile): Promise<void> => {
+    saved.push(file);
+    await writeProjectFiles(root, [file], false);
+    const latest = store.get(jobId);
+    if (latest !== undefined) store.set({ ...latest, partialFiles: summarise(saved) });
+  };
 
   const generated = await generateAndVerifyProject(schema, {
     provider: llm.provider,
@@ -522,6 +591,8 @@ async function runApplicationJob(
     // fresh for every component, first attempt and retry alike.
     skipCache: true,
     root,
+    existingFiles,
+    onComponentFile,
     onPhase: (phase: GenerationPhase) => setPhase(store, jobId, phase),
   });
   await llm.cache.flush();

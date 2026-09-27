@@ -239,6 +239,66 @@ describe('saved application runs', () => {
     });
   });
 
+  describe('continue a half-built project', () => {
+    /** Two pages: the first was saved before the run stopped, the second was not. */
+    function schemaWithTwoPages(): ValidatedProjectSchema {
+      const one = schemaWithOnePage();
+      const validated = validateProjectSchema({
+        ...one,
+        domains: {
+          ...one.domains,
+          frontend: {
+            ...one.domains.frontend,
+            components: [...one.domains.frontend.components, { id: componentId('frontend', 'Checkout', 'pays'), name: 'Checkout', purpose: 'pays' }],
+          },
+        },
+      });
+      if (!validated.ok) throw new Error('fixture invalid');
+      return validated.value;
+    }
+
+    async function stoppedRun(partial: boolean): Promise<ApplicationJob> {
+      const schema = schemaWithTwoPages();
+      const created = jobs.create({ sessionId: schema.sessionId, kind: 'generate' });
+      const job: ApplicationJob = {
+        ...created,
+        status: 'failed',
+        error: { phase: 'unexpected', message: 'daily quota exhausted' },
+        ...(partial ? { partialFiles: [{ path: PAGE_PATH, bytes: Buffer.byteLength(ORIGINAL_PAGE) }] } : {}),
+      };
+      jobs.set(job);
+      const full = join(root, 'generated', job.id, ...PAGE_PATH.split('/'));
+      await mkdir(join(full, '..'), { recursive: true });
+      await writeFile(full, ORIGINAL_PAGE, 'utf8');
+      runs.save({ id: job.id, sessionId: job.sessionId, kind: 'generate', parentId: null, status: 'failed', createdAt: job.createdAt, job: { job, schema } });
+      return job;
+    }
+    const cont = (id: string): Promise<Response> => Promise.resolve(app.request(`/application-jobs/${id}/continue`, { method: 'POST' }));
+
+    it('refuses a run that finished', async () => {
+      const job = await finishedRun(jobs, runs, join(root, 'generated'), { installOk: true, buildOk: true });
+      expect((await cont(job.id)).status).toBe(409);
+    });
+
+    it('refuses a stopped run that saved nothing', async () => {
+      const job = await stoppedRun(false);
+      expect((await cont(job.id)).status).toBe(409);
+    });
+
+    it('starts a continue run that reuses the saved components', async () => {
+      const job = await stoppedRun(true);
+      const response = await cont(job.id);
+      expect(response.status).toBe(202);
+      const started = (await response.json()) as { id: string; reused: number };
+      expect(started.reused).toBe(1);
+      expect(jobs.get(started.id)?.kind).toBe('continue');
+      expect(jobs.get(started.id)?.parentId).toBe(job.id);
+      // The page is reused, so the first reported file is it - before the stub provider throws on the next component.
+      for (let i = 0; i < 100 && jobs.get(started.id)?.status !== 'failed'; i += 1) await new Promise((r) => setTimeout(r, 20));
+      expect(jobs.get(started.id)?.partialFiles?.map((f) => f.path)).toContain(PAGE_PATH);
+    });
+  });
+
   describe('page sync', () => {
     const sync = (jobId: string, path = PAGE_PATH): Promise<Response> =>
       Promise.resolve(app.request(`/application-jobs/${jobId}/pages/sync`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path }) }));
