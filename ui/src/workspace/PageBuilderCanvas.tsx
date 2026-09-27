@@ -1,5 +1,15 @@
 import { useRef, useState } from 'react';
-import { DndContext, PointerSensor, useDraggable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { createPortal } from 'react-dom';
+import {
+  DndContext,
+  PointerSensor,
+  useDraggable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragMoveEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
 import { generatePageFile } from './page-builder-api-client';
 import { applicationJobDownloadUrl, restoreRunPage, saveRunPage } from './workflow-api-client';
 import { useWorkspaceStore } from './store';
@@ -57,8 +67,14 @@ interface PaletteItemProps {
   readonly label: string;
 }
 
+/**
+ * The palette button stays where it is while dragging: what moves is the
+ * DragOverlay ghost (PaletteGhost). The palette scrolls, and a scrolling
+ * container clips a child translated outside it, so a palette item that moved
+ * itself vanished the moment it left the palette (found live, 2026-09-27).
+ */
 function PaletteItem({ type, label }: PaletteItemProps): JSX.Element {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: `palette:${type}` });
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `palette:${type}` });
   return (
     <button
       ref={setNodeRef}
@@ -66,11 +82,31 @@ function PaletteItem({ type, label }: PaletteItemProps): JSX.Element {
       {...attributes}
       type="button"
       data-testid={`palette-${type}`}
-      style={{ transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined }}
+      style={{ opacity: isDragging ? 0.5 : 1 }}
       className="block w-full cursor-grab rounded border border-slate-700 bg-slate-800 px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-700 active:cursor-grabbing"
     >
       {label}
     </button>
+  );
+}
+
+/**
+ * What follows the pointer while a palette item is dragged: the element at its
+ * real default size, drawn at exactly the spot the drop maths will place it
+ * (pointer minus grab offset). Positioned here rather than by dnd-kit's
+ * DragOverlay, which drew it 16px below where it landed.
+ */
+function PaletteGhost({ type, left, top }: { readonly type: CanvasElementType; readonly left: number; readonly top: number }): JSX.Element {
+  const spec = ELEMENT_SPECS[type];
+  const element: CanvasElement = { id: 'ghost', type, x: 0, y: 0, width: spec.width, height: spec.height, label: spec.label, colorToken: 'primary' };
+  const visual = placedElementVisual(element, DESIGN_TOKENS.primary);
+  return (
+    <div
+      data-testid="palette-ghost"
+      style={{ ...visual.style, position: 'fixed', left, top, zIndex: 50, width: spec.width, height: spec.height, opacity: 0.75, pointerEvents: 'none', outline: '2px dashed #0a84ff' }}
+    >
+      {visual.content}
+    </div>
   );
 }
 
@@ -335,6 +371,36 @@ export function PageBuilderCanvas(): JSX.Element {
    */
   const [replayTick, setReplayTick] = useState(0);
   const [paletteQuery, setPaletteQuery] = useState('');
+  const [draggingType, setDraggingType] = useState<CanvasElementType | null>(null);
+  const [ghostAt, setGhostAt] = useState<{ readonly left: number; readonly top: number } | null>(null);
+
+  function handleDragMove(event: DragMoveEvent): void {
+    const grab = grabRef.current;
+    if (grab === null) return;
+    setGhostAt({ left: grab.pointerX + event.delta.x - grab.offsetX, top: grab.pointerY + event.delta.y - grab.offsetY });
+  }
+  // The palette must never auto-scroll during a drag: dnd-kit folds a scrolled
+  // ancestor into the dragged item's measured rect, so a palette that scrolled
+  // under the pointer landed every drop off by the scrolled amount (16px down,
+  // measured 2026-09-27). The canvas viewport still auto-scrolls.
+  const paletteRef = useRef<HTMLElement | null>(null);
+  const autoScroll = { canScroll: (element: Element) => element !== paletteRef.current };
+
+  /** Where the pointer grabbed a palette item, relative to the item's top-left - what a drop is positioned from. */
+  const grabRef = useRef<{ readonly pointerX: number; readonly pointerY: number; readonly offsetX: number; readonly offsetY: number } | null>(null);
+
+  function handleDragStart(event: DragStartEvent): void {
+    const id = String(event.active.id);
+    const isPalette = id.startsWith('palette:');
+    setDraggingType(isPalette ? (id.slice('palette:'.length) as CanvasElementType) : null);
+    const pointer = event.activatorEvent as PointerEvent;
+    const item = event.activatorEvent.target instanceof Element ? event.activatorEvent.target.closest('button') : null;
+    const itemRect = item?.getBoundingClientRect();
+    grabRef.current =
+      isPalette && itemRect !== undefined
+        ? { pointerX: pointer.clientX, pointerY: pointer.clientY, offsetX: pointer.clientX - itemRect.left, offsetY: pointer.clientY - itemRect.top }
+        : null;
+  }
   /** The fixed 1280x800 element coordinate space. */
   const canvasRef = useRef<HTMLDivElement | null>(null);
   /** The flexible, scrollable window onto it - what is actually visible on screen. */
@@ -353,6 +419,8 @@ export function PageBuilderCanvas(): JSX.Element {
   const selected = elements.find((element) => element.id === selectedId) ?? null;
 
   function handleDragEnd(event: DragEndEvent): void {
+    setDraggingType(null);
+    setGhostAt(null);
     const activeId = String(event.active.id);
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     const viewportRect = viewportRef.current?.getBoundingClientRect();
@@ -362,35 +430,31 @@ export function PageBuilderCanvas(): JSX.Element {
       const type = activeId.slice('palette:'.length) as CanvasElementType;
       const size = ELEMENT_SPECS[type];
 
-      // The dragged item's final on-screen rect, real and tracked by
-      // dnd-kit's own drag state - not a guess. Whether this counts as "a
-      // drop onto the canvas" is decided here by direct geometric
-      // containment against the canvas's own real getBoundingClientRect,
-      // rather than dnd-kit's useDroppable/collision-detection layer:
-      // that layer exists to disambiguate BETWEEN several distinct drop
-      // zones, which this feature does not have (there is exactly one
-      // canvas) - a plain containment check against the one real rect we
-      // already need for coordinate translation is simpler and answers
-      // the only question that actually matters here.
-      const finalRect = event.active.rect.current.translated;
-      if (finalRect === null) return;
-      const centerX = finalRect.left + finalRect.width / 2;
-      const centerY = finalRect.top + finalRect.height / 2;
-      // Asked against the VISIBLE viewport, not the canvas: the canvas is now
+      // Positioned from the POINTER, not from a measured rect: with the
+      // DragOverlay ghost, dnd-kit measures the ghost (a 1280px navbar) rather
+      // than the palette button, which put the drop 16px low and made a wide
+      // element's drop miss the canvas entirely (found live, 2026-09-27).
+      // The element's top-left lands where the ghost's top-left is: the
+      // pointer minus where on the item it was grabbed.
+      const grab = grabRef.current;
+      grabRef.current = null;
+      if (grab === null) return;
+      const pointerX = grab.pointerX + event.delta.x;
+      const pointerY = grab.pointerY + event.delta.y;
+      // Asked against the VISIBLE viewport, not the canvas: the canvas is
       // usually wider than what is on screen, and a drop onto scrolled-out
       // canvas area the user cannot even see is not a drop they meant.
       const droppedOnCanvas =
-        centerX >= viewportRect.left &&
-        centerX <= viewportRect.right &&
-        centerY >= viewportRect.top &&
-        centerY <= viewportRect.bottom;
+        pointerX >= viewportRect.left &&
+        pointerX <= viewportRect.right &&
+        pointerY >= viewportRect.top &&
+        pointerY <= viewportRect.bottom;
       if (!droppedOnCanvas) return;
 
-      // Canvas-space. No scroll adjustment needed: the canvas element scrolls
-      // together with its own contents, so its rect's origin already IS the
-      // element coordinate space's origin at any scroll offset.
-      const dropX = finalRect.left - canvasRect.left;
-      const dropY = finalRect.top - canvasRect.top;
+      // Canvas-space. The canvas scrolls with its contents, so its rect's
+      // origin already IS the element coordinate origin at any scroll offset.
+      const dropX = pointerX - grab.offsetX - canvasRect.left;
+      const dropY = pointerY - grab.offsetY - canvasRect.top;
 
       const newElement: CanvasElement = {
         id: nextElementId(elements),
@@ -618,9 +682,9 @@ export function PageBuilderCanvas(): JSX.Element {
           </button>
         </div>
 
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} autoScroll={autoScroll} onDragStart={handleDragStart} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragCancel={() => { setDraggingType(null); setGhostAt(null); grabRef.current = null; }}>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[160px_1fr_260px]">
-            <aside className="max-h-[800px] space-y-2 overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 p-3">
+            <aside ref={paletteRef} className="max-h-[800px] space-y-2 overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 p-3">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                 Elements
               </h4>
@@ -823,6 +887,8 @@ export function PageBuilderCanvas(): JSX.Element {
               )}
             </aside>
           </div>
+          {/* Portalled to <body>: an ancestor with backdrop-filter (the glass panels) makes position: fixed relative to itself, which drew the ghost 16px off. */}
+          {draggingType !== null && ghostAt !== null && createPortal(<PaletteGhost type={draggingType} left={ghostAt.left} top={ghostAt.top} />, document.body)}
         </DndContext>
 
         {error !== null && (
