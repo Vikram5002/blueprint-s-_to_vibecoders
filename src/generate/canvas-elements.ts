@@ -188,7 +188,7 @@ function rating(c: ElementContext): string {
   const [score = '4', caption] = parts(c.label);
   const filled = Math.min(5, Math.max(0, Math.round(Number(score) || 0)));
   const stars = '★'.repeat(filled) + '☆'.repeat(5 - filled);
-  const text = caption === undefined ? '' : `<span style={{ marginLeft: 8, fontSize: 14, color: '${MUTED}' }}>${c.text(caption)}</span>`;
+  const text = caption === undefined ? '' : `<span style={{ marginLeft: 8, fontSize: 14, letterSpacing: 0, color: '${MUTED}' }}>${c.text(caption)}</span>`;
   return `${open('div', c, `display: 'flex', alignItems: 'center', color: '${c.color}', fontSize: 20, letterSpacing: 2`, ` aria-label="${filled} out of 5"`)}${stars}${text}</div>`;
 }
 
