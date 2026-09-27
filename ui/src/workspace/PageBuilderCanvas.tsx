@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   DndContext,
@@ -15,8 +15,11 @@ import { applicationJobDownloadUrl, restoreRunPage, saveRunPage } from './workfl
 import { useWorkspaceStore } from './store';
 import { PageSwitcher } from './PageSwitcher';
 import { PageSyncButton } from './PageSyncButton';
+import { EditorToolbar, LayersList } from './EditorToolbar';
 import { ELEMENT_CATEGORIES, ELEMENT_SPECS, FIELD_TYPES, derivedFieldName } from './page-builder-catalogue';
 import { SPIN_KEYFRAMES, extendedPreview } from './page-builder-previews';
+import { HANDLES, otherRects, reorder, resizeRect, snapMove, type Guide, type Handle, type Rect } from './page-builder-geometry';
+import { SECTION_TEMPLATES, instantiateTemplate, templateTop } from './page-templates';
 import {
   ANIMATION_NAMES,
   ANIMATIONS,
@@ -98,16 +101,19 @@ function PaletteItem({ type, label }: PaletteItemProps): JSX.Element {
  * (pointer minus grab offset). Positioned here rather than by dnd-kit's
  * DragOverlay, which drew it 16px below where it landed.
  */
-function PaletteGhost({ type, left, top }: { readonly type: CanvasElementType; readonly left: number; readonly top: number }): JSX.Element {
+function PaletteGhost({ type, left, top, zoom }: { readonly type: CanvasElementType; readonly left: number; readonly top: number; readonly zoom: number }): JSX.Element {
   const spec = ELEMENT_SPECS[type];
   const element: CanvasElement = { id: 'ghost', type, x: 0, y: 0, width: spec.width, height: spec.height, label: spec.label, colorToken: 'primary' };
   const visual = placedElementVisual(element, DESIGN_TOKENS.primary);
   return (
     <div
       data-testid="palette-ghost"
-      style={{ ...visual.style, position: 'fixed', left, top, zIndex: 50, width: spec.width, height: spec.height, opacity: 0.75, pointerEvents: 'none', outline: '2px dashed #0a84ff' }}
+      style={{ position: 'fixed', left, top, zIndex: 50, width: spec.width * zoom, height: spec.height * zoom, pointerEvents: 'none' }}
     >
-      {visual.content}
+      {/* Drawn at canvas size and scaled like the canvas, so the ghost is exactly the size it will land at. */}
+      <div style={{ ...visual.style, width: spec.width, height: spec.height, transform: `scale(${zoom})`, transformOrigin: '0 0', opacity: 0.75, outline: '2px dashed #0a84ff' }}>
+        {visual.content}
+      </div>
     </div>
   );
 }
@@ -116,6 +122,57 @@ interface PlacedElementProps {
   readonly element: CanvasElement;
   readonly selected: boolean;
   readonly onSelect: () => void;
+  readonly zoom: number;
+  readonly preview: boolean;
+  readonly onResize: (rect: Rect) => void;
+}
+
+const HANDLE_CURSOR: Readonly<Record<Handle, string>> = { n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize', ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize' };
+
+/**
+ * Eight handles on the selected element. A handle's pointerdown stops
+ * propagation so the element's own drag never starts; the resize then follows
+ * the pointer on window listeners, converted to canvas px through the zoom.
+ */
+function ResizeHandles({ element, zoom, onResize }: { readonly element: CanvasElement; readonly zoom: number; readonly onResize: (rect: Rect) => void }): JSX.Element {
+  function start(handle: Handle, event: React.PointerEvent): void {
+    event.stopPropagation();
+    event.preventDefault();
+    const origin = { x: event.clientX, y: event.clientY };
+    const from: Rect = { x: element.x, y: element.y, width: element.width, height: element.height };
+    const move = (e: PointerEvent): void => onResize(resizeRect(from, handle, (e.clientX - origin.x) / zoom, (e.clientY - origin.y) / zoom));
+    const up = (): void => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+  const size = 10 / zoom;
+  return (
+    <>
+      {HANDLES.map((handle) => (
+        <span
+          key={handle}
+          data-testid={`resize-${handle}`}
+          onPointerDown={(event) => start(handle, event)}
+          style={{
+            position: 'absolute',
+            left: handle.includes('w') ? 0 : handle.includes('e') ? '100%' : '50%',
+            top: handle.includes('n') ? 0 : handle.includes('s') ? '100%' : '50%',
+            width: size,
+            height: size,
+            transform: 'translate(-50%, -50%)',
+            background: '#ffffff',
+            border: `${1.5 / zoom}px solid #0a84ff`,
+            borderRadius: 2 / zoom,
+            cursor: HANDLE_CURSOR[handle],
+            zIndex: 2,
+          }}
+        />
+      ))}
+    </>
+  );
 }
 
 /**
@@ -256,7 +313,7 @@ function placedElementVisual(
   }
 }
 
-function PlacedElement({ element, selected, onSelect }: PlacedElementProps): JSX.Element {
+function PlacedElement({ element, selected, onSelect, zoom, preview, onResize }: PlacedElementProps): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `element:${element.id}`,
   });
@@ -270,11 +327,12 @@ function PlacedElement({ element, selected, onSelect }: PlacedElementProps): JSX
     top: element.y,
     width: element.width,
     height: element.height,
-    transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
-    outline: selected ? '2px solid #38bdf8' : 'none',
-    outlineOffset: 2,
+    // The pointer moves in screen px; inside the scaled canvas that is delta / zoom.
+    transform: transform ? `translate(${transform.x / zoom}px, ${transform.y / zoom}px)` : undefined,
+    outline: selected && !preview ? `${2 / zoom}px solid #0a84ff` : 'none',
+    outlineOffset: 2 / zoom,
     opacity: isDragging ? 0.6 : 1,
-    cursor: 'grab',
+    cursor: preview ? 'default' : 'grab',
     // Suppressed mid-drag: several catalogue animations drive `transform`,
     // which is the same property dnd-kit uses to follow the pointer, so an
     // animating element would fight the drag and visibly jump.
@@ -299,6 +357,13 @@ function PlacedElement({ element, selected, onSelect }: PlacedElementProps): JSX
   // "phantom" drag on this element and swallowing every click afterward
   // (dnd-kit installs a document-wide capture-phase click-canceller for
   // the duration of any activated drag).
+  if (preview) {
+    return (
+      <div data-testid={`placed-${element.id}`} style={{ ...baseStyle, ...visual.style }}>
+        {visual.content}
+      </div>
+    );
+  }
   return (
     <div
       ref={setNodeRef}
@@ -323,6 +388,7 @@ function PlacedElement({ element, selected, onSelect }: PlacedElementProps): JSX
       style={{ ...baseStyle, ...visual.style }}
     >
       {visual.content}
+      {selected && !isDragging && <ResizeHandles element={element} zoom={zoom} onResize={onResize} />}
     </div>
   );
 }
@@ -336,14 +402,13 @@ function PlacedElement({ element, selected, onSelect }: PlacedElementProps): JSX
  * (layoutToComponentFile, src/generate/canvas-layout.ts), which copies
  * exact position/size/color data into real JSX - never infers it.
  *
- * Fixed 1280x800 canvas, rendered at true 1:1 scale (no zoom/scale
- * transform) so a screen drop position maps directly onto the generated
- * file's own coordinate space with no scale-factor arithmetic to get
- * wrong. Twelve element types (CANVAS_ELEMENT_TYPES, page-builder-types.ts)
- * covering the common building blocks of a page - headings, text, links,
- * images, buttons, the standard form controls, a divider, and a grouping
- * container - and one color per element from the fixed DESIGN_TOKENS
- * palette.
+ * Fixed 1280x800 canvas coordinate space, shown zoomed (fit-to-width by
+ * default) with a CSS scale. Every screen position is converted to canvas px
+ * by dividing by the zoom in exactly two places - paletteLanding and
+ * moveLanding (and ResizeHandles for resizes) - and all snapping, resizing
+ * and bounds logic lives in page-builder-geometry.ts, which never sees the
+ * zoom. The element catalogue is page-builder-catalogue.ts; each element takes
+ * one color from the fixed DESIGN_TOKENS palette.
  */
 export function PageBuilderCanvas(): JSX.Element {
   // The canvas lives in the workspace store, not here: this component
@@ -375,12 +440,58 @@ export function PageBuilderCanvas(): JSX.Element {
   const [paletteQuery, setPaletteQuery] = useState('');
   const [draggingType, setDraggingType] = useState<CanvasElementType | null>(null);
   const [ghostAt, setGhostAt] = useState<{ readonly left: number; readonly top: number } | null>(null);
+  const [guides, setGuides] = useState<readonly Guide[]>([]);
+  const [preview, setPreview] = useState(false);
+  const [zoomChoice, setZoomChoice] = useState<'fit' | number>('fit');
+  const [fitZoom, setFitZoom] = useState(1);
+  const zoom = zoomChoice === 'fit' ? fitZoom : zoomChoice;
+  const undoPage = useWorkspaceStore((state) => state.undoPage);
+  const redoPage = useWorkspaceStore((state) => state.redoPage);
+  const canUndo = useWorkspaceStore((state) => state.pageHistory.past.length > 0);
+  const canRedo = useWorkspaceStore((state) => state.pageHistory.future.length > 0);
+
+  /** Where a palette item would land (canvas px, snapped) for a pointer at (pointerX, pointerY). */
+  function paletteLanding(
+    type: CanvasElementType,
+    pointerX: number,
+    pointerY: number,
+    grab = grabRef.current,
+  ): { readonly x: number; readonly y: number; readonly guides: readonly Guide[] } | null {
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    if (grab === null || canvasRect === undefined) return null;
+    const size = ELEMENT_SPECS[type];
+    const rect = { x: (pointerX - grab.offsetX - canvasRect.left) / zoom, y: (pointerY - grab.offsetY - canvasRect.top) / zoom, width: size.width, height: size.height };
+    return snapMove(rect, elements);
+  }
+
+  /** Where a placed element would land after a drag of (dx, dy) screen px. */
+  function moveLanding(id: string, dx: number, dy: number): { readonly x: number; readonly y: number; readonly guides: readonly Guide[] } | null {
+    const element = elements.find((candidate) => candidate.id === id);
+    if (element === undefined) return null;
+    return snapMove({ x: element.x + dx / zoom, y: element.y + dy / zoom, width: element.width, height: element.height }, otherRects(elements, id));
+  }
 
   function handleDragMove(event: DragMoveEvent): void {
+    const activeId = String(event.active.id);
     const grab = grabRef.current;
-    if (grab === null) return;
-    setGhostAt({ left: grab.pointerX + event.delta.x - grab.offsetX, top: grab.pointerY + event.delta.y - grab.offsetY });
+    if (grab !== null && activeId.startsWith('palette:')) {
+      const pointerX = grab.pointerX + event.delta.x;
+      const pointerY = grab.pointerY + event.delta.y;
+      setGhostAt({ left: pointerX - grab.offsetX, top: pointerY - grab.offsetY });
+      setGuides(paletteLanding(activeId.slice('palette:'.length) as CanvasElementType, pointerX, pointerY)?.guides ?? []);
+      return;
+    }
+    if (activeId.startsWith('element:')) setGuides(moveLanding(activeId.slice('element:'.length), event.delta.x, event.delta.y)?.guides ?? []);
   }
+
+  // Zoom to fit: the whole 1280px-wide page visible at once, recomputed as the window resizes.
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (viewport === null) return undefined;
+    const observer = new ResizeObserver(() => setFitZoom(Math.min(1, Math.max(0.25, (viewport.clientWidth - 4) / CANVAS_WIDTH))));
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, [preview]);
   // The palette must never auto-scroll during a drag: dnd-kit folds a scrolled
   // ancestor into the dragged item's measured rect, so a palette that scrolled
   // under the pointer landed every drop off by the scrolled amount (16px down,
@@ -423,6 +534,7 @@ export function PageBuilderCanvas(): JSX.Element {
   function handleDragEnd(event: DragEndEvent): void {
     setDraggingType(null);
     setGhostAt(null);
+    setGuides([]);
     const activeId = String(event.active.id);
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     const viewportRect = viewportRef.current?.getBoundingClientRect();
@@ -453,16 +565,17 @@ export function PageBuilderCanvas(): JSX.Element {
         pointerY <= viewportRect.bottom;
       if (!droppedOnCanvas) return;
 
-      // Canvas-space. The canvas scrolls with its contents, so its rect's
-      // origin already IS the element coordinate origin at any scroll offset.
-      const dropX = pointerX - grab.offsetX - canvasRect.left;
-      const dropY = pointerY - grab.offsetY - canvasRect.top;
+      // Canvas-space: the canvas's (scaled) rect origin is the element
+      // origin at any scroll offset; dividing by the zoom undoes the scale.
+      // Snapped to the grid or to an aligned neighbour, as the guides showed.
+      const landing = paletteLanding(type, pointerX, pointerY, grab);
+      if (landing === null) return;
 
       const newElement: CanvasElement = {
         id: nextElementId(elements),
         type,
-        x: Math.round(clamp(dropX, 0, CANVAS_WIDTH - size.width)),
-        y: Math.round(clamp(dropY, 0, CANVAS_HEIGHT - size.height)),
+        x: landing.x,
+        y: landing.y,
         width: size.width,
         height: size.height,
         label: ELEMENT_SPECS[type].label,
@@ -476,19 +589,67 @@ export function PageBuilderCanvas(): JSX.Element {
     if (activeId.startsWith('element:')) {
       // An existing placed element, moved by the drag delta.
       const id = activeId.slice('element:'.length);
-      setElements((current) =>
-        current.map((element) =>
-          element.id === id
-            ? {
-                ...element,
-                x: Math.round(clamp(element.x + event.delta.x, 0, CANVAS_WIDTH - element.width)),
-                y: Math.round(clamp(element.y + event.delta.y, 0, CANVAS_HEIGHT - element.height)),
-              }
-            : element,
-        ),
-      );
+      const landing = moveLanding(id, event.delta.x, event.delta.y);
+      if (landing === null) return;
+      setElements((current) => current.map((element) => (element.id === id ? { ...element, x: landing.x, y: landing.y } : element)));
     }
   }
+
+  function resizeElement(id: string, rect: Rect): void {
+    setElements((current) => current.map((element) => (element.id === id ? { ...element, ...rect } : element)), { coalesce: true });
+  }
+
+  function nudgeSelected(dx: number, dy: number): void {
+    if (selectedId === null) return;
+    setElements((current) =>
+      current.map((element) =>
+        element.id === selectedId
+          ? { ...element, x: clamp(element.x + dx, 0, CANVAS_WIDTH - element.width), y: clamp(element.y + dy, 0, CANVAS_HEIGHT - element.height) }
+          : element,
+      ),
+      { coalesce: true },
+    );
+  }
+
+  function addTemplate(templateId: string): void {
+    const template = SECTION_TEMPLATES.find((candidate) => candidate.id === templateId);
+    if (template === undefined) return;
+    const firstId = Number(nextElementId(elements).slice('el-'.length));
+    const top = templateTop(elements);
+    const placed = instantiateTemplate(template, top, firstId, CANVAS_HEIGHT);
+    if (placed === null) {
+      setError(`The ${template.name} section does not fit on the canvas.`);
+      return;
+    }
+    // No room below the existing content: the section would be moved up over
+    // it. Never cover someone's work without asking.
+    const overlaps = elements.length > 0 && top + template.height > CANVAS_HEIGHT;
+    if (overlaps && !window.confirm(`There is no room for "${template.name}" below your content, so it would be placed over it. Add it anyway?`)) return;
+    setElements((current) => [...current, ...placed]);
+    setSelectedId(null);
+  }
+
+  // Keyboard shortcuts - not while typing in a field.
+  useEffect(() => {
+    function onKey(event: KeyboardEvent): void {
+      const target = event.target as HTMLElement | null;
+      if (target !== null && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)) return;
+      const mod = event.ctrlKey || event.metaKey;
+      const key = event.key.toLowerCase();
+      if (mod && key === 'z' && !event.shiftKey) undoPage();
+      else if (mod && (key === 'y' || (key === 'z' && event.shiftKey))) redoPage();
+      else if (mod && key === 'd') duplicateSelected();
+      else if (event.key === 'Delete' || event.key === 'Backspace') deleteSelected();
+      else if (event.key === 'Escape') setSelectedId(null);
+      else if (event.key.startsWith('Arrow') && selectedId !== null) {
+        const step = event.shiftKey ? 10 : 1;
+        nudgeSelected(event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0, event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0);
+      } else return;
+      event.preventDefault();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   function deleteSelected(): void {
     if (selectedId === null) return;
@@ -536,6 +697,7 @@ export function PageBuilderCanvas(): JSX.Element {
           y: clamp(next.y, 0, CANVAS_HEIGHT - height),
         };
       }),
+      { coalesce: true },
     );
   }
 
@@ -552,6 +714,7 @@ export function PageBuilderCanvas(): JSX.Element {
         const { animation, field, ...rest } = { ...element, ...patch };
         return { ...rest, ...(animation === undefined ? {} : { animation }), ...(field === undefined ? {} : { field }) };
       }),
+      { coalesce: true },
     );
   }
 
@@ -689,8 +852,21 @@ export function PageBuilderCanvas(): JSX.Element {
           </button>
         </div>
 
-        <DndContext sensors={sensors} autoScroll={autoScroll} onDragStart={handleDragStart} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragCancel={() => { setDraggingType(null); setGhostAt(null); grabRef.current = null; }}>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[160px_1fr_260px]">
+        <DndContext sensors={sensors} autoScroll={autoScroll} onDragStart={handleDragStart} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragCancel={() => { setDraggingType(null); setGhostAt(null); setGuides([]); grabRef.current = null; }}>
+          <EditorToolbar
+            zoom={zoom}
+            fitting={zoomChoice === 'fit'}
+            onZoom={setZoomChoice}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onUndo={undoPage}
+            onRedo={redoPage}
+            preview={preview}
+            onPreview={setPreview}
+            onTemplate={addTemplate}
+          />
+          <div className={preview ? 'grid grid-cols-1' : 'grid grid-cols-1 gap-4 lg:grid-cols-[160px_1fr_260px]'}>
+            {!preview && (
             <aside ref={paletteRef} className="max-h-[800px] space-y-2 overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 p-3">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                 Elements
@@ -718,6 +894,7 @@ export function PageBuilderCanvas(): JSX.Element {
               })}
               <p className="pt-2 text-[10px] text-slate-500">Drag any element onto the canvas.</p>
             </aside>
+            )}
 
             {/*
               Two elements, not one, and that split is load-bearing.
@@ -743,8 +920,10 @@ export function PageBuilderCanvas(): JSX.Element {
             <div
               ref={viewportRef}
               data-testid="page-builder-viewport"
-              className="min-w-0 overflow-auto border border-slate-700"
+              className="min-w-0 overflow-auto rounded-lg border border-slate-700 bg-slate-950/40"
             >
+              {/* The scaled canvas's layout box: the canvas is scaled with a transform, which does not change its layout size. */}
+              <div style={{ width: CANVAS_WIDTH * zoom, height: CANVAS_HEIGHT * zoom }}>
               <div
                 ref={canvasRef}
                 data-testid="page-builder-canvas"
@@ -763,7 +942,16 @@ export function PageBuilderCanvas(): JSX.Element {
                 onClick={(event) => {
                   if (event.target === event.currentTarget) setSelectedId(null);
                 }}
-                style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, position: 'relative' }}
+                style={{
+                  width: CANVAS_WIDTH,
+                  height: CANVAS_HEIGHT,
+                  position: 'relative',
+                  transform: `scale(${zoom})`,
+                  transformOrigin: '0 0',
+                  // A faint 8px dot grid while editing - what elements snap to.
+                  backgroundImage: preview ? undefined : 'radial-gradient(circle, #e2e8f0 1px, transparent 1px)',
+                  backgroundSize: '16px 16px',
+                }}
                 className="bg-white"
               >
                 {/*
@@ -778,12 +966,31 @@ export function PageBuilderCanvas(): JSX.Element {
                     element={element}
                     selected={element.id === selectedId}
                     onSelect={() => setSelectedId(element.id)}
+                    zoom={zoom}
+                    preview={preview}
+                    onResize={(rect) => resizeElement(element.id, rect)}
+                  />
+                ))}
+                {guides.map((guide, index) => (
+                  <div
+                    key={index}
+                    data-testid="snap-guide"
+                    style={{
+                      position: 'absolute',
+                      pointerEvents: 'none',
+                      background: '#ff2d55',
+                      ...(guide.axis === 'x'
+                        ? { left: guide.at, top: 0, width: 1 / zoom, height: CANVAS_HEIGHT }
+                        : { top: guide.at, left: 0, height: 1 / zoom, width: CANVAS_WIDTH }),
+                    }}
                   />
                 ))}
               </div>
+              </div>
             </div>
 
-            <aside className="space-y-3 rounded-lg border border-slate-800 bg-slate-900 p-3">
+            {!preview && (
+            <aside className="max-h-[800px] space-y-3 overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 p-3">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                 Inspector
               </h4>
@@ -907,12 +1114,28 @@ export function PageBuilderCanvas(): JSX.Element {
                       Delete
                     </button>
                   </div>
+                  <div className="flex gap-1">
+                    {(['back', 'backward', 'forward', 'front'] as const).map((direction) => (
+                      <button
+                        key={direction}
+                        type="button"
+                        data-testid={`order-${direction}`}
+                        onClick={() => setElements((current) => reorder(current, selected.id, direction))}
+                        title={{ back: 'Send to back', backward: 'Send backward', forward: 'Bring forward', front: 'Bring to front' }[direction]}
+                        className="flex-1 rounded border border-slate-700 px-1 py-1 text-[10px] text-slate-300 hover:bg-slate-800"
+                      >
+                        {{ back: '⤓ Back', backward: '↓', forward: '↑', front: '⤒ Front' }[direction]}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
+              <LayersList elements={elements} selectedId={selectedId} onSelect={setSelectedId} />
             </aside>
+            )}
           </div>
           {/* Portalled to <body>: an ancestor with backdrop-filter (the glass panels) makes position: fixed relative to itself, which drew the ghost 16px off. */}
-          {draggingType !== null && ghostAt !== null && createPortal(<PaletteGhost type={draggingType} left={ghostAt.left} top={ghostAt.top} />, document.body)}
+          {draggingType !== null && ghostAt !== null && createPortal(<PaletteGhost type={draggingType} left={ghostAt.left} top={ghostAt.top} zoom={zoom} />, document.body)}
         </DndContext>
 
         {error !== null && (

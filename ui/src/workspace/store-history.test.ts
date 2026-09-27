@@ -36,7 +36,7 @@ describe('page builder undo/redo', () => {
     vi.advanceTimersByTime(1000);
     for (let x = 1; x <= 5; x += 1) {
       vi.advanceTimersByTime(100);
-      useWorkspaceStore.getState().setElements((c) => c.map((e) => ({ ...e, x })));
+      useWorkspaceStore.getState().setElements((c) => c.map((e) => ({ ...e, x })), { coalesce: true });
     }
     expect(ids()).toEqual(['a@5']);
     useWorkspaceStore.getState().undoPage();
@@ -49,5 +49,20 @@ describe('page builder undo/redo', () => {
     step((c) => [...c, el('b')]);
     useWorkspaceStore.getState().redoPage();
     expect(ids()).toEqual(['b@0']);
+  });
+});
+
+describe('page builder undo/redo - discrete steps stay separate', () => {
+  it('a continuous edit right after a drop does not merge into the drop', () => {
+    useWorkspaceStore.getState().openPageInBuilder(
+      { runId: 'r', sessionId: 's', sessionTitle: 't', path: 'frontend/src/pages/p.tsx', edited: false },
+      { id: 'p', pageName: 'P', elements: [] },
+    );
+    vi.advanceTimersByTime(1000);
+    useWorkspaceStore.getState().setElements((c) => [...c, el('a')]);
+    vi.advanceTimersByTime(100);
+    useWorkspaceStore.getState().setElements((c) => c.map((e) => ({ ...e, x: 9 })), { coalesce: true });
+    useWorkspaceStore.getState().undoPage();
+    expect(ids()).toEqual(['a@0']);
   });
 });

@@ -60,7 +60,13 @@ export interface WorkspaceState {
 
   readonly pageBuilder: PageBuilderState;
   readonly setPageName: (pageName: string) => void;
-  readonly setElements: (update: (current: readonly CanvasElement[]) => readonly CanvasElement[]) => void;
+  /**
+   * `coalesce` merges this change into the previous undo step when it follows
+   * within HISTORY_COALESCE_MS - for continuous edits (typing, nudging,
+   * resizing). Discrete actions (drop, delete, template) never pass it, so
+   * each is always its own step.
+   */
+  readonly setElements: (update: (current: readonly CanvasElement[]) => readonly CanvasElement[], options?: { readonly coalesce?: boolean }) => void;
   readonly setSelectedId: (id: string | null) => void;
   /** Loads one of a run's pages into the canvas and switches to the Page Builder tab. */
   readonly openPageInBuilder: (origin: PageOrigin, layout: PageLayout) => void;
@@ -75,6 +81,8 @@ export interface WorkspaceState {
 const HISTORY_COALESCE_MS = 600;
 const HISTORY_LIMIT = 100;
 let lastHistoryPush = 0;
+/** Whether the latest step came from a continuous edit - only those may absorb the next one. */
+let lastStepContinuous = false;
 
 const EMPTY_CANVAS: PageBuilderState = { pageName: 'Landing Page', elements: [], selectedId: null, origin: null };
 
@@ -93,14 +101,16 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
 
   pageBuilder: EMPTY_CANVAS,
   setPageName: (pageName) => set((state) => ({ pageBuilder: { ...state.pageBuilder, pageName } })),
-  setElements: (update) =>
+  setElements: (update, options) =>
     set((state) => {
       const before = state.pageBuilder.elements;
       const after = update(before);
       if (after === before) return {};
       const now = Date.now();
-      const coalesce = now - lastHistoryPush < HISTORY_COALESCE_MS && state.pageHistory.past.length > 0;
+      const continuous = options?.coalesce === true;
+      const coalesce = continuous && lastStepContinuous && now - lastHistoryPush < HISTORY_COALESCE_MS && state.pageHistory.past.length > 0;
       lastHistoryPush = now;
+      lastStepContinuous = continuous;
       const past = coalesce ? state.pageHistory.past : [...state.pageHistory.past, before].slice(-HISTORY_LIMIT);
       return { pageBuilder: { ...state.pageBuilder, elements: after }, pageHistory: { past, future: [] } };
     }),
