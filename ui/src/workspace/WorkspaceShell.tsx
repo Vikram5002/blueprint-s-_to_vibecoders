@@ -1,6 +1,5 @@
 import { Sidebar } from './Sidebar';
 import { ConversationPane } from './ConversationPane';
-import { PromptBar } from './PromptBar';
 import { LayoutDemo } from './LayoutDemo';
 import { VerificationDemo } from './VerificationDemo';
 import { WorkflowDemo } from './WorkflowDemo';
@@ -28,8 +27,8 @@ const TABS: readonly { readonly id: Tab; readonly label: string }[] = [
  * graph) previously each had their own "temporary" button opening an
  * unrelated modal. Replaced with a single tab strip so there is one coherent
  * way to move between every area of the workspace, not four disconnected
- * entry points. The Conversation tab itself is still an unwired placeholder
- * (see ConversationPane/PromptBar). `activeTab` lives in the shared
+ * entry points. The Conversation tab is Agent mode (ConversationPane.tsx)
+ * (see ConversationPane - now Agent mode). `activeTab` lives in the shared
  * workspace store, not local state, so the Sidebar's session list can switch
  * this shell to the Workflow graph tab from outside this component.
  */
@@ -59,12 +58,7 @@ export function WorkspaceShell(): JSX.Element {
 
         {/* Keyed on the tab so each view fades in when it is switched to. Opacity only: a moving parent would shift the page builder's drop maths and React Flow's fit-to-view while it settles (caught by the page-builder e2e tests). */}
         <div key={activeTab} className="anim-fade flex min-h-0 min-w-0 flex-1 flex-col">
-          {activeTab === 'conversation' && (
-            <>
-              <ConversationPane />
-              <PromptBar />
-            </>
-          )}
+          {activeTab === 'conversation' && <ConversationPane />}
           {activeTab === 'layout' && <LayoutDemo />}
           {activeTab === 'page-builder' && <PageBuilderCanvas />}
           {activeTab === 'verification' && <VerificationDemo />}
