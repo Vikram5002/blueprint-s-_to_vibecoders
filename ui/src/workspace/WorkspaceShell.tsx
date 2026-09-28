@@ -1,6 +1,5 @@
 import { Sidebar } from './Sidebar';
 import { ConversationPane } from './ConversationPane';
-import { LayoutDemo } from './LayoutDemo';
 import { VerificationDemo } from './VerificationDemo';
 import { WorkflowDemo } from './WorkflowDemo';
 import { PageBuilderCanvas } from './PageBuilderCanvas';
@@ -10,7 +9,6 @@ import { SegmentedControl } from '../design/SegmentedControl';
 
 const TABS: readonly { readonly id: Tab; readonly label: string }[] = [
   { id: 'conversation', label: 'Conversation' },
-  { id: 'layout', label: 'Page regions (mock)' },
   { id: 'page-builder', label: 'Page builder' },
   { id: 'verification', label: 'Verification (mock)' },
   { id: 'workflow', label: 'Workflow graph (mock)' },
@@ -22,13 +20,11 @@ const TABS: readonly { readonly id: Tab; readonly label: string }[] = [
  * a flex item refuses to shrink below its content's natural width, which is
  * exactly what breaks this layout at 768px.
  *
- * The three mock-data features (Module C's layout selection, the
- * three-outcome verification result display, and the deterministic workflow
- * graph) previously each had their own "temporary" button opening an
- * unrelated modal. Replaced with a single tab strip so there is one coherent
- * way to move between every area of the workspace, not four disconnected
- * entry points. The Conversation tab is Agent mode (ConversationPane.tsx)
- * (see ConversationPane - now Agent mode). `activeTab` lives in the shared
+ * One tab strip for every area of the workspace: Agent mode (the
+ * Conversation tab, ConversationPane.tsx), the Page Builder, the
+ * three-outcome verification display and the workflow graph. The former
+ * "Page regions" tab (Module C's layout presets) was folded into the Page
+ * Builder as page templates - see page-templates.ts. `activeTab` lives in the shared
  * workspace store, not local state, so the Sidebar's session list can switch
  * this shell to the Workflow graph tab from outside this component.
  */
@@ -59,7 +55,6 @@ export function WorkspaceShell(): JSX.Element {
         {/* Keyed on the tab so each view fades in when it is switched to. Opacity only: a moving parent would shift the page builder's drop maths and React Flow's fit-to-view while it settles (caught by the page-builder e2e tests). */}
         <div key={activeTab} className="anim-fade flex min-h-0 min-w-0 flex-1 flex-col">
           {activeTab === 'conversation' && <ConversationPane />}
-          {activeTab === 'layout' && <LayoutDemo />}
           {activeTab === 'page-builder' && <PageBuilderCanvas />}
           {activeTab === 'verification' && <VerificationDemo />}
           {activeTab === 'workflow' && <WorkflowDemo />}

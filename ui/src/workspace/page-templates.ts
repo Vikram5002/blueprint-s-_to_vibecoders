@@ -45,6 +45,36 @@ export const SECTION_TEMPLATES: readonly SectionTemplate[] = [
     ],
   },
   {
+    // From the former Page regions tab: header, content, footer in one column.
+    id: 'single-column',
+    name: 'Single column page',
+    description: 'Header, one content column, footer',
+    height: 800,
+    parts: [
+      p('navbar', 0, 0, 1280, 64, 'Brand|Home|About|Contact'),
+      p('section', 160, 88, 960, 624, 'Content'),
+      p('heading', 200, 120, 880, 44, 'Page title'),
+      p('paragraph', 200, 176, 880, 96, 'Your main content goes here - one centred column, easy to read on any screen.', 'neutral'),
+      p('footer', 0, 752, 1280, 48, '© 2026 Brand|Privacy|Terms', 'dark'),
+    ],
+  },
+  {
+    // From the former Page regions tab: header, navigation, content, sidebar, footer.
+    id: 'split-panel',
+    name: 'Split panel page',
+    description: 'Header, left navigation, content, right sidebar, footer',
+    height: 800,
+    parts: [
+      p('navbar', 0, 0, 1280, 64, 'Brand|Dashboard|Reports|Settings'),
+      p('sidebar', 0, 64, 312, 688, 'Menu|Overview|Projects|Team|Settings'),
+      p('section', 336, 88, 608, 640, 'Content'),
+      p('heading', 368, 112, 544, 44, 'Main content'),
+      p('paragraph', 368, 168, 544, 96, 'The wide middle column holds the page itself.', 'neutral'),
+      p('card', 968, 88, 288, 200, 'Sidebar|Related links, filters or help.|Learn more'),
+      p('footer', 0, 752, 1280, 48, '© 2026 Brand|Privacy|Terms', 'dark'),
+    ],
+  },
+  {
     id: 'pricing',
     name: 'Pricing',
     description: 'Heading and three plans',

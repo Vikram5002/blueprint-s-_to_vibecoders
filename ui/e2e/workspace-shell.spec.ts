@@ -1,11 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Covers ui/src/workspace/: WorkspaceShell, Sidebar, ConversationPane,
- * PromptBar, store.ts. No backend — ConversationPane and PromptBar remain
- * placeholder content only (see each component's own doc comment), so those
- * assertions still cover the real current behavior, not an intended future
- * one.
+ * Covers ui/src/workspace/: WorkspaceShell, Sidebar, ConversationPane (Agent
+ * mode) and store.ts. No backend: these check the shell itself - layout,
+ * tabs, the agent's input - not a run (agent-runner.test.ts covers the
+ * agent's decisions).
  *
  * Sidebar is the one exception: it now fetches `/api/workflow/sessions` on
  * mount (a real workspace-sessions-store.ts feature, tested against a real
@@ -25,7 +24,7 @@ const EXPECTED_SESSIONS_FETCH_NOISE = 'Failed to load resource: the server respo
 test.describe('workspace shell — 1280px', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
-  test('renders sidebar at 240px, conversation pane, and prompt bar with zero console errors', async ({
+  test('renders sidebar at 240px and the Agent mode pane with zero console errors', async ({
     page,
   }) => {
     const consoleErrors: string[] = [];
@@ -40,9 +39,9 @@ test.describe('workspace shell — 1280px', () => {
     const sidebarWidth = await sidebar.evaluate((el) => el.getBoundingClientRect().width);
     expect(sidebarWidth).toBe(240);
 
-    await expect(page.getByText('No messages yet. The conversation will appear here.')).toBeVisible();
-    await expect(page.getByPlaceholder('Message...')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Send' })).toBeVisible();
+    await expect(page.getByText('Agent mode')).toBeVisible();
+    await expect(page.getByTestId('agent-prompt')).toBeVisible();
+    await expect(page.getByTestId('agent-start')).toBeVisible();
 
     expect(consoleErrors.filter((message) => message !== EXPECTED_SESSIONS_FETCH_NOISE)).toEqual([]);
   });
@@ -55,8 +54,8 @@ test.describe('workspace shell — 768px', () => {
     await page.goto('/workspace.html');
 
     await expect(page.locator('aside')).toBeVisible();
-    await expect(page.getByText('No messages yet. The conversation will appear here.')).toBeVisible();
-    await expect(page.getByPlaceholder('Message...')).toBeVisible();
+    await expect(page.getByText('Agent mode')).toBeVisible();
+    await expect(page.getByTestId('agent-prompt')).toBeVisible();
 
     const { scrollWidth, innerWidth } = await page.evaluate(() => ({
       scrollWidth: document.body.scrollWidth,
@@ -100,7 +99,7 @@ test.describe('sidebar collapse / expand', () => {
 test.describe('tab navigation', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
-  test('starts on Conversation and moves between all five sections with zero console errors', async ({
+  test('starts on Conversation and moves between all four sections with zero console errors', async ({
     page,
   }) => {
     const consoleErrors: string[] = [];
@@ -111,21 +110,16 @@ test.describe('tab navigation', () => {
     await page.goto('/workspace.html');
 
     const conversationTab = page.getByRole('tab', { name: 'Conversation' });
-    const layoutTab = page.getByRole('tab', { name: 'Page regions (mock)' });
     const pageBuilderTab = page.getByRole('tab', { name: 'Page builder' });
     const verificationTab = page.getByRole('tab', { name: 'Verification (mock)' });
     const workflowTab = page.getByRole('tab', { name: 'Workflow graph (mock)' });
 
     await expect(conversationTab).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByText('No messages yet. The conversation will appear here.')).toBeVisible();
-
-    await layoutTab.click();
-    await expect(layoutTab).toHaveAttribute('aria-selected', 'true');
-    await expect(conversationTab).toHaveAttribute('aria-selected', 'false');
-    await expect(page.getByText('Mock data — these presets are hard-coded')).toBeVisible();
+    await expect(page.getByText('Agent mode')).toBeVisible();
 
     await pageBuilderTab.click();
     await expect(pageBuilderTab).toHaveAttribute('aria-selected', 'true');
+    await expect(conversationTab).toHaveAttribute('aria-selected', 'false');
     await expect(page.getByTestId('page-builder-canvas')).toBeVisible();
 
     await verificationTab.click();
@@ -138,7 +132,7 @@ test.describe('tab navigation', () => {
 
     await conversationTab.click();
     await expect(conversationTab).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByPlaceholder('Message...')).toBeVisible();
+    await expect(page.getByTestId('agent-prompt')).toBeVisible();
 
     expect(consoleErrors.filter((message) => message !== EXPECTED_SESSIONS_FETCH_NOISE)).toEqual([]);
   });
@@ -202,7 +196,7 @@ test.describe('workflow graph — fit-to-view', () => {
 test.describe('no horizontal overflow at 768px', () => {
   test.use({ viewport: { width: 768, height: 1024 } });
 
-  for (const tab of ['Conversation', 'Page regions (mock)', 'Page builder', 'Verification (mock)', 'Workflow graph (mock)']) {
+  for (const tab of ['Conversation', 'Page builder', 'Verification (mock)', 'Workflow graph (mock)']) {
     test(`"${tab}" tab has no horizontal overflow`, async ({ page }) => {
       await page.goto('/workspace.html');
       await page.getByRole('tab', { name: tab }).click();
@@ -216,31 +210,33 @@ test.describe('no horizontal overflow at 768px', () => {
   }
 });
 
-test.describe('prompt bar', () => {
+test.describe('agent input', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
-  test('typing updates the textarea value; submit stays disabled regardless of input', async ({
-    page,
-  }) => {
+  test('Build it is disabled until something is typed, and disabled again when cleared', async ({ page }) => {
     await page.goto('/workspace.html');
 
-    const textarea = page.getByPlaceholder('Message...');
-    const submit = page.getByRole('button', { name: 'Send' });
+    const prompt = page.getByTestId('agent-prompt');
+    const start = page.getByTestId('agent-start');
 
-    // Current store.ts has no field tied to prompt text, and PromptBar.tsx
-    // hardcodes `disabled` on the submit button — it is never re-enabled.
-    // This is documented as intentional in PromptBar.tsx ("Deliberately
-    // disabled... not yet wired to anything"), not a bug, so this test
-    // asserts that actual behavior rather than an enabled-when-non-empty
-    // rule the code does not implement.
-    await expect(submit).toBeDisabled();
+    await expect(start).toBeDisabled();
+    await prompt.fill('A booking site for a yoga studio');
+    await expect(prompt).toHaveValue('A booking site for a yoga studio');
+    await expect(start).toBeEnabled();
+    await prompt.fill('   ');
+    await expect(start).toBeDisabled();
+  });
+});
 
-    await textarea.fill('hello world');
-    await expect(textarea).toHaveValue('hello world');
-    await expect(submit).toBeDisabled();
+test.describe('page templates (formerly the Page regions tab)', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
 
-    await textarea.fill('');
-    await expect(textarea).toHaveValue('');
-    await expect(submit).toBeDisabled();
+  test('the single-column and split-panel layouts are Page Builder templates now', async ({ page }) => {
+    await page.goto('/workspace.html');
+    await expect(page.getByRole('tab', { name: /Page regions/ })).toHaveCount(0);
+    await page.getByRole('tab', { name: 'Page builder' }).click();
+
+    await page.getByTestId('add-template').selectOption('split-panel');
+    await expect(page.locator('[data-testid^="placed-"]')).toHaveCount(7);
   });
 });

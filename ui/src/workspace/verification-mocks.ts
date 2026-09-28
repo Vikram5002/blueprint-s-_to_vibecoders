@@ -8,11 +8,10 @@ import type { VerificationInput } from './verification-outcome';
 
 /**
  * Mock data for all three outcomes plus both zero-violation cases, so every
- * path in VerificationResultPanel is demonstrable with no backend — same
- * "no backend yet, mock data, labeled as such" discipline as
- * layout-presets.ts. Nothing here is real: no actual code was generated, no
+ * path in VerificationResultPanel is demonstrable with no backend — labeled
+ * as mock data. Nothing here is real: no actual code was generated, no
  * actual graph was analysed. `VerificationDemo.tsx` shows an on-screen
- * banner saying so, same as `LayoutPresetPanel.tsx` does for its presets.
+ * banner saying so.
  */
 
 let mockConstraintCounter = 0;

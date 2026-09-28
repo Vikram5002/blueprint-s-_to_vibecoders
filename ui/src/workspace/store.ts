@@ -3,7 +3,7 @@ import type { PageTheme } from './page-theme';
 import type { WorkflowSessionDetail } from './workflow-session-types';
 import type { CanvasElement, PageLayout } from './page-builder-types';
 
-export type Tab = 'conversation' | 'layout' | 'page-builder' | 'verification' | 'workflow';
+export type Tab = 'conversation' | 'page-builder' | 'verification' | 'workflow';
 
 /**
  * Where a Page Builder canvas came from, when it is one of a generated
