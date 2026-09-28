@@ -50,6 +50,8 @@ export const EXTENDED_ELEMENT_TYPES = [
   'typewriter', 'text-shimmer', 'text-scramble', 'word-reveal', 'counter', 'marquee', 'gradient-border',
   'columns', 'spacer', 'sidebar', 'mobile-menu', 'modal', 'tooltip', 'dropdown-menu',
   'toast', 'back-to-top', 'scroll-progress', 'fab', 'cookie-banner',
+  'radio-group', 'checkbox-group', 'segmented', 'time', 'date-range', 'color-input', 'phone', 'url',
+  'multi-select', 'tag-input', 'otp', 'newsletter', 'signature', 'rich-text',
 ] as const;
 
 export type ExtendedElementType = (typeof EXTENDED_ELEMENT_TYPES)[number];

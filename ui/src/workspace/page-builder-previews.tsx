@@ -63,7 +63,76 @@ const textSize = (element: CanvasElement): number => Math.max(14, Math.min(64, M
 
 const pill = (color: string): CSSProperties => ({ ...flexCenter, backgroundColor: color, color: '#fff', borderRadius: 8, padding: '0 14px' });
 
+function choicePreview(kind: 'radio' | 'checkbox'): Preview {
+  return (element, color, p) => {
+    const [legend, ...options] = labelParts(element.label);
+    return {
+      style: { border: `1px solid ${p.line}`, borderRadius: 10, padding: '6px 12px', display: 'flex', flexDirection: 'column', gap: 4, color: p.ink },
+      content: (
+        <>
+          <span style={{ fontSize: 12, fontWeight: 600, color: p.muted }}>{legend}</span>
+          {options.map((option, i) => (
+            <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 12, height: 12, border: `2px solid ${color}`, borderRadius: kind === 'radio' ? '50%' : 3, background: i === 0 ? color : 'transparent' }} />
+              {option}
+            </span>
+          ))}
+        </>
+      ),
+    };
+  };
+}
+
+const field = (p: PreviewPalette): CSSProperties => ({ border: `1px solid ${p.line}`, borderRadius: 8, background: p.surface, color: p.muted, display: 'flex', alignItems: 'center', padding: '0 10px' });
+
 const PREVIEWS: Readonly<Record<ExtendedElementType, Preview>> = {
+  'radio-group': choicePreview('radio'),
+  'checkbox-group': choicePreview('checkbox'),
+  segmented: (element, color, p) => ({
+    style: { display: 'flex', gap: 4, padding: 4, borderRadius: 10, background: p.line },
+    content: labelParts(element.label).map((option, i) => (
+      <span key={i} style={{ flex: 1, ...flexCenter, borderRadius: 8, background: i === 0 ? color : 'transparent', color: i === 0 ? '#fff' : p.ink }}>{option}</span>
+    )),
+  }),
+  time: (element, _color, p) => ({ style: field(p), content: `🕒 ${element.label}` }),
+  'date-range': (element, _color, p) => {
+    const [from = 'From', to = 'To'] = labelParts(element.label);
+    return { style: { display: 'flex', gap: 10, alignItems: 'flex-end' }, content: [from, to].map((label) => <span key={label} style={{ flex: 1, height: 40, ...field(p) }}>📅 {label}</span>) };
+  },
+  'color-input': (element, color, p) => ({ style: { display: 'flex', alignItems: 'center', gap: 8, color: p.ink }, content: (<><span style={{ width: 36, height: 28, borderRadius: 6, background: color }} />{element.label}</>) }),
+  phone: (element, _color, p) => ({ style: field(p), content: `☎ ${element.label}` }),
+  url: (element, _color, p) => ({ style: field(p), content: `🔗 ${element.label}` }),
+  'multi-select': (element, color, p) => {
+    const [, ...options] = labelParts(element.label);
+    return { style: { ...field(p), flexDirection: 'column', alignItems: 'stretch', padding: 4, gap: 2 }, content: options.map((option, i) => <span key={i} style={{ padding: '2px 6px', borderRadius: 4, background: i === 0 ? `${color}33` : 'transparent', color: p.ink }}>{option}</span>) };
+  },
+  'tag-input': (element, color, p) => ({ style: { ...field(p), gap: 6 }, content: (<><span style={{ padding: '1px 8px', borderRadius: 999, background: color, color: '#fff' }}>design ×</span>{element.label}</>) }),
+  otp: (_element, _color, p) => ({ style: { ...field(p), justifyContent: 'center', fontFamily: 'ui-monospace, monospace', fontSize: 22, letterSpacing: '0.5em' }, content: '000000' }),
+  newsletter: (element, color, p) => {
+    const [title, placeholder, action = 'Subscribe'] = labelParts(element.label);
+    return {
+      style: { display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' },
+      content: (
+        <>
+          <strong style={{ color: p.ink, fontSize: 16 }}>{title}</strong>
+          <span style={{ display: 'flex', gap: 6 }}>
+            <span style={{ flex: 1, height: 38, ...field(p) }}>{placeholder}</span>
+            <span style={{ ...flexCenter, background: color, color: '#fff', borderRadius: 8, padding: '0 14px' }}>{action}</span>
+          </span>
+        </>
+      ),
+    };
+  },
+  signature: (element, color, p) => ({ style: { border: `1px dashed ${p.line}`, borderRadius: 10, background: p.surface, ...flexCenter, flexDirection: 'column', color: p.muted }, content: (<><span style={{ fontFamily: 'cursive', fontSize: 28, color }}>~ Ada L. ~</span>{element.label}</>) }),
+  'rich-text': (element, _color, p) => ({
+    style: { border: `1px solid ${p.line}`, borderRadius: 10, background: p.surface, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+    content: (
+      <>
+        <span style={{ borderBottom: `1px solid ${p.line}`, padding: '4px 8px', color: p.ink, fontSize: 12 }}><b>B</b> <i>I</i> • List</span>
+        <span style={{ padding: 10, color: p.muted }}>{element.label}</span>
+      </>
+    ),
+  }),
   columns: (element, _color, p) => ({
     style: { display: 'flex', gap: 16 },
     content: (labelParts(element.label).length > 0 ? labelParts(element.label) : ['Column 1', 'Column 2', 'Column 3']).map((title, i) => (

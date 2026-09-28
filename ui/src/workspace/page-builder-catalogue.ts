@@ -79,6 +79,21 @@ export const ELEMENT_SPECS: Readonly<Record<CanvasElementType, ElementSpec>> = {
   'blob-scene': { palette: 'Blob scene', label: '31|6', width: 1280, height: 400, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
   peaks: { palette: 'Layered peaks', label: '5|5', width: 1280, height: 260, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
   circles: { palette: 'Circle scatter', label: '44|6', width: 1280, height: 400, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
+  // Form widgets - every one is a real field of the page's form
+  'radio-group': { palette: 'Radio group', label: 'Plan|Free|Pro|Team', width: 280, height: 120, hint: 'Question | option | option …' },
+  'checkbox-group': { palette: 'Checkbox group', label: 'Interests|Design|Code|Marketing', width: 280, height: 120, hint: 'Question | option | option … - submits a list' },
+  segmented: { palette: 'Segmented control', label: 'Monthly|Yearly', width: 260, height: 44, hint: 'Option | option …' },
+  time: { palette: 'Time', label: 'Time', width: 180, height: 40 },
+  'date-range': { palette: 'Date range', label: 'Check-in|Check-out', width: 420, height: 64, hint: 'From label | To label - submits <name>From and <name>To' },
+  'color-input': { palette: 'Colour picker', label: 'Pick a colour', width: 220, height: 40 },
+  phone: { palette: 'Phone', label: '+91 98765 43210', width: 240, height: 40 },
+  url: { palette: 'URL', label: 'https://example.com', width: 300, height: 40 },
+  'multi-select': { palette: 'Multi-select', label: 'Tags|Alpha|Beta|Gamma', width: 260, height: 110, hint: 'Label | option | option … - submits a list' },
+  'tag-input': { palette: 'Tag input', label: 'Add tags…', width: 420, height: 44, hint: 'Type a tag and press Enter' },
+  otp: { palette: 'OTP code', label: 'Verification code', width: 260, height: 56 },
+  newsletter: { palette: 'Newsletter signup', label: 'Get the newsletter|you@example.com|Subscribe', width: 520, height: 90, hint: 'Title | placeholder | button' },
+  signature: { palette: 'Signature pad', label: 'Sign here', width: 420, height: 170 },
+  'rich-text': { palette: 'Rich text', label: 'Write something…', width: 520, height: 180 },
   // Widgets - layout, navigation, overlays, page-level
   columns: { palette: 'Columns', label: 'Column 1|Column 2|Column 3', width: 960, height: 200, hint: 'One title per column, split by |' },
   spacer: { palette: 'Spacer', label: '', width: 400, height: 48 },
@@ -112,7 +127,7 @@ export const ELEMENT_CATEGORIES: readonly ElementCategory[] = [
   { name: 'Layout', types: ['navbar', 'hero', 'section', 'columns', 'card', 'container', 'spacer', 'divider', 'footer'] },
   { name: 'Text', types: ['heading', 'text', 'paragraph', 'quote', 'list', 'code', 'badge', 'link'] },
   { name: 'Media', types: ['image', 'video', 'icon', 'avatar'] },
-  { name: 'Forms', types: ['button', 'input', 'email', 'password', 'number', 'date', 'search', 'textarea', 'select', 'checkbox', 'radio', 'toggle', 'slider', 'file', 'rating'] },
+  { name: 'Forms', types: ['button', 'input', 'email', 'password', 'number', 'phone', 'url', 'date', 'date-range', 'time', 'search', 'textarea', 'rich-text', 'select', 'multi-select', 'checkbox', 'checkbox-group', 'radio', 'radio-group', 'segmented', 'toggle', 'slider', 'color-input', 'tag-input', 'otp', 'file', 'signature', 'rating', 'newsletter'] },
   { name: 'Data', types: ['table', 'stat', 'progress', 'pricing', 'testimonial'] },
   { name: 'Navigation', types: ['sidebar', 'mobile-menu', 'dropdown-menu', 'tabs', 'breadcrumb', 'pagination'] },
   { name: 'Overlays', types: ['modal', 'tooltip', 'toast'] },
@@ -130,6 +145,7 @@ export function labelParts(label: string): string[] {
 /** Element types that are form fields - mirrors FIELD_KINDS in src/generate/canvas-form.ts. */
 export const FIELD_TYPES: ReadonlySet<CanvasElementType> = new Set<CanvasElementType>([
   'input', 'textarea', 'select', 'search', 'email', 'password', 'number', 'slider', 'date', 'checkbox', 'radio', 'toggle',
+  'radio-group', 'checkbox-group', 'segmented', 'time', 'date-range', 'color-input', 'phone', 'url', 'multi-select', 'tag-input', 'otp', 'newsletter', 'signature', 'rich-text',
 ]);
 
 /** The field name the generator derives from a label when none is set - same rule as canvas-form.ts. */
