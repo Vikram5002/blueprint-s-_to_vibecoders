@@ -73,6 +73,32 @@ export const SECTION_TEMPLATES: readonly SectionTemplate[] = [
     ],
   },
   {
+    id: 'signup',
+    name: 'Signup form',
+    description: 'Name, email, password, terms, create account',
+    height: 460,
+    parts: [
+      p('heading', 440, 20, 400, 44, 'Create your account'),
+      p('text', 440, 72, 400, 24, 'Free for 14 days. No card needed.', 'neutral'),
+      p('input', 440, 112, 400, 44, 'Full name'),
+      p('email', 440, 168, 400, 44, 'you@example.com'),
+      p('password', 440, 224, 400, 44, 'Password'),
+      p('checkbox', 440, 284, 400, 28, 'I agree to the terms'),
+      p('button', 440, 328, 400, 48, 'Create account'),
+      p('link', 440, 392, 300, 24, 'Already have an account? Sign in'),
+    ],
+  },
+  {
+    id: 'not-found',
+    name: '404 page',
+    description: 'Not found message and a way home',
+    height: 360,
+    parts: [
+      p('heading', 440, 40, 400, 60, '404'),
+      p('empty-state', 390, 100, 500, 220, '🧭|Page not found|The page you are looking for does not exist.|Back to home'),
+    ],
+  },
+  {
     id: 'contact',
     name: 'Contact form',
     description: 'Name, email, message, send',

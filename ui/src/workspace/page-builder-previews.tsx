@@ -85,7 +85,114 @@ function choicePreview(kind: 'radio' | 'checkbox'): Preview {
 
 const field = (p: PreviewPalette): CSSProperties => ({ border: `1px solid ${p.line}`, borderRadius: 8, background: p.surface, color: p.muted, display: 'flex', alignItems: 'center', padding: '0 10px' });
 
+function chartSeries(label: string): { name: string; value: number }[] {
+  return labelParts(label).map((part) => {
+    const match = /(-?\d+(?:\.\d+)?)\s*$/.exec(part);
+    return { name: match === null ? part : part.slice(0, match.index).trim(), value: match === null ? 0 : Number(match[1]) };
+  });
+}
+
+const mediaBox = (color: string, p: PreviewPalette, text: string): PreviewVisual => ({
+  style: { ...flexCenter, borderRadius: 12, background: `linear-gradient(135deg, ${color}55, ${color}22)`, color: p.ink, fontSize: 13, textAlign: 'center', padding: 8 },
+  content: text,
+});
+
 const PREVIEWS: Readonly<Record<ExtendedElementType, Preview>> = {
+  carousel: (element, color, _p) => ({
+    style: { ...flexCenter, borderRadius: 14, background: `linear-gradient(135deg, ${color}, ${color}88)`, color: '#fff', fontSize: 24, fontWeight: 700, position: 'relative' },
+    content: (<>{labelParts(element.label)[0]}<span style={{ position: 'absolute', left: 10, fontSize: 20 }}>‹</span><span style={{ position: 'absolute', right: 10, fontSize: 20 }}>›</span></>),
+  }),
+  gallery: (element, color, _p) => ({ style: { display: 'grid', gridTemplateColumns: `repeat(${Math.min(4, Math.max(1, labelParts(element.label).length))}, 1fr)`, gap: 8 }, content: labelParts(element.label).map((_img, i) => <span key={i} style={{ borderRadius: 10, background: `linear-gradient(135deg, ${color}55, ${color}22)` }} />) }),
+  lightbox: (_element, color, p) => mediaBox(color, p, '🔍 click to enlarge'),
+  'before-after': (_element, color, _p) => ({ style: { display: 'flex', borderRadius: 12, overflow: 'hidden' }, content: (<><span style={{ flex: 1, background: '#9ca3af' }} /><span style={{ width: 3, background: '#fff' }} /><span style={{ flex: 1, background: color }} /></>) }),
+  map: (element, color, p) => mediaBox(color, p, `📍 ${element.label}`),
+  embed: (element, color, p) => mediaBox(color, p, `⧉ ${element.label}`),
+  'custom-html': (element, _color, p) => ({ style: { border: `1px dashed ${p.line}`, borderRadius: 8, padding: 8, fontFamily: 'ui-monospace, monospace', fontSize: 11, color: p.muted, overflow: 'hidden' }, content: element.label }),
+  audio: (element, color, p) => ({ style: { display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px', borderRadius: 12, background: p.surface, border: `1px solid ${p.line}`, color: p.ink }, content: (<><span style={{ color }}>▶</span>{labelParts(element.label)[1] ?? 'Audio'}<span style={{ flex: 1, height: 4, borderRadius: 2, background: p.line }} /></>) }),
+  lottie: (_element, color, p) => mediaBox(color, p, '✦ Lottie'),
+  'social-icons': (element, color, _p) => ({ style: { display: 'flex', alignItems: 'center', gap: 8 }, content: labelParts(element.label).map((name, i) => <span key={i} style={{ width: 36, height: 36, borderRadius: '50%', ...flexCenter, background: color, color: '#fff', fontSize: 12, fontWeight: 700 }}>{name.slice(0, 2).toUpperCase()}</span>) }),
+  'logo-cloud': (element, _color, p) => ({ style: { display: 'flex', alignItems: 'center', justifyContent: 'space-around' }, content: labelParts(element.label).map((name, i) => <strong key={i} style={{ fontSize: 18, color: p.muted }}>{name}</strong>) }),
+  'feature-grid': (element, color, p) => {
+    const items = labelParts(element.label);
+    const cells = [];
+    for (let i = 0; i < items.length; i += 3) cells.push(items.slice(i, i + 3));
+    return {
+      style: { display: 'grid', gridTemplateColumns: `repeat(${Math.min(4, Math.max(1, cells.length))}, 1fr)`, gap: 16 },
+      content: cells.map(([icon, title, text], i) => (
+        <span key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span style={{ width: 32, height: 32, borderRadius: 8, ...flexCenter, background: `${color}22` }}>{icon}</span>
+          <strong style={{ color: p.ink }}>{title}</strong>
+          <span style={{ color: p.muted, fontSize: 12 }}>{text}</span>
+        </span>
+      )),
+    };
+  },
+  'faq-list': (element, _color, p) => {
+    const items = labelParts(element.label);
+    return { style: { display: 'flex', flexDirection: 'column' }, content: items.filter((_q, i) => i % 2 === 0).map((q, i) => <span key={i} style={{ padding: '8px 0', borderBottom: `1px solid ${p.line}`, color: p.ink, fontWeight: 600 }}>▸ {q}</span>) };
+  },
+  'cta-banner': (element, color, _p) => {
+    const [title, text, action] = labelParts(element.label);
+    return {
+      style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', borderRadius: 16, background: `linear-gradient(120deg, ${color}, ${color}cc)`, color: '#fff' },
+      content: (<><span><strong style={{ fontSize: 20 }}>{title}</strong><br />{text}</span><span style={{ background: '#fff', color, borderRadius: 999, padding: '8px 16px', fontWeight: 700 }}>{action}</span></>),
+    };
+  },
+  'team-card': (element, color, p) => {
+    const [name = '', role, bio] = labelParts(element.label);
+    return {
+      style: { ...surface(p), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, textAlign: 'center' },
+      content: (<><span style={{ width: 56, height: 56, borderRadius: '50%', ...flexCenter, background: color, color: '#fff', fontWeight: 700 }}>{name.split(' ').map((w) => w[0]).join('').slice(0, 2)}</span><strong style={{ color: p.ink }}>{name}</strong><span style={{ color, fontSize: 12 }}>{role}</span><span style={{ color: p.muted, fontSize: 12 }}>{bio}</span></>),
+    };
+  },
+  'blog-card': (element, color, p) => {
+    const [title, excerpt, date] = labelParts(element.label);
+    return { style: { ...surface(p), display: 'flex', flexDirection: 'column' }, content: (<><span style={{ height: '42%', background: `linear-gradient(135deg, ${color}55, ${color}22)` }} /><span style={{ padding: 12 }}><span style={{ fontSize: 11, color }}>{date}</span><br /><strong style={{ color: p.ink }}>{title}</strong><br /><span style={{ fontSize: 12, color: p.muted }}>{excerpt}</span></span></>) };
+  },
+  'product-card': (element, color, p) => {
+    const [name, price] = labelParts(element.label);
+    return { style: { ...surface(p), display: 'flex', flexDirection: 'column' }, content: (<><span style={{ height: '50%', background: `linear-gradient(135deg, ${color}55, ${color}22)` }} /><span style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 4 }}><strong style={{ color: p.ink }}>{name}</strong><span style={{ color, fontWeight: 700 }}>{price}</span><span style={{ ...flexCenter, background: color, color: '#fff', borderRadius: 8, padding: '6px 0' }}>Add to cart</span></span></>) };
+  },
+  'bar-chart': (element, color, p) => {
+    const data = chartSeries(element.label);
+    const max = Math.max(1, ...data.map((d) => d.value));
+    return { style: { display: 'flex', alignItems: 'flex-end', gap: 12, padding: '8px 8px 20px' }, content: data.map((d, i) => <span key={i} style={{ flex: 1, height: `${(d.value / max) * 100}%`, background: color, borderRadius: 4, position: 'relative' }}><span style={{ position: 'absolute', bottom: -18, left: 0, right: 0, textAlign: 'center', fontSize: 11, color: p.muted }}>{d.name}</span></span>) };
+  },
+  'line-chart': (element, color, _p) => {
+    const data = chartSeries(element.label);
+    const max = Math.max(1, ...data.map((d) => d.value));
+    const points = data.map((d, i) => `${(i / Math.max(1, data.length - 1)) * 100},${100 - (d.value / max) * 90}`).join(' ');
+    return { style: {}, content: <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}><polyline points={points} fill="none" stroke={color} strokeWidth={2} vectorEffect="non-scaling-stroke" /></svg> };
+  },
+  'pie-chart': (element, color, p) => {
+    const data = chartSeries(element.label).filter((d) => d.value > 0);
+    const total = data.reduce((s, d) => s + d.value, 0) || 1;
+    let at = 0;
+    const stops = data.map((d, i) => { const from = at; at += (d.value / total) * 360; return `color-mix(in srgb, ${color}, #fff ${[0, 25, 45, 60, 72][i % 5]}%) ${from}deg ${at}deg`; }).join(', ');
+    return { style: { display: 'flex', alignItems: 'center', gap: 14 }, content: (<><span style={{ height: '100%', aspectRatio: '1', borderRadius: '50%', background: `conic-gradient(${stops})` }} /><span style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: p.ink }}>{data.map((d, i) => <span key={i}>{d.name} {Math.round((d.value / total) * 100)}%</span>)}</span></>) };
+  },
+  'description-list': (element, _color, p) => ({ style: { display: 'flex', flexDirection: 'column' }, content: labelParts(element.label).map((row, i) => { const [k, ...v] = row.split(':'); return <span key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${p.line}` }}><span style={{ color: p.muted }}>{k}</span><strong style={{ color: p.ink }}>{v.join(':')}</strong></span>; }) }),
+  'tree-view': (element, color, p) => ({ style: { ...surface(p), padding: 10, fontFamily: 'ui-monospace, monospace', fontSize: 12 }, content: labelParts(element.label).map((row, i) => { const depth = /^-*/.exec(row)?.[0].length ?? 0; const name = row.replace(/^-+/, ''); return <div key={i} style={{ paddingLeft: depth * 14, color: /\.[a-z]+$/i.test(name) ? p.ink : color }}>{/\.[a-z]+$/i.test(name) ? '📄' : '📁'} {name}</div>; }) }),
+  kanban: (element, _color, p) => ({ style: { display: 'flex', gap: 10, alignItems: 'flex-start' }, content: labelParts(element.label).map((col, i) => { const [title = '', rest = ''] = col.split(':'); return <span key={i} style={{ flex: 1, background: p.line, borderRadius: 10, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}><strong style={{ fontSize: 11, color: p.muted }}>{title.toUpperCase()}</strong>{rest.split(',').filter((c) => c.trim() !== '').map((card, j) => <span key={j} style={{ background: p.surface, borderRadius: 6, padding: '6px 8px', color: p.ink }}>{card.trim()}</span>)}</span>; }) }),
+  calendar: (element, color, p) => {
+    const [month = '2026-10', marked = ''] = labelParts(element.label);
+    const marks = new Set(marked.split(',').map((d) => Number(d.trim())));
+    return { style: { ...surface(p), padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }, content: (<><strong style={{ color: p.ink }}>{month}</strong><span style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, fontSize: 11 }}>{Array.from({ length: 31 }, (_u, i) => <span key={i} style={{ textAlign: 'center', borderRadius: 4, padding: 2, background: marks.has(i + 1) ? color : 'transparent', color: marks.has(i + 1) ? '#fff' : p.ink }}>{i + 1}</span>)}</span></>) };
+  },
+  timeline: (element, color, p) => ({ style: { borderLeft: `2px solid ${p.line}`, paddingLeft: 14, display: 'flex', flexDirection: 'column', gap: 8 }, content: labelParts(element.label).map((row, i) => { const [when, ...what] = row.split(' '); return <span key={i}><strong style={{ color }}>● {when}</strong> <span style={{ color: p.ink }}>{what.join(' ')}</span></span>; }) }),
+  stepper: (element, color, p) => {
+    const steps = labelParts(element.label);
+    const current = Math.max(0, steps.findIndex((s) => s.startsWith('*')));
+    return { style: { display: 'flex', alignItems: 'center', gap: 8 }, content: steps.map((s, i) => <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, color: i === current ? p.ink : p.muted }}><span style={{ width: 24, height: 24, borderRadius: '50%', ...flexCenter, background: i <= current ? color : p.line, color: i <= current ? '#fff' : p.muted, fontSize: 12 }}>{i < current ? '✓' : i + 1}</span>{s.replace(/^\*/, '')}</span>) };
+  },
+  kbd: (element, _color, p) => ({ style: { display: 'flex', alignItems: 'center', gap: 4 }, content: element.label.split('+').map((k, i) => <kbd key={i} style={{ padding: '1px 7px', border: `1px solid ${p.line}`, borderBottomWidth: 3, borderRadius: 5, background: p.surface, color: p.ink, fontFamily: 'ui-monospace, monospace' }}>{k.trim()}</kbd>) }),
+  skeleton: (_element, _color, p) => ({ style: { display: 'flex', flexDirection: 'column', gap: 8 }, content: ['40%', '100%', '90%', '70%'].map((w, i) => <span key={i} style={{ width: w, height: i === 0 ? 16 : 10, borderRadius: 5, background: p.line }} />) }),
+  'empty-state': (element, color, p) => {
+    const [icon, title, text, action] = labelParts(element.label);
+    return { style: { ...flexCenter, flexDirection: 'column', gap: 4, textAlign: 'center' }, content: (<><span style={{ fontSize: 34 }}>{icon}</span><strong style={{ color: p.ink }}>{title}</strong><span style={{ color: p.muted, fontSize: 12 }}>{text}</span>{action !== undefined && <span style={{ background: color, color: '#fff', borderRadius: 8, padding: '6px 12px' }}>{action}</span>}</>) };
+  },
+  countdown: (element, color, p) => ({ style: { display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }, content: (<><span style={{ fontSize: 12, color: p.muted }}>{labelParts(element.label)[1]}</span><span style={{ display: 'flex', gap: 8 }}>{['DAYS', 'HRS', 'MIN', 'SEC'].map((u) => <span key={u} style={{ ...surface(p), padding: '4px 8px', textAlign: 'center' }}><strong style={{ color, fontSize: 20 }}>00</strong><br /><span style={{ fontSize: 9, color: p.muted }}>{u}</span></span>)}</span></>) }),
+  'qr-code': (_element, _color, _p) => ({ style: { background: '#fff', ...flexCenter, border: '1px solid #e5e7eb' }, content: <span style={{ width: '80%', height: '80%', backgroundImage: 'repeating-conic-gradient(#000 0 25%, #fff 0 50%)', backgroundSize: '12% 12%' }} /> }),
   'radio-group': choicePreview('radio'),
   'checkbox-group': choicePreview('checkbox'),
   segmented: (element, color, p) => ({
