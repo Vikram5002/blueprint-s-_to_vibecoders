@@ -18,7 +18,7 @@ import { componentSlug, type PublicRoute } from './assemble.js';
 import type { ValidatedProjectSchema } from '../types/project-schema.js';
 import type { CanvasElement, CanvasElementType, PageLayout } from './canvas-layout.js';
 
-export type FieldKind = 'text' | 'email' | 'password' | 'number' | 'date' | 'boolean';
+export type FieldKind = 'text' | 'email' | 'password' | 'number' | 'date' | 'boolean' | 'list';
 
 /** The element types that hold a value a person enters, and the kind of value each holds. */
 export const FIELD_KINDS: Readonly<Partial<Record<CanvasElementType, FieldKind>>> = {
@@ -34,7 +34,25 @@ export const FIELD_KINDS: Readonly<Partial<Record<CanvasElementType, FieldKind>>
   checkbox: 'boolean',
   radio: 'boolean',
   toggle: 'boolean',
+  // form widgets (canvas-form-widgets.ts)
+  'radio-group': 'text',
+  segmented: 'text',
+  time: 'text',
+  'color-input': 'text',
+  phone: 'text',
+  url: 'text',
+  otp: 'text',
+  'tag-input': 'text',
+  newsletter: 'email',
+  signature: 'text',
+  'rich-text': 'text',
+  'checkbox-group': 'list',
+  'multi-select': 'list',
+  'date-range': 'date',
 };
+
+/** Widgets whose one element is several fields: a date range is `<name>From` and `<name>To`. */
+const MULTI_FIELD_SUFFIXES: Readonly<Partial<Record<CanvasElementType, readonly string[]>>> = { 'date-range': ['From', 'To'] };
 
 export interface FormField {
   readonly elementId: string;
@@ -62,10 +80,13 @@ export function formFields(layout: PageLayout): readonly FormField[] {
     const kind = FIELD_KINDS[element.type];
     if (kind === undefined) continue;
     const base = element.field ?? camelName(element.label) ?? element.type;
-    let name = base;
-    for (let n = 2; used.has(name); n += 1) name = `${base}${n}`;
-    used.add(name);
-    fields.push({ elementId: element.id, name, kind, label: element.label });
+    for (const suffix of MULTI_FIELD_SUFFIXES[element.type] ?? ['']) {
+      const wanted = `${base}${suffix}`;
+      let name = wanted;
+      for (let n = 2; used.has(name); n += 1) name = `${wanted}${n}`;
+      used.add(name);
+      fields.push({ elementId: element.id, name, kind, label: element.label });
+    }
   }
   return fields;
 }
@@ -96,6 +117,7 @@ export function asSubmitButton(element: CanvasElement, markup: string): string {
 function valueExpression(field: FormField): string {
   const raw = `data.get('${field.name}')`;
   if (field.kind === 'boolean') return `${raw} === 'on'`;
+  if (field.kind === 'list') return `data.getAll('${field.name}').map(String)`;
   if (field.kind === 'number') return `Number(${raw} ?? 0)`;
   return `String(${raw} ?? '')`;
 }

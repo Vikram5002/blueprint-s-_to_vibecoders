@@ -75,7 +75,7 @@ function apiPurpose(pageName: string, fields: readonly FormField[]): string {
     `${PAGE_FORM_API_PURPOSE_PREFIX}${pageName}" page's form, mounted at ${pageApiPath(pageName)}.`,
     "POST / is public - anyone who opens the page may submit it, so it needs no login; GET / is for the app's signed-in users.",
     `POST / accepts a JSON body with exactly these fields: ${describeFields(fields)}.`,
-    'It validates each one (text and password must be non-empty strings, email must be a string containing @, number must be a finite number, date must be a YYYY-MM-DD string, boolean must be true or false),',
+    'It validates each one (text and password must be non-empty strings, email must be a string containing @, number must be a finite number, date must be a YYYY-MM-DD string, boolean must be true or false, list must be an array of strings stored as JSON text),',
     `responds 400 with { error } naming the first invalid field, otherwise stores the submission through the "${pageStoreComponentName(pageName)}" database component and responds 201 with { id }.`,
     `GET / responds 200 with the stored submissions${secret.length > 0 ? `, never including ${secret.join(', ')}` : ''}.`,
   ].join(' ');

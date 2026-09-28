@@ -37,6 +37,7 @@ import {
   type ExtendedElementType,
 } from './canvas-elements.js';
 import { widgetRuntime } from './canvas-widgets.js';
+import { formWidgetRuntime, withFieldNames } from './canvas-form-widgets.js';
 import { HOVER_EFFECTS, applyEffects, motionRuntime, type HoverEffect, type MotionUse } from './canvas-motion.js';
 import { DEFAULT_THEME, FONTS, googleFontsUrl, validateTheme, type PageTheme, type ThemeError } from './page-theme.js';
 import {
@@ -324,7 +325,8 @@ function reactImport(values: readonly string[], types: readonly string[]): strin
  */
 function pageSource(layout: PageLayout, componentName: string, fields: readonly FormField[]): string {
   const isForm = fields.length > 0;
-  const nameOf = new Map(fields.map((field) => [field.elementId, field.name] as const));
+  const namesOf = new Map<string, string[]>();
+  for (const field of fields) namesOf.set(field.elementId, [...(namesOf.get(field.elementId) ?? []), field.name]);
   const use: MotionUse = {
     types: new Set(layout.elements.map((element) => element.type)),
     hovers: new Set(layout.elements.flatMap((element) => (element.hover === undefined ? [] : [element.hover]))),
@@ -332,12 +334,14 @@ function pageSource(layout: PageLayout, componentName: string, fields: readonly 
   };
   const motion = motionRuntime(use);
   const widgets = widgetRuntime(use.types);
+  const formWidgets = formWidgetRuntime(use.types);
   const elementsJsx = layout.elements
     .map((element) => {
       let markup = renderElement(element, layout.theme);
       if (isForm) markup = asSubmitButton(element, markup);
-      const name = nameOf.get(element.id);
-      if (name !== undefined) markup = withFieldName(markup, name);
+      const names = namesOf.get(element.id);
+      // Form widgets name their inputs with placeholders (canvas-form-widgets.ts); basic inputs get the name on their one control.
+      if (names !== undefined) markup = markup.includes('__vbf') ? withFieldNames(markup, names) : withFieldName(markup, names[0] ?? '');
       return `      ${applyEffects(markup, element.hover, element.reveal === true)}`;
     })
     .join('\n');
@@ -345,17 +349,18 @@ function pageSource(layout: PageLayout, componentName: string, fields: readonly 
   const root = isForm ? 'form' : 'div';
   const rootOpen = isForm ? '<form onSubmit={(event) => void handleSubmit(event)} style=' : '<div style=';
   return (
-    reactImport([...(isForm ? ['useState'] : []), ...motion.values, ...widgets.values], [...(isForm ? ['FormEvent'] : []), ...motion.types]) +
+    reactImport([...(isForm ? ['useState'] : []), ...motion.values, ...widgets.values, ...formWidgets.values], [...(isForm ? ['FormEvent'] : []), ...motion.types, ...formWidgets.types]) +
     '\n' +
     (motion.helpers === '' ? '' : `${motion.helpers}\n\n`) +
     (widgets.helpers === '' ? '' : `${widgets.helpers}\n\n`) +
+    (formWidgets.helpers === '' ? '' : `${formWidgets.helpers}\n\n`) +
     `export const ${componentName}: FC = () => {\n` +
     (isForm ? submitHandlerSource(fields, pageApiPath(layout.pageName)) : '') +
     motion.hooks +
     '  return (\n' +
     `    ${rootOpen}{{ position: 'relative', width: ${CANVAS_WIDTH}, height: ${CANVAS_HEIGHT}${themeRootStyle(layout.theme)} }}>\n` +
     renderThemeBlock(layout.theme) +
-    renderKeyframesBlock(layout.elements, [...motion.css, ...widgets.css]) +
+    renderKeyframesBlock(layout.elements, [...motion.css, ...widgets.css, ...formWidgets.css]) +
     `${elementsJsx}\n` +
     (isForm ? "      <p role=\"status\" style={{ position: 'absolute', left: 16, bottom: 8, margin: 0, fontSize: 14, color: '#475569' }}>{status}</p>\n" : '') +
     `    </${root}>\n` +
