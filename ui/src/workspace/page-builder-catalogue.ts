@@ -79,6 +79,19 @@ export const ELEMENT_SPECS: Readonly<Record<CanvasElementType, ElementSpec>> = {
   'blob-scene': { palette: 'Blob scene', label: '31|6', width: 1280, height: 400, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
   peaks: { palette: 'Layered peaks', label: '5|5', width: 1280, height: 260, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
   circles: { palette: 'Circle scatter', label: '44|6', width: 1280, height: 400, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
+  // Widgets - layout, navigation, overlays, page-level
+  columns: { palette: 'Columns', label: 'Column 1|Column 2|Column 3', width: 960, height: 200, hint: 'One title per column, split by |' },
+  spacer: { palette: 'Spacer', label: '', width: 400, height: 48 },
+  sidebar: { palette: 'Sidebar', label: 'Admin|Dashboard|Projects|Team|Settings', width: 240, height: 480, hint: 'Brand | item | item … (first item is active)' },
+  'mobile-menu': { palette: 'Mobile menu', label: 'Brand|Home|About|Contact', width: 1280, height: 56, hint: 'Brand | link | link - opens as a drawer' },
+  modal: { palette: 'Modal / dialog', label: 'Open dialog|Dialog title|What the dialog says.', width: 200, height: 48, hint: 'Button text | title | body' },
+  tooltip: { palette: 'Tooltip', label: 'Hover for help|Helpful tip text', width: 200, height: 28, hint: 'Text | tooltip' },
+  'dropdown-menu': { palette: 'Dropdown menu', label: 'Account|Profile|Settings|Sign out', width: 180, height: 44, hint: 'Button | item | item …' },
+  toast: { palette: 'Toast', label: 'Saved successfully', width: 300, height: 48, hint: 'Shown bottom-left for a few seconds after the page loads' },
+  'back-to-top': { palette: 'Back to top', label: '↑', width: 44, height: 44, hint: 'Fixed bottom-right of the window' },
+  'scroll-progress': { palette: 'Scroll progress', label: '', width: 1280, height: 4, hint: 'A bar across the top of the window that fills as you scroll' },
+  fab: { palette: 'Floating button', label: '+', width: 56, height: 56, hint: 'Fixed bottom-right of the window' },
+  'cookie-banner': { palette: 'Cookie banner', label: 'We use cookies to improve your experience.|Accept', width: 1200, height: 60, hint: 'Text | button - remembered once accepted' },
   // Motion
   typewriter: { palette: 'Typewriter', label: 'Build websites that move.', width: 640, height: 64 },
   'text-shimmer': { palette: 'Text shimmer', label: 'Shimmering headline', width: 560, height: 60 },
@@ -96,12 +109,14 @@ export interface ElementCategory {
 }
 
 export const ELEMENT_CATEGORIES: readonly ElementCategory[] = [
-  { name: 'Layout', types: ['navbar', 'hero', 'section', 'card', 'container', 'divider', 'footer'] },
+  { name: 'Layout', types: ['navbar', 'hero', 'section', 'columns', 'card', 'container', 'spacer', 'divider', 'footer'] },
   { name: 'Text', types: ['heading', 'text', 'paragraph', 'quote', 'list', 'code', 'badge', 'link'] },
   { name: 'Media', types: ['image', 'video', 'icon', 'avatar'] },
   { name: 'Forms', types: ['button', 'input', 'email', 'password', 'number', 'date', 'search', 'textarea', 'select', 'checkbox', 'radio', 'toggle', 'slider', 'file', 'rating'] },
   { name: 'Data', types: ['table', 'stat', 'progress', 'pricing', 'testimonial'] },
-  { name: 'Navigation', types: ['tabs', 'breadcrumb', 'pagination'] },
+  { name: 'Navigation', types: ['sidebar', 'mobile-menu', 'dropdown-menu', 'tabs', 'breadcrumb', 'pagination'] },
+  { name: 'Overlays', types: ['modal', 'tooltip', 'toast'] },
+  { name: 'Page', types: ['back-to-top', 'scroll-progress', 'fab', 'cookie-banner'] },
   { name: 'Feedback', types: ['alert', 'accordion', 'spinner'] },
   { name: 'Motion', types: ['typewriter', 'text-shimmer', 'text-scramble', 'word-reveal', 'counter', 'marquee', 'gradient-border'] },
   { name: 'Backgrounds', types: ['waves', 'layered-waves', 'peaks', 'blob', 'blob-scene', 'circles', 'mesh-gradient'] },

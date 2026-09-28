@@ -48,6 +48,8 @@ export const EXTENDED_ELEMENT_TYPES = [
   'alert', 'accordion', 'spinner',
   'waves', 'layered-waves', 'blob', 'blob-scene', 'peaks', 'circles', 'mesh-gradient',
   'typewriter', 'text-shimmer', 'text-scramble', 'word-reveal', 'counter', 'marquee', 'gradient-border',
+  'columns', 'spacer', 'sidebar', 'mobile-menu', 'modal', 'tooltip', 'dropdown-menu',
+  'toast', 'back-to-top', 'scroll-progress', 'fab', 'cookie-banner',
 ] as const;
 
 export type ExtendedElementType = (typeof EXTENDED_ELEMENT_TYPES)[number];

@@ -61,7 +61,64 @@ function fieldPreview(type: string): Preview {
 
 const textSize = (element: CanvasElement): number => Math.max(14, Math.min(64, Math.round(element.height * 0.55)));
 
+const pill = (color: string): CSSProperties => ({ ...flexCenter, backgroundColor: color, color: '#fff', borderRadius: 8, padding: '0 14px' });
+
 const PREVIEWS: Readonly<Record<ExtendedElementType, Preview>> = {
+  columns: (element, _color, p) => ({
+    style: { display: 'flex', gap: 16 },
+    content: (labelParts(element.label).length > 0 ? labelParts(element.label) : ['Column 1', 'Column 2', 'Column 3']).map((title, i) => (
+      <div key={i} style={{ flex: 1, border: `1px dashed ${p.line}`, borderRadius: 10, padding: 12, color: p.muted }}>{title}</div>
+    )),
+  }),
+  spacer: (_element, _color, p) => ({ style: { border: `1px dashed ${p.line}`, borderRadius: 4, ...flexCenter, color: p.muted, fontSize: 11 }, content: 'spacer' }),
+  sidebar: (element, color, p) => {
+    const [brand, ...items] = labelParts(element.label);
+    return {
+      style: { background: p.surface, borderRight: `1px solid ${p.line}`, padding: 12, display: 'flex', flexDirection: 'column', gap: 4 },
+      content: (
+        <>
+          <strong style={{ color: p.ink, padding: '4px 10px 12px', fontSize: 16 }}>{brand}</strong>
+          {items.map((item, i) => (
+            <span key={i} style={{ padding: '8px 10px', borderRadius: 8, background: i === 0 ? color : 'transparent', color: i === 0 ? '#fff' : p.ink }}>{item}</span>
+          ))}
+        </>
+      ),
+    };
+  },
+  'mobile-menu': (element, color, p) => ({
+    style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px', background: p.surface, borderBottom: `1px solid ${p.line}` },
+    content: (
+      <>
+        <strong style={{ color: p.ink }}>{labelParts(element.label)[0]}</strong>
+        <span style={{ fontSize: 22, color }}>☰</span>
+      </>
+    ),
+  }),
+  modal: (element, color, _p) => ({ style: { display: 'flex', alignItems: 'center' }, content: <span style={{ ...pill(color), height: '100%' }}>{labelParts(element.label)[0] ?? 'Open'} ⧉</span> }),
+  tooltip: (element, color, _p) => ({
+    style: { display: 'flex', alignItems: 'center', color, textDecoration: 'underline dotted' },
+    content: <span title={labelParts(element.label)[1]}>{labelParts(element.label)[0]} ⓘ</span>,
+  }),
+  'dropdown-menu': (element, color, _p) => ({ style: { display: 'flex', alignItems: 'center' }, content: <span style={{ ...pill(color), height: '100%' }}>{labelParts(element.label)[0] ?? 'Menu'} ▾</span> }),
+  toast: (element, color, p) => ({
+    style: { display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: 10, background: p.surface, color: p.ink, borderLeft: `4px solid ${color}`, boxShadow: '0 8px 24px rgba(0,0,0,0.18)' },
+    content: element.label,
+  }),
+  'back-to-top': (element, color, _p) => ({ style: { ...flexCenter, borderRadius: '50%', background: color, color: '#fff', fontSize: 18 }, content: element.label || '↑' }),
+  'scroll-progress': (_element, color, p) => ({ style: { background: p.line }, content: <span style={{ display: 'block', width: '40%', height: '100%', background: color }} /> }),
+  fab: (element, color, _p) => ({ style: { ...flexCenter, borderRadius: '50%', background: color, color: '#fff', fontSize: 24, boxShadow: '0 8px 20px rgba(0,0,0,0.25)' }, content: element.label || '+' }),
+  'cookie-banner': (element, color, p) => {
+    const [text, accept = 'Accept'] = labelParts(element.label);
+    return {
+      style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', borderRadius: 12, background: p.surface, color: p.ink, boxShadow: '0 8px 30px rgba(0,0,0,0.2)' },
+      content: (
+        <>
+          <span>{text}</span>
+          <span style={{ ...pill(color), height: 32 }}>{accept}</span>
+        </>
+      ),
+    };
+  },
   typewriter: (element, color, _p) => ({
     style: { display: 'flex', alignItems: 'center', color, fontSize: textSize(element), fontWeight: 700 },
     content: (
