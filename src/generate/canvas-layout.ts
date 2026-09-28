@@ -445,6 +445,7 @@ function renderElement(element: CanvasElement, theme: PageTheme | undefined): st
     muted: palette.muted,
     line: palette.line,
     surface: palette.surface,
+    background: palette.background,
     ...(theme === undefined ? {} : { headingFont: FONTS[theme.headingFont].stack }),
   };
   if (isExtendedElementType(element.type)) return renderExtendedElement(element.type, context);

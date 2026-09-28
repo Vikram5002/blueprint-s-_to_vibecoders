@@ -16,6 +16,8 @@
  * receive everything they need in an `ElementContext`.
  */
 
+import { parseBackgroundLabel, renderBackgroundSvg, type BackgroundKind } from './svg-backgrounds.js';
+
 export const EXTENDED_ELEMENT_TYPES = [
   // Layout
   'section', 'card', 'navbar', 'hero', 'footer',
@@ -31,6 +33,8 @@ export const EXTENDED_ELEMENT_TYPES = [
   'tabs', 'breadcrumb', 'pagination',
   // Feedback
   'alert', 'accordion', 'spinner',
+  // Backgrounds (svg-backgrounds.ts)
+  'waves', 'layered-waves', 'blob', 'blob-scene', 'peaks', 'circles', 'mesh-gradient',
 ] as const;
 
 export type ExtendedElementType = (typeof EXTENDED_ELEMENT_TYPES)[number];
@@ -61,6 +65,8 @@ export interface ElementContext {
   readonly surface: string;
   /** The theme's heading font stack, for elements that carry a headline. */
   readonly headingFont?: string;
+  /** The page background colour, which layered backgrounds blend into. */
+  readonly background: string;
 }
 
 /** Keyframes an extended element needs regardless of the animation picker (the spinner spins). */
@@ -279,6 +285,16 @@ function spinner(c: ElementContext): string {
   return `<div data-testid="${c.id}" role="status" aria-label="${c.attr(c.label || 'Loading')}" style={{ ${c.position}, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: ${size}, height: ${size}, boxSizing: 'border-box', borderRadius: '50%', border: '4px solid ${c.color}33', borderTopColor: '${c.color}', animation: 'vb-spin 0.8s linear infinite' }} /></div>`;
 }
 
+// ---- Backgrounds ------------------------------------------------------------
+
+function background(kind: BackgroundKind): (c: ElementContext) => string {
+  return (c) => {
+    const { seed, complexity } = parseBackgroundLabel(c.label);
+    const svg = renderBackgroundSvg(kind, { id: c.id, width: c.width, height: c.height, color: c.color, background: c.background, seed, complexity }, 'jsx');
+    return `${open('div', c, `overflow: 'hidden', pointerEvents: 'none'`)}${svg}</div>`;
+  };
+}
+
 const RENDERERS: Readonly<Record<ExtendedElementType, (c: ElementContext) => string>> = {
   section, card, navbar, hero, footer,
   paragraph, quote, code, list, badge,
@@ -288,6 +304,13 @@ const RENDERERS: Readonly<Record<ExtendedElementType, (c: ElementContext) => str
   table, stat, progress, pricing, testimonial,
   tabs, breadcrumb, pagination,
   alert, accordion, spinner,
+  waves: background('waves'),
+  'layered-waves': background('layered-waves'),
+  blob: background('blob'),
+  'blob-scene': background('blob-scene'),
+  peaks: background('peaks'),
+  circles: background('circles'),
+  'mesh-gradient': background('mesh-gradient'),
 };
 
 export function renderExtendedElement(type: ExtendedElementType, context: ElementContext): string {

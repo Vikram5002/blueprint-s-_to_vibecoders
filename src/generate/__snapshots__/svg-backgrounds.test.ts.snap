@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`svg backgrounds > matches the fingerprints the UI copy is tested against 1`] = `
+[
+  "4fc8f5a6",
+  "a553d3cf",
+  "c395cd00",
+  "6f93f9c0",
+  "42e27fbd",
+  "c60f50b3",
+  "659442fc",
+]
+`;
