@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { PageTheme } from './page-theme';
 import type { WorkflowSessionDetail } from './workflow-session-types';
 import type { CanvasElement, PageLayout } from './page-builder-types';
 
@@ -24,6 +25,8 @@ export interface PageBuilderState {
   readonly elements: readonly CanvasElement[];
   readonly selectedId: string | null;
   readonly origin: PageOrigin | null;
+  /** The page's theme; undefined = the default look. */
+  readonly theme?: PageTheme;
 }
 
 /**
@@ -71,6 +74,7 @@ export interface WorkspaceState {
   /** Loads one of a run's pages into the canvas and switches to the Page Builder tab. */
   readonly openPageInBuilder: (origin: PageOrigin, layout: PageLayout) => void;
   readonly setPageOrigin: (origin: PageOrigin | null) => void;
+  readonly setPageTheme: (theme: PageTheme | undefined) => void;
   /** Canvas undo/redo: element lists before (past) and after (future) the current one. */
   readonly pageHistory: { readonly past: readonly (readonly CanvasElement[])[]; readonly future: readonly (readonly CanvasElement[])[] };
   readonly undoPage: () => void;
@@ -118,10 +122,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   openPageInBuilder: (origin, layout) =>
     set({
       activeTab: 'page-builder',
-      pageBuilder: { pageName: layout.pageName, elements: layout.elements, selectedId: null, origin },
+      pageBuilder: { pageName: layout.pageName, elements: layout.elements, selectedId: null, origin, ...(layout.theme === undefined ? {} : { theme: layout.theme }) },
       pageHistory: { past: [], future: [] },
     }),
   setPageOrigin: (origin) => set((state) => ({ pageBuilder: { ...state.pageBuilder, origin } })),
+  setPageTheme: (theme) =>
+    set((state) => {
+      const { theme: _previous, ...rest } = state.pageBuilder;
+      return { pageBuilder: theme === undefined ? rest : { ...rest, theme } };
+    }),
   pageHistory: { past: [], future: [] },
   undoPage: () =>
     set((state) => {

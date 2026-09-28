@@ -53,7 +53,8 @@ export function PageSyncButton({ origin, pageName, elements }: PageSyncButtonPro
   async function handleSync(): Promise<void> {
     setState({ kind: 'running', fields: [], phase: 'saving the page' });
     try {
-      const layout = { id: `${origin.runId}:${origin.path}`, pageName, elements };
+      const theme = useWorkspaceStore.getState().pageBuilder.theme;
+      const layout = { id: `${origin.runId}:${origin.path}`, pageName, elements, ...(theme === undefined ? {} : { theme }) };
       await saveRunPage(origin.runId, layout);
       const started = await syncRunPage(origin.runId, origin.path);
       const job = await waitFor(started.id, started.fields);

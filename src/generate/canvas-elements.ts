@@ -89,7 +89,7 @@ function card(c: ElementContext): string {
   const [title = 'Card title', body = '', action] = parts(c.label);
   const style = `background: '${c.surface}', border: '1px solid ${c.line}', borderRadius: 12, boxShadow: '0 4px 14px rgba(15, 23, 42, 0.08)', padding: 20, display: 'flex', flexDirection: 'column', gap: 8, overflow: 'hidden'`;
   const button = action === undefined ? '' : `<button type="button" style={{ alignSelf: 'flex-start', backgroundColor: '${c.color}', color: '#ffffff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer' }}>${c.text(action)}</button>`;
-  return `${open('div', c, style)}<h3 style={{ margin: 0, fontSize: 18, color: '${c.ink}' }}>${c.text(title)}</h3><p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: '#475569', flex: 1 }}>${c.text(body)}</p>${button}</div>`;
+  return `${open('div', c, style)}<h3 style={{ margin: 0, fontSize: 18, color: '${c.ink}' }}>${c.text(title)}</h3><p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: '${c.muted}', flex: 1 }}>${c.text(body)}</p>${button}</div>`;
 }
 
 function navbar(c: ElementContext): string {
@@ -109,7 +109,7 @@ function hero(c: ElementContext): string {
 function footer(c: ElementContext): string {
   const [note = '', ...links] = parts(c.label);
   const anchors = links.map((link) => `<a href="#" style={{ color: '#cbd5e1', textDecoration: 'none' }}>${c.text(link)}</a>`).join('');
-  const style = `backgroundColor: '${c.ink}', color: '#cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', fontSize: 14, borderTop: '3px solid ${c.color}'`;
+  const style = `backgroundColor: '#0f172a', color: '#cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', fontSize: 14, borderTop: '3px solid ${c.color}'`;
   return `${open('footer', c, style)}<span>${c.text(note)}</span><div style={{ display: 'flex', gap: 20 }}>${anchors}</div></footer>`;
 }
 
@@ -122,12 +122,12 @@ function paragraph(c: ElementContext): string {
 function quote(c: ElementContext): string {
   const [text = '', author] = parts(c.label);
   const cite = author === undefined ? '' : `<footer style={{ marginTop: 8, fontSize: 14, fontStyle: 'normal', color: '${c.muted}' }}>— ${c.text(author)}</footer>`;
-  return `${open('blockquote', c, `margin: 0, borderLeft: '4px solid ${c.color}', paddingLeft: 16, fontStyle: 'italic', fontSize: 18, color: '#334155'`)}${c.text(text)}${cite}</blockquote>`;
+  return `${open('blockquote', c, `margin: 0, borderLeft: '4px solid ${c.color}', paddingLeft: 16, fontStyle: 'italic', fontSize: 18, color: '${c.ink}'`)}${c.text(text)}${cite}</blockquote>`;
 }
 
 function code(c: ElementContext): string {
   const source = JSON.stringify(parts(c.label).join('\n'));
-  return `${open('pre', c, `margin: 0, backgroundColor: '${c.ink}', color: '#e2e8f0', borderTop: '3px solid ${c.color}', borderRadius: 8, padding: 12, fontSize: 13, overflow: 'auto'`)}<code>{${source}}</code></pre>`;
+  return `${open('pre', c, `margin: 0, backgroundColor: '#0f172a', color: '#e2e8f0', borderTop: '3px solid ${c.color}', borderRadius: 8, padding: 12, fontSize: 13, overflow: 'auto'`)}<code>{${source}}</code></pre>`;
 }
 
 function list(c: ElementContext): string {
@@ -155,7 +155,7 @@ function video(c: ElementContext): string {
   if (url !== null) {
     return `<video data-testid="${c.id}" src="${c.attr(url)}" controls style={{ ${c.position}, borderRadius: 8, backgroundColor: '#000000' }} />`;
   }
-  return `${open('div', c, `backgroundColor: '${c.ink}', color: '#ffffff', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: '2px solid ${c.color}'`, ' role="img"')}<span style={{ fontSize: 28, color: '${c.color}' }}>▶</span>${c.text(c.label)}</div>`;
+  return `${open('div', c, `backgroundColor: '#0f172a', color: '#ffffff', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: '2px solid ${c.color}'`, ' role="img"')}<span style={{ fontSize: 28, color: '${c.color}' }}>▶</span>${c.text(c.label)}</div>`;
 }
 
 function icon(c: ElementContext): string {
@@ -202,7 +202,7 @@ function table(c: ElementContext): string {
   const [header = [], ...rows] = parts(c.label).map((row) => row.split(',').map((cell) => cell.trim()));
   const th = header.map((cell) => `<th style={{ textAlign: 'left', padding: '8px 12px', backgroundColor: '${c.color}', color: '#ffffff' }}>${c.text(cell)}</th>`).join('');
   const body = rows
-    .map((row) => `<tr>${row.map((cell) => `<td style={{ padding: '8px 12px', borderBottom: '1px solid ${c.line}', color: '#334155' }}>${c.text(cell)}</td>`).join('')}</tr>`)
+    .map((row) => `<tr>${row.map((cell) => `<td style={{ padding: '8px 12px', borderBottom: '1px solid ${c.line}', color: '${c.ink}' }}>${c.text(cell)}</td>`).join('')}</tr>`)
     .join('');
   return `${open('table', c, `borderCollapse: 'collapse', fontSize: 14, backgroundColor: '${c.surface}', overflow: 'hidden', borderRadius: 8`)}<thead><tr>${th}</tr></thead><tbody>${body}</tbody></table>`;
 }
@@ -222,13 +222,13 @@ function pricing(c: ElementContext): string {
   const [plan = 'Pro', price = '$0', ...features] = parts(c.label);
   const items = features.map((feature) => `<li>✓ ${c.text(feature)}</li>`).join('');
   const style = `background: '${c.surface}', border: '2px solid ${c.color}', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', gap: 12, overflow: 'hidden'`;
-  return `${open('div', c, style)}<span style={{ fontSize: 14, fontWeight: 600, color: '${c.color}', textTransform: 'uppercase' }}>${c.text(plan)}</span><strong style={{ fontSize: 36, color: '${c.ink}' }}>${c.text(price)}</strong><ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none', lineHeight: 1.9, fontSize: 14, color: '#334155', flex: 1 }}>${items}</ul><button type="button" style={{ backgroundColor: '${c.color}', color: '#ffffff', border: 'none', borderRadius: 8, padding: '10px 0', fontSize: 15, cursor: 'pointer' }}>Get started</button></div>`;
+  return `${open('div', c, style)}<span style={{ fontSize: 14, fontWeight: 600, color: '${c.color}', textTransform: 'uppercase' }}>${c.text(plan)}</span><strong style={{ fontSize: 36, color: '${c.ink}' }}>${c.text(price)}</strong><ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none', lineHeight: 1.9, fontSize: 14, color: '${c.ink}', flex: 1 }}>${items}</ul><button type="button" style={{ backgroundColor: '${c.color}', color: '#ffffff', border: 'none', borderRadius: 8, padding: '10px 0', fontSize: 15, cursor: 'pointer' }}>Get started</button></div>`;
 }
 
 function testimonial(c: ElementContext): string {
   const [text = '', author = '', role = ''] = parts(c.label);
   const style = `background: '${c.surface}', border: '1px solid ${c.line}', borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 12, overflow: 'hidden'`;
-  return `${open('figure', c, `margin: 0, ${style}`)}<blockquote style={{ margin: 0, fontSize: 16, lineHeight: 1.5, color: '#334155' }}>“${c.text(text)}”</blockquote><figcaption style={{ fontSize: 14 }}><strong style={{ color: '${c.color}' }}>${c.text(author)}</strong> <span style={{ color: '${c.muted}' }}>${c.text(role)}</span></figcaption></figure>`;
+  return `${open('figure', c, `margin: 0, ${style}`)}<blockquote style={{ margin: 0, fontSize: 16, lineHeight: 1.5, color: '${c.ink}' }}>“${c.text(text)}”</blockquote><figcaption style={{ fontSize: 14 }}><strong style={{ color: '${c.color}' }}>${c.text(author)}</strong> <span style={{ color: '${c.muted}' }}>${c.text(role)}</span></figcaption></figure>`;
 }
 
 // ---- Navigation -------------------------------------------------------------
@@ -271,7 +271,7 @@ function alert(c: ElementContext): string {
 
 function accordion(c: ElementContext): string {
   const [title = 'Question', body = ''] = parts(c.label);
-  return `${open('details', c, `border: '1px solid ${c.line}', borderRadius: 10, padding: '12px 16px', backgroundColor: '${c.surface}', overflow: 'hidden'`)}<summary style={{ cursor: 'pointer', fontWeight: 600, color: '${c.color}' }}>${c.text(title)}</summary><p style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.5, color: '#475569' }}>${c.text(body)}</p></details>`;
+  return `${open('details', c, `border: '1px solid ${c.line}', borderRadius: 10, padding: '12px 16px', backgroundColor: '${c.surface}', overflow: 'hidden'`)}<summary style={{ cursor: 'pointer', fontWeight: 600, color: '${c.color}' }}>${c.text(title)}</summary><p style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.5, color: '${c.muted}' }}>${c.text(body)}</p></details>`;
 }
 
 function spinner(c: ElementContext): string {

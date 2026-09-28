@@ -17,7 +17,9 @@ import { PageSwitcher } from './PageSwitcher';
 import { PageSyncButton } from './PageSyncButton';
 import { EditorToolbar, LayersList } from './EditorToolbar';
 import { ELEMENT_CATEGORIES, ELEMENT_SPECS, FIELD_TYPES, derivedFieldName } from './page-builder-catalogue';
-import { SPIN_KEYFRAMES, extendedPreview } from './page-builder-previews';
+import { SPIN_KEYFRAMES, extendedPreview, type PreviewPalette } from './page-builder-previews';
+import { DEFAULT_THEME, FONTS, type PageTheme } from './page-theme';
+import { ThemePanel } from './ThemePanel';
 import { HANDLES, otherRects, reorder, resizeRect, snapMove, type Guide, type Handle, type Rect } from './page-builder-geometry';
 import { SECTION_TEMPLATES, instantiateTemplate, templateTop } from './page-templates';
 import {
@@ -26,7 +28,6 @@ import {
   EXTENDED_ELEMENT_TYPES,
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
-  DESIGN_TOKENS,
   DESIGN_TOKEN_NAMES,
   keyframesIdentifier,
   type AnimationName,
@@ -104,7 +105,8 @@ function PaletteItem({ type, label }: PaletteItemProps): JSX.Element {
 function PaletteGhost({ type, left, top, zoom }: { readonly type: CanvasElementType; readonly left: number; readonly top: number; readonly zoom: number }): JSX.Element {
   const spec = ELEMENT_SPECS[type];
   const element: CanvasElement = { id: 'ghost', type, x: 0, y: 0, width: spec.width, height: spec.height, label: spec.label, colorToken: 'primary' };
-  const visual = placedElementVisual(element, DESIGN_TOKENS.primary);
+  const palette = paletteOf(useWorkspaceStore((state) => state.pageBuilder.theme));
+  const visual = placedElementVisual(element, palette.theme.colors.primary, palette);
   return (
     <div
       data-testid="palette-ghost"
@@ -125,6 +127,7 @@ interface PlacedElementProps {
   readonly zoom: number;
   readonly preview: boolean;
   readonly onResize: (rect: Rect) => void;
+  readonly theme: PageTheme | undefined;
 }
 
 const HANDLE_CURSOR: Readonly<Record<Handle, string>> = { n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize', ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize' };
@@ -184,13 +187,20 @@ function ResizeHandles({ element, zoom, onResize }: { readonly element: CanvasEl
  * as "this is an input" is the honest tradeoff, not a claim that this IS
  * the generated markup.
  */
+/** The colours a page is drawn with - its theme, or the default look. */
+function paletteOf(theme: PageTheme | undefined): PreviewPalette & { readonly theme: PageTheme } {
+  const t = theme ?? DEFAULT_THEME;
+  return { theme: t, ink: t.text, muted: t.muted, line: t.line, surface: t.surface };
+}
+
 function placedElementVisual(
   element: CanvasElement,
   color: string,
+  palette: PreviewPalette = paletteOf(undefined),
 ): { readonly style: React.CSSProperties; readonly content: React.ReactNode } {
   const base: React.CSSProperties = { fontSize: 13, boxSizing: 'border-box' };
   if (isExtended(element.type)) {
-    const preview = extendedPreview(element.type, element, color);
+    const preview = extendedPreview(element.type, element, color, palette);
     return { style: { ...base, ...preview.style }, content: preview.content };
   }
   if (element.type === 'image' && isHttpUrl(element.label)) {
@@ -313,12 +323,13 @@ function placedElementVisual(
   }
 }
 
-function PlacedElement({ element, selected, onSelect, zoom, preview, onResize }: PlacedElementProps): JSX.Element {
+function PlacedElement({ element, selected, onSelect, zoom, preview, onResize, theme }: PlacedElementProps): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `element:${element.id}`,
   });
-  const color = DESIGN_TOKENS[element.colorToken];
-  const visual = placedElementVisual(element, color);
+  const palette = paletteOf(theme);
+  const color = palette.theme.colors[element.colorToken];
+  const visual = placedElementVisual(element, color, palette);
   const pointerDownPosition = useRef<{ x: number; y: number } | null>(null);
 
   const baseStyle: React.CSSProperties = {
@@ -417,6 +428,8 @@ export function PageBuilderCanvas(): JSX.Element {
   const elements = useWorkspaceStore((state) => state.pageBuilder.elements);
   const selectedId = useWorkspaceStore((state) => state.pageBuilder.selectedId);
   const origin = useWorkspaceStore((state) => state.pageBuilder.origin);
+  const theme = useWorkspaceStore((state) => state.pageBuilder.theme);
+  const setPageTheme = useWorkspaceStore((state) => state.setPageTheme);
   const setPageName = useWorkspaceStore((state) => state.setPageName);
   const setElements = useWorkspaceStore((state) => state.setElements);
   const setSelectedId = useWorkspaceStore((state) => state.setSelectedId);
@@ -722,7 +735,7 @@ export function PageBuilderCanvas(): JSX.Element {
     setGenerating(true);
     setError(null);
     try {
-      const file = await generatePageFile({ id: 'page-builder-v1', pageName, elements });
+      const file = await generatePageFile({ id: 'page-builder-v1', pageName, elements, ...(theme === undefined ? {} : { theme }) });
       setGenerated(file);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -739,7 +752,7 @@ export function PageBuilderCanvas(): JSX.Element {
     setError(null);
     setSavedNote(null);
     try {
-      await saveRunPage(origin.runId, { id: `${origin.runId}:${origin.path}`, pageName, elements });
+      await saveRunPage(origin.runId, { id: `${origin.runId}:${origin.path}`, pageName, elements, ...(theme === undefined ? {} : { theme }) });
       setPageOrigin({ ...origin, edited: true });
       setSavedNote(`Saved to ${origin.path} - the zip download now includes this design.`);
       notifyRunSaved();
@@ -853,6 +866,7 @@ export function PageBuilderCanvas(): JSX.Element {
         </div>
 
         <DndContext sensors={sensors} autoScroll={autoScroll} onDragStart={handleDragStart} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragCancel={() => { setDraggingType(null); setGhostAt(null); setGuides([]); grabRef.current = null; }}>
+          <ThemePanel theme={theme} onChange={setPageTheme} />
           <EditorToolbar
             zoom={zoom}
             fitting={zoomChoice === 'fit'}
@@ -949,10 +963,12 @@ export function PageBuilderCanvas(): JSX.Element {
                   transform: `scale(${zoom})`,
                   transformOrigin: '0 0',
                   // A faint 8px dot grid while editing - what elements snap to.
-                  backgroundImage: preview ? undefined : 'radial-gradient(circle, #e2e8f0 1px, transparent 1px)',
+                  backgroundColor: paletteOf(theme).theme.background,
+                  color: paletteOf(theme).theme.text,
+                  fontFamily: FONTS[paletteOf(theme).theme.bodyFont].stack,
+                  backgroundImage: preview ? undefined : `radial-gradient(circle, ${paletteOf(theme).theme.line} 1px, transparent 1px)`,
                   backgroundSize: '16px 16px',
                 }}
-                className="bg-white"
               >
                 {/*
                   The same keyframes the generated file carries, by the same
@@ -969,6 +985,7 @@ export function PageBuilderCanvas(): JSX.Element {
                     zoom={zoom}
                     preview={preview}
                     onResize={(rect) => resizeElement(element.id, rect)}
+                    theme={theme}
                   />
                 ))}
                 {guides.map((guide, index) => (
@@ -1055,7 +1072,7 @@ export function PageBuilderCanvas(): JSX.Element {
                           data-testid={`color-${token}`}
                           aria-label={token}
                           onClick={() => updateSelected({ colorToken: token as DesignToken })}
-                          style={{ backgroundColor: DESIGN_TOKENS[token] }}
+                          style={{ backgroundColor: paletteOf(theme).theme.colors[token] }}
                           className={`h-6 w-6 rounded-full border-2 ${
                             selected.colorToken === token ? 'border-white' : 'border-transparent'
                           }`}

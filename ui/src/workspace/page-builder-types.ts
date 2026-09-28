@@ -1,3 +1,4 @@
+import type { PageTheme } from './page-theme';
 /**
  * Mirrors src/generate/canvas-layout.ts's types, hand-duplicated for the
  * same rule-4 reason every other mirror file in this directory documents
@@ -141,6 +142,8 @@ export interface PageLayout {
   readonly id: string;
   readonly pageName: string;
   readonly elements: readonly CanvasElement[];
+  /** Mirrors canvas-layout.ts: the page's colours and fonts; absent = the default look. */
+  readonly theme?: PageTheme;
 }
 
 export interface GeneratedPageFile {
