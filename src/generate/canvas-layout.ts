@@ -36,6 +36,7 @@ import {
   type ElementContext,
   type ExtendedElementType,
 } from './canvas-elements.js';
+import { HOVER_EFFECTS, applyEffects, motionRuntime, type HoverEffect, type MotionUse } from './canvas-motion.js';
 import { DEFAULT_THEME, FONTS, googleFontsUrl, validateTheme, type PageTheme, type ThemeError } from './page-theme.js';
 import {
   FIELD_NAME_PATTERN,
@@ -202,6 +203,10 @@ export interface CanvasElement {
    * elements; ignored on the rest.
    */
   readonly field?: string;
+  /** A hover effect (canvas-motion.ts); absent = none. */
+  readonly hover?: HoverEffect;
+  /** Fades and slides in when scrolled into view. */
+  readonly reveal?: boolean;
 }
 
 /** Fixed 1280x800 canvas per the approved v1 scope - responsive/breakpoint support is explicitly deferred, not reconciled with LayoutSchema's own breakpoints concept in this pass. */
@@ -227,7 +232,8 @@ export type LayoutValidationError =
   | { readonly reason: 'out-of-bounds'; readonly elementId: string }
   | { readonly reason: 'invalid-field-name'; readonly elementId: string; readonly field: string }
   | { readonly reason: 'duplicate-field-name'; readonly elementId: string; readonly field: string }
-  | ThemeError;
+  | ThemeError
+  | { readonly reason: 'unknown-hover-effect'; readonly elementId: string; readonly hover: string };
 
 /**
  * Validates before generating anything - never silently clamp an
@@ -256,6 +262,12 @@ export function validatePageLayout(layout: PageLayout): readonly LayoutValidatio
       element.y + element.height > CANVAS_HEIGHT
     ) {
       errors.push({ reason: 'out-of-bounds', elementId: element.id });
+    }
+  }
+
+  for (const element of layout.elements) {
+    if (element.hover !== undefined && !(HOVER_EFFECTS as readonly string[]).includes(element.hover)) {
+      errors.push({ reason: 'unknown-hover-effect', elementId: element.id, hover: element.hover });
     }
   }
 
@@ -293,57 +305,57 @@ export function layoutToComponentFile(layout: PageLayout): GeneratedFile {
   }
 
   const componentName = pascalIdentifier(componentSlug(layout.pageName));
-  const fields = formFields(layout);
-  if (fields.length > 0) return { path: pageLayoutTargetPath(layout), contents: formPageSource(layout, componentName, fields) };
+  return { path: pageLayoutTargetPath(layout), contents: pageSource(layout, componentName, formFields(layout)) };
+}
 
-  const elementsJsx = layout.elements
-    .map((element) => renderElement(element, layout.theme))
-    .map((line) => `      ${line}`)
-    .join('\n');
-
-  const contents =
-    "import type { FC } from 'react';\n" +
-    '\n' +
-    `export const ${componentName}: FC = () => {\n` +
-    '  return (\n' +
-    `    <div style={{ position: 'relative', width: ${CANVAS_WIDTH}, height: ${CANVAS_HEIGHT}${themeRootStyle(layout.theme)} }}>\n` +
-    renderThemeBlock(layout.theme) +
-    renderKeyframesBlock(layout.elements) +
-    `${elementsJsx}\n` +
-    '    </div>\n' +
-    '  );\n' +
-    '};\n';
-
-  return { path: pageLayoutTargetPath(layout), contents };
+/** `import { ... } from 'react';` - just `import type { FC }` for a page that needs nothing else, exactly as before. */
+function reactImport(values: readonly string[], types: readonly string[]): string {
+  const valueList = [...new Set(values)].sort();
+  const typeList = ['FC', ...[...new Set(types)].filter((t) => t !== 'FC').sort()];
+  if (valueList.length === 0 && typeList.length === 1) return "import type { FC } from 'react';\n";
+  return `import { ${[...valueList, ...typeList.map((t) => `type ${t}`)].join(', ')} } from 'react';\n`;
 }
 
 /**
- * A page with inputs is a real form: every input carries its field name, the
- * Button submits, and the handler POSTs the fields to the page's own API
- * (canvas-form.ts), showing the outcome in a status line.
+ * The page component. A page with inputs is a real form (canvas-form.ts); a
+ * page using motion gets exactly the helpers, hooks and CSS it uses
+ * (canvas-motion.ts). A page with neither is byte-identical to before.
  */
-function formPageSource(layout: PageLayout, componentName: string, fields: readonly FormField[]): string {
+function pageSource(layout: PageLayout, componentName: string, fields: readonly FormField[]): string {
+  const isForm = fields.length > 0;
   const nameOf = new Map(fields.map((field) => [field.elementId, field.name] as const));
+  const use: MotionUse = {
+    types: new Set(layout.elements.map((element) => element.type)),
+    hovers: new Set(layout.elements.flatMap((element) => (element.hover === undefined ? [] : [element.hover]))),
+    reveal: layout.elements.some((element) => element.reveal === true),
+  };
+  const motion = motionRuntime(use);
   const elementsJsx = layout.elements
     .map((element) => {
-      const markup = asSubmitButton(element, renderElement(element, layout.theme));
+      let markup = renderElement(element, layout.theme);
+      if (isForm) markup = asSubmitButton(element, markup);
       const name = nameOf.get(element.id);
-      return `      ${name === undefined ? markup : withFieldName(markup, name)}`;
+      if (name !== undefined) markup = withFieldName(markup, name);
+      return `      ${applyEffects(markup, element.hover, element.reveal === true)}`;
     })
     .join('\n');
 
+  const root = isForm ? 'form' : 'div';
+  const rootOpen = isForm ? '<form onSubmit={(event) => void handleSubmit(event)} style=' : '<div style=';
   return (
-    "import { useState, type FC, type FormEvent } from 'react';\n" +
+    reactImport([...(isForm ? ['useState'] : []), ...motion.values], [...(isForm ? ['FormEvent'] : []), ...motion.types]) +
     '\n' +
+    (motion.helpers === '' ? '' : `${motion.helpers}\n\n`) +
     `export const ${componentName}: FC = () => {\n` +
-    submitHandlerSource(fields, pageApiPath(layout.pageName)) +
+    (isForm ? submitHandlerSource(fields, pageApiPath(layout.pageName)) : '') +
+    motion.hooks +
     '  return (\n' +
-    `    <form onSubmit={(event) => void handleSubmit(event)} style={{ position: 'relative', width: ${CANVAS_WIDTH}, height: ${CANVAS_HEIGHT}${themeRootStyle(layout.theme)} }}>\n` +
+    `    ${rootOpen}{{ position: 'relative', width: ${CANVAS_WIDTH}, height: ${CANVAS_HEIGHT}${themeRootStyle(layout.theme)} }}>\n` +
     renderThemeBlock(layout.theme) +
-    renderKeyframesBlock(layout.elements) +
+    renderKeyframesBlock(layout.elements, motion.css) +
     `${elementsJsx}\n` +
-    "      <p role=\"status\" style={{ position: 'absolute', left: 16, bottom: 8, margin: 0, fontSize: 14, color: '#475569' }}>{status}</p>\n" +
-    '    </form>\n' +
+    (isForm ? "      <p role=\"status\" style={{ position: 'absolute', left: 16, bottom: 8, margin: 0, fontSize: 14, color: '#475569' }}>{status}</p>\n" : '') +
+    `    </${root}>\n` +
     '  );\n' +
     '};\n'
   );
@@ -392,19 +404,20 @@ function renderThemeBlock(theme: PageTheme | undefined): string {
  * order elements happen to appear in, so the same layout always produces the
  * same bytes regardless of how it was assembled.
  */
-function renderKeyframesBlock(elements: readonly CanvasElement[]): string {
+function renderKeyframesBlock(elements: readonly CanvasElement[], motionCss: readonly string[] = []): string {
   const used = new Set(
     elements.flatMap((element) => (element.animation === undefined ? [] : [element.animation])),
   );
   // The spinner spins whatever the animation picker says, so its keyframes ride along too.
   const spins = elements.some((element) => element.type === 'spinner');
-  if (used.size === 0 && !spins) return '';
+  if (used.size === 0 && !spins && motionCss.length === 0) return '';
 
   const rules = [
     ...ANIMATION_NAMES.filter((name) => used.has(name)).map(
       (name) => `@keyframes ${keyframesIdentifier(name)} { ${ANIMATIONS[name].keyframes} }`,
     ),
     ...(spins ? [SPIN_KEYFRAMES] : []),
+    ...motionCss,
   ].join('\n');
 
   return `      <style>{\`\n${rules}\n\`}</style>\n`;
