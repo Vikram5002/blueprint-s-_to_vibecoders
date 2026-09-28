@@ -1,0 +1,34 @@
+candidate: local:code; reference projects: 26; scratch: capture\code\work\eval-qwen-coder-7b-code-frontend-database
+(node:7312) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ B session-gold-002 backend/src/db/boards-table.ts  A:build-failed
+A  session-gold-002 frontend/src/pages/board-view.tsx
+A  session-gold-003 frontend/src/pages/forecast-view.tsx
+!! session-gold-004 frontend/src/pages/calculator-widget.tsx  A:build-failed  B:build-failed
+A  session-gold-006 backend/src/db/products-table.ts
+A  session-gold-006 backend/src/db/orders-table.ts
+A  session-gold-006 frontend/src/pages/product-catalog.tsx
+A  session-gold-006 frontend/src/pages/cart-checkout.tsx
+!! session-gold-006 frontend/src/pages/admin-product-panel.tsx  A:build-failed  B:build-failed
+ B session-gold-010 backend/src/db/transactions-table.ts  A:build-failed
+!! session-gold-010 backend/src/db/bank-credentials-table.ts  A:build-failed  B:build-failed
+A  session-gold-010 frontend/src/pages/transaction-list.tsx
+ B session-gold-010 frontend/src/pages/budget-overview.tsx  A:build-failed
+A  session-gold-011 frontend/src/pages/about-projects-pages.tsx
+A  session-gold-011 frontend/src/pages/contact-form.tsx
+ B session-gold-012 backend/src/db/readings-table.ts  A:build-failed
+ B session-gold-012 backend/src/db/devices-table.ts  A:build-failed
+A  session-gold-012 frontend/src/pages/sensor-dashboard.tsx
+A  session-gold-016 backend/src/db/events-table.ts
+ B session-gold-016 backend/src/db/tickets-table.ts  A:build-failed
+
+--- results ---
+candidate: local:code
+scope           n        A       B    D(A)    D(B)
+all            20   55.0%  85.0%   0.0%  55.0%
+frontend       11   72.7%  81.8%   0.0%  72.7%
+database        9   33.3%  88.9%   0.0%  33.3%
+C (projects)    0     -
+
+written to training/eval/code/qwen-coder-7b-code-frontend-database.json
+attempt 1 exit 0

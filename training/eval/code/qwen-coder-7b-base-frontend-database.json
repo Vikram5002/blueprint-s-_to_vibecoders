@@ -1,0 +1,446 @@
+{
+  "candidate": "local:base",
+  "candidateModel": "base",
+  "reference": "capture/code/gold-reference",
+  "referenceProjects": 26,
+  "nodeModulesSharing": "junction",
+  "evaluatedAt": "2026-09-28T14:41:38.814Z",
+  "rates": {
+    "n": 20,
+    "A": 0.2,
+    "B": 0.4,
+    "D_A": 0,
+    "D_B": 0.2,
+    "projects": 0,
+    "C": null
+  },
+  "byDomain": {
+    "frontend": {
+      "n": 11,
+      "A": 0.36363636363636365,
+      "B": 0.6363636363636364,
+      "D_A": 0,
+      "D_B": 0.36363636363636365
+    },
+    "database": {
+      "n": 9,
+      "A": 0,
+      "B": 0.1111111111111111,
+      "D_A": 0,
+      "D_B": 0
+    }
+  },
+  "rows": [
+    {
+      "sessionId": "session-gold-002",
+      "title": "Board App (Unspecified Differentiator)",
+      "component": "boards table",
+      "domain": "database",
+      "targetPath": "backend/src/db/boards-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('boards.db');\n\ninterface Board {\n  id: number;\n  title: string;\n}\n\ninterface Card {\n  id: number;\n  boardId: number;\n  content: string;\n}\n\nfunction createBoard(title: string): void {\n  const sql = 'INSERT INTO boards (title) VALUES (?)';\n  db.run(sql, [title]);\n}\n\nfunction getBoards(): Board[] {\n  const sql = 'SELECT * FROM boards';\n  const stmt = db.prepare(sql);\n  return stmt.all() as unknown as Board[];\n}\n\nfunction getCards(boardId: number): Card[] {\n  const sql = 'SELECT * FROM cards WHERE boardId = ?';\n  const stmt = db.prepare(sql);\n  return stmt.all([boardId]) as unknown as Card[];\n}\n\nfunction createCard(boardId: number, content: string): void {\n  const sql = 'INSERT INTO cards (boardId, content) VALUES (?, ?)';\n  db.run(sql, [boardId, content]);\n}\n\nexport { db, createBoard, getBoards, getCards, createCard };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/boards-table.ts(18,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/boards-table.ts(30,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/db/boards-table.ts(35,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/boards-api.ts(4,3): error TS2724: '\"../db/boards-table\"' has no exported member named 'getBoard'. Did you mean 'getBoards'?\r\nbackend/src/routes/boards-api.ts(5,3): error TS2305: Module '\"../db/boards-table\"' has no exported member 'listBoards'.\r\nbackend/src/routes/boards-api.ts(6,3): error TS2305: Module '\"../db/boards-table\"' has no exported member 'deleteBoard'.\r\nbackend/src/routes/boards-api.ts(8,3): error TS2305: Module '\"../db/boards-table\"' has no exported member 'getCardsByBoard'.\r\nbackend/src/routes/boards-api.ts(9,3): error TS2305: Module '\"../db/boards-table\"' has no exported member 'updateCardPosition'.\r\nbackend/src/routes/boards-api.ts(10,3): error TS2305: Module '\"../db/boards-table\"' has no exported member 'deleteCard'.\r\nbackend/src/routes/boards-api.ts(33,29): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/routes/boards-api.ts(93,7): error TS2554: Expected 2 arguments, but got 6.\r\nbackend/src/routes/boards-api.ts(100,37): error TS7006: Parameter 'c' implicitly has an 'any' type.\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/boards-table.ts(18,16): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/db/boards-table.ts(19,30): error TS2339: Property 'lastInsertRowid' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/boards-table.ts(37,16): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/db/boards-table.ts(38,30): error TS2339: Property 'lastInsertRowid' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/boards-table.ts(50,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/boards-table.ts(56,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/boards-api.ts(46,46): error TS2554: Expected 2 arguments, but got 3.\r\nbackend/src/routes/boards-api.ts(59,59): error TS2554: Expected 2 arguments, but got 4.\r\nbackend/src/routes/boards-api.ts(74,47): error TS2554: Expected 1 arguments, but got 2.\r\n"
+    },
+    {
+      "sessionId": "session-gold-002",
+      "title": "Board App (Unspecified Differentiator)",
+      "component": "Board View",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/board-view.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Board {\n  id: number;\n  title: string;\n  cards: Card[];\n}\n\ninterface Card {\n  id: number;\n  title: string;\n  description: string;\n  dueDate?: Date;\n}\n\nconst fetchBoards = async (): Promise<Board[]> => {\n  const response = await fetch('/api/boards-api/api/boards');\n  if (!response.ok) {\n    throw new Error('Failed to fetch boards');\n  }\n  return await response.json();\n};\n\nconst BoardView: FC = () => {\n  const [boards, setBoards] = React.useState<Board[]>([]);\n\n  React.useEffect(() => {\n    fetchBoards()\n      .then(boards => setBoards(boards))\n      .catch(error => console.error('Error fetching boards:', error));\n  }, []);\n\n  return (\n    <div>\n      <h1>Boards</h1>\n      <ul>\n        {boards.map(board => (\n          <li key={board.id}>{board.title}</li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n\nexport { BoardView };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/board-view.tsx(25,31): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/board-view.tsx(27,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-003",
+      "title": "Weather App",
+      "component": "Forecast View",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/forecast-view.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Forecast {\n  temperature: number;\n  condition: string;\n}\n\nconst ForecastView: FC = () => {\n  const fetchForecast = async () => {\n    try {\n      const response = await fetch('/api/weather-api/forecast');\n      if (!response.ok) {\n        throw new Error('Failed to fetch weather data');\n      }\n      const forecastData: Forecast[] = await response.json();\n      console.log(forecastData);\n    } catch (error) {\n      console.error(error);\n    }\n  };\n\n  useEffect(() => {\n    fetchForecast();\n  }, []);\n\n  return (\n    <div>\n      <h1>Weather Forecast</h1>\n      {/* Render the forecast data here */}\n    </div>\n  );\n};\n\nexport { ForecastView };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/forecast-view.tsx(22,3): error TS2304: Cannot find name 'useEffect'.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-004",
+      "title": "Client-Only Calculator",
+      "component": "Calculator Widget",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/calculator-widget.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Button {\n  label: string;\n  onClick: () => void;\n}\n\nconst buttons: Button[] = [\n  { label: '7', onClick: () => {} },\n  { label: '8', onClick: () => {} },\n  { label: '9', onClick: () => {} },\n  { label: '/', onClick: () => {} },\n  { label: '4', onClick: () => {} },\n  { label: '5', onClick: () => {} },\n  { label: '6', onClick: () => {} },\n  { label: '*', onClick: () => {} },\n  { label: '1', onClick: () => {} },\n  { label: '2', onClick: () => {} },\n  { label: '3', onClick: () => {} },\n  { label: '-', onClick: () => {} },\n  { label: '0', onClick: () => {} },\n  { label: '.', onClick: () => {} },\n  { label: '=', onClick: () => {} },\n  { label: '+', onClick: () => {} }\n];\n\nconst CalculatorWidget: FC = () => {\n  const handleButtonClick = (label: string) => {\n    // Handle button click logic here\n  };\n\n  return (\n    <div className=\"calculator\">\n      <input type=\"text\" readOnly />\n      <div className=\"buttons\">\n        {buttons.map((button, index) => (\n          <button key={index} onClick={() => handleButtonClick(button.label)}>\n            {button.label}\n          </button>\n        ))}\n      </div>\n    </div>\n  );\n};\n\nexport { CalculatorWidget };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "products table",
+      "domain": "database",
+      "targetPath": "backend/src/db/products-table.ts",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Product {\n  id: number;\n  name: string;\n  price: number;\n  stockCount: number;\n}\n\nconst db = new DatabaseSync('products.db');\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS products (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      name TEXT NOT NULL,\n      price REAL NOT NULL,\n      stockCount INTEGER NOT NULL\n    )`\n  );\n}\n\nfunction insertProduct(name: string, price: number, stockCount: number): number {\n  const stmt = db.prepare(\n    'INSERT INTO products (name, price, stockCount) VALUES (?, ?, ?)' as const\n  );\n  return stmt.run(name, price, stockCount).lastInsertRowid as number;\n}\n\nfunction getProductById(id: number): Product | null {\n  const stmt = db.prepare(\n    'SELECT * FROM products WHERE id = ?' as const\n  );\n  return stmt.get(id) as unknown as Product | null;\n}\n\nfunction getProducts(): Product[] {\n  const stmt = db.prepare('SELECT * FROM products' as const);\n  return stmt.all() as unknown as Product[];\n}\n\nfunction updateProduct(id: number, name: string, price: number, stockCount: number): boolean {\n  const stmt = db.prepare(\n    'UPDATE products SET name = ?, price = ?, stockCount = ? WHERE id = ?' as const\n  );\n  return stmt.run(name, price, stockCount, id).changes > 0;\n}\n\nfunction deleteProduct(id: number): boolean {\n  const stmt = db.prepare('DELETE FROM products WHERE id = ?' as const);\n  return stmt.run(id).changes > 0;\n}\n\nexport { db, createTable, insertProduct, getProductById, getProducts, updateProduct, deleteProduct };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/catalog-api.ts(2,10): error TS2459: Module '\"../db/products-table\"' declares 'Product' locally, but it is not exported.\r\nbackend/src/routes/catalog-api.ts(2,19): error TS2724: '\"../db/products-table\"' has no exported member named 'getAllProducts'. Did you mean 'getProducts'?\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "orders table",
+      "domain": "database",
+      "targetPath": "backend/src/db/orders-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('orders.db');\n\ninterface Order {\n  id: number;\n  customerId: number;\n  lineItems: string;\n  paymentStatus: string;\n}\n\nfunction createOrder(order: Order): void {\n  const sql = 'INSERT INTO orders (id, customerId, lineItems, paymentStatus) VALUES (?, ?, ?, ?)';\n  db.prepare(sql).run(order.id, order.customerId, order.lineItems, order.paymentStatus);\n}\n\nfunction getOrderById(id: number): Order | null {\n  const sql = 'SELECT * FROM orders WHERE id = ?';\n  const result = db.prepare(sql).get(id) as unknown as Order;\n  return result || null;\n}\n\nfunction getOrdersByCustomerId(customerId: number): Order[] {\n  const sql = 'SELECT * FROM orders WHERE customerId = ?';\n  const results = db.prepare(sql).all(customerId) as unknown as Order[];\n  return results;\n}\n\nfunction updateOrder(order: Order): void {\n  const sql = 'UPDATE orders SET customerId = ?, lineItems = ?, paymentStatus = ? WHERE id = ?';\n  db.prepare(sql).run(order.customerId, order.lineItems, order.paymentStatus, order.id);\n}\n\nfunction deleteOrder(id: number): void {\n  const sql = 'DELETE FROM orders WHERE id = ?';\n  db.prepare(sql).run(id);\n}\n\nexport { db, createOrder, getOrderById, getOrdersByCustomerId, updateOrder, deleteOrder };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/orders-api.ts(2,10): error TS2305: Module '\"../db/orders-table\"' has no exported member 'insertOrder'.\r\nbackend/src/routes/orders-api.ts(2,23): error TS2459: Module '\"../db/orders-table\"' declares 'Order' locally, but it is not exported.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/orders-api.ts(8,13): error TS2769: No overload matches this call.\r\n  The last overload gave the following error.\r\n    Argument of type '(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>>, next: NextFunction) => void' is not assignable to parameter of type 'PathParams'.\r\nbackend/src/routes/orders-api.ts(12,51): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/routes/orders-api.ts(20,12): error TS2769: No overload matches this call.\r\n  The last overload gave the following error.\r\n    Argument of type '(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>>, next: NextFunction) => void' is not assignable to parameter of type 'PathParams'.\r\nbackend/src/routes/orders-api.ts(30,12): error TS2769: No overload matches this call.\r\n  The last overload gave the following error.\r\n    Argument of type '(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>>, next: NextFunction) => void' is not assignable to parameter of type 'PathParams'.\r\nbackend/src/routes/orders-api.ts(45,12): error TS2769: No overload matches this call.\r\n  The last overload gave the following error.\r\n    Argument of type '(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>>, next: NextFunction) => void' is not assignable to parameter of type 'PathParams'.\r\nbackend/src/routes/orders-api.ts(49,32): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/routes/orders-api.ts(57,15): error TS2769: No overload matches this call.\r\n  The last overload gave the following error.\r\n    Argument of type '(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>>, next: NextFunction) => void' is not assignable to parameter of type 'PathParams'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Product Catalog",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/product-catalog.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface Product {\n  id: number;\n  name: string;\n  description: string;\n  price: number;\n}\n\nconst fetchProducts = async (): Promise<Product[]> => {\n  const response = await fetch(\"/api/catalog-api/products\");\n  if (!response.ok) {\n    throw new Error(\"Failed to fetch products\");\n  }\n  return await response.json();\n};\n\nconst ProductCatalog: FC = () => {\n  const [products, setProducts] = React.useState<Product[]>([]);\n\n  React.useEffect(() => {\n    fetchProducts().then(setProducts);\n  }, []);\n\n  return (\n    <div>\n      <h1>Product Catalog</h1>\n      <ul>\n        {products.map(product => (\n          <li key={product.id}>{product.name}</li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n\nexport { ProductCatalog };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/product-catalog.tsx(19,35): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/product-catalog.tsx(21,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/product-catalog.tsx(19,35): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/product-catalog.tsx(21,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n"
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Cart & Checkout",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/cart-checkout.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\nconst CartCheckout: FC = () => {\n  // Placeholder implementation for demonstration purposes\n  return (\n    <div>\n      <h1>Cart & Checkout</h1>\n      {/* Render cart items and checkout form */}\n    </div>\n  );\n};\n\nexport { CartCheckout };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Admin Product Panel",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/admin-product-panel.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Product {\n  id: number;\n  name: string;\n  price: number;\n}\n\nconst AdminProductPanel: FC = () => {\n  const [products, setProducts] = React.useState<Product[]>([]);\n  const [newProductName, setNewProductName] = React.useState('');\n  const [newProductPrice, setNewProductPrice] = React.useState(0);\n\n  React.useEffect(() => {\n    fetch('/api/catalog-api/products')\n      .then(response => response.json())\n      .then(data => setProducts(data));\n  }, []);\n\n  const handleAddProduct = async () => {\n    const newProduct = {\n      name: newProductName,\n      price: Number(newProductPrice),\n    };\n\n    await fetch('/api/catalog-api/products', {\n      method: 'POST',\n      headers: {\n        'Content-Type': 'application/json',\n      },\n      body: JSON.stringify(newProduct),\n    });\n\n    setProducts([...products, newProduct]);\n    setNewProductName('');\n    setNewProductPrice(0);\n  };\n\n  const handleEditProduct = async (id: number, newName: string, newPrice: number) => {\n    await fetch(`/api/catalog-api/products/${id}`, {\n      method: 'PUT',\n      headers: {\n        'Content-Type': 'application/json',\n      },\n      body: JSON.stringify({ name: newName, price: newPrice }),\n    });\n\n    setProducts(products.map(product => (\n      product.id === id ? { ...product, name: newName, price: newPrice } : product\n    )));\n  };\n\n  const handleDeleteProduct = async (id: number) => {\n    await fetch(`/api/catalog-api/products/${id}`, {\n      method: 'DELETE',\n    });\n\n    setProducts(products.filter(product => product.id !== id));\n  };\n\n  return (\n    <div>\n      <h1>Admin Product Panel</h1>\n      <input\n        type='text'\n        placeholder='New Product Name'\n        value={newProductName}\n        onChange={(e) => setNewProductName(e.target.value)}\n      />\n      <input\n        type='number'\n        placeholder='New Product Price'\n        value={newProductPrice}\n        onChange={(e) => setNewProductPrice(Number(e.target.value))}\n      />\n      <button onClick={handleAddProduct}>Add Product</button>\n      <ul>\n        {products.map(product => (\n          <li key={product.id}>\n            {product.name} - ${product.price}\n            <button onClick={() => handleEditProduct(product.id, 'Updated Name', 99)}>Edit</button>\n            <button onClick={() => handleDeleteProduct(product.id)}>Delete</button>\n          </li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n\nexport { AdminProductPanel };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/admin-product-panel.tsx(10,35): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/admin-product-panel.tsx(11,47): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/admin-product-panel.tsx(12,49): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/admin-product-panel.tsx(14,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/admin-product-panel.tsx(34,18): error TS2322: Type 'Product | { name: string; price: number; }' is not assignable to type 'Product'.\r\n  Property 'id' is missing in type '{ name: string; price: number; }' but required in type 'Product'.\r\nfrontend/src/pages/admin-product-panel.tsx(34,31): error TS2741: Property 'id' is missing in type '{ name: string; price: number; }' but required in type 'Product'.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "transactions table",
+      "domain": "database",
+      "targetPath": "backend/src/db/transactions-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Transaction {\n  id: number;\n  amount: number;\n  merchant: string;\n  date: Date;\n  category: string;\n}\n\nconst db = new DatabaseSync('transactions.db');\n\nfunction createTable(): void {\n  const sql = `CREATE TABLE IF NOT EXISTS transactions (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    amount REAL NOT NULL,\n    merchant TEXT NOT NULL,\n    date DATETIME NOT NULL,\n    category TEXT NOT NULL\n  )`;\n  db.exec(sql);\n}\n\nfunction insertTransaction(amount: number, merchant: string, date: Date, category: string): void {\n  const sql = 'INSERT INTO transactions (amount, merchant, date, category) VALUES (?, ?, ?, ?)';\n  db.prepare(sql).run(amount, merchant, date.toISOString(), category);\n}\n\nfunction getTransactions(): Transaction[] {\n  const sql = 'SELECT * FROM transactions';\n  const stmt = db.prepare(sql);\n  return stmt.all() as unknown as Transaction[];\n}\n\nfunction getTransactionById(id: number): Transaction | null {\n  const sql = 'SELECT * FROM transactions WHERE id = ?';\n  const stmt = db.prepare(sql);\n  return stmt.get(id) as unknown as Transaction | null;\n}\n\nexport { db, createTable, insertTransaction, getTransactions, getTransactionById };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/bank-sync-service.ts(2,10): error TS2459: Module '\"../db/transactions-table\"' declares 'Transaction' locally, but it is not exported.\r\nbackend/src/routes/categorisation-api.ts(2,10): error TS2459: Module '\"../db/transactions-table\"' declares 'Transaction' locally, but it is not exported.\r\n",
+      "repairRounds": 3,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/bank-sync-service.ts(25,60): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.\r\n  Type 'undefined' is not assignable to type 'number'.\r\nbackend/src/routes/bank-sync-service.ts(27,11): error TS2322: Type 'void' is not assignable to type 'Transaction | null'.\r\nbackend/src/routes/bank-sync-service.ts(27,39): error TS2554: Expected 4 arguments, but got 1.\r\n"
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "bank_credentials table",
+      "domain": "database",
+      "targetPath": "backend/src/db/bank-credentials-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('./bank_credentials.db');\n\ninterface BankCredential {\n  id: number;\n  token: string;\n}\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS bank_credentials (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      token TEXT NOT NULL\n    )`\n  );\n}\n\nfunction insertToken(token: string): number {\n  const stmt = db.prepare('INSERT INTO bank_credentials (token) VALUES (?)');\n  return stmt.run(token).lastInsertRowid as number;\n}\n\nfunction getTokenById(id: number): BankCredential | undefined {\n  const stmt = db.prepare('SELECT * FROM bank_credentials WHERE id = ?');\n  return stmt.get(id) as unknown as BankCredential | undefined;\n}\n\nfunction getAllTokens(): BankCredential[] {\n  const stmt = db.prepare('SELECT * FROM bank_credentials');\n  return stmt.all() as unknown as BankCredential[];\n}\n\nexport { db, createTable, insertToken, getTokenById, getAllTokens };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/bank-sync-service.ts(3,10): error TS2459: Module '\"../db/bank-credentials-table\"' declares 'BankCredential' locally, but it is not exported.\r\nbackend/src/routes/bank-sync-service.ts(3,26): error TS2305: Module '\"../db/bank-credentials-table\"' has no exported member 'getBankCredentialsByUserId'.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/bank-sync-service.ts(6,7): error TS2451: Cannot redeclare block-scoped variable 'router'.\r\nbackend/src/routes/bank-sync-service.ts(13,79): error TS2552: Cannot find name 'Transaction'. Did you mean 'IDBTransaction'?\r\nbackend/src/routes/bank-sync-service.ts(18,21): error TS2304: Cannot find name 'credentialEncryptionMiddleware'.\r\nbackend/src/routes/bank-sync-service.ts(21,29): error TS2552: Cannot find name 'Transaction'. Did you mean 'IDBTransaction'?\r\nbackend/src/routes/bank-sync-service.ts(25,23): error TS2339: Property 'userId' does not exist on type 'BankCredential'.\r\nbackend/src/routes/bank-sync-service.ts(26,28): error TS2339: Property 'accessToken' does not exist on type 'BankCredential'.\r\nbackend/src/routes/bank-sync-service.ts(42,14): error TS2451: Cannot redeclare block-scoped variable 'router'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "Transaction List",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/transaction-list.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "repair-failed"
+      ],
+      "error": {
+        "reason": "unparseable-json",
+        "message": "response was not valid JSON (SyntaxError: Bad control character in string literal in JSON at position 2644 (line 2 column 2643)); first 300 chars: {\n  \"code\": \"import type { FC } from \\\"react\\\";\\n\\nconst fetchSyncedTransactions = async (userId: string): Promise<Transaction[]> => {\\n  const response = await fetch(`/api/bank-sync-service/sync/${userId}`);\\n  if (!response.ok) {\\n    throw new Error('Failed to sync transactions');\\n  }\\n  return "
+      },
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Transaction {\n  id: number;\n  amount: number;\n  description: string;\n  category?: string;\n}\n\nconst fetchTransactions = async (userId: number): Promise<Transaction[]> => {\n  const response = await fetch(`/api/bank-sync-service/sync/${userId}`);\n  if (!response.ok) {\n    throw new Error('Failed to sync transactions');\n  }\n  return response.json();\n};\n\nconst fetchTransactionById = async (id: number): Promise<Transaction> => {\n  const response = await fetch(`/api/categorisation-api/transactions/${id}`);\n  if (!response.ok) {\n    throw new Error(`Failed to get transaction ${id}`);\n  }\n  return response.json();\n};\n\nconst updateTransactionCategory = async (\n  id: number,\n  category: string\n): Promise<void> => {\n  const response = await fetch(`/api/categorisation-api/transactions/${id}`, {\n    method: 'PUT',\n    headers: {\n      'Content-Type': 'application/json'\n    },\n    body: JSON.stringify({ category })\n  });\n  if (!response.ok) {\n    throw new Error(`Failed to update transaction ${id}`);\n  }\n};\n\nconst TransactionList: FC<{ userId: number }> = ({ userId }) => {\n  const [transactions, setTransactions] = React.useState<Transaction[]>([]);\n\n  React.useEffect(() => {\n    const loadTransactions = async () => {\n      try {\n        const transactionsData = await fetchTransactions(userId);\n        setTransactions(transactionsData);\n      } catch (error) {\n        console.error(error);\n      }\n    };\n\n    loadTransactions();\n  }, [userId]);\n\n  const handleCategoryChange = async (\n    event: React.ChangeEvent<HTMLSelectElement>,\n    transactionId: number\n  ) => {\n    const category = event.target.value;\n    try {\n      await updateTransactionCategory(transactionId, category);\n      const updatedTransactions = await fetchTransactions(userId);\n      setTransactions(updatedTransactions);\n    } catch (error) {\n      console.error(error);\n    }\n  };\n\n  return (\n    <div>\n      <h1>Transaction List</h1>\n      <ul>\n        {transactions.map((transaction) => (\n          <li key={transaction.id}>\n            {transaction.description} - ${transaction.amount}\n            <select\n              value={transaction.category || ''}\n              onChange={(event) => handleCategoryChange(event, transaction.id)}\n            >\n              <option value=''>Uncategorized</option>\n              <option value='Food'>Food</option>\n              <option value='Transport'>Transport</option>\n              <option value='Entertainment'>Entertainment</option>\n            </select>\n          </li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n\nexport { TransactionList };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/main.tsx(15,8): error TS2741: Property 'userId' is missing in type '{}' but required in type '{ userId: number; }'.\r\nfrontend/src/pages/transaction-list.tsx(43,43): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/transaction-list.tsx(45,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n"
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "Budget Overview",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/budget-overview.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "repair-failed"
+      ],
+      "error": {
+        "reason": "unparseable-json",
+        "message": "response was not valid JSON (SyntaxError: Bad control character in string literal in JSON at position 850 (line 2 column 849)); first 300 chars: {\n  \"code\": \"import type { FC } from \\\"react\\\";\\n\\ninterface Transaction {\\n  id: number;\\n  amount: number;\\n  category: string;\\n}\\n\\nconst fetchTransactions = async (userId: number): Promise<Transaction[]> => {\\n  const response = await fetch(`/api/categorisation-api/transactions?userId=${userId}"
+      },
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Transaction {\n  id: number;\n  amount: number;\n  category: string;\n}\n\nconst calculateSpendingPerCategory = (transactions: Transaction[]): { [category: string]: number } => {\n  const spending: { [category: string]: number } = {};\n  transactions.forEach(transaction => {\n    if (!spending[transaction.category]) {\n      spending[transaction.category] = 0;\n    }\n    spending[transaction.category] += transaction.amount;\n  });\n  return spending;\n};\n\nconst fetchTransactions = async (): Promise<Transaction[]> => {\n  const response = await fetch('/api/categorisation-api/transactions');\n  if (!response.ok) {\n    throw new Error('Failed to fetch transactions');\n  }\n  return await response.json();\n};\n\nconst BudgetOverview: FC = () => {\n  const [transactions, setTransactions] = React.useState<Transaction[]>([]);\n  const [loading, setLoading] = React.useState<boolean>(true);\n  const [error, setError] = React.useState<string | null>(null);\n\n  React.useEffect(() => {\n    const fetchData = async () => {\n      try {\n        const transactionsData = await fetchTransactions();\n        setTransactions(transactionsData);\n      } catch (err) {\n        setError(err.message);\n      } finally {\n        setLoading(false);\n      }\n    };\n\n    fetchData();\n  }, []);\n\n  if (loading) {\n    return <div>Loading...</div>;\n  }\n\n  if (error) {\n    return <div>Error: {error}</div>;\n  }\n\n  const spendingPerCategory = calculateSpendingPerCategory(transactions);\n\n  return (\n    <div>\n      <h1>Budget Overview</h1>\n      <ul>\n        {Object.entries(spendingPerCategory).map(([category, amount]) => (\n          <li key={category}>{`${category}: ${amount}`}</li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n\nexport { BudgetOverview };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/budget-overview.tsx(29,43): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/budget-overview.tsx(30,33): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/budget-overview.tsx(31,29): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/budget-overview.tsx(33,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/budget-overview.tsx(39,18): error TS18046: 'err' is of type 'unknown'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-011",
+      "title": "Personal Portfolio Site",
+      "component": "About/Projects Pages",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/about-projects-pages.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\nconst AboutProjectsPages: FC = () => {\n  return (\n    <div>\n      <h1>About Me</h1>\n      <p>Welcome to my personal portfolio site!</p>\n      <h2>My Projects</h2>\n      <ul>\n        <li>Project 1</li>\n        <li>Project 2</li>\n        <li>Project 3</li>\n      </ul>\n    </div>\n  );\n};\n\nexport { AboutProjectsPages };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-011",
+      "title": "Personal Portfolio Site",
+      "component": "Contact Form",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/contact-form.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\nconst ContactForm: FC = () => {\n  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {\n    event.preventDefault();\n    const formData = new FormData(event.target);\n    const message = formData.get('message') as string;\n\n    try {\n      await fetch('/api/contact-form-handler/submit', {\n        method: 'POST',\n        body: JSON.stringify({ message }),\n        headers: {\n          'Content-Type': 'application/json'\n        }\n      });\n\n      alert('Message sent successfully!');\n    } catch (error) {\n      console.error('Error sending message:', error);\n      alert('Failed to send message.');\n    }\n  };\n\n  return (\n    <form onSubmit={handleSubmit}>\n      <label htmlFor=\"message\">Your Message:</label>\n      <textarea id=\"message\" name=\"message\" required></textarea>\n      <button type=\"submit\">Send</button>\n    </form>\n  );\n};\n\nexport { ContactForm };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/contact-form.tsx(6,35): error TS2345: Argument of type 'EventTarget' is not assignable to parameter of type 'HTMLFormElement'.\r\n  Type 'EventTarget' is missing the following properties from type 'HTMLFormElement': acceptCharset, action, autocomplete, elements, and 330 more.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/contact-form.tsx(6,35): error TS2345: Argument of type 'EventTarget' is not assignable to parameter of type 'HTMLFormElement'.\r\n  Type 'EventTarget' is missing the following properties from type 'HTMLFormElement': acceptCharset, action, autocomplete, elements, and 330 more.\r\n"
+    },
+    {
+      "sessionId": "session-gold-012",
+      "title": "IoT Sensor Dashboard",
+      "component": "readings table",
+      "domain": "database",
+      "targetPath": "backend/src/db/readings-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Reading {\n  sensor_id: number;\n  warehouse_id: number;\n  value: number;\n  timestamp: Date;\n}\n\nconst db = new DatabaseSync('readings.db');\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS readings (\n      sensor_id INTEGER,\n      warehouse_id INTEGER,\n      value REAL,\n      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP\n    )`\n  );\n}\n\nfunction insertReading(sensorId: number, warehouseId: number, value: number): void {\n  db.run(\n    'INSERT INTO readings (sensor_id, warehouse_id, value) VALUES (?, ?, ?)',\n    [sensorId, warehouseId, value]\n  );\n}\n\nfunction getReadingsBySensorId(sensorId: number): Reading[] {\n  const stmt = db.prepare('SELECT * FROM readings WHERE sensor_id = ?');\n  return stmt.all([sensorId]) as unknown as Reading[];\n}\n\nfunction getLatestReading(warehouseId: number): Reading | null {\n  const stmt = db.prepare('SELECT * FROM readings WHERE warehouse_id = ? ORDER BY timestamp DESC LIMIT 1');\n  return stmt.get([warehouseId]) as unknown as Reading | null;\n}\n\nexport { db, createTable, insertReading, getReadingsBySensorId, getLatestReading };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/readings-table.ts(24,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/readings-table.ts(32,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/db/readings-table.ts(37,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue> | undefined', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue> | undefined', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/routes/alerting-service.ts(2,10): error TS2305: Module '\"../db/readings-table\"' has no exported member 'getLatestReadingByWarehouse'.\r\nbackend/src/routes/alerting-service.ts(2,39): error TS2724: '\"../db/readings-table\"' has no exported member named 'getReadingsBySensor'. Did you mean 'getReadingsBySensorId'?\r\nbackend/src/routes/alerting-service.ts(41,46): error TS7006: Parameter 'reading' implicitly has an 'any' type.\r\nbackend/src/routes/ingest-api.ts(22,47): error TS2554: Expected 3 arguments, but got 4.\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/readings-table.ts(24,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/readings-table.ts(32,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/db/readings-table.ts(37,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue> | undefined', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue> | undefined', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-012",
+      "title": "IoT Sensor Dashboard",
+      "component": "devices table",
+      "domain": "database",
+      "targetPath": "backend/src/db/devices-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Device {\n  id: number;\n  warehouseId: number;\n  apiKeyHash: string;\n}\n\nconst db = new DatabaseSync('devices.db');\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS devices (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      warehouseId INTEGER NOT NULL,\n      apiKeyHash TEXT NOT NULL\n    )`\n  );\n}\n\nfunction insertDevice(warehouseId: number, apiKeyHash: string): void {\n  db.run(\n    'INSERT INTO devices (warehouseId, apiKeyHash) VALUES (?, ?)',\n    [warehouseId, apiKeyHash]\n  );\n}\n\nfunction getDeviceById(id: number): Device | null {\n  const stmt = db.prepare('SELECT * FROM devices WHERE id = ?');\n  const result = stmt.get(id) as unknown as Device | null;\n  return result;\n}\n\nfunction getAllDevices(): Device[] {\n  const stmt = db.prepare('SELECT * FROM devices');\n  const results = stmt.all() as unknown as Device[];\n  return results;\n}\n\nexport { db, createTable, insertDevice, getDeviceById, getAllDevices };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/devices-table.ts(22,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/alerting-service.ts(3,25): error TS2305: Module '\"../db/devices-table\"' has no exported member 'getDevicesByWarehouseId'.\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/alerting-service.ts(30,27): error TS2339: Property 'minRange' does not exist on type 'Device'.\r\nbackend/src/routes/alerting-service.ts(31,27): error TS2339: Property 'maxRange' does not exist on type 'Device'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-012",
+      "title": "IoT Sensor Dashboard",
+      "component": "Sensor Dashboard",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/sensor-dashboard.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\nconst SensorDashboard: FC = () => {\n  // Placeholder implementation\n  return (\n    <div>\n      <h1>Sensor Dashboard</h1>\n      {/* Grid of sensors per warehouse */}\n      {/* Alert banners */}\n    </div>\n  );\n};\n\nexport { SensorDashboard };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-016",
+      "title": "Event Ticketing",
+      "component": "events table",
+      "domain": "database",
+      "targetPath": "backend/src/db/events-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface EventRow {\n  id: number;\n  name: string;\n  description: string;\n  date: string;\n  location: string;\n  total_tickets: number;\n}\n\nconst db = new DatabaseSync('events.db');\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS events (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      name TEXT NOT NULL,\n      description TEXT,\n      date TEXT NOT NULL,\n      location TEXT NOT NULL,\n      total_tickets INTEGER NOT NULL\n    )`\n  );\n}\n\nfunction insertEvent(event: { name: string; description: string; date: string; location: string; total_tickets: number }): number {\n  const stmt = db.prepare(\n    'INSERT INTO events (name, description, date, location, total_tickets) VALUES (?, ?, ?, ?, ?)'\\n  );\n  return stmt.run(event.name, event.description, event.date, event.location, event.total_tickets).lastInsertRowid;\n}\n\nfunction getEvents(): EventRow[] {\n  const stmt = db.prepare('SELECT * FROM events');\n  return stmt.all() as unknown as EventRow[];\n}\n\nfunction getEventById(id: number): EventRow | undefined {\n  const stmt = db.prepare('SELECT * FROM events WHERE id = ?');\n  return stmt.get(id) as unknown as EventRow | undefined;\n}\n\nfunction updateEvent(id: number, event: { name?: string; description?: string; date?: string; location?: string; total_tickets?: number }): boolean {\n  const setClause: string[] = [];\n  const params: any[] = [];\n\n  if (event.name !== undefined) {\n    setClause.push('name = ?');\n    params.push(event.name);\n  }\n\n  if (event.description !== undefined) {\n    setClause.push('description = ?');\n    params.push(event.description);\n  }\n\n  if (event.date !== undefined) {\n    setClause.push('date = ?');\n    params.push(event.date);\n  }\n\n  if (event.location !== undefined) {\n    setClause.push('location = ?');\n    params.push(event.location);\n  }\n\n  if (event.total_tickets !== undefined) {\n    setClause.push('total_tickets = ?');\n    params.push(event.total_tickets);\n  }\n\n  if (setClause.length === 0) {\n    return false;\n  }\n\n  const sql = `UPDATE events SET ${setClause.join(', ')} WHERE id = ?`;\n  params.push(id);\n\n  const result = db.prepare(sql).run(...params);\n  return result.changes > 0;\n}\n\nfunction deleteEvent(id: number): boolean {\n  const stmt = db.prepare('DELETE FROM events WHERE id = ?');\n  const result = stmt.run(id);\n  return result.changes > 0;\n}\n\nexport { db, createTable, insertEvent, getEvents, getEventById, updateEvent, deleteEvent };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/events-table.ts(29,99): error TS1127: Invalid character.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/events-table.ts(16,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/events-table.ts(21,13): error TS2339: Property 'all' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/events-table.ts(26,13): error TS2339: Property 'get' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/events-table.ts(31,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/events-table.ts(36,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-016",
+      "title": "Event Ticketing",
+      "component": "tickets table",
+      "domain": "database",
+      "targetPath": "backend/src/db/tickets-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('tickets.db');\n\ninterface Ticket {\n  id: number;\n  qrCode: string;\n}\n\nfunction createTable(): void {\n  const sql = `CREATE TABLE IF NOT EXISTS tickets (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    qrCode TEXT NOT NULL UNIQUE\n  )`;\n  db.exec(sql);\n}\n\nfunction insertTicket(qrCode: string): number {\n  const sql = 'INSERT INTO tickets (qrCode) VALUES (?)';\n  const stmt = db.prepare(sql);\n  const result = stmt.run(qrCode);\n  return result.lastInsertRowid as number;\n}\n\nfunction getTicketById(id: number): Ticket | null {\n  const sql = 'SELECT * FROM tickets WHERE id = ?';\n  const stmt = db.prepare(sql);\n  const result = stmt.get(id) as unknown as Ticket;\n  return result || null;\n}\n\nfunction getAllTickets(): Ticket[] {\n  const sql = 'SELECT * FROM tickets';\n  const stmt = db.prepare(sql);\n  const results = stmt.all() as unknown as Ticket[];\n  return results;\n}\n\ncreateTable();\n\nexport { db, insertTicket, getTicketById, getAllTickets };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/email-delivery-service.ts(3,10): error TS2724: '\"../db/tickets-table\"' has no exported member named 'getTicketByQRCode'. Did you mean 'getTicketById'?\r\nbackend/src/routes/ticketing-api.ts(19,25): error TS2554: Expected 1 arguments, but got 3.\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/email-delivery-service.ts(33,28): error TS2339: Property 'email' does not exist on type 'Ticket'.\r\nbackend/src/routes/email-delivery-service.ts(33,42): error TS2339: Property 'name' does not exist on type 'Ticket'.\r\nbackend/src/routes/ticketing-api.ts(20,26): error TS2304: Cannot find name 'getAllEvents'.\r\nbackend/src/routes/ticketing-api.ts(51,35): error TS2554: Expected 1 arguments, but got 3.\r\n"
+    }
+  ],
+  "projects": []
+}
