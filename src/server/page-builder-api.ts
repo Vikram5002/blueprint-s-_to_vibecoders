@@ -18,6 +18,7 @@ import {
   type CanvasElementType,
   type PageLayout,
 } from '../generate/canvas-layout.js';
+import type { PageTheme } from '../generate/page-theme.js';
 
 const KNOWN_ELEMENT_TYPES: ReadonlySet<string> = new Set(CANVAS_ELEMENT_TYPES);
 
@@ -54,10 +55,15 @@ export function parsePageLayout(body: unknown): PageLayout | null {
   if (typeof candidate['id'] !== 'string' || typeof candidate['pageName'] !== 'string') return null;
   if (!Array.isArray(candidate['elements']) || !candidate['elements'].every(isCanvasElement)) return null;
 
+  // Structural only, like the elements: validatePageLayout checks every colour and font.
+  const theme = candidate['theme'];
+  if (theme !== undefined && (typeof theme !== 'object' || theme === null || typeof (theme as Record<string, unknown>)['colors'] !== 'object')) return null;
+
   return {
     id: candidate['id'],
     pageName: candidate['pageName'],
     elements: candidate['elements'],
+    ...(theme === undefined ? {} : { theme: theme as PageTheme }),
   } satisfies PageLayout;
 }
 

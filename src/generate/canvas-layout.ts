@@ -36,6 +36,7 @@ import {
   type ElementContext,
   type ExtendedElementType,
 } from './canvas-elements.js';
+import { DEFAULT_THEME, FONTS, googleFontsUrl, validateTheme, type PageTheme, type ThemeError } from './page-theme.js';
 import {
   FIELD_NAME_PATTERN,
   asSubmitButton,
@@ -212,6 +213,11 @@ export interface PageLayout {
   /** Becomes the generated component's name and file slug. */
   readonly pageName: string;
   readonly elements: readonly CanvasElement[];
+  /**
+   * The page's colours and fonts (page-theme.ts). Absent means the default
+   * look - and a page generates exactly as it did before themes existed.
+   */
+  readonly theme?: PageTheme;
 }
 
 export type LayoutValidationError =
@@ -220,7 +226,8 @@ export type LayoutValidationError =
   | { readonly reason: 'unknown-animation'; readonly elementId: string; readonly animation: string }
   | { readonly reason: 'out-of-bounds'; readonly elementId: string }
   | { readonly reason: 'invalid-field-name'; readonly elementId: string; readonly field: string }
-  | { readonly reason: 'duplicate-field-name'; readonly elementId: string; readonly field: string };
+  | { readonly reason: 'duplicate-field-name'; readonly elementId: string; readonly field: string }
+  | ThemeError;
 
 /**
  * Validates before generating anything - never silently clamp an
@@ -230,6 +237,7 @@ export type LayoutValidationError =
 export function validatePageLayout(layout: PageLayout): readonly LayoutValidationError[] {
   const errors: LayoutValidationError[] = [];
 
+  if (layout.theme !== undefined) errors.push(...validateTheme(layout.theme));
   if (layout.pageName.trim() === '') {
     errors.push({ reason: 'empty-page-name' });
   }
@@ -289,7 +297,7 @@ export function layoutToComponentFile(layout: PageLayout): GeneratedFile {
   if (fields.length > 0) return { path: pageLayoutTargetPath(layout), contents: formPageSource(layout, componentName, fields) };
 
   const elementsJsx = layout.elements
-    .map((element) => renderElement(element))
+    .map((element) => renderElement(element, layout.theme))
     .map((line) => `      ${line}`)
     .join('\n');
 
@@ -298,7 +306,8 @@ export function layoutToComponentFile(layout: PageLayout): GeneratedFile {
     '\n' +
     `export const ${componentName}: FC = () => {\n` +
     '  return (\n' +
-    `    <div style={{ position: 'relative', width: ${CANVAS_WIDTH}, height: ${CANVAS_HEIGHT} }}>\n` +
+    `    <div style={{ position: 'relative', width: ${CANVAS_WIDTH}, height: ${CANVAS_HEIGHT}${themeRootStyle(layout.theme)} }}>\n` +
+    renderThemeBlock(layout.theme) +
     renderKeyframesBlock(layout.elements) +
     `${elementsJsx}\n` +
     '    </div>\n' +
@@ -317,7 +326,7 @@ function formPageSource(layout: PageLayout, componentName: string, fields: reado
   const nameOf = new Map(fields.map((field) => [field.elementId, field.name] as const));
   const elementsJsx = layout.elements
     .map((element) => {
-      const markup = asSubmitButton(element, renderElement(element));
+      const markup = asSubmitButton(element, renderElement(element, layout.theme));
       const name = nameOf.get(element.id);
       return `      ${name === undefined ? markup : withFieldName(markup, name)}`;
     })
@@ -329,7 +338,8 @@ function formPageSource(layout: PageLayout, componentName: string, fields: reado
     `export const ${componentName}: FC = () => {\n` +
     submitHandlerSource(fields, pageApiPath(layout.pageName)) +
     '  return (\n' +
-    `    <form onSubmit={(event) => void handleSubmit(event)} style={{ position: 'relative', width: ${CANVAS_WIDTH}, height: ${CANVAS_HEIGHT} }}>\n` +
+    `    <form onSubmit={(event) => void handleSubmit(event)} style={{ position: 'relative', width: ${CANVAS_WIDTH}, height: ${CANVAS_HEIGHT}${themeRootStyle(layout.theme)} }}>\n` +
+    renderThemeBlock(layout.theme) +
     renderKeyframesBlock(layout.elements) +
     `${elementsJsx}\n` +
     "      <p role=\"status\" style={{ position: 'absolute', left: 16, bottom: 8, margin: 0, fontSize: 14, color: '#475569' }}>{status}</p>\n" +
@@ -337,6 +347,36 @@ function formPageSource(layout: PageLayout, componentName: string, fields: reado
     '  );\n' +
     '};\n'
   );
+}
+
+/** The themed page root: its background, text colour and body font. Nothing at all for an unthemed page. */
+function themeRootStyle(theme: PageTheme | undefined): string {
+  if (theme === undefined) return '';
+  return `, backgroundColor: '${theme.background}', color: '${theme.text}', fontFamily: ${JSON.stringify(FONTS[theme.bodyFont].stack)}`;
+}
+
+/**
+ * A themed page's fonts (loaded from Google Fonts when not system fonts) and
+ * its heading font, plus the theme as CSS variables so hand-written code
+ * added later can use the same palette. Nothing for an unthemed page.
+ */
+function renderThemeBlock(theme: PageTheme | undefined): string {
+  if (theme === undefined) return '';
+  const fonts = googleFontsUrl(theme);
+  const variables = [
+    ...Object.entries(theme.colors).map(([token, hex]) => `--vb-${token}: ${hex};`),
+    `--vb-background: ${theme.background};`,
+    `--vb-text: ${theme.text};`,
+    `--vb-muted: ${theme.muted};`,
+    `--vb-surface: ${theme.surface};`,
+    `--vb-line: ${theme.line};`,
+  ].join(' ');
+  const rules = [
+    ...(fonts === null ? [] : [`@import url('${fonts}');`]),
+    `:root { ${variables} }`,
+    `h1, h2, h3 { font-family: ${FONTS[theme.headingFont].stack}; }`,
+  ].join('\n');
+  return `      <style>{\`\n${rules}\n\`}</style>\n`;
 }
 
 /**
@@ -388,8 +428,9 @@ function positionStyle(element: CanvasElement): string {
   return `${base}, animation: '${keyframesIdentifier(element.animation)} ${spec.timing}'`;
 }
 
-function renderElement(element: CanvasElement): string {
-  const color = DESIGN_TOKENS[element.colorToken];
+function renderElement(element: CanvasElement, theme: PageTheme | undefined): string {
+  const palette = theme ?? DEFAULT_THEME;
+  const color = palette.colors[element.colorToken];
   const position = positionStyle(element);
   const context: ElementContext = {
     id: element.id,
@@ -400,6 +441,11 @@ function renderElement(element: CanvasElement): string {
     height: element.height,
     text: escapeJsxText,
     attr: escapeJsxAttribute,
+    ink: palette.text,
+    muted: palette.muted,
+    line: palette.line,
+    surface: palette.surface,
+    ...(theme === undefined ? {} : { headingFont: FONTS[theme.headingFont].stack }),
   };
   if (isExtendedElementType(element.type)) return renderExtendedElement(element.type, context);
   return renderBasicElement({ ...element, type: element.type }, context);
