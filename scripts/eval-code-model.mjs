@@ -53,6 +53,22 @@ import { componentTargetPath } from '../dist/generate/assemble.js';
 
 loadEnvFile(process.cwd());
 
+/**
+ * A provider-error (a daily quota, a dead tunnel) says nothing about the
+ * plan or the candidate - recording it as a failure would make the resume
+ * logic skip that plan forever, and would score the candidate on an outage.
+ * Found live 2026-09-28: 42 of 47 gold plans were recorded as
+ * generation-failed after Gemini's daily quota ran out. So the run stops,
+ * and the next run resumes from here.
+ */
+function stopOnProviderError(error, where) {
+  const failure = error?.failure ?? error;
+  if (failure?.reason !== 'provider-error') return;
+  console.error(`\nprovider unavailable at ${where}: ${failure.message ?? ''}`);
+  console.error('Stopping without recording it. Rerun the same command later; finished work is kept and skipped.');
+  process.exit(3);
+}
+
 // ---- arguments ---------------------------------------------------------------
 
 const args = process.argv.slice(2);
@@ -194,10 +210,12 @@ async function buildReferenceProjects() {
     const generated = await generateAndVerifyProject(schema, { provider, cache: nullCache, skipCache: true, root });
     let manifest;
     if (!generated.ok) {
+      stopOnProviderError(generated.error, schema.sessionId);
       manifest = { sessionId: schema.sessionId, passed: false, reasons: ['generation-failed'], error: generated.error };
     } else {
       const built = await installBuildAndRepair({ schema, llm: { provider, cache: nullCache }, root, files: generated.value.files });
       if (!built.ok) {
+        stopOnProviderError(built.error, schema.sessionId);
         manifest = { sessionId: schema.sessionId, passed: false, reasons: ['repair-failed'], error: built.error };
       } else {
         const buildOk = built.value.build.installOk && built.value.build.buildOk;
@@ -270,6 +288,7 @@ async function evaluate() {
 
       const regenerated = await regenerateWith(candidate, schema, entry, referenceFiles);
       if (!regenerated.ok) {
+        stopOnProviderError(regenerated.error, `${schema.sessionId} ${entry.targetPath}`);
         row.error = regenerated.error.failure;
         row.reasonsA = ['generation-failed'];
         row.reasonsB = ['generation-failed'];
