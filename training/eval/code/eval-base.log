@@ -1,0 +1,85 @@
+candidate: local:base; reference projects: 26; scratch: capture\code\work\eval-qwen-coder-7b-base
+(node:6100) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+A  session-gold-002 backend/src/routes/boards-api.ts
+C  session-gold-002 whole project
+!! session-gold-003 backend/src/routes/weather-api.ts  A:build-failed  B:build-failed
+!! session-gold-003 whole project  build-failed
+ B session-gold-006 backend/src/routes/catalog-api.ts  A:build-failed
+A  session-gold-006 backend/src/routes/orders-api.ts
+!! session-gold-006 backend/src/routes/payment-gateway-adapter.ts  A:build-failed  B:build-failed
+A  session-gold-006 backend/src/middleware/admin-only-write-guard.ts
+!! session-gold-006 whole project  build-failed
+ B session-gold-010 backend/src/routes/bank-sync-service.ts  A:build-failed
+A  session-gold-010 backend/src/routes/categorisation-api.ts
+A  session-gold-010 backend/src/middleware/credential-encryption.ts
+!! session-gold-010 whole project  build-failed
+A  session-gold-011 backend/src/routes/contact-form-handler.ts
+C  session-gold-011 whole project
+A  session-gold-012 backend/src/routes/ingest-api.ts
+!! session-gold-012 backend/src/routes/alerting-service.ts  A:build-failed  B:build-failed
+A  session-gold-012 backend/src/middleware/device-api-key-check.ts
+!! session-gold-012 whole project  build-failed
+!! session-gold-016 backend/src/routes/ticketing-api.ts  A:build-failed  B:build-failed
+!! session-gold-016 backend/src/routes/email-delivery-service.ts  A:build-failed  B:build-failed
+!! session-gold-016 backend/src/middleware/oversell-guard.ts  A:build-failed  B:build-failed
+!! session-gold-016 whole project  build-failed
+!! session-gold-017 backend/src/routes/workouts-api.ts  A:build-failed  B:build-failed
+!! session-gold-017 whole project  build-failed
+A  session-gold-020 backend/src/routes/tracking-api.ts
+C  session-gold-020 whole project
+!! session-gold-023 backend/src/routes/device-control-api.ts: generation failed (unparseable-json)
+!! session-gold-023 backend/src/routes/scheduler-service.ts  A:build-failed  B:build-failed
+!! session-gold-023 backend/src/middleware/owner-only-device-control.ts  A:build-failed  B:build-failed
+!! session-gold-023 whole project  generation-failed
+ B session-gold-024 backend/src/routes/claims-api.ts  A:build-failed
+!! session-gold-024 backend/src/routes/decision-service.ts  A:build-failed  B:build-failed
+!! session-gold-024 backend/src/middleware/reason-required-guard.ts  A:build-failed  B:build-failed
+!! session-gold-024 whole project  build-failed
+ B session-gold-025 backend/src/routes/farm-api.ts  A:build-failed
+!! session-gold-025 whole project  build-failed
+!! session-gold-027 backend/src/routes/rentals-api.ts  A:build-failed  B:build-failed
+!! session-gold-027 whole project  build-failed
+A  session-gold-030 backend/src/routes/build-status-api.ts
+A  session-gold-030 backend/src/routes/slack-notifier.ts
+C  session-gold-030 whole project
+ B session-gold-031 backend/src/routes/league-api.ts  A:build-failed
+!! session-gold-031 whole project  build-failed
+!! session-gold-032 backend/src/routes/reservations-api.ts  A:build-failed  B:build-failed
+!! session-gold-032 whole project  build-failed
+ B session-gold-034 backend/src/routes/carpool-api.ts  A:build-failed
+!! session-gold-034 whole project  build-failed
+A  session-gold-035 backend/src/routes/learning-api.ts
+C  session-gold-035 whole project
+A  session-gold-036 backend/src/routes/check-in-api.ts
+A  session-gold-036 backend/src/routes/billing-service.ts
+!! session-gold-036 backend/src/middleware/expiry-guard.ts  A:build-failed  B:build-failed
+!! session-gold-036 whole project  build-failed
+A  session-gold-037 backend/src/routes/sessions-api.ts
+ B session-gold-037 backend/src/middleware/note-privacy-guard.ts  A:build-failed
+!! session-gold-037 whole project  build-failed
+!! session-gold-038 backend/src/routes/inventory-api.ts  A:build-failed  B:build-failed
+!! session-gold-038 whole project  build-failed
+A  session-gold-040 backend/src/routes/expenses-api.ts
+ B session-gold-040 backend/src/routes/payout-queue-service.ts  A:build-failed
+!! session-gold-040 backend/src/middleware/manager-scoped-approval.ts  A:build-failed  B:build-failed
+!! session-gold-040 whole project  build-failed
+A  session-gold-045 backend/src/routes/shifts-api.ts
+C  session-gold-045 whole project
+!! session-gold-046 backend/src/routes/timesheets-api.ts  A:build-failed  B:build-failed
+!! session-gold-046 backend/src/routes/payroll-export-service.ts  A:build-failed  B:build-failed
+A  session-gold-046 backend/src/middleware/approved-only-payroll-guard.ts
+!! session-gold-046 whole project  build-failed
+A  session-gold-047 backend/src/routes/parking-api.ts
+C  session-gold-047 whole project
+
+--- results ---
+candidate: local:base
+scope           n        A       B    D(A)    D(B)
+all            46   41.3%  58.7%  41.3%  58.7%
+backend        36   41.7%  61.1%  41.7%  61.1%
+security       10   40.0%  50.0%  40.0%  50.0%
+C (projects)   25   28.0%
+
+written to training/eval/code/qwen-coder-7b-base.json
+attempt 1 exit 0

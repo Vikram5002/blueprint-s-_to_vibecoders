@@ -1,0 +1,1297 @@
+{
+  "candidate": "local:code",
+  "candidateModel": "code",
+  "reference": "capture/code/gold-reference",
+  "referenceProjects": 26,
+  "nodeModulesSharing": "junction",
+  "evaluatedAt": "2026-09-28T13:42:47.275Z",
+  "rates": {
+    "n": 46,
+    "A": 0.8695652173913043,
+    "B": 0.8695652173913043,
+    "D_A": 0.8695652173913043,
+    "D_B": 0.8695652173913043,
+    "projects": 25,
+    "C": 0.8
+  },
+  "byDomain": {
+    "backend": {
+      "n": 36,
+      "A": 0.8611111111111112,
+      "B": 0.8611111111111112,
+      "D_A": 0.8611111111111112,
+      "D_B": 0.8611111111111112
+    },
+    "security": {
+      "n": 10,
+      "A": 0.9,
+      "B": 0.9,
+      "D_A": 0.9,
+      "D_B": 0.9
+    }
+  },
+  "rows": [
+    {
+      "sessionId": "session-gold-002",
+      "title": "Board App (Unspecified Differentiator)",
+      "component": "Boards API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/boards-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { BoardRow, CardRow, createBoard, getBoard, listBoards, deleteBoard, createCard, getCardsByBoard, updateCardPosition, deleteCard } from \"../db/boards-table\";\n\nexport const router = Router();\n\nrouter.get(\"/boards\", (req: Request, res: Response) => {\n  const boards = listBoards();\n  res.json(boards);\n});\n\nrouter.post(\"/boards\", (req: Request, res: Response) => {\n  const { id, name }: { id: string, name: string } = req.body;\n  createBoard(id, name);\n  res.status(201).send({ message: \"Board created\" });\n});\n\nrouter.get(\"/boards/:id\", (req: Request, res: Response) => {\n  const boardId = req.params.id;\n  const board = getBoard(boardId);\n  if (board) {\n    res.json(board);\n  } else {\n    res.status(404).send({ message: \"Board not found\" });\n  }\n});\n\nrouter.delete(\"/boards/:id\", (req: Request, res: Response) => {\n  const boardId = req.params.id;\n  deleteBoard(boardId);\n  res.send({ message: \"Board deleted\" });\n});\n\nrouter.get(\"/boards/:id/cards\", (req: Request, res: Response) => {\n  const boardId = req.params.id;\n  const cards = getCardsByBoard(boardId);\n  res.json(cards);\n});\n\nrouter.post(\"/boards/:id/cards\", (req: Request, res: Response) => {\n  const boardId = req.params.id;\n  const { title, description, columnName, position }: { title: string, description: string, columnName: string, position: number } = req.body;\n  createCard(Date.now().toString(), boardId, title, description, columnName, position);\n  res.status(201).send({ message: \"Card created\" });\n});\n\nrouter.put(\"/cards/:cardId\", (req: Request, res: Response) => {\n  const cardId = req.params.cardId;\n  const { columnName, position }: { columnName: string, position: number } = req.body;\n  updateCardPosition(cardId, columnName, position);\n  res.send({ message: \"Card updated\" });\n});\n\nrouter.delete(\"/cards/:cardId\", (req: Request, res: Response) => {\n  const cardId = req.params.cardId;\n  deleteCard(cardId);\n  res.send({ message: \"Card deleted\" });\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-003",
+      "title": "Weather App",
+      "component": "Weather API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/weather-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\n\n// Example placeholder for actual weather data fetching logic\nconst fetchWeatherData = async (location: string): Promise<any> => {\n  // This should be replaced with actual API calls to a weather service\n  // For demonstration purposes, we'll just return mock data\n  return {\n    location,\n    temperature: 22,\n    description: \"Sunny\"\n  };\n};\n\nexport const router = Router();\n\nrouter.get(\"/forecast\", async (req: Request, res: Response) => {\n  const location = req.query.location as string | undefined;\n\n  if (!location) {\n    res.status(400).send({ message: \"Location query parameter is required.\" });\n    return;\n  }\n\n  try {\n    const weatherData = await fetchWeatherData(location);\n    res.json(weatherData);\n  } catch (error) {\n    res.status(500).send({ message: \"Failed to retrieve weather data.\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Catalog API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/catalog-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Product, getAllProducts, getProductById, insertProduct, updateProductStock } from \"../db/products-table\";\n\nexport const router = Router();\n\nrouter.get(\"/products\", (req: Request, res: Response) => {\n  const products = getAllProducts();\n  res.json(products);\n});\n\nrouter.get(\"/products/:id\", (req: Request, res: Response) => {\n  const productId = Number(req.params.id);\n  const product = getProductById(productId);\n  if (product) {\n    res.json(product);\n  } else {\n    res.status(404).send(`Product with ID ${productId} not found.`);\n  }\n});\n\nrouter.post(\"/products\", (req: Request, res: Response) => {\n  const { name, price, stockCount } = req.body;\n  insertProduct(name, price, stockCount);\n  res.status(201).send(\"Product created successfully.\");\n});\n\nrouter.put(\"/products/:id\", (req: Request, res: Response) => {\n  const productId = Number(req.params.id);\n  const { stockCount } = req.body;\n  updateProductStock(productId, stockCount);\n  res.send(\"Product stock updated successfully.\");\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Orders API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/orders-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Product, getAllProducts, getProductById, insertProduct, updateProductStock } from \"../db/products-table\";\nimport { Order, getAllOrders, getOrderById, insertOrder } from \"../db/orders-table\";\n\nexport const router = Router();\n\nrouter.post(\"/orders\", (req: Request, res: Response) => {\n  const { customerId, lineItems, paymentStatus } = req.body;\n  insertOrder(Number(customerId), lineItems, paymentStatus);\n  res.status(201).send({ message: \"Order created successfully\" });\n});\n\nrouter.get(\"/orders/:orderId\", (req: Request, res: Response) => {\n  const orderId = Number(req.params.orderId);\n  const order = getOrderById(orderId);\n  if (order) {\n    res.json(order);\n  } else {\n    res.status(404).send({ message: \"Order not found\" });\n  }\n});\n\nrouter.get(\"/orders\", (req: Request, res: Response) => {\n  const orders = getAllOrders();\n  res.json(orders);\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Payment Gateway Adapter",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/payment-gateway-adapter.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\n\n// Define the PaymentGatewayAdapter routes\nexport const router = Router();\n\n// Example route to handle payment processing\nrouter.post(\"/process-payment\", (req: Request, res: Response) => {\n  // Placeholder for actual payment processing logic\n  const { amount, currency, source } = req.body;\n\n  // Simulate a successful payment\n  setTimeout(() => {\n    res.status(200).json({ message: \"Payment processed successfully\", amount, currency });\n  }, 1000);\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Admin-Only Write Guard",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/admin-only-write-guard.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  // Only apply the guard to POST, PUT, and DELETE requests\n  if (!['POST', 'PUT', 'DELETE'].includes(req.method)) {\n    return next();\n  }\n\n  // Check if the user is an admin\n  const isAdmin = req.body.isAdmin || false;\n\n  if (!isAdmin) {\n    res.status(403).send('Forbidden');\n    return;\n  }\n\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "Bank Sync Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/bank-sync-service.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Transaction, getTransactions, insertTransaction } from \"../db/transactions-table\";\nimport { BankCredential, getBankCredentialsByUserId } from \"../db/bank-credentials-table\";\n\nexport const router = Router();\n\nrouter.get(\"/sync\", async (req: Request, res: Response) => {\n  const userId = Number(req.query.userId);\n  if (isNaN(userId)) {\n    res.status(400).send(\"Invalid user ID\");\n    return;\n  }\n\n  const credentials = getBankCredentialsByUserId(userId);\n  if (!credentials || credentials.length === 0) {\n    res.status(404).send(\"No bank credentials found for this user\");\n    return;\n  }\n\n  // Simulate fetching transactions from a bank API\n  const fetchedTransactions = await fetchTransactionsFromBankApi(credentials[0].encryptedToken);\n\n  // Insert fetched transactions into the database\n  fetchedTransactions.forEach(transaction => {\n    insertTransaction(transaction.amount, transaction.merchant, transaction.date, transaction.category);\n  });\n\n  res.status(201).send(\"Transactions synced successfully\");\n});\n\nasync function fetchTransactionsFromBankApi(token: string): Promise<Transaction[]> {\n  // Placeholder for actual API call\n  // For demonstration purposes, we'll generate some fake data\n  const fakeTransactions: Transaction[] = [\n    { id: 1, amount: 150.75, merchant: \"Grocery Store\", date: \"2023-10-01\", category: \"Food\" },\n    { id: 2, amount: 99.99, merchant: \"Clothing Shop\", date: \"2023-10-02\", category: \"Shopping\" }\n  ];\n  return fakeTransactions;\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "Categorisation API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/categorisation-api.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Transaction, insertTransaction, getTransactionById, getTransactions, updateTransactionCategory } from \"../db/transactions-table\";\n\nexport const router = Router();\n\nrouter.post(\"/transactions\", (req: Request, res: Response) => {\n  const { amount, merchant, date, category }: { amount: number, merchant: string, date: string, category: string } = req.body;\n  insertTransaction(amount, merchant, date, category);\n  res.status(201).send({ message: \"Transaction created\" });\n});\n\nrouter.put(\"/transactions/:id/category\", (req: Request, res: Response) => {\n  const transactionId = Number(req.params.id);\n  const { category }: { category: string } = req.body;\n  const transaction = getTransactionById(transactionId);\n  if (!transaction) {\n    res.status(404).send({ message: \"Transaction not found\" });\n    return;\n  }\n  updateTransactionCategory(transactionId, category);\n  res.send({ message: \"Transaction category updated\" });\n});\n\nrouter.get(\"/transactions\", (req: Request, res: Response) => {\n  const transactions = getTransactions();\n  res.json(transactions);\n});\n\nrouter.get(\"/transactions/:id\", (req: Request, res: Response) => {\n  const transactionId = Number(req.params.id);\n  const transaction = getTransactionById(transactionId);\n  if (!transaction) {\n    res.status(404).send({ message: \"Transaction not found\" });\n    return;\n  }\n  res.json(transaction);\n});\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/categorisation-api.ts(2,79): error TS2305: Module '\"../db/transactions-table\"' has no exported member 'updateTransactionCategory'.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/categorisation-api.ts(2,79): error TS2305: Module '\"../db/transactions-table\"' has no exported member 'updateTransactionCategory'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "Credential Encryption",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/credential-encryption.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  // This middleware is intended to encrypt sensitive data but does not handle actual encryption.\n  // It exists solely to demonstrate the structure required by the project plan.\n  // For now, it simply passes through all requests without modification.\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-011",
+      "title": "Personal Portfolio Site",
+      "component": "Contact Form Handler",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/contact-form-handler.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\n\n// Placeholder for sending emails, replace with actual email sending logic\nfunction sendEmail(to: string, subject: string, message: string): void {\n  console.log(`Email sent to ${to} with subject: ${subject}\nMessage:\n${message}`);\n}\n\nexport const router = Router();\n\nrouter.post(\"/submit\", (req: Request, res: Response) => {\n  const { name, email, message } = req.body;\n\n  if (!name || !email || !message) {\n    res.status(400).send(\"Missing required fields\");\n    return;\n  }\n\n  sendEmail(email, \"Contact Form Submission\", `Name: ${name}\nEmail: ${email}\nMessage: ${message}`);\n\n  res.status(200).send(\"Email sent successfully\");\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-012",
+      "title": "IoT Sensor Dashboard",
+      "component": "Ingest API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/ingest-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response, type NextFunction } from \"express\";\nimport { insertReading } from \"../db/readings-table\";\nimport { middleware } from \"../middleware/device-api-key-check\";\n\nexport const router = Router();\n\nrouter.post(\"/readings\", middleware, (req: Request, res: Response) => {\n  const { sensorId, warehouseId, value, timestamp } = req.body;\n  if (typeof sensorId !== \"number\" || typeof warehouseId !== \"number\" || typeof value !== \"number\" || typeof timestamp !== \"number\") {\n    res.status(400).send(\"Invalid input\");\n    return;\n  }\n  insertReading(sensorId, warehouseId, value, timestamp);\n  res.status(201).send(\"Reading inserted successfully\");\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-012",
+      "title": "IoT Sensor Dashboard",
+      "component": "Alerting Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/alerting-service.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response, type NextFunction } from \"express\";\nimport { getLatestReadingByWarehouse, getDevicesByWarehouseId } from \"../db/readings-table\";\nimport { Device, getDeviceById } from \"../db/devices-table\";\n\nexport const router = Router();\n\nrouter.post(\"/check-alerts\", async (req: Request, res: Response) => {\n  const { warehouseId } = req.body;\n\n  // Check for missed heartbeats\n  const latestReading = getLatestReadingByWarehouse(Number(warehouseId));\n  if (!latestReading || Date.now() - latestReading.timestamp > 60000) {\n    res.status(200).json({ alert: \"Missed heartbeat detected.\" });\n    return;\n  }\n\n  // Check for out-of-range readings\n  const devices = getDevicesByWarehouseId(Number(warehouseId));\n  for (const device of devices) {\n    const reading = getLatestReadingByWarehouse(device.id);\n    if (reading && (reading.value < device.minValue || reading.value > device.maxValue)) {\n      res.status(200).json({ alert: `Out-of-range reading detected for device ${device.id}.` });\n      return;\n    }\n  }\n\n  res.status(200).json({ message: \"No alerts detected.\" });\n});\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/alerting-service.ts(2,39): error TS2305: Module '\"../db/readings-table\"' has no exported member 'getDevicesByWarehouseId'.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/alerting-service.ts(2,39): error TS2305: Module '\"../db/readings-table\"' has no exported member 'getDevicesByWarehouseId'.\r\nbackend/src/routes/alerting-service.ts(30,21): error TS7006: Parameter 'device' implicitly has an 'any' type.\r\nbackend/src/routes/alerting-service.ts(32,30): error TS2552: Cannot find name 'getReadingsBySensor'. Did you mean 'readingsBySensor'?\r\nbackend/src/routes/alerting-service.ts(33,60): error TS2304: Cannot find name 'Reading'.\r\nbackend/src/routes/alerting-service.ts(33,122): error TS2304: Cannot find name 'Reading'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-012",
+      "title": "IoT Sensor Dashboard",
+      "component": "Device API Key Check",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/device-api-key-check.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  // This middleware is intended to protect routes related to sensor readings,\n  // but since no specific routes are mentioned, we assume it should run on all routes.\n  // For demonstration purposes, let's assume the protected routes start with \"/readings\".\n\n  const protectedPathPrefix = \"/readings\";\n\n  if (!req.path.startsWith(protectedPathPrefix)) {\n    return next();\n  }\n\n  const apiKey = req.headers[\"x-device-api-key\"] as string | undefined;\n\n  if (!apiKey || apiKey !== process.env.DEVICE_API_KEY) {\n    res.status(401).json({ message: \"Invalid API key.\" });\n    return;\n  }\n\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-016",
+      "title": "Event Ticketing",
+      "component": "Ticketing API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/ticketing-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response, type NextFunction } from \"express\";\nimport { insertEvent, getEventById, getAllEvents } from \"../db/events-table\";\nimport { insertTicket, getTicketByQRCode, getAllTickets } from \"../db/tickets-table\";\nimport { middleware } from \"../middleware/oversell-guard\";\n\nexport const router = Router();\n\nrouter.post(\"/events\", (req: Request, res: Response) => {\n  const { name, date, location, totalTickets } = req.body;\n  insertEvent(name, date, location, totalTickets);\n  res.status(201).send({ message: \"Event created successfully\" });\n});\n\nrouter.get(\"/events/:id\", (req: Request, res: Response) => {\n  const eventId = Number(req.params.id);\n  const event = getEventById(eventId);\n  if (event) {\n    res.json(event);\n  } else {\n    res.status(404).send({ message: \"Event not found\" });\n  }\n});\n\nrouter.get(\"/events\", (req: Request, res: Response) => {\n  const events = getAllEvents();\n  res.json(events);\n});\n\nrouter.post(\"/tickets\", middleware, (req: Request, res: Response) => {\n  const { eventId, userId, qrCode } = req.body;\n  const event = getEventById(Number(eventId));\n  if (!event) {\n    res.status(404).send({ message: \"Event not found\" });\n    return;\n  }\n  const remainingTickets = event.totalTickets - getAllTickets().filter(ticket => ticket.event_id === Number(eventId)).length;\n  if (remainingTickets <= 0) {\n    res.status(409).send({ message: \"No tickets remaining\" });\n    return;\n  }\n  insertTicket(Number(eventId), Number(userId), qrCode);\n  res.status(201).send({ message: \"Ticket purchased successfully\" });\n});\n\nrouter.get(\"/tickets/:qrCode\", (req: Request, res: Response) => {\n  const qrCode = req.params.qrCode;\n  const ticket = getTicketByQRCode(qrCode);\n  if (ticket) {\n    res.json(ticket);\n  } else {\n    res.status(404).send({ message: \"Ticket not found\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-016",
+      "title": "Event Ticketing",
+      "component": "Email Delivery Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/email-delivery-service.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { sendEmail } from \"nodemailer\";\n\nexport const router = Router();\n\nrouter.post(\"/send-email\", async (req: Request, res: Response) => {\n  const { qrCode, userEmail } = req.body;\n\n  try {\n    await sendEmail(userEmail, qrCode);\n    res.status(200).send({ message: \"Email sent successfully\" });\n  } catch (error) {\n    res.status(500).send({ message: \"Failed to send email\" });\n  }\n});\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/email-delivery-service.ts(2,27): error TS2307: Cannot find module 'nodemailer' or its corresponding type declarations.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/email-delivery-service.ts(2,29): error TS2305: Module '\"../db/tickets-table\"' has no exported member 'getEventById'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-016",
+      "title": "Event Ticketing",
+      "component": "Oversell Guard",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/oversell-guard.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  // This middleware is intended to protect routes related to ticket purchases.\n  // For demonstration purposes, let's assume there's a specific path `/purchase-ticket`\n  // that requires overselling protection.\n  if (req.method !== \"POST\" || req.path !== \"/purchase-ticket\") {\n    return next();\n  }\n\n  // Placeholder logic to simulate checking ticket availability.\n  const ticketsRemaining = getTicketsRemainingForEvent(req.body.eventId);\n\n  if (ticketsRemaining <= 0) {\n    res.status(409).json({ message: \"Oversell detected: No tickets available.\" });\n  } else {\n    next();\n  }\n}\n\n// Dummy function to simulate fetching tickets remaining for an event.\nfunction getTicketsRemainingForEvent(eventId: number): number {\n  // In a real implementation, this would query the database.\n  // For now, we'll just return a hardcoded value.\n  return eventId === 1 ? 0 : 1; // Event ID 1 has no tickets left, others have at least one.\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-017",
+      "title": "Fitness Tracker With Friend Feed",
+      "component": "Workouts API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/workouts-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Workout, getWorkoutsByUserId, insertWorkout } from \"../db/workouts-table\";\nimport { Follow, getFollowers, getFollowing } from \"../db/follows-table\";\n\nexport const router = Router();\n\nrouter.post(\"/workouts\", (req: Request, res: Response) => {\n  const { userId, exercise, sets, reps } = req.body;\n  insertWorkout(Number(userId), exercise, Number(sets), Number(reps));\n  res.status(201).send({ message: \"Workout added successfully\" });\n});\n\nrouter.get(\"/feed/:userId\", (req: Request, res: Response) => {\n  const userId = Number(req.params.userId);\n  const followingIds = getFollowing(userId).map(follow => follow.following_id);\n  followingIds.push(userId); // Include own workouts in feed\n\n  const feedWorkouts = followingIds.flatMap(id => getWorkoutsByUserId(id));\n  res.json(feedWorkouts);\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-020",
+      "title": "Shipment Tracking Page",
+      "component": "Tracking API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/tracking-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getShipmentEventsByTrackingNumber } from \"../db/shipment-events-table\";\n\nexport const router = Router();\n\nrouter.get(\"/track\", (req: Request, res: Response) => {\n  const trackingNumber = req.query.trackingNumber as string;\n  if (!trackingNumber) {\n    res.status(400).send(\"Tracking number is required.\");\n    return;\n  }\n\n  const events = getShipmentEventsByTrackingNumber(trackingNumber);\n  res.json(events);\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-023",
+      "title": "Smart Home Control App",
+      "component": "Device Control API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/device-control-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Device, getAllDevices, getDeviceById, insertDevice } from \"../db/devices-table\";\n\nexport const router = Router();\n\nrouter.get(\"/devices\", (req: Request, res: Response) => {\n  const devices: Device[] = getAllDevices();\n  res.json(devices);\n});\n\nrouter.get(\"/devices/:id\", (req: Request, res: Response) => {\n  const deviceId: number = Number(req.params.id);\n  const device: Device | undefined = getDeviceById(deviceId);\n  if (device) {\n    res.json(device);\n  } else {\n    res.status(404).send(`Device with ID ${deviceId} not found.`);\n  }\n});\n\nrouter.post(\"/devices\", (req: Request, res: Response) => {\n  const { type, lastKnownState }: { type: string; lastKnownState: string } = req.body;\n  insertDevice(type, lastKnownState);\n  res.status(201).send(\"Device created successfully.\");\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-023",
+      "title": "Smart Home Control App",
+      "component": "Scheduler Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/scheduler-service.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getSchedules, getDeviceById, updateDevice } from \"../db/devices-table\";\n\nexport const router = Router();\n\nrouter.get(\"/run-scheduled-rules\", async (req: Request, res: Response) => {\n  const schedules = getSchedules();\n  const currentTime = new Date().toISOString();\n\n  for (const schedule of schedules) {\n    if (schedule.triggerTime <= currentTime) {\n      const device = getDeviceById(Number(schedule.targetDevice));\n      if (device) {\n        // Execute the action on the device\n        console.log(`Executing action ${schedule.action} on device ${device.id}`);\n        // Placeholder for actual action execution\n        updateDevice(device.id, device.type, `${device.lastKnownState} - ${schedule.action}`);\n      }\n    }\n  }\n\n  res.status(200).send({ message: \"Scheduled rules executed.\" });\n});\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/scheduler-service.ts(2,10): error TS2305: Module '\"../db/devices-table\"' has no exported member 'getSchedules'.\r\nbackend/src/routes/scheduler-service.ts(2,39): error TS2305: Module '\"../db/devices-table\"' has no exported member 'updateDevice'.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/scheduler-service.ts(2,10): error TS2305: Module '\"../db/devices-table\"' has no exported member 'getSchedules'.\r\nbackend/src/routes/scheduler-service.ts(2,39): error TS2305: Module '\"../db/devices-table\"' has no exported member 'updateDevice'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-023",
+      "title": "Smart Home Control App",
+      "component": "Owner-Only Device Control",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/owner-only-device-control.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  // This middleware is intended to protect routes related to device control and rescheduling.\n  // For demonstration purposes, let's assume these routes start with \"/devices\".\n  // Adjust the path and method checks as necessary based on your actual routes.\n\n  const protectedPaths = ['/devices'];\n  const isProtectedPath = protectedPaths.some(path => req.path.startsWith(path));\n\n  if (!isProtectedPath || req.method !== 'POST' && req.method !== 'PUT') {\n    return next();\n  }\n\n  // Placeholder for owner validation logic.\n  // In a real implementation, you would check the user's role or ownership status here.\n  // For now, we'll assume the owner status is checked elsewhere and set by the request.\n\n  const isAdmin = (req as { isAdmin?: boolean }).isAdmin;\n\n  if (!isAdmin) {\n    res.status(403).send('Forbidden: Only the home's registered owner account can control or reschedule its devices.');\n    return;\n  }\n\n  next();\n}\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/middleware/owner-only-device-control.ts(22,52): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,54): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,65): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,71): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,79): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,83): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,91): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,94): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,105): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,109): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,117): error TS1003: Identifier expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,120): error TS1002: Unterminated string literal.\r\nbackend/src/middleware/owner-only-device-control.ts(23,5): error TS1005: ',' expected.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/middleware/owner-only-device-control.ts(20,52): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(20,54): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(20,65): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(20,71): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(20,79): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(20,83): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(20,91): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(20,94): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(20,105): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(20,109): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(20,117): error TS1003: Identifier expected.\r\nbackend/src/middleware/owner-only-device-control.ts(20,120): error TS1002: Unterminated string literal.\r\nbackend/src/middleware/owner-only-device-control.ts(21,5): error TS1005: ',' expected.\r\n"
+    },
+    {
+      "sessionId": "session-gold-024",
+      "title": "Insurance Claims Portal",
+      "component": "Claims API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/claims-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response, type NextFunction } from \"express\";\nimport { Claim, getClaimById, getClaimsByPolicyholderId, insertClaim, updateClaimStatus } from \"../db/claims-table\";\nimport { ClaimDecision, insertClaimDecision, getClaimDecisionsByClaimId } from \"../db/claim-decisions-table\";\nimport { middleware } from \"../middleware/reason-required-guard\";\n\nexport const router = Router();\n\nrouter.post(\"/claims\", (req: Request, res: Response) => {\n  const { policyholderId, details, status } = req.body;\n  insertClaim(Number(policyholderId), details, status);\n  res.status(201).send({ message: \"Claim created successfully\" });\n});\n\nrouter.get(\"/claims/:policyholderId\", (req: Request, res: Response) => {\n  const policyholderId = Number(req.params.policyholderId);\n  const claims = getClaimsByPolicyholderId(policyholderId);\n  res.json(claims);\n});\n\nrouter.get(\"/claims/:id\", (req: Request, res: Response) => {\n  const id = Number(req.params.id);\n  const claim = getClaimById(id);\n  if (claim) {\n    res.json(claim);\n  } else {\n    res.status(404).send({ message: \"Claim not found\" });\n  }\n});\n\nrouter.put(\"/claims/:id/status\", (req: Request, res: Response) => {\n  const id = Number(req.params.id);\n  const { status } = req.body;\n  updateClaimStatus(id, status);\n  res.send({ message: \"Claim status updated\" });\n});\n\nrouter.post(\"/claims/:claimId/decisions\", middleware, (req: Request, res: Response) => {\n  const claimId = Number(req.params.claimId);\n  const { adjusterId, decision, reasonText } = req.body;\n  insertClaimDecision(Number(adjusterId), decision, reasonText, claimId);\n  res.status(201).send({ message: \"Claim decision made\" });\n});\n\nrouter.get(\"/claims/:claimId/decisions\", (req: Request, res: Response) => {\n  const claimId = Number(req.params.claimId);\n  const decisions = getClaimDecisionsByClaimId(claimId);\n  res.json(decisions);\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-024",
+      "title": "Insurance Claims Portal",
+      "component": "Decision Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/decision-service.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response, type NextFunction } from \"express\";\nimport { insertClaimDecision } from \"../db/claim-decisions-table\";\nimport { middleware } from \"../middleware/reason-required-guard\";\n\nexport const router = Router();\n\nrouter.post(\"/:claimId\", middleware, async (req: Request, res: Response) => {\n  const claimId = Number(req.params.claimId);\n  const { decision, reasonText } = req.body;\n\n  if (!reasonText) {\n    res.status(400).send(\"Reason text is required.\");\n    return;\n  }\n\n  try {\n    insertClaimDecision(req.body.adjusterId, decision, reasonText, claimId);\n    res.status(201).send(\"Claim decision recorded successfully.\");\n  } catch (error) {\n    res.status(500).send(\"Failed to record claim decision.\");\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-024",
+      "title": "Insurance Claims Portal",
+      "component": "Reason-Required Guard",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/reason-required-guard.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  // This guard should only apply to POST requests to the claims endpoint\n  if (req.method !== \"POST\" || !req.path.startsWith(\"/claims/\")) {\n    return next();\n  }\n\n  const claimData = req.body;\n  if (!claimData.reason) {\n    res.status(400).json({ error: \"A reason must be provided for the claim decision.\" });\n    return;\n  }\n\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-025",
+      "title": "Farm Management App",
+      "component": "Farm API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/farm-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Field, getAllFields, getFieldById, insertField, updateField, deleteField } from \"../db/fields-table\";\nimport { Application, getApplicationsByFieldId, insertApplication } from \"../db/applications-table\";\n\nexport const router = Router();\n\nrouter.get(\"/fields\", (req: Request, res: Response) => {\n  const fields = getAllFields();\n  res.json(fields);\n});\n\nrouter.get(\"/fields/:id\", (req: Request, res: Response) => {\n  const id = Number(req.params.id);\n  const field = getFieldById(id);\n  if (field) {\n    res.json(field);\n  } else {\n    res.status(404).send(`Field with id ${id} not found.`);\n  }\n});\n\nrouter.post(\"/fields\", (req: Request, res: Response) => {\n  const { name, currentCrop } = req.body;\n  insertField(name, currentCrop);\n  res.status(201).send(\"Field created.\");\n});\n\nrouter.put(\"/fields/:id\", (req: Request, res: Response) => {\n  const id = Number(req.params.id);\n  const { name, currentCrop } = req.body;\n  updateField(id, name, currentCrop);\n  res.send(\"Field updated.\");\n});\n\nrouter.delete(\"/fields/:id\", (req: Request, res: Response) => {\n  const id = Number(req.params.id);\n  deleteField(id);\n  res.send(\"Field deleted.\");\n});\n\nrouter.get(\"/fields/:fieldId/applications\", (req: Request, res: Response) => {\n  const fieldId = Number(req.params.fieldId);\n  const applications = getApplicationsByFieldId(fieldId);\n  res.json(applications);\n});\n\nrouter.post(\"/fields/:fieldId/applications\", (req: Request, res: Response) => {\n  const fieldId = Number(req.params.fieldId);\n  const { applicationType, amount, date } = req.body;\n  insertApplication(fieldId, applicationType, amount, date);\n  res.status(201).send(\"Application recorded.\");\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-027",
+      "title": "Car Rental Booking",
+      "component": "Rentals API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/rentals-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Car, getAllCars, getCarById } from \"../db/cars-table\";\nimport { Booking, insertBooking, getBookingsByCarId } from \"../db/bookings-table\";\n\nexport const router = Router();\n\nrouter.get(\"/availability\", (req: Request, res: Response) => {\n  const { carId, startDate, endDate } = req.query;\n  const car = getCarById(Number(carId));\n  if (!car) {\n    res.status(404).send(\"Car not found\");\n    return;\n  }\n\n  const existingBookings = getBookingsByCarId(Number(carId));\n  const isAvailable = existingBookings.every((booking: Booking) => {\n    const bookingStartDate = new Date(booking.startDate);\n    const bookingEndDate = new Date(booking.endDate);\n    const requestedStartDate = new Date(startDate as string);\n    const requestedEndDate = new Date(endDate as string);\n    return !(requestedStartDate < bookingEndDate && requestedEndDate > bookingStartDate);\n  });\n\n  res.json({ isAvailable });\n});\n\nrouter.post(\"/book\", (req: Request, res: Response) => {\n  const { carId, customerId, startDate, endDate } = req.body;\n  const car = getCarById(Number(carId));\n  if (!car) {\n    res.status(404).send(\"Car not found\");\n    return;\n  }\n\n  const existingBookings = getBookingsByCarId(Number(carId));\n  const isAvailable = existingBookings.every((booking: Booking) => {\n    const bookingStartDate = new Date(booking.startDate);\n    const bookingEndDate = new Date(booking.endDate);\n    const requestedStartDate = new Date(startDate);\n    const requestedEndDate = new Date(endDate);\n    return !(requestedStartDate < bookingEndDate && requestedEndDate > bookingStartDate);\n  });\n\n  if (!isAvailable) {\n    res.status(409).send(\"Car is not available for the selected dates\");\n    return;\n  }\n\n  insertBooking(Number(carId), Number(customerId), startDate, endDate);\n  res.status(201).send(\"Booking created successfully\");\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-030",
+      "title": "CI/CD Status Dashboard",
+      "component": "Build Status API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/build-status-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { BuildRow, getAllBuilds, insertBuild } from \"../db/builds-table\";\n\nexport const router = Router();\n\nrouter.post(\"/webhook\", (req: Request, res: Response) => {\n  const { repo, branch, status, timestamp }: { repo: string, branch: string, status: string, timestamp: number } = req.body;\n  insertBuild(repo, branch, status, timestamp);\n  res.status(201).send({ message: \"Build status received\" });\n});\n\nrouter.get(\"/status\", (req: Request, res: Response) => {\n  const builds: BuildRow[] = getAllBuilds();\n  res.json(builds);\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-030",
+      "title": "CI/CD Status Dashboard",
+      "component": "Slack Notifier",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/slack-notifier.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getAllBuilds } from \"../db/builds-table\";\n\nexport const router = Router();\n\nrouter.post(\"/notify\", (req: Request, res: Response) => {\n  const builds = getAllBuilds();\n  const failedMainBranchBuild = builds.find(build => build.branch === \"main\" && build.status !== \"success\");\n\n  if (failedMainBranchBuild) {\n    // Logic to post a Slack message goes here\n    console.log(`Failed build detected: ${JSON.stringify(failedMainBranchBuild)}`);\n    res.status(200).send(\"Slack notification sent.\");\n  } else {\n    res.status(200).send(\"No failed main branch builds found.\");\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-031",
+      "title": "Rec League Manager",
+      "component": "League API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/league-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Team, getTeams, getTeamById, createTeam, updateTeam, deleteTeam } from \"../db/teams-table\";\nimport { Game, insertGame, getGames } from \"../db/games-table\";\n\nexport const router = Router();\n\nrouter.get(\"/teams\", (req: Request, res: Response) => {\n  const teams = getTeams();\n  res.json(teams);\n});\n\nrouter.get(\"/teams/:id\", (req: Request, res: Response) => {\n  const teamId = Number(req.params.id);\n  const team = getTeamById(teamId);\n  if (team) {\n    res.json(team);\n  } else {\n    res.status(404).send(`Team with ID ${teamId} not found.`);\n  }\n});\n\nrouter.post(\"/teams\", (req: Request, res: Response) => {\n  const { name, roster } = req.body;\n  createTeam(name, roster);\n  res.status(201).send(\"Team created successfully.\");\n});\n\nrouter.put(\"/teams/:id\", (req: Request, res: Response) => {\n  const teamId = Number(req.params.id);\n  const { name, roster } = req.body;\n  updateTeam(teamId, name, roster);\n  res.send(\"Team updated successfully.\");\n});\n\nrouter.delete(\"/teams/:id\", (req: Request, res: Response) => {\n  const teamId = Number(req.params.id);\n  deleteTeam(teamId);\n  res.send(\"Team deleted successfully.\");\n});\n\nrouter.post(\"/games\", (req: Request, res: Response) => {\n  const { homeTeam, awayTeam, date, homeScore, awayScore } = req.body;\n  insertGame(homeTeam, awayTeam, date, homeScore, awayScore);\n  res.status(201).send(\"Game created successfully.\");\n});\n\nrouter.get(\"/games\", (req: Request, res: Response) => {\n  const games = getGames();\n  res.json(games);\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-032",
+      "title": "Restaurant Reservations",
+      "component": "Reservations API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/reservations-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Reservation, getReservations, getReservationById, insertReservation, updateReservation, deleteReservation } from \"../db/reservations-table\";\n\nexport const router = Router();\n\nrouter.get(\"/availability\", (req: Request, res: Response) => {\n  const timeSlot = req.query.timeSlot as string;\n  const reservations = getReservations().filter(reservation => reservation.timeSlot === timeSlot);\n  const tables = [\"table1\", \"table2\", \"table3\"];\n  const availableTables = tables.filter(table => !reservations.some(reservation => reservation.tableAssignment === table));\n  res.json({ availableTables });\n});\n\nrouter.post(\"/book\", (req: Request, res: Response) => {\n  const { partySize, timeSlot, tableAssignment, guestContactInfo } = req.body;\n  insertReservation(Number(partySize), timeSlot, tableAssignment, guestContactInfo);\n  res.status(201).send();\n});\n\nrouter.put(\"/:id\", (req: Request, res: Response) => {\n  const id = Number(req.params.id);\n  const { partySize, timeSlot, tableAssignment, guestContactInfo } = req.body;\n  updateReservation(id, Number(partySize), timeSlot, tableAssignment, guestContactInfo);\n  res.send();\n});\n\nrouter.delete(\"/:id\", (req: Request, res: Response) => {\n  const id = Number(req.params.id);\n  deleteReservation(id);\n  res.send();\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-034",
+      "title": "Commuter Carpooling",
+      "component": "Carpool API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/carpool-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Route, getRouteById, getRoutes, insertRoute } from \"../db/routes-table\";\nimport { RideRequest, getRideRequest, getAllRideRequests, insertRideRequest, updateApprovalStatus, deleteRideRequest } from \"../db/ride-requests-table\";\n\nexport const router = Router();\n\nrouter.get(\"/routes\", (req: Request, res: Response) => {\n  const routes = getRoutes();\n  res.json(routes);\n});\n\nrouter.get(\"/routes/:id\", (req: Request, res: Response) => {\n  const id = Number(req.params.id);\n  const route = getRouteById(id);\n  if (route) {\n    res.json(route);\n  } else {\n    res.status(404).send(\"Route not found\");\n  }\n});\n\nrouter.post(\"/routes\", (req: Request, res: Response) => {\n  const { driverId, route, departureTime, totalSeats } = req.body;\n  insertRoute(driverId, route, departureTime, totalSeats);\n  res.status(201).send(\"Route created\");\n});\n\nrouter.get(\"/ride-requests\", (req: Request, res: Response) => {\n  const rideRequests = getAllRideRequests();\n  res.json(rideRequests);\n});\n\nrouter.get(\"/ride-requests/:riderId/:routeId\", (req: Request, res: Response) => {\n  const riderId = Number(req.params.riderId);\n  const routeId = Number(req.params.routeId);\n  const rideRequest = getRideRequest(riderId, routeId);\n  if (rideRequest) {\n    res.json(rideRequest);\n  } else {\n    res.status(404).send(\"Ride request not found\");\n  }\n});\n\nrouter.post(\"/ride-requests\", (req: Request, res: Response) => {\n  const { riderId, routeId, approvalStatus } = req.body;\n  insertRideRequest(riderId, routeId, approvalStatus);\n  res.status(201).send(\"Ride request created\");\n});\n\nrouter.put(\"/ride-requests/:riderId/:routeId\", (req: Request, res: Response) => {\n  const riderId = Number(req.params.riderId);\n  const routeId = Number(req.params.routeId);\n  const { approvalStatus } = req.body;\n  updateApprovalStatus(riderId, routeId, approvalStatus);\n  res.send(\"Approval status updated\");\n});\n\nrouter.delete(\"/ride-requests/:riderId/:routeId\", (req: Request, res: Response) => {\n  const riderId = Number(req.params.riderId);\n  const routeId = Number(req.params.routeId);\n  deleteRideRequest(riderId, routeId);\n  res.send(\"Ride request deleted\");\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-035",
+      "title": "Language Learning App",
+      "component": "Learning API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/learning-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getUserProgress, updateUserProgress } from \"../db/progress-table\";\n\nexport const router = Router();\n\nrouter.get(\"/lessons\", (req: Request, res: Response) => {\n  // Placeholder for fetching lessons\n  res.json({ message: \"Fetch lessons endpoint\" });\n});\n\nrouter.post(\"/quizzes\", (req: Request, res: Response) => {\n  // Placeholder for taking quizzes\n  res.json({ message: \"Take quiz endpoint\" });\n});\n\nrouter.post(\"/complete-lesson\", (req: Request, res: Response) => {\n  const userId = Number(req.body.userId);\n  const lessonsCompleted = Number(req.body.lessonsCompleted);\n  const currentStreak = Number(req.body.currentStreak);\n\n  if (isNaN(userId) || isNaN(lessonsCompleted) || isNaN(currentStreak)) {\n    res.status(400).json({ message: \"Invalid input\" });\n    return;\n  }\n\n  updateUserProgress(userId, lessonsCompleted, currentStreak);\n  res.json({ message: \"Lesson completed and streak updated\" });\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-036",
+      "title": "Gym Membership System",
+      "component": "Check-In API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/check-in-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response, type NextFunction } from \"express\";\nimport { getMemberById } from \"../db/members-table\";\nimport { insertCheckIn } from \"../db/check-ins-table\";\nimport { middleware } from \"../middleware/expiry-guard\";\n\nexport const router = Router();\n\nrouter.post(\"/:memberId\", middleware, async (req: Request, res: Response) => {\n  const memberId = Number(req.params.memberId);\n  const member = getMemberById(memberId);\n\n  if (!member || new Date(member.expiryDate) < new Date()) {\n    res.status(403).send(\"Access denied: Invalid or expired membership.\");\n    return;\n  }\n\n  const result = req.body.result;\n  if (typeof result !== \"string\") {\n    res.status(400).send(\"Invalid input: Result must be a string.\");\n    return;\n  }\n\n  insertCheckIn(memberId, result);\n  res.status(201).send(\"Check-in recorded successfully.\");\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-036",
+      "title": "Gym Membership System",
+      "component": "Billing Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/billing-service.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Member, getAllMembers, getMemberById, insertMember } from \"../db/members-table\";\n\nexport const router = Router();\n\nrouter.get(\"/members\", (req: Request, res: Response) => {\n  const members = getAllMembers();\n  res.json(members);\n});\n\nrouter.get(\"/members/:id\", (req: Request, res: Response) => {\n  const memberId = Number(req.params.id);\n  const member = getMemberById(memberId);\n  if (member) {\n    res.json(member);\n  } else {\n    res.status(404).send(`Member with ID ${memberId} not found.`);\n  }\n});\n\nrouter.post(\"/members\", (req: Request, res: Response) => {\n  const { plan, expiryDate } = req.body;\n  insertMember(plan, expiryDate);\n  res.status(201).send(\"Member created successfully.\");\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-036",
+      "title": "Gym Membership System",
+      "component": "Expiry Guard",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/expiry-guard.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  // This middleware is intended to protect routes related to gym memberships,\n  // but the specific routes and methods it should guard are not detailed.\n  // For now, we'll assume it should apply to POST requests to \"/check-in\".\n  // Adjust the following conditions as per the actual requirements.\n\n  if (req.method !== \"POST\" || req.path !== \"/check-in\") {\n    return next();\n  }\n\n  const membershipId = req.body.membershipId;\n  if (!membershipId) {\n    res.status(400).send(\"Membership ID is required.\");\n    return;\n  }\n\n  // Placeholder for checking membership expiry logic.\n  // In a real implementation, this would involve querying the database.\n  const isMembershipExpired = checkMembershipExpiry(membershipId);\n\n  if (isMembershipExpired) {\n    res.status(403).send(\"Membership has expired.\");\n    return;\n  }\n\n  next();\n}\n\nfunction checkMembershipExpiry(membershipId: string): boolean {\n  // Mock implementation to simulate membership expiry check.\n  // Replace this with actual database query logic.\n  // For demonstration purposes, let's assume membership IDs ending in '1' are expired.\n  return membershipId.endsWith('1');\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-037",
+      "title": "Therapy Session Booking",
+      "component": "Sessions API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/sessions-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response, type NextFunction } from \"express\";\nimport { Session, insertSession, getSessionById, getAllSessions } from \"../db/sessions-table\";\nimport { SessionNote, addOrUpdateSessionNotes, getSessionNotes } from \"../db/session-notes-table\";\nimport { middleware } from \"../middleware/note-privacy-guard\";\n\nexport const router = Router();\n\nrouter.post(\"/book\", (req: Request, res: Response) => {\n  const { therapistId, clientId, scheduledTime } = req.body;\n  insertSession(Number(therapistId), Number(clientId), scheduledTime);\n  res.status(201).send({ message: \"Session booked successfully\" });\n});\n\nrouter.get(\"/sessions/:id\", (req: Request, res: Response) => {\n  const sessionId = Number(req.params.id);\n  const session = getSessionById(sessionId);\n  if (session) {\n    res.json(session);\n  } else {\n    res.status(404).send({ message: \"Session not found\" });\n  }\n});\n\nrouter.get(\"/all-sessions\", (req: Request, res: Response) => {\n  const sessions = getAllSessions();\n  res.json(sessions);\n});\n\nrouter.put(\"/notes/:sessionId\", middleware, (req: Request, res: Response) => {\n  const sessionId = Number(req.params.sessionId);\n  const { notes } = req.body;\n  addOrUpdateSessionNotes(sessionId, notes);\n  res.send({ message: \"Session notes updated successfully\" });\n});\n\nrouter.get(\"/notes/:sessionId\", middleware, (req: Request, res: Response) => {\n  const sessionId = Number(req.params.sessionId);\n  const sessionNotes = getSessionNotes(sessionId);\n  if (sessionNotes) {\n    res.json(sessionNotes);\n  } else {\n    res.status(404).send({ message: \"No notes found for this session\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-037",
+      "title": "Therapy Session Booking",
+      "component": "Note Privacy Guard",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/note-privacy-guard.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  // This middleware is intended to protect session notes visibility,\n  // but since there are no specific routes or methods defined for handling\n  // session notes, we will assume it should run on all routes.\n  // In practice, you would add specific checks here based on the actual\n  // requirements and routes involved.\n\n  // For demonstration purposes, let's assume we want to protect POST requests\n  // to a hypothetical \"/notes\" endpoint.\n  if (req.method !== \"POST\" || req.path !== \"/notes\") {\n    return next();\n  }\n\n  // Here you would add your logic to check user roles and permissions.\n  // Since this is a placeholder, we'll just call next() for now.\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-038",
+      "title": "Warehouse Inventory System",
+      "component": "Inventory API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/inventory-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getStockLevelBySku, updateStockLevel } from \"../db/stock-levels-table\";\nimport { logStockMovement } from \"../db/stock-movements-table\";\n\nexport const router = Router();\n\nrouter.post(\"/movement\", (req: Request, res: Response) => {\n  const { sku, quantity, movementType }: { sku: string, quantity: number, movementType: 'in' | 'out' } = req.body;\n\n  // Log the stock movement\n  logStockMovement(Number(sku), quantity, movementType);\n\n  // Update the stock level\n  const stockLevel = getStockLevelBySku(sku);\n  if (!stockLevel) {\n    res.status(404).send(`Stock level not found for SKU: ${sku}`);\n    return;\n  }\n\n  let newCurrentQuantity = stockLevel.currentQuantity;\n  if (movementType === 'in') {\n    newCurrentQuantity += quantity;\n  } else if (movementType === 'out') {\n    newCurrentQuantity -= quantity;\n  }\n\n  updateStockLevel(sku, stockLevel.locationId, newCurrentQuantity, stockLevel.reorderThreshold);\n\n  res.send({ message: `Stock movement logged and processed for SKU: ${sku}` });\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-040",
+      "title": "Expense Reimbursement Tool",
+      "component": "Expenses API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/expenses-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response, type NextFunction } from \"express\";\nimport { Expense, insertExpense, getExpenses, getExpenseById, updateExpenseApprovalStatus } from \"../db/expenses-table\";\nimport { middleware } from \"../middleware/manager-scoped-approval\";\n\nexport const router = Router();\n\nrouter.post(\"/expenses\", (req: Request, res: Response) => {\n  const { employeeId, managerId, amount, receiptReference, approvalStatus } = req.body;\n  insertExpense(Number(employeeId), Number(managerId), Number(amount), receiptReference, approvalStatus);\n  res.status(201).send({ message: \"Expense submitted successfully.\" });\n});\n\nrouter.get(\"/expenses\", middleware, (req: Request, res: Response) => {\n  const expenses = getExpenses();\n  res.json(expenses);\n});\n\nrouter.get(\"/expenses/:id\", middleware, (req: Request, res: Response) => {\n  const expenseId = Number(req.params.id);\n  const expense = getExpenseById(expenseId);\n  if (expense) {\n    res.json(expense);\n  } else {\n    res.status(404).send({ message: \"Expense not found.\" });\n  }\n});\n\nrouter.put(\"/expenses/:id/approval-status\", middleware, (req: Request, res: Response) => {\n  const expenseId = Number(req.params.id);\n  const { approvalStatus } = req.body;\n  updateExpenseApprovalStatus(expenseId, approvalStatus);\n  res.send({ message: \"Approval status updated successfully.\" });\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-040",
+      "title": "Expense Reimbursement Tool",
+      "component": "Payout Queue Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/payout-queue-service.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Expense, getExpenses, getExpenseById, updateExpenseApprovalStatus } from \"../db/expenses-table\";\n\nexport const router = Router();\n\nrouter.get(\"/approved-expenses\", (req: Request, res: Response) => {\n  const expenses = getExpenses().filter(expense => expense.approvalStatus === \"approved\");\n  res.json(expenses);\n});\n\nrouter.post(\"/approve-expense/:id\", (req: Request, res: Response) => {\n  const expenseId = Number(req.params.id);\n  const expense = getExpenseById(expenseId);\n\n  if (!expense) {\n    res.status(404).send(\"Expense not found\");\n    return;\n  }\n\n  updateExpenseApprovalStatus(expenseId, \"approved\");\n  res.send(`Expense ${expenseId} approved`);\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-040",
+      "title": "Expense Reimbursement Tool",
+      "component": "Manager-Scoped Approval",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/manager-scoped-approval.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  // This middleware is intended for manager-approved expense reimbursement tool.\n  // It should only handle POST/PUT/PATCH/DELETE requests to expense routes,\n  // and ensure the logged-in user is a manager approving their own reportee's expense.\n  // For now, we'll just pass through all requests since the specific implementation details aren't provided.\n  // In a real-world scenario, you would add your validation logic here.\n\n  // Example placeholder logic:\n  // const userId = req.user?.id; // Assuming user id is attached to req.user by some previous middleware\n  // const expenseId = Number(req.params.id); // Extract expense ID from URL params\n  // const isManagerApprovingOwnReporteeExpense = /* Your validation logic here */;\n\n  // If the request is not related to expense approval, or if the user is authorized, proceed to the next middleware\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-045",
+      "title": "Volunteer Coordination Tool",
+      "component": "Shifts API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/shifts-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Shift, insertShift, getShifts, getShiftById, updateShift, deleteShift } from \"../db/shifts-table\";\n\nexport const router = Router();\n\nrouter.get(\"/shifts\", (req: Request, res: Response) => {\n  const shifts = getShifts();\n  res.json(shifts);\n});\n\nrouter.get(\"/shifts/:id\", (req: Request, res: Response) => {\n  const id = Number(req.params.id);\n  const shift = getShiftById(id);\n  if (shift) {\n    res.json(shift);\n  } else {\n    res.status(404).send(`Shift with id ${id} not found.`);\n  }\n});\n\nrouter.post(\"/shifts\", (req: Request, res: Response) => {\n  const { description, startTime, endTime, volunteerCapacity } = req.body;\n  insertShift(description, startTime, endTime, volunteerCapacity);\n  res.status(201).send(\"Shift created successfully.\");\n});\n\nrouter.put(\"/shifts/:id\", (req: Request, res: Response) => {\n  const id = Number(req.params.id);\n  const { description, startTime, endTime, volunteerCapacity } = req.body;\n  updateShift(id, description, startTime, endTime, volunteerCapacity);\n  res.send(\"Shift updated successfully.\");\n});\n\nrouter.delete(\"/shifts/:id\", (req: Request, res: Response) => {\n  const id = Number(req.params.id);\n  deleteShift(id);\n  res.send(\"Shift deleted successfully.\");\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-046",
+      "title": "Timesheet and Payroll Tracker",
+      "component": "Timesheets API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/timesheets-api.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { ClockEvent, getClockEventsByEmployeeId, insertClockEvent } from \"../db/clock-events-table\";\n\nexport const router = Router();\n\nrouter.post(\"/clock-events\", (req: Request, res: Response) => {\n  const { employeeId, eventType, timestamp }: { employeeId: number, eventType: 'in' | 'out', timestamp: string } = req.body;\n  insertClockEvent(employeeId, eventType);\n  res.status(201).send({ message: \"Clock event recorded successfully.\" });\n});\n\nrouter.get(\"/timesheets/:employeeId\", (req: Request, res: Response) => {\n  const employeeId = Number(req.params.employeeId);\n  const clockEvents = getClockEventsByEmployeeId(employeeId);\n  const timesheet = calculateTimesheet(clockEvents);\n  res.json(timesheet);\n});\n\nfunction calculateTimesheet(clockEvents: ClockEvent[]): Record<string, number> {\n  const timesheet: Record<string, number> = {};\n  let currentWeekStart = new Date().setHours(0, 0, 0, 0);\n  while (currentWeekStart < new Date()) {\n    const weekEnd = new Date(currentWeekStart + 6 * 24 * 60 * 60 * 1000);\n    const weekEvents = clockEvents.filter(event => {\n      const eventDate = new Date(event.timestamp);\n      return eventDate >= currentWeekStart && eventDate <= weekEnd;\n    });\n    const totalHours = weekEvents.reduce((total, event, index) => {\n      if (index % 2 === 0) return total;\n      const previousEvent = weekEvents[index - 1];\n      const duration = new Date(event.timestamp).getTime() - new Date(previousEvent.timestamp).getTime();\n      return total + duration / (1000 * 60 * 60);\n    }, 0);\n    timesheet[new Date(currentWeekStart).toISOString().split('T')[0]] = totalHours;\n    currentWeekStart = weekEnd;\n  }\n  return timesheet;\n}\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/timesheets-api.ts(22,10): error TS2365: Operator '<' cannot be applied to types 'number' and 'Date'.\r\nbackend/src/routes/timesheets-api.ts(26,14): error TS2365: Operator '>=' cannot be applied to types 'Date' and 'number'.\r\nbackend/src/routes/timesheets-api.ts(35,5): error TS2322: Type 'Date' is not assignable to type 'number'.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/timesheets-api.ts(26,5): error TS2322: Type 'number' is not assignable to type 'number[]'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-046",
+      "title": "Timesheet and Payroll Tracker",
+      "component": "Payroll Export Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/payroll-export-service.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getClockEventsByEmployeeId } from \"../db/clock-events-table\";\n\nexport const router = Router();\n\nrouter.get(\"/payroll\", (req: Request, res: Response) => {\n  // This route should generate a payroll file from approved timesheets only.\n  // For now, we'll just fetch clock events and send them as a simple response.\n  // In a real implementation, you'd filter approved timesheets and format the output accordingly.\n\n  const employeeId = Number(req.query.employeeId);\n  if (isNaN(employeeId)) {\n    res.status(400).send(\"Invalid employee ID\");\n    return;\n  }\n\n  const clockEvents = getClockEventsByEmployeeId(employeeId);\n  res.json(clockEvents);\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-046",
+      "title": "Timesheet and Payroll Tracker",
+      "component": "Approved-Only Payroll Guard",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/approved-only-payroll-guard.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  // This middleware is intended to protect routes related to payroll,\n  // but the specific routes and methods it should guard are not detailed.\n  // For now, we'll assume it should apply to POST requests to \"/payroll/export\".\n  // Adjust the following conditions as per the actual requirements.\n\n  if (req.method !== \"POST\" || req.path !== \"/payroll/export\") {\n    return next();\n  }\n\n  // Placeholder for approval check logic.\n  // In a real implementation, this would involve querying the timesheet status.\n  const isTimesheetApproved = false; // Replace with actual approval check.\n\n  if (!isTimesheetApproved) {\n    res.status(403).send(\"Access denied: Timesheet is not approved.\");\n    return;\n  }\n\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-047",
+      "title": "Office Parking Reservations",
+      "component": "Parking API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/parking-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { Reservation, getReservationByEmployeeAndDate, getReservationsByDate, insertReservation } from \"../db/reservations-table\";\n\nexport const router = Router();\n\nrouter.post(\"/reserve\", (req: Request, res: Response) => {\n  const { employeeId, date, spotNumber }: { employeeId: number, date: string, spotNumber: number } = req.body;\n  insertReservation(employeeId, date, spotNumber);\n  res.status(201).send({ message: \"Spot reserved successfully.\" });\n});\n\nrouter.get(\"/reservations/:date\", (req: Request, res: Response) => {\n  const date = req.params.date;\n  const reservations = getReservationsByDate(date);\n  res.json(reservations);\n});\n\nrouter.get(\"/reservation/:employeeId/:date\", (req: Request, res: Response) => {\n  const employeeId = Number(req.params.employeeId);\n  const date = req.params.date;\n  const reservation = getReservationByEmployeeAndDate(employeeId, date);\n  if (reservation) {\n    res.json(reservation);\n  } else {\n    res.status(404).send({ message: \"No reservation found.\" });\n  }\n});\n",
+      "buildOutputA": null
+    }
+  ],
+  "projects": [
+    {
+      "sessionId": "session-gold-002",
+      "title": "Board App (Unspecified Differentiator)",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/boards-api",
+          "status": 404
+        },
+        {
+          "path": "/api/boards-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-003",
+      "title": "Weather App",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/weather-api",
+          "status": 404
+        },
+        {
+          "path": "/api/weather-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "components": 4,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/catalog-api",
+          "status": 404
+        },
+        {
+          "path": "/api/catalog-api/",
+          "status": 404
+        },
+        {
+          "path": "/api/orders-api",
+          "status": 404
+        },
+        {
+          "path": "/api/orders-api/",
+          "status": 404
+        },
+        {
+          "path": "/api/payment-gateway-adapter",
+          "status": 404
+        },
+        {
+          "path": "/api/payment-gateway-adapter/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "components": 3,
+      "C": false,
+      "reasons": [
+        "build-failed"
+      ],
+      "error": null,
+      "buildOutput": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/categorisation-api.ts(2,79): error TS2305: Module '\"../db/transactions-table\"' has no exported member 'updateTransactionCategory'.\r\n",
+      "routes": []
+    },
+    {
+      "sessionId": "session-gold-011",
+      "title": "Personal Portfolio Site",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/contact-form-handler",
+          "status": 404
+        },
+        {
+          "path": "/api/contact-form-handler/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-012",
+      "title": "IoT Sensor Dashboard",
+      "components": 3,
+      "C": false,
+      "reasons": [
+        "build-failed"
+      ],
+      "error": null,
+      "buildOutput": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/alerting-service.ts(2,39): error TS2305: Module '\"../db/readings-table\"' has no exported member 'getDevicesByWarehouseId'.\r\n",
+      "routes": []
+    },
+    {
+      "sessionId": "session-gold-016",
+      "title": "Event Ticketing",
+      "components": 3,
+      "C": false,
+      "reasons": [
+        "build-failed"
+      ],
+      "error": null,
+      "buildOutput": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/email-delivery-service.ts(2,27): error TS2307: Cannot find module 'nodemailer' or its corresponding type declarations.\r\n",
+      "routes": []
+    },
+    {
+      "sessionId": "session-gold-017",
+      "title": "Fitness Tracker With Friend Feed",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/workouts-api",
+          "status": 404
+        },
+        {
+          "path": "/api/workouts-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-020",
+      "title": "Shipment Tracking Page",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/tracking-api",
+          "status": 404
+        },
+        {
+          "path": "/api/tracking-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-023",
+      "title": "Smart Home Control App",
+      "components": 3,
+      "C": false,
+      "reasons": [
+        "build-failed"
+      ],
+      "error": null,
+      "buildOutput": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/middleware/owner-only-device-control.ts(22,52): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,54): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,65): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,71): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,79): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,83): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,91): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,94): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,105): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,109): error TS1005: ',' expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,117): error TS1003: Identifier expected.\r\nbackend/src/middleware/owner-only-device-control.ts(22,120): error TS1002: Unterminated string literal.\r\nbackend/src/middleware/owner-only-device-control.ts(23,5): error TS1005: ',' expected.\r\n",
+      "routes": []
+    },
+    {
+      "sessionId": "session-gold-024",
+      "title": "Insurance Claims Portal",
+      "components": 3,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/claims-api",
+          "status": 404
+        },
+        {
+          "path": "/api/claims-api/",
+          "status": 404
+        },
+        {
+          "path": "/api/decision-service",
+          "status": 404
+        },
+        {
+          "path": "/api/decision-service/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-025",
+      "title": "Farm Management App",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/farm-api",
+          "status": 404
+        },
+        {
+          "path": "/api/farm-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-027",
+      "title": "Car Rental Booking",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/rentals-api",
+          "status": 404
+        },
+        {
+          "path": "/api/rentals-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-030",
+      "title": "CI/CD Status Dashboard",
+      "components": 2,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/build-status-api",
+          "status": 404
+        },
+        {
+          "path": "/api/build-status-api/",
+          "status": 404
+        },
+        {
+          "path": "/api/slack-notifier",
+          "status": 404
+        },
+        {
+          "path": "/api/slack-notifier/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-031",
+      "title": "Rec League Manager",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/league-api",
+          "status": 404
+        },
+        {
+          "path": "/api/league-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-032",
+      "title": "Restaurant Reservations",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/reservations-api",
+          "status": 404
+        },
+        {
+          "path": "/api/reservations-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-034",
+      "title": "Commuter Carpooling",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/carpool-api",
+          "status": 404
+        },
+        {
+          "path": "/api/carpool-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-035",
+      "title": "Language Learning App",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/learning-api",
+          "status": 404
+        },
+        {
+          "path": "/api/learning-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-036",
+      "title": "Gym Membership System",
+      "components": 3,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/check-in-api",
+          "status": 404
+        },
+        {
+          "path": "/api/check-in-api/",
+          "status": 404
+        },
+        {
+          "path": "/api/billing-service",
+          "status": 404
+        },
+        {
+          "path": "/api/billing-service/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-037",
+      "title": "Therapy Session Booking",
+      "components": 2,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/sessions-api",
+          "status": 404
+        },
+        {
+          "path": "/api/sessions-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-038",
+      "title": "Warehouse Inventory System",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/inventory-api",
+          "status": 404
+        },
+        {
+          "path": "/api/inventory-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-040",
+      "title": "Expense Reimbursement Tool",
+      "components": 3,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/expenses-api",
+          "status": 404
+        },
+        {
+          "path": "/api/expenses-api/",
+          "status": 404
+        },
+        {
+          "path": "/api/payout-queue-service",
+          "status": 404
+        },
+        {
+          "path": "/api/payout-queue-service/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-045",
+      "title": "Volunteer Coordination Tool",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/shifts-api",
+          "status": 404
+        },
+        {
+          "path": "/api/shifts-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-046",
+      "title": "Timesheet and Payroll Tracker",
+      "components": 3,
+      "C": false,
+      "reasons": [
+        "build-failed"
+      ],
+      "error": null,
+      "buildOutput": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/timesheets-api.ts(22,10): error TS2365: Operator '<' cannot be applied to types 'number' and 'Date'.\r\nbackend/src/routes/timesheets-api.ts(26,14): error TS2365: Operator '>=' cannot be applied to types 'Date' and 'number'.\r\nbackend/src/routes/timesheets-api.ts(35,5): error TS2322: Type 'Date' is not assignable to type 'number'.\r\n",
+      "routes": []
+    },
+    {
+      "sessionId": "session-gold-047",
+      "title": "Office Parking Reservations",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/parking-api",
+          "status": 404
+        },
+        {
+          "path": "/api/parking-api/",
+          "status": 404
+        }
+      ]
+    }
+  ]
+}
