@@ -517,11 +517,18 @@ class ModelRegistry:
         self.entries = {}    # NAME -> (ModelSpec, _LoadedBase)
 
     @staticmethod
+    def _compute_dtype():
+        # bfloat16 needs Ampere (compute capability 8.x) or newer; older GPUs
+        # such as the T4 (7.5) only emulate it, so they compute in float16.
+        major, _ = torch.cuda.get_device_capability()
+        return torch.bfloat16 if major >= 8 else torch.float16
+
+    @staticmethod
     def _bnb_config():
         return BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16,
+            bnb_4bit_compute_dtype=ModelRegistry._compute_dtype(),
         )
 
     @staticmethod
