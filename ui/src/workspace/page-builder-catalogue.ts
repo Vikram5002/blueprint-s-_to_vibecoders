@@ -72,6 +72,14 @@ export const ELEMENT_SPECS: Readonly<Record<CanvasElementType, ElementSpec>> = {
   alert: { palette: 'Alert', label: 'Your changes have been saved.', width: 420, height: 48 },
   accordion: { palette: 'Accordion', label: 'How does billing work?|You are billed monthly and can cancel anytime.', width: 480, height: 110, hint: 'Question | answer' },
   spinner: { palette: 'Spinner', label: 'Loading', width: 48, height: 48 },
+  // Backgrounds - label is "seed|complexity"; "New shape" in the Inspector picks a new seed
+  waves: { palette: 'Waves', label: '12|5', width: 1280, height: 200, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
+  'layered-waves': { palette: 'Layered waves', label: '27|6', width: 1280, height: 260, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
+  blob: { palette: 'Blob', label: '8|6', width: 320, height: 320, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
+  'blob-scene': { palette: 'Blob scene', label: '31|6', width: 1280, height: 400, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
+  peaks: { palette: 'Layered peaks', label: '5|5', width: 1280, height: 260, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
+  circles: { palette: 'Circle scatter', label: '44|6', width: 1280, height: 400, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
+  'mesh-gradient': { palette: 'Mesh gradient', label: '19|6', width: 1280, height: 400, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
 };
 
 export interface ElementCategory {
@@ -87,6 +95,7 @@ export const ELEMENT_CATEGORIES: readonly ElementCategory[] = [
   { name: 'Data', types: ['table', 'stat', 'progress', 'pricing', 'testimonial'] },
   { name: 'Navigation', types: ['tabs', 'breadcrumb', 'pagination'] },
   { name: 'Feedback', types: ['alert', 'accordion', 'spinner'] },
+  { name: 'Backgrounds', types: ['waves', 'layered-waves', 'peaks', 'blob', 'blob-scene', 'circles', 'mesh-gradient'] },
 ];
 
 /** The label split the same way the generator splits it. */

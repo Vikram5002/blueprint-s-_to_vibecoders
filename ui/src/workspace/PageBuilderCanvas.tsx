@@ -20,6 +20,9 @@ import { ELEMENT_CATEGORIES, ELEMENT_SPECS, FIELD_TYPES, derivedFieldName } from
 import { SPIN_KEYFRAMES, extendedPreview, type PreviewPalette } from './page-builder-previews';
 import { DEFAULT_THEME, FONTS, type PageTheme } from './page-theme';
 import { ThemePanel } from './ThemePanel';
+import { BACKGROUND_KINDS, parseBackgroundLabel } from './svg-backgrounds';
+
+const BACKGROUND_TYPES: ReadonlySet<string> = new Set(BACKGROUND_KINDS);
 import { HANDLES, otherRects, reorder, resizeRect, snapMove, type Guide, type Handle, type Rect } from './page-builder-geometry';
 import { SECTION_TEMPLATES, instantiateTemplate, templateTop } from './page-templates';
 import {
@@ -190,7 +193,7 @@ function ResizeHandles({ element, zoom, onResize }: { readonly element: CanvasEl
 /** The colours a page is drawn with - its theme, or the default look. */
 function paletteOf(theme: PageTheme | undefined): PreviewPalette & { readonly theme: PageTheme } {
   const t = theme ?? DEFAULT_THEME;
-  return { theme: t, ink: t.text, muted: t.muted, line: t.line, surface: t.surface };
+  return { theme: t, ink: t.text, muted: t.muted, line: t.line, surface: t.surface, background: t.background };
 }
 
 function placedElementVisual(
@@ -594,7 +597,8 @@ export function PageBuilderCanvas(): JSX.Element {
         label: ELEMENT_SPECS[type].label,
         colorToken: 'primary',
       };
-      setElements((current) => [...current, newElement]);
+      // A background belongs behind the content, like in a design tool.
+      setElements((current) => (BACKGROUND_TYPES.has(type) ? [newElement, ...current] : [...current, newElement]));
       setSelectedId(newElement.id);
       return;
     }
@@ -1031,6 +1035,30 @@ export function PageBuilderCanvas(): JSX.Element {
                       </span>
                     )}
                   </label>
+                  {BACKGROUND_TYPES.has(selected.type) && (
+                    <div className="space-y-1.5">
+                      <button
+                        type="button"
+                        data-testid="new-shape"
+                        onClick={() => updateSelected({ label: `${Math.floor(Math.random() * 100000)}|${parseBackgroundLabel(selected.label).complexity}` })}
+                        className="w-full rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-800"
+                      >
+                        ⤮ New shape
+                      </button>
+                      <label className="flex items-center gap-2 text-[11px] text-slate-400">
+                        Complexity
+                        <input
+                          type="range"
+                          min={1}
+                          max={10}
+                          data-testid="bg-complexity"
+                          value={parseBackgroundLabel(selected.label).complexity}
+                          onChange={(event) => updateSelected({ label: `${parseBackgroundLabel(selected.label).seed}|${event.target.value}` })}
+                          className="flex-1"
+                        />
+                      </label>
+                    </div>
+                  )}
                   {FIELD_TYPES.has(selected.type) && (
                     <label className="block text-xs text-slate-400">
                       Field name

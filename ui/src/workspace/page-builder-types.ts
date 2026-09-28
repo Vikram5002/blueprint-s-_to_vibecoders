@@ -46,6 +46,7 @@ export const EXTENDED_ELEMENT_TYPES = [
   'table', 'stat', 'progress', 'pricing', 'testimonial',
   'tabs', 'breadcrumb', 'pagination',
   'alert', 'accordion', 'spinner',
+  'waves', 'layered-waves', 'blob', 'blob-scene', 'peaks', 'circles', 'mesh-gradient',
 ] as const;
 
 export type ExtendedElementType = (typeof EXTENDED_ELEMENT_TYPES)[number];

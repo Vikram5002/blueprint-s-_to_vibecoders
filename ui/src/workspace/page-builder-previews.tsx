@@ -9,6 +9,7 @@
  */
 import type { CSSProperties, ReactNode } from 'react';
 import { labelParts } from './page-builder-catalogue';
+import { parseBackgroundLabel, renderBackgroundSvg, type BackgroundKind } from './svg-backgrounds';
 import type { CanvasElement, ExtendedElementType } from './page-builder-types';
 
 export interface PreviewVisual {
@@ -22,6 +23,17 @@ export interface PreviewPalette {
   readonly muted: string;
   readonly line: string;
   readonly surface: string;
+  /** The page background, which layered backgrounds blend into. */
+  readonly background: string;
+}
+
+/** The same SVG the generated page gets (svg-backgrounds.ts), drawn with HTML attribute names. */
+function backgroundPreview(kind: BackgroundKind): Preview {
+  return (element, color, p) => {
+    const { seed, complexity } = parseBackgroundLabel(element.label);
+    const svg = renderBackgroundSvg(kind, { id: `preview-${element.id}`, width: element.width, height: element.height, color, background: p.background, seed, complexity }, 'html');
+    return { style: { overflow: 'hidden' }, content: <div style={{ width: '100%', height: '100%' }} dangerouslySetInnerHTML={{ __html: svg }} /> };
+  };
 }
 
 type Preview = (element: CanvasElement, color: string, p: PreviewPalette) => PreviewVisual;
@@ -46,6 +58,13 @@ function fieldPreview(type: string): Preview {
 }
 
 const PREVIEWS: Readonly<Record<ExtendedElementType, Preview>> = {
+  waves: backgroundPreview('waves'),
+  'layered-waves': backgroundPreview('layered-waves'),
+  blob: backgroundPreview('blob'),
+  'blob-scene': backgroundPreview('blob-scene'),
+  peaks: backgroundPreview('peaks'),
+  circles: backgroundPreview('circles'),
+  'mesh-gradient': backgroundPreview('mesh-gradient'),
   section: (_element, color, _p) => ({ style: { backgroundColor: `${color}14`, borderRadius: 12, padding: 8, color }, content: 'Section' }),
   card: (element, color, p) => {
     const [title, body, action] = labelParts(element.label);
