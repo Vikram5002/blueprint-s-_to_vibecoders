@@ -79,6 +79,14 @@ export const ELEMENT_SPECS: Readonly<Record<CanvasElementType, ElementSpec>> = {
   'blob-scene': { palette: 'Blob scene', label: '31|6', width: 1280, height: 400, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
   peaks: { palette: 'Layered peaks', label: '5|5', width: 1280, height: 260, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
   circles: { palette: 'Circle scatter', label: '44|6', width: 1280, height: 400, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
+  // Motion
+  typewriter: { palette: 'Typewriter', label: 'Build websites that move.', width: 640, height: 64 },
+  'text-shimmer': { palette: 'Text shimmer', label: 'Shimmering headline', width: 560, height: 60 },
+  'text-scramble': { palette: 'Text scramble', label: 'DECRYPTING...', width: 480, height: 50 },
+  'word-reveal': { palette: 'Word reveal', label: 'Every word arrives on its own', width: 640, height: 60 },
+  counter: { palette: 'Animated counter', label: '12500|+|Happy customers', width: 260, height: 110, hint: 'Number | suffix | caption' },
+  marquee: { palette: 'Marquee', label: 'Acme|Globex|Initech|Umbrella|Hooli', width: 1280, height: 60, hint: 'Item | item | item - scrolls forever' },
+  'gradient-border': { palette: 'Gradient border card', label: 'Featured|The border flows around the card.', width: 360, height: 170, hint: 'Title | text' },
   'mesh-gradient': { palette: 'Mesh gradient', label: '19|6', width: 1280, height: 400, hint: 'Seed | complexity 1-10. Use New shape to redraw.' },
 };
 
@@ -95,6 +103,7 @@ export const ELEMENT_CATEGORIES: readonly ElementCategory[] = [
   { name: 'Data', types: ['table', 'stat', 'progress', 'pricing', 'testimonial'] },
   { name: 'Navigation', types: ['tabs', 'breadcrumb', 'pagination'] },
   { name: 'Feedback', types: ['alert', 'accordion', 'spinner'] },
+  { name: 'Motion', types: ['typewriter', 'text-shimmer', 'text-scramble', 'word-reveal', 'counter', 'marquee', 'gradient-border'] },
   { name: 'Backgrounds', types: ['waves', 'layered-waves', 'peaks', 'blob', 'blob-scene', 'circles', 'mesh-gradient'] },
 ];
 

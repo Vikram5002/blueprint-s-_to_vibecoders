@@ -15,6 +15,8 @@ import type { CanvasElement, ExtendedElementType } from './page-builder-types';
 export interface PreviewVisual {
   readonly style: CSSProperties;
   readonly content: ReactNode;
+  /** A class for the element's root - an animation that must run on the root itself. */
+  readonly className?: string;
 }
 
 /** The theme colours a preview is drawn with (page-theme.ts). */
@@ -57,7 +59,73 @@ function fieldPreview(type: string): Preview {
   });
 }
 
+const textSize = (element: CanvasElement): number => Math.max(14, Math.min(64, Math.round(element.height * 0.55)));
+
 const PREVIEWS: Readonly<Record<ExtendedElementType, Preview>> = {
+  typewriter: (element, color, _p) => ({
+    style: { display: 'flex', alignItems: 'center', color, fontSize: textSize(element), fontWeight: 700 },
+    content: (
+      <>
+        {element.label}
+        <span className="vb-caret">|</span>
+      </>
+    ),
+  }),
+  'text-shimmer': (element, color, _p) => ({
+    style: { display: 'flex', alignItems: 'center', fontSize: textSize(element), fontWeight: 700 },
+    content: <span className="vb-shimmer" style={{ backgroundImage: `linear-gradient(90deg, ${color} 0%, ${color} 35%, #ffffff 50%, ${color} 65%, ${color} 100%)` }}>{element.label}</span>,
+  }),
+  'text-scramble': (element, color, _p) => ({
+    style: { display: 'flex', alignItems: 'center', color, fontSize: textSize(element), fontWeight: 700, fontFamily: 'ui-monospace, monospace' },
+    content: element.label,
+  }),
+  'word-reveal': (element, color, _p) => ({
+    style: { display: 'flex', flexWrap: 'wrap', alignContent: 'center', gap: '0 0.3em', color, fontSize: textSize(element), fontWeight: 700 },
+    content: element.label.split(/\s+/).filter(Boolean).map((word, i) => (
+      <span key={i} className="vb-word" style={{ animationDelay: `${i * 90}ms` }}>{word}</span>
+    )),
+  }),
+  counter: (element, color, p) => {
+    const [value = '0', suffix = '', caption = ''] = labelParts(element.label);
+    return {
+      style: { display: 'flex', flexDirection: 'column', justifyContent: 'center' },
+      content: (
+        <>
+          <strong style={{ fontSize: Math.max(20, Math.min(64, Math.round(element.height * 0.45))), color, lineHeight: 1.1 }}>
+            {Number(value.replace(/[^0-9.]/g, '') || 0).toLocaleString()}
+            {suffix}
+          </strong>
+          <span style={{ fontSize: 14, color: p.muted }}>{caption}</span>
+        </>
+      ),
+    };
+  },
+  marquee: (element, color, _p) => {
+    const items = labelParts(element.label).map((item, i) => <span key={i} style={{ fontSize: 20, fontWeight: 600, color, whiteSpace: 'nowrap' }}>{item}</span>);
+    return { style: { overflow: 'hidden', display: 'flex', alignItems: 'center' }, content: <div className="vb-marquee">{items}{items}</div> };
+  },
+  'gradient-border': (element, color, p) => {
+    const [title = 'Featured', body = ''] = labelParts(element.label);
+    return {
+      style: {
+        border: '2px solid transparent',
+        borderRadius: 16,
+        padding: 18,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+        background: `linear-gradient(${p.surface}, ${p.surface}) padding-box, linear-gradient(120deg, ${color}, #ffffff, ${color}, #ffffff, ${color}) border-box`,
+        backgroundSize: '100% 100%, 300% 300%',
+      },
+      className: 'vb-gradient-border',
+      content: (
+        <>
+          <strong style={{ fontSize: 18, color: p.ink }}>{title}</strong>
+          <span style={{ fontSize: 13, color: p.muted }}>{body}</span>
+        </>
+      ),
+    };
+  },
   waves: backgroundPreview('waves'),
   'layered-waves': backgroundPreview('layered-waves'),
   blob: backgroundPreview('blob'),

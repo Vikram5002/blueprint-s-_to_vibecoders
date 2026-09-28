@@ -47,6 +47,7 @@ export const EXTENDED_ELEMENT_TYPES = [
   'tabs', 'breadcrumb', 'pagination',
   'alert', 'accordion', 'spinner',
   'waves', 'layered-waves', 'blob', 'blob-scene', 'peaks', 'circles', 'mesh-gradient',
+  'typewriter', 'text-shimmer', 'text-scramble', 'word-reveal', 'counter', 'marquee', 'gradient-border',
 ] as const;
 
 export type ExtendedElementType = (typeof EXTENDED_ELEMENT_TYPES)[number];
@@ -134,6 +135,10 @@ export interface CanvasElement {
   readonly animation?: AnimationName;
   /** Form field name (mirrors canvas-layout.ts); absent means derived from the label. */
   readonly field?: string;
+  /** Hover effect (mirrors canvas-motion.ts); absent = none. */
+  readonly hover?: 'lift' | 'glow' | 'tilt' | 'magnetic' | 'spotlight';
+  /** Fades in when scrolled into view. */
+  readonly reveal?: boolean;
 }
 
 export const CANVAS_WIDTH = 1280;

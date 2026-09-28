@@ -20,6 +20,7 @@ import { ELEMENT_CATEGORIES, ELEMENT_SPECS, FIELD_TYPES, derivedFieldName } from
 import { SPIN_KEYFRAMES, extendedPreview, type PreviewPalette } from './page-builder-previews';
 import { DEFAULT_THEME, FONTS, type PageTheme } from './page-theme';
 import { ThemePanel } from './ThemePanel';
+import { HOVER_CLASS, HOVER_EFFECTS, HOVER_LABEL, MOTION_CSS, hoverHandlers, type HoverEffect } from './motion-preview';
 import { BACKGROUND_KINDS, parseBackgroundLabel } from './svg-backgrounds';
 
 const BACKGROUND_TYPES: ReadonlySet<string> = new Set(BACKGROUND_KINDS);
@@ -44,7 +45,7 @@ import {
 /** Every catalogue keyframe, injected once into the canvas so the editor preview animates exactly like the generated file does. Built once at module load - it never varies. */
 const EDITOR_KEYFRAMES = ANIMATION_NAMES.map(
   (name) => `@keyframes ${keyframesIdentifier(name)} { ${ANIMATIONS[name].keyframes} }`,
-).join('\n') + `\n${SPIN_KEYFRAMES}`;
+).join('\n') + `\n${SPIN_KEYFRAMES}\n${MOTION_CSS}`;
 
 const EXTENDED: ReadonlySet<string> = new Set(EXTENDED_ELEMENT_TYPES);
 
@@ -200,11 +201,11 @@ function placedElementVisual(
   element: CanvasElement,
   color: string,
   palette: PreviewPalette = paletteOf(undefined),
-): { readonly style: React.CSSProperties; readonly content: React.ReactNode } {
+): { readonly style: React.CSSProperties; readonly content: React.ReactNode; readonly className?: string } {
   const base: React.CSSProperties = { fontSize: 13, boxSizing: 'border-box' };
   if (isExtended(element.type)) {
     const preview = extendedPreview(element.type, element, color, palette);
-    return { style: { ...base, ...preview.style }, content: preview.content };
+    return { style: { ...base, ...preview.style }, content: preview.content, ...(preview.className === undefined ? {} : { className: preview.className }) };
   }
   if (element.type === 'image' && isHttpUrl(element.label)) {
     return {
@@ -372,8 +373,9 @@ function PlacedElement({ element, selected, onSelect, zoom, preview, onResize, t
   // (dnd-kit installs a document-wide capture-phase click-canceller for
   // the duration of any activated drag).
   if (preview) {
+    const classes = [visual.className, element.hover === undefined ? undefined : HOVER_CLASS[element.hover]].filter(Boolean).join(' ');
     return (
-      <div data-testid={`placed-${element.id}`} style={{ ...baseStyle, ...visual.style }}>
+      <div data-testid={`placed-${element.id}`} className={classes || undefined} style={{ ...baseStyle, ...visual.style }} {...hoverHandlers(element.hover)}>
         {visual.content}
       </div>
     );
@@ -384,6 +386,7 @@ function PlacedElement({ element, selected, onSelect, zoom, preview, onResize, t
       {...listeners}
       {...attributes}
       data-testid={`placed-${element.id}`}
+      className={visual.className}
       onPointerDown={(event) => {
         pointerDownPosition.current = { x: event.clientX, y: event.clientY };
         listeners?.onPointerDown?.(event);
@@ -694,6 +697,8 @@ export function PageBuilderCanvas(): JSX.Element {
     readonly animation?: AnimationName | undefined;
     /** Explicit `undefined` clears it, back to the label-derived name. */
     readonly field?: string | undefined;
+    readonly hover?: HoverEffect | undefined;
+    readonly reveal?: boolean | undefined;
   }
 
   /** Position and size from the Inspector, clamped so the element always stays on the canvas - the server rejects anything outside it. */
@@ -728,8 +733,14 @@ export function PageBuilderCanvas(): JSX.Element {
         // animation", and JSON.stringify would drop an explicit undefined on
         // the way to the API anyway - so storing one would only create a
         // shape the rest of the pipeline never sees.
-        const { animation, field, ...rest } = { ...element, ...patch };
-        return { ...rest, ...(animation === undefined ? {} : { animation }), ...(field === undefined ? {} : { field }) };
+        const { animation, field, hover, reveal, ...rest } = { ...element, ...patch };
+        return {
+          ...rest,
+          ...(animation === undefined ? {} : { animation }),
+          ...(field === undefined ? {} : { field }),
+          ...(hover === undefined ? {} : { hover }),
+          ...(reveal === true ? { reveal } : {}),
+        };
       }),
       { coalesce: true },
     );
@@ -1139,6 +1150,33 @@ export function PageBuilderCanvas(): JSX.Element {
                     >
                       Replay animations
                     </button>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <span className="block text-xs text-slate-400">Hover effect</span>
+                    <select
+                      data-testid="hover-select"
+                      value={selected.hover ?? 'none'}
+                      onChange={(event) => updateSelected({ hover: event.target.value === 'none' ? undefined : (event.target.value as HoverEffect) })}
+                      className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
+                    >
+                      <option value="none">None</option>
+                      {HOVER_EFFECTS.map((effect) => (
+                        <option key={effect} value={effect}>
+                          {HOVER_LABEL[effect]}
+                        </option>
+                      ))}
+                    </select>
+                    <label className="flex items-center gap-2 text-xs text-slate-400">
+                      <input
+                        type="checkbox"
+                        data-testid="reveal-toggle"
+                        checked={selected.reveal === true}
+                        onChange={(event) => updateSelected({ reveal: event.target.checked ? true : undefined })}
+                      />
+                      Reveal on scroll
+                    </label>
+                    <span className="block text-[10px] text-slate-500">Hover effects run in Preview and on the generated page.</span>
                   </div>
 
                   <div className="flex gap-2 border-t border-slate-800 pt-3">
