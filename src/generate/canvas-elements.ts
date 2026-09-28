@@ -18,6 +18,7 @@
 
 import { parseBackgroundLabel, renderBackgroundSvg, type BackgroundKind } from './svg-backgrounds.js';
 import { MOTION_RENDERERS } from './canvas-motion.js';
+import { WIDGET_RENDERERS } from './canvas-widgets.js';
 
 export const EXTENDED_ELEMENT_TYPES = [
   // Layout
@@ -38,6 +39,9 @@ export const EXTENDED_ELEMENT_TYPES = [
   'waves', 'layered-waves', 'blob', 'blob-scene', 'peaks', 'circles', 'mesh-gradient',
   // Motion (canvas-motion.ts)
   'typewriter', 'text-shimmer', 'text-scramble', 'word-reveal', 'counter', 'marquee', 'gradient-border',
+  // Widgets (canvas-widgets.ts)
+  'columns', 'spacer', 'sidebar', 'mobile-menu', 'modal', 'tooltip', 'dropdown-menu',
+  'toast', 'back-to-top', 'scroll-progress', 'fab', 'cookie-banner',
 ] as const;
 
 export type ExtendedElementType = (typeof EXTENDED_ELEMENT_TYPES)[number];
@@ -315,6 +319,7 @@ const RENDERERS: Readonly<Record<ExtendedElementType, (c: ElementContext) => str
   circles: background('circles'),
   'mesh-gradient': background('mesh-gradient'),
   ...MOTION_RENDERERS,
+  ...WIDGET_RENDERERS,
 };
 
 export function renderExtendedElement(type: ExtendedElementType, context: ElementContext): string {

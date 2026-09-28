@@ -36,6 +36,7 @@ import {
   type ElementContext,
   type ExtendedElementType,
 } from './canvas-elements.js';
+import { widgetRuntime } from './canvas-widgets.js';
 import { HOVER_EFFECTS, applyEffects, motionRuntime, type HoverEffect, type MotionUse } from './canvas-motion.js';
 import { DEFAULT_THEME, FONTS, googleFontsUrl, validateTheme, type PageTheme, type ThemeError } from './page-theme.js';
 import {
@@ -330,6 +331,7 @@ function pageSource(layout: PageLayout, componentName: string, fields: readonly 
     reveal: layout.elements.some((element) => element.reveal === true),
   };
   const motion = motionRuntime(use);
+  const widgets = widgetRuntime(use.types);
   const elementsJsx = layout.elements
     .map((element) => {
       let markup = renderElement(element, layout.theme);
@@ -343,16 +345,17 @@ function pageSource(layout: PageLayout, componentName: string, fields: readonly 
   const root = isForm ? 'form' : 'div';
   const rootOpen = isForm ? '<form onSubmit={(event) => void handleSubmit(event)} style=' : '<div style=';
   return (
-    reactImport([...(isForm ? ['useState'] : []), ...motion.values], [...(isForm ? ['FormEvent'] : []), ...motion.types]) +
+    reactImport([...(isForm ? ['useState'] : []), ...motion.values, ...widgets.values], [...(isForm ? ['FormEvent'] : []), ...motion.types]) +
     '\n' +
     (motion.helpers === '' ? '' : `${motion.helpers}\n\n`) +
+    (widgets.helpers === '' ? '' : `${widgets.helpers}\n\n`) +
     `export const ${componentName}: FC = () => {\n` +
     (isForm ? submitHandlerSource(fields, pageApiPath(layout.pageName)) : '') +
     motion.hooks +
     '  return (\n' +
     `    ${rootOpen}{{ position: 'relative', width: ${CANVAS_WIDTH}, height: ${CANVAS_HEIGHT}${themeRootStyle(layout.theme)} }}>\n` +
     renderThemeBlock(layout.theme) +
-    renderKeyframesBlock(layout.elements, motion.css) +
+    renderKeyframesBlock(layout.elements, [...motion.css, ...widgets.css]) +
     `${elementsJsx}\n` +
     (isForm ? "      <p role=\"status\" style={{ position: 'absolute', left: 16, bottom: 8, margin: 0, fontSize: 14, color: '#475569' }}>{status}</p>\n" : '') +
     `    </${root}>\n` +
