@@ -20,6 +20,7 @@ import { parseBackgroundLabel, renderBackgroundSvg, type BackgroundKind } from '
 import { MOTION_RENDERERS } from './canvas-motion.js';
 import { WIDGET_RENDERERS } from './canvas-widgets.js';
 import { FORM_WIDGET_RENDERERS } from './canvas-form-widgets.js';
+import { CONTENT_RENDERERS } from './canvas-content.js';
 
 export const EXTENDED_ELEMENT_TYPES = [
   // Layout
@@ -46,6 +47,11 @@ export const EXTENDED_ELEMENT_TYPES = [
   // Form widgets (canvas-form-widgets.ts)
   'radio-group', 'checkbox-group', 'segmented', 'time', 'date-range', 'color-input', 'phone', 'url',
   'multi-select', 'tag-input', 'otp', 'newsletter', 'signature', 'rich-text',
+  // Content and data (canvas-content.ts)
+  'carousel', 'gallery', 'lightbox', 'before-after', 'map', 'embed', 'custom-html', 'audio', 'lottie',
+  'social-icons', 'logo-cloud', 'feature-grid', 'faq-list', 'cta-banner', 'team-card', 'blog-card', 'product-card',
+  'bar-chart', 'line-chart', 'pie-chart', 'description-list', 'tree-view', 'kanban', 'calendar', 'timeline',
+  'stepper', 'kbd', 'skeleton', 'empty-state', 'countdown', 'qr-code',
 ] as const;
 
 export type ExtendedElementType = (typeof EXTENDED_ELEMENT_TYPES)[number];
@@ -325,6 +331,7 @@ const RENDERERS: Readonly<Record<ExtendedElementType, (c: ElementContext) => str
   ...MOTION_RENDERERS,
   ...WIDGET_RENDERERS,
   ...FORM_WIDGET_RENDERERS,
+  ...CONTENT_RENDERERS,
 };
 
 export function renderExtendedElement(type: ExtendedElementType, context: ElementContext): string {
