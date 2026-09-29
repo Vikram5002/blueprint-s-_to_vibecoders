@@ -323,6 +323,33 @@ input[type='range'] {
   padding: 3px 10px;
 }
 
+.seg-item-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seg-item-inner svg {
+  opacity: 0.75;
+  transition: opacity var(--dur-2) var(--ease-out);
+}
+
+.seg-item[aria-selected='true'] .seg-item-inner svg {
+  opacity: 1;
+}
+
+/* Narrow windows keep the icons and drop the words, so the strip never overflows. */
+@media (max-width: 900px) {
+  .seg-item-inner .seg-item-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
 /* ---------- React Flow, dark ---------- */
 
 /*
@@ -403,6 +430,310 @@ html .react-flow.light {
 /* Smooth zoom / fit-view instead of a jump (React Flow animates the transform when asked). */
 .react-flow__viewport {
   will-change: transform;
+}
+
+/* ---------- brand and premium surfaces ---------- */
+
+:root {
+  /* The one brand gradient: violet into the system indigo and blue. */
+  --brand-1: #a78bfa;
+  --brand-2: #6d6af8;
+  --brand-3: #0a84ff;
+  --brand-gradient: linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 48%, var(--brand-3) 100%);
+  --brand-glow: 0 10px 30px -10px rgba(109, 106, 248, 0.65);
+
+  /* A card is a whisper of light on the canvas, with a top highlight like glass edges catch. */
+  --card-fill: rgba(255, 255, 255, 0.028);
+  --card-border: rgba(255, 255, 255, 0.075);
+  --card-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 18px 40px -24px rgba(0, 0, 0, 0.75);
+}
+
+/* The main canvas: near-black with two soft light sources, so empty space has depth instead of being flat. */
+.app-canvas {
+  background:
+    radial-gradient(900px 480px at 50% -12%, rgba(109, 106, 248, 0.13), transparent 62%),
+    radial-gradient(700px 420px at 100% 0%, rgba(10, 132, 255, 0.07), transparent 60%),
+    var(--bg-0);
+}
+
+.gradient-text {
+  background: linear-gradient(120deg, #ffffff 0%, #d9d6ff 45%, #8fc3ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.card {
+  background: var(--card-fill);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--card-highlight), var(--card-shadow);
+}
+
+/* A card that reacts to the pointer: lifts a hair and brightens its edge. */
+.card-hover {
+  transition:
+    transform var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    background-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out);
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(167, 139, 250, 0.35);
+  background-color: rgba(255, 255, 255, 0.045);
+  box-shadow: var(--card-highlight), 0 22px 44px -22px rgba(109, 106, 248, 0.45);
+}
+
+/* ---------- buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid transparent;
+  user-select: none;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.btn-sm {
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.btn-primary {
+  color: #fff;
+  background: var(--brand-gradient);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 6px 18px -8px rgba(109, 106, 248, 0.7);
+}
+
+.btn-primary:not(:disabled):hover {
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    var(--brand-glow);
+}
+
+.btn-secondary {
+  color: var(--label-1);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.btn-secondary:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.btn-ghost {
+  color: var(--label-2);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--label-1);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.btn-danger {
+  color: #ffb4ae;
+  background: rgba(255, 69, 58, 0.12);
+  border-color: rgba(255, 69, 58, 0.3);
+}
+
+.btn-danger:not(:disabled):hover {
+  background: rgba(255, 69, 58, 0.2);
+}
+
+/* A round icon button (send, stop). */
+.btn-icon {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+/* ---------- small parts ---------- */
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 5px;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--label-2);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* An iOS-style switch driven by a real checkbox, so forms, tests and screen readers see a checkbox. */
+.switch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 30px;
+  height: 18px;
+}
+
+.switch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.switch-track {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: rgba(120, 120, 128, 0.36);
+  transition: background-color var(--dur-2) var(--ease-out);
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  transition: transform var(--dur-3) var(--ease);
+  pointer-events: none;
+}
+
+.switch input:checked + .switch-track {
+  background: var(--brand-2);
+}
+
+.switch input:checked ~ .switch-thumb {
+  transform: translateX(12px);
+}
+
+.switch input:focus-visible + .switch-track {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.switch input:disabled {
+  cursor: not-allowed;
+}
+
+.switch input:disabled + .switch-track {
+  opacity: 0.5;
+}
+
+/* A thin spinning ring: the one "working" indicator everywhere. */
+@keyframes vb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-top-color: var(--brand-1);
+  border-right-color: var(--brand-3);
+  animation: vb-spin 0.8s linear infinite;
+}
+
+/* A composer or field whose whole frame lights up while typing in it. */
+.focus-glow {
+  transition:
+    border-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-3) var(--ease-out),
+    background-color var(--dur-2) var(--ease-out);
+}
+
+.focus-glow:focus-within {
+  border-color: rgba(167, 139, 250, 0.45);
+  box-shadow:
+    0 0 0 4px rgba(109, 106, 248, 0.14),
+    0 24px 60px -28px rgba(109, 106, 248, 0.6);
+}
+
+/* The progress hairline across the top of a working card. */
+@keyframes vb-progress-sheen {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.progress-line {
+  height: 2px;
+  border-radius: 999px;
+  background: var(--brand-gradient);
+  transition: width var(--dur-3) var(--ease);
+}
+
+.progress-line[data-live='true'] {
+  background: linear-gradient(90deg, var(--brand-1), var(--brand-3), var(--brand-1));
+  background-size: 200% 100%;
+  animation: vb-progress-sheen 1.8s linear infinite;
+}
+
+/* Items that arrive together settle in one after another: set --i on each. */
+.stagger {
+  animation: vb-view-in var(--dur-3) var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+/* The brand mark's soft halo in the hero. */
+@keyframes vb-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.06);
+  }
+}
+
+.halo {
+  position: absolute;
+  inset: -18px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(109, 106, 248, 0.45), transparent 70%);
+  filter: blur(8px);
+  animation: vb-breathe 4s ease-in-out infinite;
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

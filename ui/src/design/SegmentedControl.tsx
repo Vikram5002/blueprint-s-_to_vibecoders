@@ -1,8 +1,10 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 
 export interface SegmentOption<T extends string> {
   readonly value: T;
   readonly label: string;
+  /** Drawn before the label; the label stays the segment's accessible name. */
+  readonly icon?: ReactNode;
   readonly title?: string;
   readonly disabled?: boolean;
   /** Stable hook for tests; defaults to none. */
@@ -137,7 +139,14 @@ export function SegmentedControl<T extends string>({
               }
             }}
           >
-            {option.label}
+            {option.icon === undefined ? (
+              option.label
+            ) : (
+              <span className="seg-item-inner">
+                {option.icon}
+                <span className="seg-item-label">{option.label}</span>
+              </span>
+            )}
           </button>
         );
       })}
