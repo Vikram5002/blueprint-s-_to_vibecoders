@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { INITIAL_STEPS, runAgent, type AgentOutcome, type AgentStep, type StepId, type StepStatus } from './agent-runner';
+import { runAgent, stepsFor, type AgentOutcome, type AgentStep, type ReviewDecision, type StepId, type StepStatus } from './agent-runner';
+import { PlanReview } from './PlanReview';
+import { STARTER_IDEAS } from './starter-ideas';
+import type { ProjectSchema } from './project-schema-types';
+import type { WorkflowJob } from './workflow-job-types';
 import {
   applicationJobDownloadUrl,
   continueApplicationViaApi,
@@ -26,6 +30,27 @@ interface Run {
   readonly finishedAt: number | null;
   readonly outcome: AgentOutcome | null;
   readonly error: string | null;
+  /** The plan waiting for the person's decision, while the agent is stopped at the review. */
+  readonly review: { readonly schema: ProjectSchema; readonly workflowJob: WorkflowJob } | null;
+}
+
+/** Remembered per browser; a missing or blocked storage just means the default (review first). */
+const REVIEW_FIRST_KEY = 'vibe.agent.reviewFirst';
+
+function readReviewFirst(): boolean {
+  try {
+    return window.localStorage.getItem(REVIEW_FIRST_KEY) !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+function writeReviewFirst(value: boolean): void {
+  try {
+    window.localStorage.setItem(REVIEW_FIRST_KEY, String(value));
+  } catch {
+    // Not remembered - the choice still applies to this session.
+  }
 }
 
 /**
@@ -41,7 +66,9 @@ export function ConversationPane(): JSX.Element {
   const [prompt, setPrompt] = useState('');
   const [runs, setRuns] = useState<readonly Run[]>([]);
   const [now, setNow] = useState(Date.now());
+  const [reviewFirst, setReviewFirst] = useState(readReviewFirst);
   const abortRef = useRef<AbortController | null>(null);
+  const decideRef = useRef<((decision: ReviewDecision) => void) | null>(null);
   const running = runs.some((run) => run.finishedAt === null);
 
   useEffect(() => {
@@ -60,9 +87,22 @@ export function ConversationPane(): JSX.Element {
     setPrompt('');
     const controller = new AbortController();
     abortRef.current = controller;
-    setRuns((current) => [...current, { prompt: request, steps: INITIAL_STEPS, startedAt: Date.now(), finishedAt: null, outcome: null, error: null }]);
+    setRuns((current) => [
+      ...current,
+      { prompt: request, steps: stepsFor(reviewFirst), startedAt: Date.now(), finishedAt: null, outcome: null, error: null, review: null },
+    ]);
     const update = (id: StepId, status: StepStatus, detail: string): void =>
       updateLast((run) => ({ ...run, steps: run.steps.map((step) => (step.id === id ? { ...step, status, detail } : step)) }));
+    // Resolved by "Build this plan", "Cancel" or Stop - whichever comes first.
+    const review = (schema: ProjectSchema, workflowJob: WorkflowJob): Promise<ReviewDecision> =>
+      new Promise((resolve) => {
+        updateLast((run) => ({ ...run, review: { schema, workflowJob } }));
+        decideRef.current = (decision) => {
+          decideRef.current = null;
+          updateLast((run) => ({ ...run, review: null }));
+          resolve(decision);
+        };
+      });
     try {
       const outcome = await runAgent(
         request,
@@ -75,6 +115,7 @@ export function ConversationPane(): JSX.Element {
         },
         update,
         controller.signal,
+        reviewFirst ? { review } : {},
       );
       notifySessionSaved();
       notifyRunSaved();
@@ -88,6 +129,30 @@ export function ConversationPane(): JSX.Element {
         steps: run.steps.map((step) => (step.status === 'running' ? { ...step, status: 'failed' as const, detail: stopped ? 'stopped' : step.detail } : step)),
       }));
     }
+  }
+
+  /** Re-plans the plan under review with one change (the same revision the Workflow tab uses). */
+  async function reviseReview(sessionId: string, change: string): Promise<string | null> {
+    try {
+      const job = await generateProjectSchemaViaApi({ revises: sessionId, change });
+      const result = job.result;
+      if (job.status !== 'succeeded' || result === undefined) return job.error?.message ?? `job ended as ${job.status}`;
+      updateLast((run) => ({ ...run, review: { schema: result.schema, workflowJob: job } }));
+      notifySessionSaved();
+      return null;
+    } catch (cause) {
+      return cause instanceof Error ? cause.message : String(cause);
+    }
+  }
+
+  function stop(): void {
+    abortRef.current?.abort();
+    decideRef.current?.({ kind: 'cancel' });
+  }
+
+  function toggleReviewFirst(value: boolean): void {
+    setReviewFirst(value);
+    writeReviewFirst(value);
   }
 
   function openResult(outcome: AgentOutcome): void {
@@ -114,6 +179,21 @@ export function ConversationPane(): JSX.Element {
               Describe the application you want. The agent plans it, generates it, builds it, fixes what fails and prepares its pages -
               step by step, on its own. You can stop it at any time; whatever it finished is kept.
             </p>
+            <div className="mt-6 text-xs font-medium uppercase tracking-wider text-slate-500">Start from an idea</div>
+            <div className="mt-2 flex flex-wrap justify-center gap-2">
+              {STARTER_IDEAS.map((idea) => (
+                <button
+                  key={idea.label}
+                  type="button"
+                  data-testid="starter-idea"
+                  onClick={() => setPrompt(idea.prompt)}
+                  title={idea.prompt}
+                  className="rounded-full border border-slate-700 bg-slate-900/60 px-3 py-1 text-xs text-slate-300 hover:border-sky-600 hover:text-sky-200"
+                >
+                  {idea.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {runs.map((run, index) => {
@@ -137,6 +217,16 @@ export function ConversationPane(): JSX.Element {
                     </li>
                   ))}
                 </ol>
+                {run.review !== null && run.finishedAt === null && (
+                  <PlanReview
+                    schema={run.review.schema}
+                    onRevise={(change) => reviseReview(run.review?.schema.sessionId ?? '', change)}
+                    onApprove={() => {
+                      if (run.review !== null) decideRef.current?.({ kind: 'approve', schema: run.review.schema, workflowJob: run.review.workflowJob });
+                    }}
+                    onCancel={() => decideRef.current?.({ kind: 'cancel' })}
+                  />
+                )}
                 {run.error !== null && <p className="mt-2 text-xs text-amber-300">{run.error}</p>}
                 {outcome?.job != null && outcome.schema !== null && (
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -168,6 +258,17 @@ export function ConversationPane(): JSX.Element {
         })}
       </div>
       <div className="border-t border-slate-800 p-4">
+        <label className="mx-auto mb-2 flex max-w-3xl items-center gap-2 text-xs text-slate-400">
+          <input
+            type="checkbox"
+            data-testid="agent-review-first"
+            checked={reviewFirst}
+            disabled={running}
+            onChange={(event) => toggleReviewFirst(event.target.checked)}
+            className="accent-sky-500"
+          />
+          Let me review the plan before it is built
+        </label>
         <div className="mx-auto flex max-w-3xl gap-2">
           <textarea
             data-testid="agent-prompt"
@@ -184,7 +285,7 @@ export function ConversationPane(): JSX.Element {
             className="flex-1 resize-none rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
           />
           {running ? (
-            <button type="button" data-testid="agent-stop" onClick={() => abortRef.current?.abort()} className="rounded-xl border border-red-700 bg-red-950/40 px-4 text-sm text-red-200 hover:bg-red-900/40">
+            <button type="button" data-testid="agent-stop" onClick={stop} className="rounded-xl border border-red-700 bg-red-950/40 px-4 text-sm text-red-200 hover:bg-red-900/40">
               Stop
             </button>
           ) : (

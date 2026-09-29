@@ -4,6 +4,8 @@ interface PlanChangeBarProps {
   /** Re-plans with this change; resolves with an error message, or null once the new plan is shown. */
   readonly onRevise: (change: string) => Promise<string | null>;
   readonly disabled?: boolean;
+  /** What to do when the plan is right, shown while nothing is being changed. */
+  readonly readyHint?: string;
 }
 
 /**
@@ -13,7 +15,11 @@ interface PlanChangeBarProps {
  * and replaces this one in place. Generating the application stays a
  * separate, deliberate click.
  */
-export function PlanChangeBar({ onRevise, disabled = false }: PlanChangeBarProps): JSX.Element {
+export function PlanChangeBar({
+  onRevise,
+  disabled = false,
+  readyHint = 'Happy with the plan? Generate the application below. Otherwise describe a change here.',
+}: PlanChangeBarProps): JSX.Element {
   const [change, setChange] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +66,7 @@ export function PlanChangeBar({ onRevise, disabled = false }: PlanChangeBarProps
         ) : busy ? (
           'Re-planning with your change - the current plan stays until the new one is ready.'
         ) : (
-          'Happy with the plan? Generate the application below. Otherwise describe a change here.'
+          readyHint
         )}
       </div>
     </form>

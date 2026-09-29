@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { runAgent, type AgentApis, type StepId, type StepStatus } from './agent-runner';
+import { runAgent, stepsFor, type AgentApis, type StepId, type StepStatus } from './agent-runner';
 import type { ApplicationJob } from './application-job-types';
 import type { WorkflowJob } from './workflow-job-types';
 import type { ProjectSchema } from './project-schema-types';
@@ -85,5 +85,42 @@ describe('agent mode', () => {
     const { last } = await run(a);
     expect(calls).toEqual([]);
     expect(last.get('plan')).toBe('failed');
+  });
+});
+
+describe('agent mode with a plan review', () => {
+  const revised = { ...schema, title: 'Shop with admin' } as ProjectSchema;
+  const revisedJob = { ...planned, prompt: 'a shop\n\nChanges to the plan:\n- add admin' } as WorkflowJob;
+
+  it('asks before generating, then builds the plan the person approved', async () => {
+    const { apis: a, calls } = apis({ generate: async (s) => (calls.push(`generate:${s.title}`), built(true)) });
+    const last = new Map<StepId, StepStatus>();
+    const outcome = await runAgent('a shop', a, (id, status) => last.set(id, status), new AbortController().signal, {
+      review: async (proposed) => {
+        calls.push(`review:${proposed.title}`);
+        return { kind: 'approve', schema: revised, workflowJob: revisedJob };
+      },
+    });
+    expect(calls).toEqual(['plan', 'review:Shop', 'generate:Shop with admin', 'pages']);
+    expect(last.get('review')).toBe('done');
+    expect(outcome.schema?.title).toBe('Shop with admin');
+    expect(outcome.workflowJob?.prompt).toContain('add admin');
+  });
+
+  it('generates nothing when the person cancels at the review', async () => {
+    const { apis: a, calls } = apis({});
+    const last = new Map<StepId, StepStatus>();
+    const outcome = await runAgent('a shop', a, (id, status) => last.set(id, status), new AbortController().signal, {
+      review: async () => ({ kind: 'cancel' }),
+    });
+    expect(calls).toEqual(['plan']);
+    expect(last.get('review')).toBe('failed');
+    expect(last.get('generate')).toBe('skipped');
+    expect(outcome.job).toBeNull();
+  });
+
+  it('shows the review step only when one was asked for', () => {
+    expect(stepsFor(false).map((step) => step.id)).toEqual(['plan', 'generate', 'continue', 'fix', 'pages']);
+    expect(stepsFor(true).map((step) => step.id)).toEqual(['plan', 'review', 'generate', 'continue', 'fix', 'pages']);
   });
 });

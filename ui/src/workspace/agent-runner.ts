@@ -13,7 +13,7 @@ import type { ProjectSchema } from './project-schema-types';
 import type { RunPage } from './workflow-api-client';
 
 export type StepStatus = 'waiting' | 'running' | 'done' | 'failed' | 'skipped';
-export type StepId = 'plan' | 'generate' | 'continue' | 'fix' | 'pages';
+export type StepId = 'plan' | 'review' | 'generate' | 'continue' | 'fix' | 'pages';
 
 export interface AgentStep {
   readonly id: StepId;
@@ -49,6 +49,26 @@ export const INITIAL_STEPS: readonly AgentStep[] = [
   { id: 'pages', title: 'Prepare pages for editing', status: 'waiting', detail: '' },
 ];
 
+const REVIEW_STEP: AgentStep = { id: 'review', title: 'You review the plan', status: 'waiting', detail: '' };
+
+/** The timeline for one run: with a review stop after planning when the person asked for one. */
+export function stepsFor(review: boolean): readonly AgentStep[] {
+  return review ? [INITIAL_STEPS[0] as AgentStep, REVIEW_STEP, ...INITIAL_STEPS.slice(1)] : INITIAL_STEPS;
+}
+
+/**
+ * What the person decided about the plan: build it - possibly a revised
+ * plan, with the workflow job that produced it - or stop here.
+ */
+export type ReviewDecision =
+  | { readonly kind: 'approve'; readonly schema: ProjectSchema; readonly workflowJob: WorkflowJob }
+  | { readonly kind: 'cancel' };
+
+export interface AgentOptions {
+  /** When present, the agent stops after planning and waits for this before generating anything. */
+  readonly review?: (schema: ProjectSchema, workflowJob: WorkflowJob) => Promise<ReviewDecision>;
+}
+
 const builds = (job: ApplicationJob): boolean => job.status === 'succeeded' && job.result?.build.installOk === true && job.result.build.buildOk;
 const stoppedHalfway = (job: ApplicationJob): boolean => job.status === 'failed' && job.result === undefined && (job.partialFiles?.length ?? 0) > 0;
 
@@ -58,19 +78,40 @@ function failureText(job: ApplicationJob): string {
   return 'failure' in error ? `${error.component.name}: ${error.failure.message}` : error.message;
 }
 
+const planSummary = (schema: ProjectSchema): string =>
+  `${schema.title} - ${(['frontend', 'backend', 'database', 'security'] as const).map((d) => `${schema.domains[d].components.length} ${d}`).join(' · ')}`;
+
 /** Runs the whole pipeline, reporting every step change through `update`. */
-export async function runAgent(prompt: string, apis: AgentApis, update: (id: StepId, status: StepStatus, detail: string) => void, signal: AbortSignal): Promise<AgentOutcome> {
+export async function runAgent(
+  prompt: string,
+  apis: AgentApis,
+  update: (id: StepId, status: StepStatus, detail: string) => void,
+  signal: AbortSignal,
+  options: AgentOptions = {},
+): Promise<AgentOutcome> {
   const empty: AgentOutcome = { schema: null, job: null, pages: [], sessionCreatedAt: null, workflowJob: null };
 
   update('plan', 'running', 'Reading your request…');
-  const planned = await apis.plan(prompt, signal, (status) => update('plan', 'running', status));
-  const schema = planned.result?.schema;
+  let planned = await apis.plan(prompt, signal, (status) => update('plan', 'running', status));
+  let schema = planned.result?.schema;
   if (planned.status !== 'succeeded' || schema === undefined) {
     update('plan', 'failed', planned.error === undefined ? 'no plan was produced' : JSON.stringify(planned.error).slice(0, 200));
     return { ...empty, workflowJob: planned };
   }
-  const counts = (['frontend', 'backend', 'database', 'security'] as const).map((d) => `${schema.domains[d].components.length} ${d}`).join(' · ');
-  update('plan', 'done', `${schema.title} - ${counts}`);
+  update('plan', 'done', planSummary(schema));
+
+  if (options.review !== undefined) {
+    update('review', 'running', 'Waiting for you: change the plan, or build it');
+    const decision = await options.review(schema, planned);
+    if (decision.kind === 'cancel') {
+      update('review', 'failed', 'cancelled - nothing was generated');
+      for (const id of ['generate', 'continue', 'fix', 'pages'] as const) update(id, 'skipped', '');
+      return { ...empty, schema, workflowJob: planned, sessionCreatedAt: planned.createdAt };
+    }
+    schema = decision.schema;
+    planned = decision.workflowJob;
+    update('review', 'done', `approved: ${planSummary(schema)}`);
+  }
 
   update('generate', 'running', 'Starting…');
   let job = await apis.generate(schema, signal, (j) => update('generate', 'running', j.phase ?? j.status));
