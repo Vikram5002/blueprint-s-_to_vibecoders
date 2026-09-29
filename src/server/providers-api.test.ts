@@ -27,7 +27,18 @@ describe('GET /api/providers', () => {
       providers: { id: string; available: boolean; detail: string; model: string }[];
     };
     expect(body.current).toBe('gemini');
-    expect(body.providers.map((entry) => entry.id)).toEqual(['gemini', 'local', 'local-code', 'anthropic', 'bluesminds']);
+    expect(body.providers.map((entry) => entry.id)).toEqual([
+      'gemini',
+      'groq',
+      'openrouter',
+      'github',
+      'ollama',
+      'local',
+      'local-code',
+      'openai-compatible',
+      'anthropic',
+      'bluesminds',
+    ]);
     expect(body.providers.find((entry) => entry.id === 'gemini')?.available).toBe(true);
     expect(body.providers.find((entry) => entry.id === 'local')?.available).toBe(false);
     // Every entry names a real model, so the picker can say what it would run.

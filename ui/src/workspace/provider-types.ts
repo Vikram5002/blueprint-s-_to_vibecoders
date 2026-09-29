@@ -5,7 +5,17 @@
  * itself: ui/ must not import from src/ directly.
  */
 
-export type ProviderName = 'gemini' | 'local' | 'local-code' | 'anthropic' | 'bluesminds';
+export type ProviderName =
+  | 'gemini'
+  | 'groq'
+  | 'openrouter'
+  | 'github'
+  | 'ollama'
+  | 'local'
+  | 'local-code'
+  | 'openai-compatible'
+  | 'anthropic'
+  | 'bluesminds';
 
 export interface ProviderStatus {
   readonly id: ProviderName;

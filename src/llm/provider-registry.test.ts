@@ -101,6 +101,60 @@ describe('createProviderRegistry', () => {
   });
 });
 
+describe('free OpenAI-compatible services in the picker', () => {
+  it('lists the free options before the paid vendors', () => {
+    expect(SELECTABLE_PROVIDERS.indexOf('groq')).toBeLessThan(SELECTABLE_PROVIDERS.indexOf('anthropic'));
+    expect(SELECTABLE_PROVIDERS.indexOf('ollama')).toBeLessThan(SELECTABLE_PROVIDERS.indexOf('bluesminds'));
+  });
+
+  it('marks a cloud service ready once its key is set, and otherwise says how to get one free', async () => {
+    const registry = createProviderRegistry({ env: { GROQ_API_KEY: 'k' } as NodeJS.ProcessEnv, initial: null, fetchImpl: refused });
+    const status = await registry.status();
+
+    expect(status.find((entry) => entry.id === 'groq')).toMatchObject({ available: true, detail: 'GROQ_API_KEY is set' });
+    const github = status.find((entry) => entry.id === 'github');
+    expect(github?.available).toBe(false);
+    expect(github?.detail).toContain('Student Developer Pack');
+  });
+
+  it('probes Ollama, since having no key says nothing about whether it is running', async () => {
+    const down = (await createProviderRegistry({ env: {}, initial: null, fetchImpl: refused }).status()).find(
+      (entry) => entry.id === 'ollama',
+    );
+    expect(down?.available).toBe(false);
+    expect(down?.detail).toContain('ollama.com');
+
+    const up = (await createProviderRegistry({ env: {}, initial: null, fetchImpl: reachable }).status()).find(
+      (entry) => entry.id === 'ollama',
+    );
+    expect(up).toMatchObject({ available: true, detail: 'Reachable at http://127.0.0.1:11434/v1' });
+  });
+
+  it('says which model to pull when Ollama is running without it - an empty list means none, not unknown', async () => {
+    const listing = (ids: string[]) => (async () => new Response(JSON.stringify({ object: 'list', data: ids.map((id) => ({ id })) }))) as typeof fetch;
+    const status = async (ids: string[]) =>
+      (await createProviderRegistry({ env: {}, initial: null, fetchImpl: listing(ids) }).status()).find((entry) => entry.id === 'ollama');
+
+    const none = await status([]);
+    expect(none?.available).toBe(false);
+    expect(none?.detail).toContain('run: ollama pull qwen2.5-coder:7b');
+    // Ollama itself says "none" as data: null, found live on 0.34.4.
+    const nullListing = (async () => new Response('{"object":"list","data":null}')) as typeof fetch;
+    const live = (await createProviderRegistry({ env: {}, initial: null, fetchImpl: nullListing }).status()).find(
+      (entry) => entry.id === 'ollama',
+    );
+    expect(live?.available).toBe(false);
+    expect((await status(['llama3:8b']))?.available).toBe(false);
+    expect((await status(['qwen2.5-coder:7b', 'llama3:8b']))?.available).toBe(true);
+  });
+
+  it('can be selected, and resolves to the service with its own key', async () => {
+    const registry = createProviderRegistry({ env: { OPENROUTER_API_KEY: 'k' } as NodeJS.ProcessEnv, initial: null });
+    expect(registry.select('openrouter')).toBe(true);
+    expect((await registry.resolve())?.name).toMatch(/^openrouter:/);
+  });
+});
+
 describe('local base URL - pointing at a machine that is not this one', () => {
   it('defaults to loopback when nothing is configured or persisted', () => {
     const registry = createProviderRegistry({ env: {}, initial: null });
@@ -161,9 +215,12 @@ describe('local base URL - pointing at a machine that is not this one', () => {
     registry.setLocalBaseUrl('https://abc-def.trycloudflare.com');
 
     const local = (await registry.status()).find((entry) => entry.id === 'local');
-    // Nothing goes to loopback - the coder, having no origin of its own, follows the planner's tunnel too.
-    expect(probed[0]).toBe('https://abc-def.trycloudflare.com');
-    expect(probed.every((url) => url.startsWith('https://abc-def.trycloudflare.com'))).toBe(true);
+    // Nothing for local or local-code goes to loopback - the coder, having no
+    // origin of its own, follows the planner's tunnel too. (Ollama is probed
+    // at its own address, which is loopback by design.)
+    const localProbes = probed.filter((url) => !url.includes(':11434'));
+    expect(localProbes[0]).toBe('https://abc-def.trycloudflare.com');
+    expect(localProbes.every((url) => url.startsWith('https://abc-def.trycloudflare.com'))).toBe(true);
     expect(local?.available).toBe(true);
     expect(local?.detail).toContain('https://abc-def.trycloudflare.com');
   });

@@ -38,6 +38,8 @@ export interface ChatCompletionsOptions {
   readonly model: string;
   readonly retry: RetryPolicy;
   readonly requestTimeoutMs: number;
+  /** Added to a 404's message: what to do when the model is not on the server (Ollama: the pull command). */
+  readonly notFoundHint?: string;
   readonly fetchImpl?: typeof fetch;
   readonly sleep?: (ms: number) => Promise<void>;
 }
@@ -135,6 +137,18 @@ export function createChatCompletionsProvider(options: ChatCompletionsOptions): 
         }
 
         if (response.status === 429) {
+          // A free tier's daily cap does not clear by waiting; say so at once
+          // (retryable: false) instead of backing off into the same answer.
+          if (isDailyLimit(text)) {
+            return {
+              ok: false,
+              error: {
+                kind: 'unavailable',
+                message: `daily free limit reached for ${model}; it resets tomorrow. Detail: ${summarise(text)}`,
+                retryable: false,
+              },
+            };
+          }
           lastFailure = {
             ok: false,
             error: { kind: 'unavailable', message: `rate limited after ${attempt} attempt(s)` },
@@ -162,11 +176,12 @@ export function createChatCompletionsProvider(options: ChatCompletionsOptions): 
           continue;
         }
 
+        const hint = response.status === 404 && options.notFoundHint !== undefined ? ` - ${options.notFoundHint}` : '';
         return {
           ok: false,
           error: {
             kind: response.status === 400 ? 'refused' : 'unavailable',
-            message: `HTTP ${response.status}: ${summarise(text)}`,
+            message: `HTTP ${response.status}: ${summarise(text)}${hint}`,
           },
         };
       }
@@ -174,6 +189,15 @@ export function createChatCompletionsProvider(options: ChatCompletionsOptions): 
       return lastFailure ?? { ok: false, error: { kind: 'unavailable', message: 'exhausted retries' } };
     },
   };
+}
+
+/**
+ * Does this 429 name a per-day window? Groq says "requests per day (RPD)",
+ * OpenRouter "free-models-per-day", GitHub Models "UserByModelByDay". A
+ * per-minute cap names its minute and is retried as before.
+ */
+export function isDailyLimit(body: string): boolean {
+  return /per[-_ ]?day|daily|\bRPD\b|\bTPD\b|ByDay/i.test(body);
 }
 
 /** `Retry-After` in seconds, when the service sends one. */
@@ -189,10 +213,18 @@ function buildRequestBody(
   model: string,
   withSchema: boolean,
 ): Record<string, unknown> {
+  // When the schema cannot be enforced it is at least stated: a model asked
+  // only for "some JSON" guesses its own field names, and validation then
+  // rejects every answer. The same contract the local server applies
+  // (pdsf/local_inference_server.py, system_with_schema).
+  const system =
+    !withSchema && request.schema !== undefined
+      ? `${request.system}\n\nRespond with JSON only, matching this JSON schema exactly:\n${JSON.stringify(request.schema)}`
+      : request.system;
   const body: Record<string, unknown> = {
     model,
     messages: [
-      { role: 'system', content: request.system },
+      { role: 'system', content: system },
       { role: 'user', content: request.user },
     ],
     max_tokens: request.maxOutputTokens,

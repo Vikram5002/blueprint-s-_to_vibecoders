@@ -35,6 +35,14 @@ import {
   readLocalBaseUrl,
   readLocalCodeBaseUrl,
 } from './local.js';
+import {
+  isOpenAiService,
+  listServedModels,
+  missingModelHint,
+  missingSetting,
+  OPENAI_SERVICES,
+  type OpenAiServiceName,
+} from './openai-services.js';
 import type { CompletionProvider, CompletionRequest, CompletionResult } from './provider.js';
 
 /** The key `settings-store.ts` holds the persisted choice under. */
@@ -73,13 +81,33 @@ export const LOCAL_CODE_BASE_URL_SETTING_KEY = 'llm.localCodeBaseUrl';
 export const CODE_PROVIDER_SETTING_KEY = 'llm.codeProvider';
 export const CODE_PROVIDER_SAME = 'same';
 
-/** Every provider a user may pick between, in the order the picker shows them. */
-export const SELECTABLE_PROVIDERS: readonly ProviderName[] = ['gemini', 'local', 'local-code', 'anthropic', 'bluesminds'];
+/**
+ * Every provider a user may pick between, in the order the picker shows them:
+ * the free options first - Gemini's free tier, then the free OpenAI-compatible
+ * services, then the person's own GPU - and the paid vendors last.
+ */
+export const SELECTABLE_PROVIDERS: readonly ProviderName[] = [
+  'gemini',
+  'groq',
+  'openrouter',
+  'github',
+  'ollama',
+  'local',
+  'local-code',
+  'openai-compatible',
+  'anthropic',
+  'bluesminds',
+];
 
 export const PROVIDER_LABELS: Readonly<Record<ProviderName, string>> = {
-  gemini: 'Gemini (cloud)',
+  gemini: 'Gemini (free tier, cloud)',
+  groq: OPENAI_SERVICES.groq.label,
+  openrouter: OPENAI_SERVICES.openrouter.label,
+  github: OPENAI_SERVICES.github.label,
+  ollama: OPENAI_SERVICES.ollama.label,
   local: 'Local model (this machine)',
   'local-code': 'Local code model (Qwen2.5-Coder)',
+  'openai-compatible': OPENAI_SERVICES['openai-compatible'].label,
   anthropic: 'Anthropic (cloud)',
   bluesminds: 'Bluesminds (cloud)',
 };
@@ -317,15 +345,21 @@ export function createProviderRegistry(options: ProviderRegistryOptions = {}): P
 
     status: async () => {
       const codeUrl = localCodeBaseUrl();
-      const [localUp, codeUp] = await Promise.all([
+      const [localUp, codeUp, serviceStatuses] = await Promise.all([
         probeLocalServer(localBaseUrl, fetchImpl),
         probeLocalServer(codeUrl, fetchImpl),
+        Promise.all(
+          SELECTABLE_PROVIDERS.filter(isOpenAiService).map((id) => serviceStatus(id, chooseProvider(envFor(id)), fetchImpl)),
+        ),
       ]);
+      const byService = new Map(serviceStatuses.map((entry) => [entry.id, entry]));
       // Reachable is one fact; "serves the code model" is another, and a
       // server too old to have /models answers neither way - so the served
       // names are reported when known and the detail degrades gracefully.
       const served = codeUp ? await probeModels(codeUrl, fetchImpl) : null;
       return SELECTABLE_PROVIDERS.map((id) => {
+        const service = byService.get(id);
+        if (service !== undefined) return service;
         const choice = chooseProvider(envFor(id));
         if (isLocalProvider(id)) {
           const url = id === 'local' ? localBaseUrl : codeUrl;
@@ -356,6 +390,40 @@ export function createProviderRegistry(options: ProviderRegistryOptions = {}): P
 
     resolve: () => providerFor(selected),
   };
+}
+
+/**
+ * Availability for an OpenAI-compatible service. A cloud service is ready
+ * once its key is set; a keyless one (Ollama, a local compatible server) is
+ * probed, because "configured" says nothing about whether it is running.
+ * When something is missing, the detail says how to get it for free.
+ */
+async function serviceStatus(
+  id: OpenAiServiceName,
+  choice: ReturnType<typeof chooseProvider>,
+  fetchImpl: typeof fetch,
+): Promise<ProviderStatus> {
+  const service = OPENAI_SERVICES[id];
+  const settings = { baseUrl: choice.baseUrl ?? service.baseUrl, apiKey: choice.apiKey, keyEnv: choice.keyEnv, model: choice.model };
+  // The generic server has no default model; name the setting rather than show a blank.
+  const base = { id, label: PROVIDER_LABELS[id], model: choice.model === '' ? `set ${service.modelEnv}` : choice.model };
+  const missing = missingSetting(service, settings);
+  if (missing !== null) return { ...base, available: false, detail: `${missing} - ${service.howToGet}` };
+  if (settings.apiKey !== null) return { ...base, available: true, detail: `${settings.keyEnv} is set` };
+  const served = await listServedModels(settings.baseUrl, fetchImpl);
+  if (!served.reachable) {
+    return { ...base, available: false, detail: `Nothing answering at ${settings.baseUrl} - ${service.howToGet}` };
+  }
+  // Running is not enough: a local runtime answers 404 for a model it has
+  // not downloaded, and the picker is the place to say so, not the first request.
+  if (served.models !== null && !served.models.includes(settings.model)) {
+    return {
+      ...base,
+      available: false,
+      detail: `Running at ${settings.baseUrl}, but ${settings.model} is not installed - ${missingModelHint(service, settings.model)}`,
+    };
+  }
+  return { ...base, available: true, detail: `Reachable at ${settings.baseUrl}` };
 }
 
 /**

@@ -52,9 +52,22 @@ import {
   readLocalBaseUrl,
   readLocalCodeBaseUrl,
 } from './local.js';
+import {
+  createOpenAiServiceProvider,
+  isOpenAiService,
+  missingSetting,
+  OPENAI_SERVICES,
+  readServiceSettings,
+  type OpenAiServiceName,
+} from './openai-services.js';
 import type { CompletionProvider } from './provider.js';
 
-export type ProviderName = 'bluesminds' | 'gemini' | 'anthropic' | 'local' | 'local-code';
+/**
+ * The OpenAI-compatible services (`openai-services.ts`: Groq, OpenRouter,
+ * GitHub Models, Ollama, any compatible server) are explicit choices like
+ * every other provider here - never a fallback for one that is failing.
+ */
+export type ProviderName = 'bluesminds' | 'gemini' | 'anthropic' | 'local' | 'local-code' | OpenAiServiceName;
 
 /** The two providers that talk to a local inference server: no key, an origin the user may move. */
 export function isLocalProvider(provider: ProviderName): provider is 'local' | 'local-code' {
@@ -98,7 +111,12 @@ export interface ProviderChoice {
    * which the test suite sets so tests never touch the real file).
    */
   readonly keyStatePath?: string | null;
-  /** `local`/`local-code` only: where its inference server is reachable. Absent everywhere else - a vendor API's origin is not the user's to move. */
+  /**
+   * `local`/`local-code`: where its inference server is reachable. For the
+   * OpenAI-compatible services, the endpoint prefix (movable only for the
+   * local runtimes and the generic server). Absent for the other vendors - a
+   * vendor API's origin is not the user's to move.
+   */
   readonly baseUrl?: string;
 }
 
@@ -114,9 +132,17 @@ export function chooseProvider(env: NodeJS.ProcessEnv = process.env): ProviderCh
     requested === 'gemini' ||
     requested === 'bluesminds' ||
     requested === 'local' ||
-    requested === 'local-code'
+    requested === 'local-code' ||
+    (requested !== undefined && isOpenAiService(requested))
       ? requested
       : DEFAULT_PROVIDER;
+
+  if (isOpenAiService(provider)) {
+    // Each service reads its own model variable, not VIBE_LLM_MODEL - see
+    // openai-services.ts's header for why.
+    const settings = readServiceSettings(OPENAI_SERVICES[provider], env);
+    return { provider, model: settings.model, apiKey: settings.apiKey, keyEnv: settings.keyEnv, baseUrl: settings.baseUrl };
+  }
   const override = env[MODEL_ENV]?.trim();
   const pick = (fallback: string): string =>
     override !== undefined && override !== '' ? override : fallback;
@@ -191,6 +217,14 @@ export async function createProvider(choice: ProviderChoice): Promise<Completion
       model: choice.model,
       ...(choice.baseUrl === undefined ? {} : { baseUrl: choice.baseUrl }),
     });
+  }
+
+  if (isOpenAiService(choice.provider)) {
+    // Checked before the key gate: Ollama and a local compatible server have
+    // no key, and the generic server's key is optional.
+    const service = OPENAI_SERVICES[choice.provider];
+    const settings = { baseUrl: choice.baseUrl ?? service.baseUrl, apiKey: choice.apiKey, keyEnv: choice.keyEnv, model: choice.model };
+    return missingSetting(service, settings) === null ? createOpenAiServiceProvider(service, settings) : null;
   }
 
   if (choice.apiKey === null) return null;
