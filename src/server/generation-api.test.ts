@@ -1,6 +1,6 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createApplicationJobStore,
@@ -8,7 +8,11 @@ import {
   MAX_CONCURRENT_APPLICATION_JOBS,
   type ApplicationJob,
   type ApplicationJobStore,
+  type ApplicationRunPayload,
 } from './generation-api.js';
+import { createApplicationRunsStore } from '../store/application-runs-store.js';
+import { openDatabase } from '../store/database.js';
+import type { PageLayout } from '../generate/canvas-layout.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 import type { CompletionProvider, CompletionRequest, CompletionResult } from '../llm/provider.js';
 import type { CachedLabel, LabelCache } from '../llm/cache.js';
@@ -176,6 +180,52 @@ describe('createGenerationRoutes', () => {
     const app = createGenerationRoutes({ llm: { provider: stubProvider(() => okCode('x')), cache: memoryCache() }, generationRoot, jobs: store });
     const response = await app.request(`/application-jobs/${pendingJob.id}/download`);
     expect(response.status).toBe(409);
+  });
+
+  it('downloads a finished run with its Student Project Pack when the plan is on record', async () => {
+    const schema = validateProjectSchema({
+      ...EMPTY_SCHEMA_CANDIDATE,
+      title: 'Campus Quiz',
+      domains: {
+        ...EMPTY_SCHEMA_CANDIDATE.domains,
+        backend: { components: [{ id: 'quiz-api', name: 'Quiz API', purpose: 'Serves questions.' }], dependsOn: [] },
+      },
+    });
+    if (!schema.ok) throw new Error('fixture schema failed validation');
+    const files = {
+      'backend/src/index.ts': "import { router as quizApi } from './routes/quiz-api';\napp.use('/api/quiz-api', quizApi);",
+      'backend/src/routes/quiz-api.ts': "router.get('/questions', h);",
+    };
+    const store = createApplicationJobStore();
+    const job: ApplicationJob = {
+      ...store.create({ sessionId: schema.value.sessionId }),
+      status: 'succeeded',
+      result: {
+        files: Object.entries(files).map(([path, contents]) => ({ path, bytes: contents.length })),
+        regenerationLog: [],
+        unresolvedViolations: [],
+        unresolvedServiceLocatorFindings: [],
+        build: { installOk: true, buildOk: true },
+      },
+    };
+    store.set(job);
+    for (const [path, contents] of Object.entries(files)) {
+      await mkdir(join(generationRoot, job.id, dirname(path)), { recursive: true });
+      await writeFile(join(generationRoot, job.id, path), contents);
+    }
+    const runs = createApplicationRunsStore<ApplicationRunPayload, PageLayout>(openDatabase(':memory:'));
+    runs.save({ id: job.id, sessionId: job.sessionId, kind: 'generate', parentId: null, status: 'succeeded', createdAt: job.createdAt, job: { job, schema: schema.value } });
+
+    const app = createGenerationRoutes({ llm: null, generationRoot, jobs: store, runs });
+    const response = await app.request(`/application-jobs/${job.id}/download`);
+    // Stored, not compressed (zip.ts): the entries can be read straight out of the archive bytes.
+    const archive = Buffer.from(await response.arrayBuffer()).toString('utf8');
+
+    expect(response.status).toBe(200);
+    expect(archive).toContain('docs/PROJECT-REPORT.md');
+    expect(archive).toContain('# Campus Quiz - Project Report');
+    expect(archive).toContain('| GET | `/api/quiz-api/questions` | `backend/src/routes/quiz-api.ts` |');
+    expect(archive).toContain('| TypeScript build of the whole project | Passed |');
   });
 
   it('404s a download request for an unknown job', async () => {

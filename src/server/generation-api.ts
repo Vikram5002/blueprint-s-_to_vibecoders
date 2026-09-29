@@ -56,6 +56,7 @@ import { layoutToComponentFile, pageLayoutTargetPath, validatePageLayout, type P
 import { parsePageLayout } from './page-builder-api.js';
 import { buildZipArchive } from '../export/zip.js';
 import { withRunScaffold } from '../export/runnable-project.js';
+import { withProjectPack, type PackVerification } from '../export/project-pack.js';
 import { componentTargetPath, type GeneratedFile } from '../generate/assemble.js';
 import { readProjectFiles, schemaFromProjectFiles } from '../generate/import-project.js';
 import { cloneDirectoryFor, cloneRepository, parseGitUrl, validateBranch } from '../ingest/git-source.js';
@@ -442,9 +443,13 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
         contents: await readGeneratedFile(root, file.path),
       })),
     );
-    // The verified project plus what a person needs to open its UI (index.html, Vite, README).
-    const title = runs?.get(id)?.job.schema.title;
-    const zip = buildZipArchive(withRunScaffold(entries, title));
+    // The verified project plus what a person needs to open its UI (index.html,
+    // Vite, README) and, when the plan is on record, the Student Project Pack.
+    const saved = runs?.get(id)?.job;
+    const scaffolded = withRunScaffold(entries, saved?.schema.title);
+    const zip = buildZipArchive(
+      saved === undefined ? scaffolded : withProjectPack(scaffolded, { schema: saved.schema, verification: packVerification(job.result) }),
+    );
 
     c.header('content-type', 'application/zip');
     c.header('content-disposition', `attachment; filename="generated-${id}.zip"`);
@@ -607,6 +612,16 @@ function atCapacity(jobs: ApplicationJobStore, c: { header(name: string, value: 
     },
     503,
   );
+}
+
+/** The checks a finished run passed, as the project report states them. */
+function packVerification(result: ApplicationJobResult): PackVerification {
+  return {
+    buildOk: result.build.installOk && result.build.buildOk,
+    architectureViolations: result.unresolvedViolations.length,
+    securityFindings: result.unresolvedServiceLocatorFindings.length,
+    repairRounds: result.regenerationLog.length,
+  };
 }
 
 function isFrontendPage(path: string): boolean {
