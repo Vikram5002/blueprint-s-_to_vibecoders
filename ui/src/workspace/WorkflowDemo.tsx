@@ -312,7 +312,7 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
             <div className="text-xs text-slate-500">
               {(elapsedMs / 1000).toFixed(1)}s elapsed
               {elapsedMs > SLOW_PROVIDER_HINT_MS
-                ? ' — the local model can take up to ~27s; still working'
+                ? ' — still working; a local model on a small free GPU can take a few minutes for a plan'
                 : ''}
             </div>
           </div>
