@@ -94,7 +94,7 @@ test.describe('Sessions sidebar: real, server-persisted generation runs', () => 
     // else has accumulated there.
     await page.goto(`${cli.baseUrl}/workspace.html`);
 
-    await page.getByRole('tab', { name: 'Workflow graph (mock)' }).click();
+    await page.getByRole('tab', { name: 'Workflow' }).click();
     await page.getByRole('button', { name: 'Generate from prompt' }).click();
     await page
       .getByPlaceholder('Describe the app you want to build...')
@@ -112,7 +112,7 @@ test.describe('Sessions sidebar: real, server-persisted generation runs', () => 
     // and back is what a real user does, and is exactly what exposed the
     // original "session opens into an empty idle view" bug live. The newest
     // session is always first (ORDER BY created_at DESC, workflow-sessions-store.ts).
-    await page.getByRole('tab', { name: 'Conversation' }).click();
+    await page.getByRole('tab', { name: 'Agent' }).click();
     const sessionButton = page.getByTestId('session-item').first();
     await expect(sessionButton).toBeVisible();
     const sessionTitle = (await sessionButton.textContent())?.trim();
@@ -124,7 +124,7 @@ test.describe('Sessions sidebar: real, server-persisted generation runs', () => 
     await expect(reloadedButton).toBeVisible();
 
     await reloadedButton.click();
-    await expect(page.getByRole('tab', { name: 'Workflow graph (mock)' })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: 'Workflow' })).toHaveAttribute(
       'aria-selected',
       'true',
     );
@@ -161,13 +161,16 @@ test.describe('Model picker: choosing between a cloud API and the local model', 
   }) => {
     await page.goto(`${cli.baseUrl}/workspace.html`);
 
+    // The pickers live in the header's model menu.
+    await page.getByTestId('model-menu').click();
     const picker = page.getByTestId('provider-select');
     await expect(picker).toBeVisible();
 
     // Every selectable provider is offered, and the ones that cannot serve a
     // request right now say so rather than silently failing later.
     const options = await picker.locator('option').allTextContents();
-    expect(options).toHaveLength(5);
+    // Gemini, the five free OpenAI-compatible services, local, local-code, Anthropic, Bluesminds.
+    expect(options).toHaveLength(10);
     expect(options.some((text) => text.startsWith('Gemini'))).toBe(true);
     expect(options.some((text) => text.startsWith('Local model'))).toBe(true);
 
@@ -175,7 +178,7 @@ test.describe('Model picker: choosing between a cloud API and the local model', 
     // default, so it must be offered but marked unavailable - selectable
     // anyway, because you may be about to start it.
     const localOption = options.find((text) => text.startsWith('Local model'));
-    expect(localOption).toContain('unavailable');
+    expect(localOption).toContain('not set up');
 
     await picker.selectOption('local');
     await expect(picker).toHaveValue('local');
@@ -191,6 +194,7 @@ test.describe('Model picker: choosing between a cloud API and the local model', 
 
     // And it is persisted, not per-tab.
     await page.reload();
+    await page.getByTestId('model-menu').click();
     await expect(page.getByTestId('provider-select')).toHaveValue('local');
 
     // Put it back so this test leaves the shared fixture's .vibe database as

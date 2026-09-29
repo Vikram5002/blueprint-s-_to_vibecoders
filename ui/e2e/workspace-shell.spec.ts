@@ -109,10 +109,10 @@ test.describe('tab navigation', () => {
 
     await page.goto('/workspace.html');
 
-    const conversationTab = page.getByRole('tab', { name: 'Conversation' });
+    const conversationTab = page.getByRole('tab', { name: 'Agent' });
     const pageBuilderTab = page.getByRole('tab', { name: 'Page builder' });
-    const verificationTab = page.getByRole('tab', { name: 'Verification (mock)' });
-    const workflowTab = page.getByRole('tab', { name: 'Workflow graph (mock)' });
+    const verificationTab = page.getByRole('tab', { name: 'Verification' });
+    const workflowTab = page.getByRole('tab', { name: 'Workflow' });
 
     await expect(conversationTab).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByText('Agent mode')).toBeVisible();
@@ -143,7 +143,7 @@ test.describe('verification display — three outcomes', () => {
 
   test('each scenario renders its own visually distinct, unambiguous outcome', async ({ page }) => {
     await page.goto('/workspace.html');
-    await page.getByRole('tab', { name: 'Verification (mock)' }).click();
+    await page.getByRole('tab', { name: 'Verification' }).click();
 
     await page.getByRole('button', { name: 'Verified' }).click();
     await expect(page.locator('[data-outcome="verified"]')).toBeVisible();
@@ -171,7 +171,7 @@ test.describe('workflow graph — fit-to-view', () => {
 
   test('renders the four domain nodes and responds to the fit-to-view control', async ({ page }) => {
     await page.goto('/workspace.html');
-    await page.getByRole('tab', { name: 'Workflow graph (mock)' }).click();
+    await page.getByRole('tab', { name: 'Workflow' }).click();
 
     await expect(page.getByTestId('rf__node-frontend').getByText('Frontend')).toBeVisible();
     await expect(page.getByTestId('rf__node-backend').getByText('Backend')).toBeVisible();
@@ -196,7 +196,7 @@ test.describe('workflow graph — fit-to-view', () => {
 test.describe('no horizontal overflow at 768px', () => {
   test.use({ viewport: { width: 768, height: 1024 } });
 
-  for (const tab of ['Conversation', 'Page builder', 'Verification (mock)', 'Workflow graph (mock)']) {
+  for (const tab of ['Agent', 'Page builder', 'Verification', 'Workflow']) {
     test(`"${tab}" tab has no horizontal overflow`, async ({ page }) => {
       await page.goto('/workspace.html');
       await page.getByRole('tab', { name: tab }).click();

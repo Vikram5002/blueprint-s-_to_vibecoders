@@ -1,42 +1,61 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useWorkspaceStore } from './store';
 import { fetchLatestRuns, fetchWorkflowSession, listWorkflowSessions } from './workflow-api-client';
 import { ImportProjectDialog } from './ImportProjectDialog';
+import { Icon } from '../design/Icon';
+import { LogoMark, Wordmark } from '../design/Logo';
 import type { WorkflowSessionSummary } from './workflow-session-types';
 import type { LatestRun } from './application-job-types';
 
 type LoadState = { readonly kind: 'loading' } | { readonly kind: 'error'; readonly message: string } | { readonly kind: 'loaded' };
 
-/** `Intl.DateTimeFormat`, not a relative-time library — one small, dependency-free formatter for one place that needs it. */
-function formatSessionDate(iso: string): string {
+interface SessionGroup {
+  readonly label: string;
+  readonly sessions: readonly WorkflowSessionSummary[];
+}
+
+const DAY_MS = 86_400_000;
+
+/** Today / Yesterday / Previous 7 days / Earlier, newest first - how a person remembers when they worked on something. */
+export function groupSessions(sessions: readonly WorkflowSessionSummary[], now: Date): readonly SessionGroup[] {
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const buckets: { label: string; from: number; sessions: WorkflowSessionSummary[] }[] = [
+    { label: 'Today', from: startOfToday, sessions: [] },
+    { label: 'Yesterday', from: startOfToday - DAY_MS, sessions: [] },
+    { label: 'Previous 7 days', from: startOfToday - 7 * DAY_MS, sessions: [] },
+    { label: 'Earlier', from: Number.NEGATIVE_INFINITY, sessions: [] },
+  ];
+  for (const session of sessions) {
+    const time = new Date(session.createdAt).getTime();
+    const bucket = buckets.find((candidate) => (Number.isNaN(time) ? candidate.from === Number.NEGATIVE_INFINITY : time >= candidate.from));
+    bucket?.sessions.push(session);
+  }
+  return buckets.filter((bucket) => bucket.sessions.length > 0).map(({ label, sessions: items }) => ({ label, sessions: items }));
+}
+
+/** The time for today's sessions, the day for older ones - short enough to sit beside a title. */
+function formatWhen(iso: string, now: Date): string {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date);
+  if (Number.isNaN(date.getTime())) return '';
+  const sameDay = date.toDateString() === now.toDateString();
+  return new Intl.DateTimeFormat(undefined, sameDay ? { hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'short' }).format(date);
 }
 
 /**
- * 240px expanded, a narrow icon rail when collapsed. Collapse state lives in
- * the Zustand store rather than local state so other regions could react to
- * it later without prop drilling — not needed today, but cheap to set up
- * right the first time.
- *
- * Sessions are real, persisted workflow generation runs
- * (src/store/workflow-sessions-store.ts, `/api/workflow/sessions`) — fetched
- * on mount and refetched whenever `sessionsVersion` changes (bumped by
- * WorkflowDemo the moment a live generation reaches 'succeeded'). Clicking
- * one fetches its full detail and opens it in the Workflow graph tab via
- * `openSession` — never a partial render from the summary alone, since the
- * summary list intentionally omits the schema/prohibitions/permissions body.
+ * 240px expanded, a 56px rail when collapsed (collapse state lives in the
+ * store). Projects are real, persisted workflow sessions
+ * (`/api/workflow/sessions`), refetched whenever `sessionsVersion` changes;
+ * clicking one fetches its full detail and opens it in the Workflow tab via
+ * `openSession` - never a partial render from the summary alone.
  */
 export function Sidebar(): JSX.Element {
   const collapsed = useWorkspaceStore((state) => state.sidebarCollapsed);
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
   const sessionsVersion = useWorkspaceStore((state) => state.sessionsVersion);
   const openSession = useWorkspaceStore((state) => state.openSession);
-  const [importing, setImporting] = useState(false);
+  const startNewProject = useWorkspaceStore((state) => state.startNewProject);
+  const importOpen = useWorkspaceStore((state) => state.importOpen);
+  const setImportOpen = useWorkspaceStore((state) => state.setImportOpen);
   const openedSessionId = useWorkspaceStore((state) => state.openedSession?.id);
   const runsVersion = useWorkspaceStore((state) => state.runsVersion);
 
@@ -45,6 +64,7 @@ export function Sidebar(): JSX.Element {
   const [latestRuns, setLatestRuns] = useState<ReadonlyMap<string, LatestRun>>(new Map());
   const [loadState, setLoadState] = useState<LoadState>({ kind: 'loading' });
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -78,14 +98,19 @@ export function Sidebar(): JSX.Element {
     };
   }, [sessionsVersion, runsVersion]);
 
+  const now = new Date();
+  const groups = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    const matching = needle === '' ? sessions : sessions.filter((session) => session.title.toLowerCase().includes(needle));
+    return groupSessions(matching, new Date());
+  }, [sessions, query]);
+
   async function handleOpen(id: string): Promise<void> {
     setOpeningId(id);
     try {
-      const detail = await fetchWorkflowSession(id);
-      openSession(detail);
+      openSession(await fetchWorkflowSession(id));
     } catch {
-      // Left for the next click to retry — the sidebar's own list still
-      // reflects reality either way, only the detail fetch failed.
+      // Left for the next click to retry - only the detail fetch failed.
     } finally {
       setOpeningId(null);
     }
@@ -93,83 +118,130 @@ export function Sidebar(): JSX.Element {
 
   return (
     <aside
-      className={`flex h-full flex-shrink-0 flex-col border-r border-white/[0.08] bg-slate-950 transition-[width] duration-300 ease-apple ${
+      className={`relative flex h-full flex-shrink-0 flex-col border-r border-white/[0.06] bg-[#0e0e11] transition-[width] duration-300 ease-apple ${
         collapsed ? 'w-14' : 'w-60'
       }`}
     >
-      <div className="flex items-center justify-between px-3 pb-2 pt-3.5">
-        {!collapsed && <span className="text-[13px] font-semibold tracking-tight text-slate-100">Sessions</span>}
-        {!collapsed && (
-          <button
-            type="button"
-            data-testid="open-import"
-            onClick={() => setImporting(true)}
-            title="Continue a project you have been building - from a folder or Git"
-            className="ml-auto mr-1 rounded-md border border-slate-700 px-2 py-0.5 text-[11px] text-slate-300 hover:bg-white/[0.06]"
-          >
-            ⇪ Import
-          </button>
-        )}
-        {importing && <ImportProjectDialog onClose={() => setImporting(false)} />}
+      <div className={`flex items-center pb-3 pt-3.5 ${collapsed ? 'flex-col gap-3 px-2' : 'justify-between px-3.5'}`}>
+        {collapsed ? <LogoMark size={26} /> : <Wordmark />}
         <button
           type="button"
           onClick={toggleSidebar}
-          className="rounded-md p-1 text-slate-400 hover:bg-white/[0.08] hover:text-slate-100"
+          className="btn btn-ghost btn-sm !h-7 !w-7 !p-0"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           aria-expanded={!collapsed}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? '»' : '«'}
+          <Icon name={collapsed ? 'chevrons-right' : 'chevrons-left'} size={15} />
         </button>
       </div>
 
+      <div className={collapsed ? 'flex flex-col items-center gap-2 px-2' : 'space-y-2 px-3'}>
+        <button
+          type="button"
+          data-testid="new-project"
+          onClick={startNewProject}
+          title="Start a new project in Agent mode"
+          className={`btn btn-primary ${collapsed ? 'btn-icon !h-9 !w-9 !rounded-[11px]' : 'w-full'}`}
+        >
+          <Icon name="plus" size={15} strokeWidth={2.2} />
+          {!collapsed && 'New project'}
+        </button>
+        {!collapsed && (
+          <label className="focus-glow flex items-center gap-2 rounded-[10px] border border-white/[0.07] bg-white/[0.03] px-2.5">
+            <Icon name="search" size={14} className="text-slate-500" />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search projects"
+              aria-label="Search projects"
+              className="h-8 min-w-0 flex-1 bg-transparent text-[13px] text-slate-100 placeholder:text-slate-500 focus-visible:outline-none"
+            />
+          </label>
+        )}
+      </div>
+
       {!collapsed && (
-        <div className="flex-1 overflow-y-auto px-2 py-2 text-sm text-slate-500">
+        <nav aria-label="Projects" className="mt-3 flex-1 overflow-y-auto px-2 pb-3">
           {loadState.kind === 'error' ? (
-            <p className="text-red-300">Could not load sessions: {loadState.message}</p>
+            <p className="px-2 text-xs text-red-300">Could not load projects: {loadState.message}</p>
           ) : loadState.kind === 'loading' && sessions.length === 0 ? (
-            <p>Loading…</p>
-          ) : sessions.length === 0 ? (
-            <p>No sessions yet.</p>
-          ) : (
-            <ul className="space-y-0.5">
-              {sessions.map((session) => (
-                <li key={session.id}>
-                  <button
-                    type="button"
-                    data-testid="session-item"
-                    onClick={() => void handleOpen(session.id)}
-                    disabled={openingId === session.id}
-                    aria-current={openedSessionId === session.id ? 'true' : undefined}
-                    className="w-full rounded-lg px-2.5 py-2 text-left hover:bg-white/[0.05] disabled:cursor-wait aria-[current=true]:bg-sky-500/[0.16] aria-[current=true]:text-slate-100"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <RunDot run={latestRuns.get(session.id)} />
-                      <span className="truncate text-[13px] font-medium text-slate-200">{session.title}</span>
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {openingId === session.id ? 'Opening…' : formatSessionDate(session.createdAt)}
-                    </div>
-                  </button>
-                </li>
+            <div className="space-y-2 px-1.5 pt-1" aria-label="Loading projects">
+              {[0, 1, 2, 3].map((index) => (
+                <div key={index} className="skeleton h-9" />
               ))}
-            </ul>
+            </div>
+          ) : sessions.length === 0 ? (
+            <p className="px-2.5 pt-2 text-xs leading-relaxed text-slate-500">
+              No projects yet. Describe one in Agent mode and it appears here.
+            </p>
+          ) : groups.length === 0 ? (
+            <p className="px-2.5 pt-2 text-xs text-slate-500">Nothing matches &ldquo;{query}&rdquo;.</p>
+          ) : (
+            groups.map((group) => (
+              <div key={group.label} className="mb-3">
+                <div className="px-2.5 pb-1 pt-1 text-[11px] font-medium text-slate-500">{group.label}</div>
+                <ul className="space-y-px">
+                  {group.sessions.map((session) => {
+                    const current = openedSessionId === session.id;
+                    return (
+                      <li key={session.id}>
+                        <button
+                          type="button"
+                          data-testid="session-item"
+                          onClick={() => void handleOpen(session.id)}
+                          disabled={openingId === session.id}
+                          aria-current={current ? 'true' : undefined}
+                          title={session.title}
+                          className="group relative flex w-full items-center gap-2.5 rounded-[9px] px-2.5 py-[7px] text-left hover:bg-white/[0.045] disabled:cursor-wait aria-[current=true]:bg-white/[0.07]"
+                        >
+                          {current && <span aria-hidden="true" className="absolute inset-y-2 left-0 w-[2.5px] rounded-full bg-gradient-to-b from-violet-400 to-sky-500" />}
+                          {openingId === session.id ? <span className="spinner !h-2.5 !w-2.5 !border" /> : <RunDot run={latestRuns.get(session.id)} />}
+                          <span className="min-w-0 flex-1 truncate text-[13px] text-slate-300 group-hover:text-slate-100 group-aria-[current=true]:font-medium group-aria-[current=true]:text-slate-50">
+                            {session.title}
+                          </span>
+                          <span className="flex-shrink-0 text-[11px] tabular-nums text-slate-500">{formatWhen(session.createdAt, now)}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))
           )}
-        </div>
+        </nav>
       )}
+
+      <div className={`mt-auto border-t border-white/[0.06] ${collapsed ? 'flex justify-center px-2 py-3' : 'px-3 py-3'}`}>
+        <button
+          type="button"
+          data-testid="open-import"
+          onClick={() => setImportOpen(true)}
+          title="Continue a project you have been building - from a folder or Git"
+          className={`btn btn-ghost ${collapsed ? 'btn-icon' : 'w-full !justify-start'}`}
+        >
+          <Icon name="folder" size={15} />
+          {!collapsed && 'Import a project'}
+        </button>
+      </div>
+      {importOpen && <ImportProjectDialog onClose={() => setImportOpen(false)} />}
     </aside>
   );
 }
 
-/** Green: the last generated application built. Red: it did not (open the session to fix it). Nothing: never generated. */
-function RunDot({ run }: { readonly run: LatestRun | undefined }): JSX.Element | null {
-  if (run === undefined) return null;
+/** Green: the last generated application built. Red: it did not (open it to fix). Hollow: never generated. */
+function RunDot({ run }: { readonly run: LatestRun | undefined }): JSX.Element {
+  if (run === undefined) {
+    return <span aria-hidden="true" className="h-[7px] w-[7px] flex-shrink-0 rounded-full border border-slate-600" />;
+  }
   const built = run.status === 'succeeded' && run.buildOk;
   return (
     <span
       data-testid="run-dot"
       data-built={built}
       title={built ? 'Last generated application built successfully' : 'Last generated application failed to build - open to fix'}
-      className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${built ? 'bg-emerald-400' : 'bg-red-400'}`}
+      className={`h-[7px] w-[7px] flex-shrink-0 rounded-full ${built ? 'bg-emerald-400 shadow-[0_0_8px_rgba(48,209,88,0.6)]' : 'bg-red-400 shadow-[0_0_8px_rgba(255,69,58,0.5)]'}`}
     />
   );
 }

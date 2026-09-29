@@ -42,7 +42,7 @@ test('a change typed under the plan re-plans the same session and leaves Generat
   });
 
   await page.goto('/workspace.html');
-  await page.getByRole('tab', { name: 'Workflow graph (mock)' }).click();
+  await page.getByRole('tab', { name: 'Workflow' }).click();
   await page.getByText('Generate from prompt').click();
   await page.getByPlaceholder('Describe the app you want to build...').fill(ORIGINAL);
   await page.getByRole('button', { name: 'Generate', exact: true }).click();

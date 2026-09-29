@@ -60,6 +60,19 @@ export interface WorkspaceState {
   readonly notifySessionSaved: () => void;
   readonly runsVersion: number;
   readonly notifyRunSaved: () => void;
+  /** Bumped by "New project": Agent mode clears its finished runs and focuses its prompt. */
+  readonly newProjectVersion: number;
+  /** Opens Agent mode on an empty page, ready for a new request. */
+  readonly startNewProject: () => void;
+  /** The "continue a project from a folder or Git" dialog - opened from the sidebar or the command palette. */
+  readonly importOpen: boolean;
+  readonly setImportOpen: (open: boolean) => void;
+  /** The Ctrl/Cmd+K command palette. */
+  readonly commandOpen: boolean;
+  readonly setCommandOpen: (open: boolean) => void;
+  /** Bumped when the model choice changes outside the model menu (the command palette), so the menu refetches. */
+  readonly providersVersion: number;
+  readonly notifyProvidersChanged: () => void;
 
   readonly pageBuilder: PageBuilderState;
   readonly setPageName: (pageName: string) => void;
@@ -102,6 +115,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   notifySessionSaved: () => set((state) => ({ sessionsVersion: state.sessionsVersion + 1 })),
   runsVersion: 0,
   notifyRunSaved: () => set((state) => ({ runsVersion: state.runsVersion + 1 })),
+  newProjectVersion: 0,
+  startNewProject: () => set((state) => ({ activeTab: 'conversation', newProjectVersion: state.newProjectVersion + 1 })),
+  importOpen: false,
+  setImportOpen: (open) => set({ importOpen: open }),
+  commandOpen: false,
+  setCommandOpen: (open) => set({ commandOpen: open }),
+  providersVersion: 0,
+  notifyProvidersChanged: () => set((state) => ({ providersVersion: state.providersVersion + 1 })),
 
   pageBuilder: EMPTY_CANVAS,
   setPageName: (pageName) => set((state) => ({ pageBuilder: { ...state.pageBuilder, pageName } })),

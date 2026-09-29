@@ -97,7 +97,7 @@ test.describe('real "Generate Application" flow against the scale-test fixture -
   test('scale-test fixture: TaskRouter hard-fails and the UI renders it honestly, with real evidence', async ({ page }) => {
     await page.goto(`${cli.baseUrl}/workspace.html`);
 
-    await page.getByRole('tab', { name: 'Workflow graph (mock)' }).click();
+    await page.getByRole('tab', { name: 'Workflow' }).click();
     await page.getByRole('button', { name: 'Scale-test fixture (Milestone 3, TaskRouter hard-fail)' }).click();
 
     const generateButton = page.getByRole('button', { name: 'Generate Application' });

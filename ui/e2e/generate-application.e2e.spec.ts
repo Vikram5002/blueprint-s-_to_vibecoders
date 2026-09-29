@@ -93,7 +93,7 @@ test.describe('real "Generate Application" flow, driven from the actual browser 
   }) => {
     await page.goto(`${cli.baseUrl}/workspace.html`);
 
-    await page.getByRole('tab', { name: 'Workflow graph (mock)' }).click();
+    await page.getByRole('tab', { name: 'Workflow' }).click();
     await page.getByRole('button', { name: 'Known-tension fixture (Milestone 1)' }).click();
 
     const generateButton = page.getByRole('button', { name: 'Generate Application' });

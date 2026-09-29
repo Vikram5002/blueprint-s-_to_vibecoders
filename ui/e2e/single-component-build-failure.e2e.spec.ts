@@ -87,7 +87,7 @@ test.describe('Single-component fixture: live verification of the build-failure 
 
   test('a real single-file tsc failure, if it occurs, attributes cleanly and the retry produces a real passing rebuild', async ({ page }) => {
     await page.goto(`${cli.baseUrl}/workspace.html`);
-    await page.getByRole('tab', { name: 'Workflow graph (mock)' }).click();
+    await page.getByRole('tab', { name: 'Workflow' }).click();
     await page.getByRole('button', { name: 'Single-component fixture (build-failure retry)' }).click();
 
     const generateButton = page.getByRole('button', { name: 'Generate Application' });

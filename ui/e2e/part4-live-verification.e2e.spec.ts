@@ -79,7 +79,7 @@ test.describe('Part 4: live verification of Item 3 (service-locator check) and P
 
   test('a real live prompt through "Generate from prompt" exercises the real build-failure retry path', async ({ page }) => {
     await page.goto(`${cli.baseUrl}/workspace.html`);
-    await page.getByRole('tab', { name: 'Workflow graph (mock)' }).click();
+    await page.getByRole('tab', { name: 'Workflow' }).click();
     await page.getByRole('button', { name: 'Generate from prompt' }).click();
 
     const promptInput = page.getByPlaceholder('Describe the app you want to build...');
