@@ -39,3 +39,4 @@ training/code/formatted/*.zip
 pdsf/code_adapter.zip
 pdsf/hf_cache/
 __pycache__/
+pdsf/plan.zip
