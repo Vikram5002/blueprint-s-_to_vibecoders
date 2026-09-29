@@ -32,12 +32,15 @@ export interface SubmittedWorkflowJob {
   readonly status: WorkflowJobStatus;
 }
 
+/** What a plan job is asked to do: plan from a prompt, or re-plan a saved session with one change. */
+export type PlanRequest = string | { readonly revises: string; readonly change: string };
+
 /** POSTs the prompt; resolves as soon as the server acknowledges (202), before generation starts. */
-export async function submitWorkflowJob(prompt: string): Promise<SubmittedWorkflowJob> {
+export async function submitWorkflowJob(request: PlanRequest): Promise<SubmittedWorkflowJob> {
   const response = await fetch('/api/workflow/jobs', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify(typeof request === 'string' ? { prompt: request } : request),
   });
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, `submit failed: ${response.status}`));
@@ -73,11 +76,11 @@ export interface GenerateViaApiOptions {
  * the submit itself rejected (400/503), or a poll request failed outright.
  */
 export async function generateProjectSchemaViaApi(
-  prompt: string,
+  request: PlanRequest,
   options: GenerateViaApiOptions = {},
 ): Promise<WorkflowJob> {
   const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
-  const submitted = await submitWorkflowJob(prompt);
+  const submitted = await submitWorkflowJob(request);
   options.onStatus?.(submitted.status);
 
   for (;;) {

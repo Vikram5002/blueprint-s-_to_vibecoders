@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { SegmentedControl } from '../design/SegmentedControl';
 import { WorkflowGraph } from './WorkflowGraph';
 import { GenerateApplicationPanel } from './GenerateApplicationPanel';
+import { PlanChangeBar } from './PlanChangeBar';
 import {
   SMALL_PROJECT_SCHEMA,
   LARGE_PROJECT_SCHEMA,
@@ -176,7 +177,10 @@ interface LiveWorkflowProps {
 function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
   const notifySessionSaved = useWorkspaceStore((state) => state.notifySessionSaved);
   const rememberSession = useWorkspaceStore((state) => state.rememberSession);
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState(initialSession?.prompt ?? '');
+  // Bumped on every revised plan so the graph and the generate panel start
+  // fresh - a revision keeps the session id, so the id alone cannot tell them.
+  const [planVersion, setPlanVersion] = useState(0);
   const [state, setState] = useState<LiveState>(() =>
     initialSession === null
       ? { kind: 'idle' }
@@ -219,26 +223,48 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
         onStatus: (status) => setState({ kind: 'in-flight', status }),
       });
       applyFinishedJob(job, setState);
-      // The server persists a session as part of reaching 'succeeded'
-      // (workflow-api.ts) — this just tells the Sidebar its cached list is
-      // stale, never writes anything itself.
-      if (job.status === 'succeeded') {
-        notifySessionSaved();
-        if (job.result !== undefined) {
-          rememberSession({
-            id: job.result.schema.sessionId,
-            title: job.result.schema.title,
-            prompt,
-            createdAt: job.createdAt,
-            schema: job.result.schema,
-            prohibitions: job.result.prohibitions,
-            permissions: job.result.permissions,
-          });
-        }
-      }
+      recordSucceeded(job);
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === 'AbortError') return;
       setState({ kind: 'failed', message: cause instanceof Error ? cause.message : String(cause) });
+    }
+  }
+
+  // The server persists a session as part of reaching 'succeeded'
+  // (workflow-api.ts) — this just tells the Sidebar its cached list is
+  // stale, never writes anything itself.
+  function recordSucceeded(job: WorkflowJob): void {
+    if (job.status !== 'succeeded' || job.result === undefined) return;
+    notifySessionSaved();
+    rememberSession({
+      id: job.result.schema.sessionId,
+      title: job.result.schema.title,
+      prompt: job.prompt,
+      createdAt: job.createdAt,
+      schema: job.result.schema,
+      prohibitions: job.result.prohibitions,
+      permissions: job.result.permissions,
+    });
+  }
+
+  /**
+   * Re-plans the shown session with one change. The current plan stays on
+   * screen until the new one arrives; a failure leaves it untouched and is
+   * reported in the change bar, not over the plan.
+   */
+  async function handleRevise(sessionId: string, change: string): Promise<string | null> {
+    try {
+      const job = await generateProjectSchemaViaApi({ revises: sessionId, change });
+      if (job.status !== 'succeeded' || job.result === undefined) {
+        return job.error === undefined ? `job ended as ${job.status}` : job.error.message;
+      }
+      setState({ kind: 'succeeded', result: job.result });
+      setPrompt(job.prompt);
+      setPlanVersion((version) => version + 1);
+      recordSucceeded(job);
+      return null;
+    } catch (cause) {
+      return cause instanceof Error ? cause.message : String(cause);
     }
   }
 
@@ -248,13 +274,20 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
         onSubmit={handleSubmit}
         className="flex flex-shrink-0 gap-2 border-b border-slate-800 bg-slate-950 px-4 py-2"
       >
-        <input
-          type="text"
+        {/* A textarea, not an input: a revised prompt keeps its "Changes to the plan" list on separate lines. */}
+        <textarea
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              event.currentTarget.form?.requestSubmit();
+            }
+          }}
           placeholder="Describe the app you want to build..."
           disabled={state.kind === 'in-flight'}
-          className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500"
+          rows={Math.min(6, prompt.split('\n').length)}
+          className="min-w-0 flex-1 resize-none rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500"
         />
         <button
           type="submit"
@@ -298,13 +331,14 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
           <div className="flex h-full min-h-0 flex-col">
             <div className="min-h-0 flex-1">
               <WorkflowGraph
-                key={state.result.schema.sessionId}
+                key={`${state.result.schema.sessionId}:${planVersion}`}
                 schema={state.result.schema}
                 prohibitions={state.result.prohibitions}
               />
             </div>
+            <PlanChangeBar onRevise={(change) => handleRevise(state.result.schema.sessionId, change)} />
             <GenerateApplicationPanel
-              key={state.result.schema.sessionId}
+              key={`${state.result.schema.sessionId}:${planVersion}`}
               schema={state.result.schema}
             />
           </div>
