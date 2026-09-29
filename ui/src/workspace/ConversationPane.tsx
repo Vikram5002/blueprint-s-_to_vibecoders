@@ -1,12 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { runAgent, stepsFor, type AgentOutcome, type AgentStep, type ReviewDecision, type StepId, type StepStatus } from './agent-runner';
-import { PlanReview } from './PlanReview';
-import { PACK_NOTE } from './GenerateApplicationPanel';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { runAgent, stepsFor, type AgentOutcome, type ReviewDecision, type StepId, type StepStatus } from './agent-runner';
+import { AgentRunCard, type AgentRunView } from './AgentRunCard';
+import { Composer } from './Composer';
 import { STARTER_IDEAS } from './starter-ideas';
-import type { ProjectSchema } from './project-schema-types';
-import type { WorkflowJob } from './workflow-job-types';
 import {
-  applicationJobDownloadUrl,
   continueApplicationViaApi,
   fetchRunPages,
   generateApplicationViaApi,
@@ -14,23 +11,12 @@ import {
   repairApplicationViaApi,
 } from './workflow-api-client';
 import { useWorkspaceStore } from './store';
+import { Icon } from '../design/Icon';
+import { LogoMark } from '../design/Logo';
+import type { ProjectSchema } from './project-schema-types';
+import type { WorkflowJob } from './workflow-job-types';
 
-const STATUS_ICON: Record<StepStatus, string> = { waiting: '○', running: '◌', done: '✓', failed: '✕', skipped: '–' };
-const STATUS_TONE: Record<StepStatus, string> = {
-  waiting: 'text-slate-500',
-  running: 'text-sky-300',
-  done: 'text-emerald-300',
-  failed: 'text-red-300',
-  skipped: 'text-slate-500',
-};
-
-interface Run {
-  readonly prompt: string;
-  readonly steps: readonly AgentStep[];
-  readonly startedAt: number;
-  readonly finishedAt: number | null;
-  readonly outcome: AgentOutcome | null;
-  readonly error: string | null;
+interface Run extends AgentRunView {
   /** The plan waiting for the person's decision, while the agent is stopped at the review. */
   readonly review: { readonly schema: ProjectSchema; readonly workflowJob: WorkflowJob } | null;
 }
@@ -55,21 +41,28 @@ function writeReviewFirst(value: boolean): void {
 }
 
 /**
- * Agent mode: describe the application, and the tool plans it, generates it,
- * builds it, fixes what fails and prepares its pages - by itself, step by
- * step, with a live timeline and a Stop button (agent-runner.ts).
+ * Agent mode: describe the application, and the tool plans it, stops for the
+ * person to review the plan (unless they turned that off), then generates
+ * it, builds it, fixes what fails and prepares its pages - step by step, with
+ * a live timeline and a Stop button (agent-runner.ts holds the decisions).
+ *
+ * An empty page is a hero with the composer in the middle and starter ideas
+ * below it; once a run exists, the runs scroll and the composer docks at the
+ * bottom.
  */
 export function ConversationPane(): JSX.Element {
   const openSession = useWorkspaceStore((state) => state.openSession);
   const openPageInBuilder = useWorkspaceStore((state) => state.openPageInBuilder);
   const notifySessionSaved = useWorkspaceStore((state) => state.notifySessionSaved);
   const notifyRunSaved = useWorkspaceStore((state) => state.notifyRunSaved);
+  const newProjectVersion = useWorkspaceStore((state) => state.newProjectVersion);
   const [prompt, setPrompt] = useState('');
   const [runs, setRuns] = useState<readonly Run[]>([]);
   const [now, setNow] = useState(Date.now());
   const [reviewFirst, setReviewFirst] = useState(readReviewFirst);
   const abortRef = useRef<AbortController | null>(null);
   const decideRef = useRef<((decision: ReviewDecision) => void) | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const running = runs.some((run) => run.finishedAt === null);
 
   useEffect(() => {
@@ -77,6 +70,21 @@ export function ConversationPane(): JSX.Element {
     const timer = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(timer);
   }, [running]);
+
+  // "New project": a clean page, unless a run is still going (it is never thrown away mid-flight).
+  useEffect(() => {
+    if (newProjectVersion === 0) return;
+    setRuns((current) => (current.some((run) => run.finishedAt === null) ? current : []));
+    setPrompt('');
+  }, [newProjectVersion]);
+
+  // Follow the newest run as it grows, smoothly, like a conversation.
+  const lastRun = runs[runs.length - 1];
+  const lastRunSignature = lastRun === undefined ? '' : `${runs.length}:${lastRun.steps.map((step) => step.status).join(',')}:${lastRun.review === null ? 0 : 1}:${lastRun.finishedAt ?? 0}`;
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (scroller !== null) scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
+  }, [lastRunSignature]);
 
   function updateLast(change: (run: Run) => Run): void {
     setRuns((current) => current.map((run, i) => (i === current.length - 1 ? change(run) : run)));
@@ -126,7 +134,8 @@ export function ConversationPane(): JSX.Element {
       updateLast((run) => ({
         ...run,
         finishedAt: Date.now(),
-        error: stopped ? 'Stopped. Anything already generated is saved - open the session to continue from there.' : cause instanceof Error ? cause.message : String(cause),
+        review: null,
+        error: stopped ? 'Stopped. Anything already generated is saved - open the project to continue from there.' : cause instanceof Error ? cause.message : String(cause),
         steps: run.steps.map((step) => (step.status === 'running' ? { ...step, status: 'failed' as const, detail: stopped ? 'stopped' : step.detail } : step)),
       }));
     }
@@ -144,6 +153,11 @@ export function ConversationPane(): JSX.Element {
     } catch (cause) {
       return cause instanceof Error ? cause.message : String(cause);
     }
+  }
+
+  function approve(): void {
+    const pending = runs[runs.length - 1]?.review;
+    if (pending != null) decideRef.current?.({ kind: 'approve', schema: pending.schema, workflowJob: pending.workflowJob });
   }
 
   function stop(): void {
@@ -170,134 +184,111 @@ export function ConversationPane(): JSX.Element {
     });
   }
 
+  function editPages(outcome: AgentOutcome): void {
+    const firstPage = outcome.pages[0];
+    if (firstPage === undefined || outcome.job === null || outcome.schema === null) return;
+    openPageInBuilder(
+      { runId: outcome.job.id, sessionId: outcome.schema.sessionId, sessionTitle: outcome.schema.title, path: firstPage.path, edited: firstPage.edited },
+      firstPage.layout,
+    );
+  }
+
+  const composer = (variant: 'hero' | 'dock'): JSX.Element => (
+    <Composer
+      variant={variant}
+      value={prompt}
+      onChange={setPrompt}
+      onSubmit={() => void start()}
+      running={running}
+      onStop={stop}
+      reviewFirst={reviewFirst}
+      onReviewFirst={toggleReviewFirst}
+      focusKey={newProjectVersion}
+    />
+  );
+
+  if (runs.length === 0) {
+    return (
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <AgentHero composer={composer('hero')} onIdea={setPrompt} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
-        {runs.length === 0 && (
-          <div className="mx-auto max-w-xl pt-16 text-center">
-            <div className="text-lg font-semibold text-slate-100">Agent mode</div>
-            <p className="mt-2 text-sm text-slate-400">
-              Describe the application you want. The agent plans it, generates it, builds it, fixes what fails and prepares its pages -
-              step by step, on its own. You can stop it at any time; whatever it finished is kept.
-            </p>
-            <div className="mt-6 text-xs font-medium uppercase tracking-wider text-slate-500">Start from an idea</div>
-            <div className="mt-2 flex flex-wrap justify-center gap-2">
-              {STARTER_IDEAS.map((idea) => (
-                <button
-                  key={idea.label}
-                  type="button"
-                  data-testid="starter-idea"
-                  onClick={() => setPrompt(idea.prompt)}
-                  title={idea.prompt}
-                  className="rounded-full border border-slate-700 bg-slate-900/60 px-3 py-1 text-xs text-slate-300 hover:border-sky-600 hover:text-sky-200"
-                >
-                  {idea.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {runs.map((run, index) => {
-          const elapsed = ((run.finishedAt ?? now) - run.startedAt) / 1000;
-          const outcome = run.outcome;
-          const firstPage = outcome?.pages[0];
-          return (
-            <div key={index} data-testid="agent-run" className="mx-auto max-w-3xl space-y-2">
-              <div className="ml-auto w-fit max-w-[80%] rounded-2xl rounded-br-sm bg-sky-600/80 px-4 py-2 text-sm text-white">{run.prompt}</div>
-              <div className="rounded-2xl rounded-bl-sm border border-slate-800 bg-slate-900/70 p-4">
-                <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
-                  <span>{run.finishedAt === null ? 'Working…' : run.error !== null ? 'Stopped' : 'Finished'}</span>
-                  <span className="font-mono">{elapsed.toFixed(0)}s</span>
-                </div>
-                <ol className="space-y-1.5">
-                  {run.steps.map((step) => (
-                    <li key={step.id} data-testid={`agent-step-${step.id}`} data-status={step.status} className="flex gap-2 text-sm">
-                      <span className={`w-4 shrink-0 text-center ${STATUS_TONE[step.status]} ${step.status === 'running' ? 'animate-pulse' : ''}`}>{STATUS_ICON[step.status]}</span>
-                      <span className={step.status === 'waiting' ? 'text-slate-500' : 'text-slate-200'}>{step.title}</span>
-                      {step.detail !== '' && <span className="truncate text-xs leading-5 text-slate-500">{step.detail}</span>}
-                    </li>
-                  ))}
-                </ol>
-                {run.review !== null && run.finishedAt === null && (
-                  <PlanReview
-                    schema={run.review.schema}
-                    onRevise={(change) => reviseReview(run.review?.schema.sessionId ?? '', change)}
-                    onApprove={() => {
-                      if (run.review !== null) decideRef.current?.({ kind: 'approve', schema: run.review.schema, workflowJob: run.review.workflowJob });
-                    }}
-                    onCancel={() => decideRef.current?.({ kind: 'cancel' })}
-                  />
-                )}
-                {run.error !== null && <p className="mt-2 text-xs text-amber-300">{run.error}</p>}
-                {outcome?.job != null && outcome.schema !== null && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button type="button" data-testid="agent-open" onClick={() => openResult(outcome)} className="rounded-md border border-sky-700 bg-sky-950/40 px-3 py-1 text-xs text-sky-200 hover:bg-sky-900/40">
-                      Open in Workflow
-                    </button>
-                    {firstPage !== undefined && outcome.job !== null && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          openPageInBuilder(
-                            { runId: outcome.job?.id ?? '', sessionId: outcome.schema?.sessionId ?? '', sessionTitle: outcome.schema?.title ?? '', path: firstPage.path, edited: firstPage.edited },
-                            firstPage.layout,
-                          )
-                        }
-                        className="rounded-md border border-violet-700 bg-violet-950/40 px-3 py-1 text-xs text-violet-200 hover:bg-violet-900/40"
-                      >
-                        Edit pages
-                      </button>
-                    )}
-                    <a
-                      href={applicationJobDownloadUrl(outcome.job.id)}
-                      title={PACK_NOTE}
-                      className="rounded-md border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
-                    >
-                      Download (.zip + project report)
-                    </a>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 pb-10 pt-8">
+        <div className="mx-auto max-w-3xl space-y-8">
+          {runs.map((run, index) => (
+            <AgentRunCard
+              key={index}
+              run={run}
+              now={now}
+              onRevise={reviseReview}
+              onApprove={approve}
+              onCancel={() => decideRef.current?.({ kind: 'cancel' })}
+              onOpen={openResult}
+              onEditPages={editPages}
+            />
+          ))}
+        </div>
       </div>
-      <div className="border-t border-slate-800 p-4">
-        <label className="mx-auto mb-2 flex max-w-3xl items-center gap-2 text-xs text-slate-400">
-          <input
-            type="checkbox"
-            data-testid="agent-review-first"
-            checked={reviewFirst}
-            disabled={running}
-            onChange={(event) => toggleReviewFirst(event.target.checked)}
-            className="accent-sky-500"
-          />
-          Let me review the plan before it is built
-        </label>
-        <div className="mx-auto flex max-w-3xl gap-2">
-          <textarea
-            data-testid="agent-prompt"
-            value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                void start();
-              }
-            }}
-            rows={2}
-            placeholder="e.g. A booking site for a small yoga studio, with class schedules, sign-up and an admin page"
-            className="flex-1 resize-none rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
-          />
-          {running ? (
-            <button type="button" data-testid="agent-stop" onClick={stop} className="rounded-xl border border-red-700 bg-red-950/40 px-4 text-sm text-red-200 hover:bg-red-900/40">
-              Stop
+      <div className="relative flex-shrink-0 px-6 pb-5 pt-2">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-t from-[#0c0c0e] to-transparent" />
+        <div className="mx-auto max-w-3xl">{composer('dock')}</div>
+      </div>
+    </div>
+  );
+}
+
+function AgentHero({ composer, onIdea }: { readonly composer: JSX.Element; readonly onIdea: (prompt: string) => void }): JSX.Element {
+  const at = (index: number): CSSProperties => ({ '--i': index }) as CSSProperties;
+  return (
+    <div className="mx-auto flex w-full max-w-3xl flex-col items-center px-6 pb-16 pt-[9vh] text-center">
+      <div className="stagger relative mb-6" style={at(0)}>
+        <span className="halo" />
+        <LogoMark size={54} className="relative drop-shadow-[0_12px_30px_rgba(109,106,248,0.55)]" />
+      </div>
+      <span
+        className="stagger mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-[11.5px] font-medium text-slate-300"
+        style={at(1)}
+      >
+        <Icon name="sparkles" size={12} className="text-violet-300" />
+        Agent mode
+      </span>
+      <h1 className="stagger gradient-text text-[34px] font-semibold leading-[1.12] tracking-[-0.035em] sm:text-[42px]" style={at(2)}>
+        What will you build today?
+      </h1>
+      <p className="stagger mt-3.5 max-w-xl text-[15px] leading-relaxed text-slate-400" style={at(3)}>
+        Describe an app in plain words. VibeCoder plans it, lets you change the plan, then builds, checks and fixes it - on its own.
+      </p>
+      <div className="stagger mt-9 w-full" style={at(4)}>
+        {composer}
+      </div>
+      <div className="mt-10 w-full">
+        <div className="stagger mb-3 flex items-center gap-2 text-left text-xs font-medium text-slate-500" style={at(5)}>
+          <span className="h-px flex-1 bg-gradient-to-r from-transparent to-white/[0.08]" />
+          Start from an idea
+          <span className="h-px flex-1 bg-gradient-to-l from-transparent to-white/[0.08]" />
+        </div>
+        <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+          {STARTER_IDEAS.map((idea, index) => (
+            <button
+              key={idea.label}
+              type="button"
+              data-testid="starter-idea"
+              onClick={() => onIdea(idea.prompt)}
+              title={idea.prompt}
+              style={at(6 + index)}
+              className="stagger card card-hover group flex flex-col items-start gap-2 !rounded-2xl p-3.5 text-left"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.06] text-slate-300 transition-colors duration-300 group-hover:bg-violet-500/[0.18] group-hover:text-violet-200">
+                <Icon name={idea.icon} size={15} />
+              </span>
+              <span className="text-[13px] font-medium text-slate-100">{idea.label}</span>
+              <span className="text-[11.5px] leading-snug text-slate-500">{idea.blurb}</span>
             </button>
-          ) : (
-            <button type="button" data-testid="agent-start" onClick={() => void start()} disabled={prompt.trim() === ''} className="rounded-xl border border-emerald-700 bg-emerald-950/40 px-4 text-sm text-emerald-200 hover:bg-emerald-900/40 disabled:opacity-40">
-              Build it
-            </button>
-          )}
+          ))}
         </div>
       </div>
     </div>

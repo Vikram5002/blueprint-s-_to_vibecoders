@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Icon } from '../design/Icon';
 
 interface PlanChangeBarProps {
   /** Re-plans with this change; resolves with an error message, or null once the new plan is shown. */
@@ -36,12 +37,9 @@ export function PlanChangeBar({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      data-testid="plan-change-bar"
-      className="flex flex-shrink-0 flex-col gap-1 border-t border-slate-800 bg-slate-950 px-4 py-2"
-    >
-      <div className="flex gap-2">
+    <form onSubmit={handleSubmit} data-testid="plan-change-bar" className="flex flex-shrink-0 flex-col gap-1.5 px-4 py-3">
+      <div className="focus-glow flex items-center gap-2 rounded-xl border border-white/[0.08] bg-black/[0.22] pl-3 pr-1.5">
+        <Icon name="wand" size={14} className="flex-shrink-0 text-violet-300" />
         <input
           type="text"
           value={change}
@@ -49,18 +47,14 @@ export function PlanChangeBar({
           placeholder="Change the plan, e.g. add a restaurant dashboard page, remove the admin panel..."
           disabled={busy || disabled}
           data-testid="plan-change-input"
-          className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500"
+          className="h-10 min-w-0 flex-1 bg-transparent text-[13px] text-slate-100 placeholder:text-slate-500 focus-visible:outline-none disabled:opacity-60"
         />
-        <button
-          type="submit"
-          disabled={busy || disabled || change.trim() === ''}
-          data-testid="plan-change-submit"
-          className="rounded-lg border border-sky-700 bg-sky-900/40 px-3 py-1.5 text-xs font-medium text-sky-100 hover:bg-sky-800/50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <button type="submit" disabled={busy || disabled || change.trim() === ''} data-testid="plan-change-submit" className="btn btn-secondary btn-sm">
+          {busy && <span className="spinner !h-3 !w-3" />}
           {busy ? 'Updating plan…' : 'Update plan'}
         </button>
       </div>
-      <div className="text-[11px] text-slate-500">
+      <div className="px-1 text-[11px] leading-relaxed text-slate-500">
         {error !== null ? (
           <span className="text-red-300">Plan not changed: {error}</span>
         ) : busy ? (
