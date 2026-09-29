@@ -45,6 +45,18 @@ zip is one honest artifact: open it, run `npm install && npm run build`
 yourself, and you are looking at exactly what Blueprint already checked —
 no second, undocumented execution environment in between.
 
+**What the zip adds at download time (never to the verified build):** the
+run scaffold (`src/export/runnable-project.ts`: `index.html`, a Vite config,
+`web` scripts, a README) and, when the run's plan is on record, the Student
+Project Pack (`src/export/project-pack.ts`): `docs/PROJECT-REPORT.md`,
+`ARCHITECTURE.md`, `API.md`, `VIVA-PREP.md` and `DEPLOY-FREE.md`. The pack is
+deterministic and written only from the plan, the project's files
+(`project-facts.ts` reads mounted routes and `CREATE TABLE` statements) and the
+run's verification result - no model is asked anything, so every statement in
+it traces to a file. What only the author can know (scope, results,
+conclusion) is left as marked prompts, and the report tells the student to
+write those in their own words.
+
 **Progress and failure reporting is never simplified for the UI (Task
 1.4).** `GenerateApplicationPanel.tsx` renders the real
 `RegenerationAttempt` audit log (which component, which rule, the literal

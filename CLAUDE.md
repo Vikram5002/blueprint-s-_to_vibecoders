@@ -55,7 +55,7 @@ paper's discussion-section material in one place.
 | Storage | `better-sqlite3` | Local file at `.vibe/blueprint.db` |
 | Server | `hono` (or `express`) | Local only, binds to 127.0.0.1 |
 | UI | React 18 + Vite + React Flow | Separate `ui/` package |
-| LLM | Provider-agnostic adapter, user's own API key | Gemini (default), Bluesminds, Anthropic. Never bundled |
+| LLM | Provider-agnostic adapter, user's own API key | Gemini (default), Bluesminds, Anthropic, local server, and free OpenAI-compatible services (Groq, OpenRouter, GitHub Models, Ollama, any compatible server - `docs/PROVIDERS.md`). Never bundled |
 | Testing | `vitest` | Unit tests on parser and graph logic are mandatory |
 
 ---

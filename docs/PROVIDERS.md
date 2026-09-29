@@ -1,8 +1,11 @@
 # LLM providers
 
-Three adapters implement `CompletionProvider`: Bluesminds, Google Gemini and
-Anthropic. Everything above them — the cached labeller, the intent extractor,
-the pipeline — is provider-agnostic and unaware of any of them.
+Three vendor adapters implement `CompletionProvider`: Bluesminds, Google Gemini
+and Anthropic - plus the local inference server (`local`, `local-code`) and,
+since 2026-09-30, five free OpenAI-compatible services (see "The free
+OpenAI-compatible services" below). Everything above them — the cached
+labeller, the intent extractor, the pipeline — is provider-agnostic and unaware
+of any of them.
 
 ## The three have different jobs
 
@@ -32,6 +35,47 @@ VIBE_LLM_MODEL=gemini-3.5-flash-lite vibe-blueprint .
 Selection is explicit, never "whichever key happens to be set". A machine with
 all three keys would otherwise pick a provider by accident, and a run would be
 reproducible only until somebody's environment changed.
+
+---
+
+## The free OpenAI-compatible services (added 2026-09-30)
+
+Five more choices, all reached through one adapter for the OpenAI
+chat-completions format (`src/llm/chat-completions.ts`, the wire format
+Bluesminds already used) and listed in `src/llm/openai-services.ts`. Each is an
+explicit choice like the three above - never a fallback for one that is
+failing. Setup steps for people: `docs/FREE-SETUP.md`.
+
+| `VIBE_LLM_PROVIDER` | Service | Key | Model variable | Default model |
+|---|---|---|---|---|
+| `groq` | Groq free tier | `GROQ_API_KEY` | `GROQ_MODEL` | `openai/gpt-oss-120b` |
+| `openrouter` | OpenRouter `:free` models | `OPENROUTER_API_KEY` (or `OPEN_ROUTER_API_KEY`) | `OPENROUTER_MODEL` | `qwen/qwen3.8-27b:free` |
+| `github` | GitHub Models | `GITHUB_MODELS_TOKEN` (or `GITHUB_TOKEN`) | `GITHUB_MODELS_MODEL` | `openai/gpt-4.1-mini` |
+| `ollama` | Ollama on this machine | none | `OLLAMA_MODEL` (`OLLAMA_BASE_URL` to move it) | `qwen2.5-coder:7b` |
+| `openai-compatible` | Any compatible server (LM Studio, vLLM, ...) | `VIBE_OPENAI_API_KEY`, optional | `VIBE_OPENAI_MODEL` (required, with `VIBE_OPENAI_BASE_URL`) | none |
+
+What was checked, and how:
+
+- **Defaults were read from the live catalogues on 2026-09-29/30**, not from
+  memory: Groq's `GET /models` no longer lists the Llama 3.3 models, and only
+  16 OpenRouter models were free that day. Free catalogues change often, which
+  is why every service has its own model variable.
+- **One real labelling request each** through the adapter: Groq answered in
+  7.2s, OpenRouter in 8.2s, both with valid labels. Groq refused the strict
+  `json_schema` format for `gpt-oss-120b`; the adapter fell back to
+  `json_object` with the schema written into the system prompt, and the answer
+  validated. GitHub Models was not called (no token was available) - its
+  endpoint and default model are unverified live.
+- **Each service reads its own model variable, never `VIBE_LLM_MODEL`**: that
+  one names a model for the provider chosen at start-up, and applying it to
+  every service in the picker would send, say, a local checkpoint label to Groq.
+- **A daily cap fails at once** (`retryable: false`): a 429 naming a per-day
+  window (`RPD`, `free-models-per-day`, `UserByModelByDay`) cannot clear by
+  waiting, so it is not retried - and the labeller stops asking a provider that
+  says so, instead of waiting out the same answer for every module.
+- **Ollama is probed, not assumed**: the picker lists the models it has
+  downloaded and names the `ollama pull` command when the chosen one is
+  missing (Ollama 0.34 lists "none" as `"data": null`).
 
 ---
 
