@@ -53,6 +53,16 @@ describe('createWorkflowSessionsStore', () => {
     expect(fetched).toEqual(saved);
   });
 
+  it('revise replaces title, prompt and plan but keeps the id and creation time', () => {
+    const store = createWorkflowSessionsStore(openDatabase(':memory:'));
+    store.save(session());
+    const next = session({ title: 'Revised app', prompt: 'build a test app\n\nChanges to the plan:\n- add login' });
+    store.revise('session-1', { title: next.title, prompt: next.prompt, schema: next.schema, prohibitions: [], permissions: [] });
+
+    expect(store.get('session-1')).toEqual({ ...next, createdAt: '2026-01-01T00:00:00.000Z' });
+    expect(store.list()).toHaveLength(1);
+  });
+
   it('get returns undefined for an unknown id', () => {
     const store = createWorkflowSessionsStore(openDatabase(':memory:'));
     expect(store.get('does-not-exist')).toBeUndefined();

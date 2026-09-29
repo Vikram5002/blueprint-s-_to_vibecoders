@@ -27,6 +27,8 @@ import type { LabelCache } from '../llm/cache.js';
 import type { Constraint } from '../types/constraints.js';
 import type { ValidatedProjectSchema } from '../types/project-schema.js';
 import type { WorkflowSessionsStore } from '../store/workflow-sessions-store.js';
+import { revisedPlanPrompt } from '../workflow/revise-plan-prompt.js';
+import { err, ok, type Result } from '../types/result.js';
 
 /**
  * Hard cap on jobs counted as `pending` or `running` together.
@@ -146,11 +148,11 @@ export function createWorkflowRoutes(deps: WorkflowRouteDeps): Hono {
     const llm = deps.llm;
 
     const body: unknown = await c.req.json().catch(() => null);
-    const prompt =
-      typeof body === 'object' && body !== null ? (body as { prompt?: unknown }).prompt : undefined;
-    if (typeof prompt !== 'string' || prompt.trim() === '') {
-      return c.json({ error: 'expected { prompt: string }' }, 400);
+    const request = parsePlanRequest(body, sessions);
+    if (!request.ok) {
+      return c.json({ error: request.error.message }, request.error.status);
     }
+    const { prompt, revises } = request.value;
 
     if (jobs.activeCount() >= MAX_CONCURRENT_JOBS) {
       c.header('Retry-After', String(RETRY_AFTER_SECONDS));
@@ -169,7 +171,7 @@ export function createWorkflowRoutes(deps: WorkflowRouteDeps): Hono {
     // try/catch is what keeps every expected failure out of an unhandled
     // rejection; this .catch() is a defensive backstop for anything that
     // still escapes it, not the primary error path.
-    runJob(jobs, job.id, prompt, llm, sessions).catch((cause) => {
+    runJob(jobs, job.id, prompt, llm, sessions, revises).catch((cause) => {
       jobs.set({
         ...job,
         status: 'failed',
@@ -208,12 +210,52 @@ export function createWorkflowRoutes(deps: WorkflowRouteDeps): Hono {
  * revalidation, against generate's multi-second latency — so there is no
  * meaningful intermediate status worth exposing between them, per ADR-002.
  */
+interface PlanRequest {
+  readonly prompt: string;
+  /** The session whose plan this job replaces, when the request is a revision. */
+  readonly revises?: string;
+}
+
+interface PlanRequestError {
+  readonly status: 400 | 404;
+  readonly message: string;
+}
+
+/**
+ * `{ prompt }` plans from scratch. `{ revises, change }` re-plans an existing
+ * session from its prompt plus the requested change (revise-plan-prompt.ts).
+ */
+function parsePlanRequest(
+  body: unknown,
+  sessions: WorkflowSessionsStore | undefined,
+): Result<PlanRequest, PlanRequestError> {
+  const fields = typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
+  if (fields['revises'] === undefined) {
+    const prompt = fields['prompt'];
+    if (typeof prompt !== 'string' || prompt.trim() === '') {
+      return err({ status: 400, message: 'expected { prompt: string } or { revises: string, change: string }' });
+    }
+    return ok({ prompt });
+  }
+  const revises = fields['revises'];
+  const change = fields['change'];
+  if (typeof revises !== 'string' || typeof change !== 'string' || change.trim() === '') {
+    return err({ status: 400, message: 'expected { revises: string, change: string }' });
+  }
+  const session = sessions?.get(revises);
+  if (session === undefined) {
+    return err({ status: 404, message: `unknown session: ${revises}` });
+  }
+  return ok({ prompt: revisedPlanPrompt(session.prompt, change), revises });
+}
+
 async function runJob(
   store: WorkflowJobStore,
   jobId: string,
   prompt: string,
   llm: WorkflowLlmDeps,
   sessions: WorkflowSessionsStore | undefined,
+  revises?: string,
 ): Promise<void> {
   const initial = store.get(jobId);
   if (initial === undefined) return; // defensive: the caller always creates the job first
@@ -237,25 +279,25 @@ async function runJob(
     // generated.value is ValidatedProjectSchema by construction —
     // generate() returns Result<ValidatedProjectSchema, GenerateFailure> —
     // so this is the branded type flowing in unmodified, never cast past it.
-    const compiled = compileDomainConstraints(generated.value);
+    // A revision keeps the revised session's id, so the new plan replaces
+    // the old one in place rather than appearing as a second session.
+    const schema = revises === undefined ? generated.value : { ...generated.value, sessionId: revises };
+    const compiled = compileDomainConstraints(schema);
     store.set({
       ...initial,
       status: 'succeeded',
-      result: { schema: generated.value, prohibitions: compiled.prohibitions, permissions: compiled.permissions },
+      result: { schema, prohibitions: compiled.prohibitions, permissions: compiled.permissions },
     });
     // Best-effort: a session row failing to save must never turn an
     // otherwise-successful generation into a reported failure — the job
     // result above is already set and is what the caller actually polls for.
     try {
-      sessions?.save({
-        id: generated.value.sessionId,
-        title: generated.value.title,
-        prompt,
-        createdAt: initial.createdAt,
-        schema: generated.value,
-        prohibitions: compiled.prohibitions,
-        permissions: compiled.permissions,
-      });
+      const plan = { schema, prohibitions: compiled.prohibitions, permissions: compiled.permissions };
+      if (revises !== undefined) {
+        sessions?.revise(revises, { title: schema.title, prompt, ...plan });
+      } else {
+        sessions?.save({ id: schema.sessionId, title: schema.title, prompt, createdAt: initial.createdAt, ...plan });
+      }
     } catch {
       // Swallow — see comment above.
     }

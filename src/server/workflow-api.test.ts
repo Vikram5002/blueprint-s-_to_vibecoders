@@ -83,6 +83,14 @@ function memorySessionsStore(): WorkflowSessionsStore {
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
         .map(({ id, title, prompt, createdAt }) => ({ id, title, prompt, createdAt })),
     get: (id) => sessions.get(id),
+    updatePlan: (id, plan) => {
+      const existing = sessions.get(id);
+      if (existing !== undefined) sessions.set(id, { ...existing, ...plan });
+    },
+    revise: (id, revision) => {
+      const existing = sessions.get(id);
+      if (existing !== undefined) sessions.set(id, { ...existing, ...revision });
+    },
   };
 }
 
@@ -296,6 +304,55 @@ describe('workflow sessions — persisted for the Sessions sidebar', () => {
     await pollUntilTerminal(app, id, 5_000);
 
     expect(sessions.list()).toEqual([]);
+  });
+});
+
+describe('plan revision by prompt', () => {
+  async function planThenRevise() {
+    const prompts: string[] = [];
+    const sessions = memorySessionsStore();
+    const app = createWorkflowRoutes({
+      llm: {
+        generator: stubGenerator(async (prompt) => {
+          prompts.push(prompt);
+          // The model names its own sessionId, and a revision may name a different one.
+          return ok(asValidated({ ...FIXTURE_SCHEMA, sessionId: `session-${prompts.length}`, title: `Plan ${prompts.length}` }));
+        }),
+        cache: memoryCache(),
+      },
+      sessions,
+    });
+    const post = async (body: unknown) =>
+      app.request('/jobs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+    const first = (await (await post({ prompt: 'A food delivery site.' })).json()) as { id: string };
+    await pollUntilTerminal(app, first.id, 5_000);
+    const revised = await post({ revises: 'session-1', change: 'add a restaurant dashboard' });
+    return { app, sessions, prompts, revised };
+  }
+
+  it('re-plans from the saved prompt plus the change and replaces the same session', async () => {
+    const { app, sessions, prompts, revised } = await planThenRevise();
+    expect(revised.status).toBe(202);
+    const job = await pollUntilTerminal(app, ((await revised.json()) as { id: string }).id, 5_000);
+
+    expect(prompts[1]).toBe('A food delivery site.\n\nChanges to the plan:\n- add a restaurant dashboard');
+    expect(job.status).toBe('succeeded');
+    expect(job.result?.schema.sessionId).toBe('session-1');
+    expect(sessions.list()).toHaveLength(1);
+    expect(sessions.get('session-1')).toMatchObject({ title: 'Plan 2', prompt: prompts[1] });
+  });
+
+  it('404s a revision of an unknown session and 400s an empty change', async () => {
+    const app = createWorkflowRoutes({
+      llm: { generator: stubGenerator(async () => ok(FIXTURE_SCHEMA)), cache: memoryCache() },
+      sessions: memorySessionsStore(),
+    });
+    const post = async (body: unknown) =>
+      app.request('/jobs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+    expect((await post({ revises: 'nope', change: 'add login' })).status).toBe(404);
+    expect((await post({ revises: 'nope', change: '   ' })).status).toBe(400);
   });
 });
 

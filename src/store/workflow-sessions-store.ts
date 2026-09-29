@@ -51,6 +51,12 @@ export interface WorkflowSessionsStore {
    * this is the one deliberate way its plan changes afterwards.
    */
   updatePlan(id: string, plan: { readonly schema: ValidatedProjectSchema; readonly prohibitions: readonly Constraint[]; readonly permissions: readonly WorkflowPermission[] }): void;
+  /**
+   * Replaces a session's prompt, title and plan together - when a person
+   * revises the plan by prompt before generating. The session keeps its id
+   * and creation time, so it stays one entry in the sidebar.
+   */
+  revise(id: string, revision: { readonly title: string; readonly prompt: string; readonly schema: ValidatedProjectSchema; readonly prohibitions: readonly Constraint[]; readonly permissions: readonly WorkflowPermission[] }): void;
 }
 
 export function createWorkflowSessionsStore(db: BlueprintDatabase): WorkflowSessionsStore {
@@ -75,6 +81,15 @@ export function createWorkflowSessionsStore(db: BlueprintDatabase): WorkflowSess
 
     updatePlan: (id, plan) => {
       db.prepare('UPDATE workflow_sessions SET body = @body WHERE id = @id').run({ id, body: JSON.stringify(plan) });
+    },
+
+    revise: (id, { title, prompt, schema, prohibitions, permissions }) => {
+      db.prepare('UPDATE workflow_sessions SET title = @title, prompt = @prompt, body = @body WHERE id = @id').run({
+        id,
+        title,
+        prompt,
+        body: JSON.stringify({ schema, prohibitions, permissions } satisfies StoredBody),
+      });
     },
 
     list: () =>
