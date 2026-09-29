@@ -524,6 +524,24 @@ class ModelRegistry:
         return torch.bfloat16 if major >= 8 else torch.float16
 
     @staticmethod
+    def _use_compute_dtype(model, dtype):
+        """A pre-quantized repo (the unsloth *-bnb-4bit bases) carries its own
+        quantization_config, which transformers uses instead of ours - so its
+        bf16 compute dtype would stand on a T4 and run emulated. Setting it on
+        each 4-bit layer is what actually takes effect."""
+        if dtype == torch.bfloat16:
+            return
+        import bitsandbytes as bnb
+
+        changed = 0
+        for module in model.modules():
+            if isinstance(module, bnb.nn.Linear4bit) and module.compute_dtype != dtype:
+                module.compute_dtype = dtype
+                changed += 1
+        if changed:
+            print(f"  compute dtype {dtype} on {changed} 4-bit layers (no native bf16 on this GPU)")
+
+    @staticmethod
     def _bnb_config():
         return BitsAndBytesConfig(
             load_in_4bit=True,
@@ -563,11 +581,16 @@ class ModelRegistry:
         before = self._allocated_gb()
         t0 = time.perf_counter()
         tokenizer = AutoTokenizer.from_pretrained(base_id)
+        dtype = self._compute_dtype()
         model = AutoModelForCausalLM.from_pretrained(
             base_id,
             quantization_config=self._bnb_config(),
+            # The unquantized weights (embeddings, norms, lm_head) too - a
+            # pre-quantized repo's own config would otherwise load them in bf16.
+            torch_dtype=dtype,
             device_map={"": 0},
         )
+        self._use_compute_dtype(model, dtype)
         print(f"  base {base_id}: +{self._allocated_gb() - before:.2f} GB VRAM "
               f"in {time.perf_counter() - t0:.1f}s")
         return _LoadedBase(base_id, model, tokenizer)
@@ -790,9 +813,25 @@ def make_handler(registry, max_new_tokens_cap=4096):
                 return response
 
             except Exception as e:  # noqa: BLE001 - report as CompletionFailure, don't crash the server
+                if _is_out_of_memory(e):
+                    # Free what the failed generation held, so the next (usually
+                    # shorter) request is not refused for this one's leftovers.
+                    torch.cuda.empty_cache()
+                    return {"ok": False, "error": {"kind": "unavailable", "message": OUT_OF_MEMORY_MESSAGE}}
                 return {"ok": False, "error": {"kind": "unavailable", "message": f"{type(e).__name__}: {e}"}}
 
     return Handler
+
+
+OUT_OF_MEMORY_MESSAGE = (
+    "GPU out of memory: this request is too long for this GPU with the models loaded. "
+    "A shorter input, fewer models on this server, or a bigger GPU will answer it."
+)
+
+
+def _is_out_of_memory(error):
+    """True for a CUDA out-of-memory error; False when torch is not loaded (unit tests)."""
+    return torch is not None and isinstance(error, torch.cuda.OutOfMemoryError)
 
 
 def _generate_on(base, spec, ids, gen_kwargs):
@@ -841,6 +880,10 @@ def main():
     except ValueError as e:
         raise SystemExit(f"error: {e}")
 
+    # Set before torch touches CUDA: lets freed blocks be reused across the
+    # different prompt lengths, which is what ran a 16 GB T4 serving two
+    # models out of memory on one long document (2026-09-29).
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     _import_runtime()
 
     registry = ModelRegistry(specs)

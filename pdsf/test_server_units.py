@@ -151,6 +151,25 @@ def test_json_structure_still_accepts_literals_inside_containers():
     assert state.feed('{"a": 12, "b": true, "c": [null, 3]}') is True
 
 
+def test_out_of_memory_is_recognised_only_when_torch_is_loaded():
+    class OutOfMemoryError(RuntimeError):
+        pass
+
+    class FakeTorch:
+        class cuda:  # noqa: N801 - mirrors torch.cuda
+            pass
+
+    FakeTorch.cuda.OutOfMemoryError = OutOfMemoryError
+    assert srv._is_out_of_memory(OutOfMemoryError("CUDA out of memory")) is False  # torch not loaded
+    saved = srv.torch
+    srv.torch = FakeTorch
+    try:
+        assert srv._is_out_of_memory(OutOfMemoryError("CUDA out of memory")) is True
+        assert srv._is_out_of_memory(ValueError("something else")) is False
+    finally:
+        srv.torch = saved
+
+
 if __name__ == "__main__":
     tests = [(name, fn) for name, fn in sorted(globals().items()) if name.startswith("test_") and callable(fn)]
     failed = 0
