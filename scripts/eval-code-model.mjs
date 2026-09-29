@@ -272,8 +272,19 @@ async function evaluate() {
   const projects = loadReferenceProjects();
   console.log(`candidate: ${candidate.name}; reference projects: ${projects.length}; scratch: ${workRoot}`);
 
-  const rows = [];
-  const projectRows = [];
+  // Progress is checkpointed after every row, so a run stopped by a daily
+  // quota resumes where it stopped instead of starting over.
+  const partialPath = `${outPath}.partial.json`;
+  const saved = existsSync(partialPath) ? JSON.parse(readFileSync(partialPath, 'utf8')) : { rows: [], projects: [] };
+  const rows = saved.rows;
+  const projectRows = saved.projects;
+  const doneRows = new Set(rows.map((r) => `${r.sessionId} ${r.targetPath}`));
+  const doneProjects = new Set(projectRows.map((r) => r.sessionId));
+  const checkpoint = () => {
+    mkdirSync(dirname(partialPath), { recursive: true });
+    writeFileSync(partialPath, JSON.stringify({ rows, projects: projectRows }));
+  };
+  if (rows.length > 0) console.log(`resuming: ${rows.length} component(s), ${projectRows.length} project(s) already done`);
   let linkMode = null;
   let processed = 0;
 
@@ -282,6 +293,7 @@ async function evaluate() {
     for (const entry of components) {
       if (processed >= limit) break;
       processed += 1;
+      if (doneRows.has(`${schema.sessionId} ${entry.targetPath}`)) continue;
       const scratch = join(workRoot, schema.sessionId, entry.targetPath.replace(/[\\/]/g, '_'));
       linkMode = cloneProject(referenceRoot, scratch);
       const row = { sessionId: schema.sessionId, title: schema.title, component: entry.component.name, domain: entry.domain, targetPath: entry.targetPath, A: false, B: false, D_A: false, D_B: false, reasonsA: [], reasonsB: [], error: null };
@@ -293,6 +305,7 @@ async function evaluate() {
         row.reasonsA = ['generation-failed'];
         row.reasonsB = ['generation-failed'];
         rows.push(row);
+        checkpoint();
         console.log(`!! ${schema.sessionId} ${entry.targetPath}: generation failed (${regenerated.error.failure.reason})`);
         continue;
       }
@@ -316,6 +329,7 @@ async function evaluate() {
       } else {
         const repaired = await installBuildAndRepair({ schema, llm: { provider: candidate, cache: nullCache }, root: scratch, files });
         if (!repaired.ok) {
+          stopOnProviderError(repaired.error, `${schema.sessionId} ${entry.targetPath} (repair)`);
           row.reasonsB = ['repair-failed'];
           row.error = repaired.error.failure;
         } else {
@@ -330,12 +344,13 @@ async function evaluate() {
         }
       }
       rows.push(row);
+      checkpoint();
       console.log(`${row.A ? 'A ' : row.B ? ' B' : '!!'} ${schema.sessionId} ${entry.targetPath}${row.reasonsA.length ? '  A:' + row.reasonsA.join(',') : ''}${!row.B && row.reasonsB.length ? '  B:' + row.reasonsB.join(',') : ''}`);
     }
     if (processed >= limit) break;
 
     // C: the candidate writes every evaluated component, in generation order, each seeing the previous ones.
-    if (skipC || components.length === 0) continue;
+    if (skipC || components.length === 0 || doneProjects.has(schema.sessionId)) continue;
     const scratch = join(workRoot, schema.sessionId, '_whole-project');
     cloneProject(referenceRoot, scratch);
     let files = referenceFiles;
@@ -343,6 +358,7 @@ async function evaluate() {
     for (const entry of components) {
       const regenerated = await regenerateWith(candidate, schema, entry, files);
       if (!regenerated.ok) {
+        stopOnProviderError(regenerated.error, `${schema.sessionId} whole project`);
         failure = { targetPath: entry.targetPath, failure: regenerated.error.failure };
         break;
       }
@@ -361,6 +377,7 @@ async function evaluate() {
       projectRow.reasons = ['generation-failed'];
     }
     projectRows.push(projectRow);
+    checkpoint();
     console.log(`${projectRow.C ? 'C ' : '!!'} ${schema.sessionId} whole project${projectRow.reasons.length ? '  ' + projectRow.reasons.join(',') : ''}`);
   }
 
@@ -384,6 +401,7 @@ async function evaluate() {
   };
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, JSON.stringify(report, null, 2));
+  rmSync(partialPath, { force: true });
 
   const pct = (v) => (v === null ? '   -' : `${(v * 100).toFixed(1).padStart(5)}%`);
   console.log('\n--- results ---');
