@@ -204,7 +204,18 @@ export function createLocalProvider(options: LocalOptions = {}): CompletionProvi
       try {
         parsed = await response.json();
       } catch {
-        return { ok: false, error: { kind: 'unavailable', message: `response was not JSON (HTTP ${response.status})` } };
+        // Something answered, but not the inference server: a sleeping cloud
+        // GPU session's proxy or a dead tunnel answers with its own HTML page
+        // (found live on Lightning AI, 2026-09-30) - say that, not "not JSON".
+        return {
+          ok: false,
+          error: {
+            kind: 'unavailable',
+            message:
+              `no inference server is answering at ${baseUrl} (HTTP ${response.status}, not the server's JSON) - ` +
+              'start local_inference_server.py there, or wake the cloud GPU session and start it again',
+          },
+        };
       }
 
       if (!response.ok) {
