@@ -53,6 +53,9 @@ type PanelState =
   | { readonly kind: 'done'; readonly job: ApplicationJob; readonly restored: boolean }
   | { readonly kind: 'error'; readonly message: string };
 
+/** What a download holds besides the code - src/export/project-pack.ts. */
+export const PACK_NOTE = 'Includes docs/: a project report, how it works, API guide, viva questions and free hosting steps.';
+
 const PHASE_LABEL: Readonly<Record<Phase, string>> = {
   generating: 'Generating component files…',
   verifying: 'Verifying with Blueprint…',
@@ -345,10 +348,12 @@ function ApplicationJobReport({ job, schema }: { readonly job: ApplicationJob; r
         <a
           href={applicationJobDownloadUrl(job.id)}
           data-testid="download-zip"
+          title={PACK_NOTE}
           className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1 text-xs font-medium text-slate-100 hover:bg-slate-700"
         >
           Download generated project (.zip)
         </a>
+        <span className="text-[11px] text-slate-500">{PACK_NOTE}</span>
       </div>
 
       {result.build.failureOutput !== undefined && (

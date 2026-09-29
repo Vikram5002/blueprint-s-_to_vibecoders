@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { runAgent, stepsFor, type AgentOutcome, type AgentStep, type ReviewDecision, type StepId, type StepStatus } from './agent-runner';
 import { PlanReview } from './PlanReview';
+import { PACK_NOTE } from './GenerateApplicationPanel';
 import { STARTER_IDEAS } from './starter-ideas';
 import type { ProjectSchema } from './project-schema-types';
 import type { WorkflowJob } from './workflow-job-types';
@@ -247,8 +248,12 @@ export function ConversationPane(): JSX.Element {
                         Edit pages
                       </button>
                     )}
-                    <a href={applicationJobDownloadUrl(outcome.job.id)} className="rounded-md border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800">
-                      Download (.zip)
+                    <a
+                      href={applicationJobDownloadUrl(outcome.job.id)}
+                      title={PACK_NOTE}
+                      className="rounded-md border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                    >
+                      Download (.zip + project report)
                     </a>
                   </div>
                 )}
