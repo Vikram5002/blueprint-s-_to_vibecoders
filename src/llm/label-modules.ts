@@ -18,6 +18,13 @@ import type { LabellerResult, LabelOutcome, LabelRequest, ModuleLabeller } from 
 const MAX_OUTPUT_TOKENS = 256;
 const SCHEMA_FINGERPRINT = JSON.stringify(LABEL_SCHEMA);
 
+/**
+ * Consecutive fully-retried `unavailable` failures after which the provider
+ * is treated as down for the rest of the run. Each failure has already spent
+ * the provider's own retry budget, so a third in a row is not bad luck.
+ */
+export const MAX_CONSECUTIVE_UNAVAILABLE = 3;
+
 export interface ClusterEvidence {
   /** Most-used exported symbols for a module, longest-first. */
   readonly symbols: (moduleId: string) => readonly string[];
@@ -44,6 +51,14 @@ export function createCachedLabeller(options: CachedLabellerOptions): ModuleLabe
       let promptTokens = 0;
       let completionTokens = 0;
       let estimatedCostUsd = 0;
+      // A provider that is down for this run is not asked again: a daily
+      // quota spent on every key or a bad key says so (retryable: false),
+      // and each further call would only wait out the same answer. Found
+      // live 2026-09-29: with Gemini's free quota gone, start-up sat through
+      // 45 fully-retried calls before the server came up. The remaining
+      // clusters keep their mechanical names, exactly as for any failure.
+      let providerDown: string | null = null;
+      let consecutiveUnavailable = 0;
 
       for (const [index, request] of requests.entries()) {
         const user = buildUserPrompt({
@@ -72,6 +87,11 @@ export function createCachedLabeller(options: CachedLabellerOptions): ModuleLabe
         }
 
         cacheMisses += 1;
+        if (providerDown !== null) {
+          failures.push({ moduleId: request.moduleId, reason: `skipped: ${providerDown}` });
+          options.onProgress?.(index + 1, requests.length, request.moduleId);
+          continue;
+        }
         const completion = await options.provider.complete({
           system: SYSTEM_PROMPT,
           user,
@@ -84,9 +104,16 @@ export function createCachedLabeller(options: CachedLabellerOptions): ModuleLabe
 
         if (!completion.ok) {
           failures.push({ moduleId: request.moduleId, reason: completion.error.message });
+          if (completion.error.kind === 'unavailable') {
+            consecutiveUnavailable += 1;
+            if (completion.error.retryable === false || consecutiveUnavailable >= MAX_CONSECUTIVE_UNAVAILABLE) {
+              providerDown = `provider unavailable for the rest of this run (${completion.error.message})`;
+            }
+          }
           options.onProgress?.(index + 1, requests.length, request.moduleId);
           continue;
         }
+        consecutiveUnavailable = 0;
 
         // Billed whether or not the answer survives validation.
         promptTokens += completion.value.usage.promptTokens;

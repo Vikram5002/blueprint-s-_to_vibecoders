@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { cachePathFor, loadLabelCache } from './cache.js';
-import { createCachedLabeller, type ClusterEvidence } from './label-modules.js';
+import { createCachedLabeller, MAX_CONSECUTIVE_UNAVAILABLE, type ClusterEvidence } from './label-modules.js';
 import type { CompletionProvider, CompletionResult } from './provider.js';
 import type { LabelRequest } from '../pipeline/label.js';
 
@@ -218,6 +218,59 @@ describe('failures never break a run', () => {
     expect(result.outcomes).toHaveLength(2);
     expect(result.summary.failures).toHaveLength(1);
     expect(result.summary.failures[0]?.reason).toContain('rate limited');
+  });
+
+  it('stops asking a provider that says retrying cannot help, and keeps mechanical names for the rest', async () => {
+    const cache = await loadLabelCache(await tempRoot());
+    let calls = 0;
+    const exhausted: CompletionProvider = {
+      name: 'fake:exhausted',
+      model: 'test-model',
+      complete: async (): Promise<CompletionResult> => {
+        calls += 1;
+        return { ok: false, error: { kind: 'unavailable', message: 'daily free-tier quota exhausted', retryable: false } };
+      },
+    };
+
+    const result = await createCachedLabeller({ provider: exhausted, cache, evidence: NO_EVIDENCE }).label(requests(45));
+
+    expect(calls).toBe(1);
+    expect(result.outcomes).toHaveLength(0);
+    expect(result.summary.failures).toHaveLength(45);
+    expect(result.summary.failures[44]?.reason).toContain('skipped: provider unavailable for the rest of this run');
+  });
+
+  it(`stops after ${MAX_CONSECUTIVE_UNAVAILABLE} fully-retried failures in a row, but not after failures a success interrupts`, async () => {
+    const cache = await loadLabelCache(await tempRoot());
+    const script = [false, false, true, false, false, false, true, true];
+    let calls = 0;
+    const flaky: CompletionProvider = {
+      name: 'fake:flaky',
+      model: 'test-model',
+      complete: async (): Promise<CompletionResult> => {
+        const succeed = script[calls] ?? true;
+        calls += 1;
+        return succeed
+          ? {
+              ok: true,
+              value: {
+                text: '{"label":"Fine","description":"ok"}',
+                model: 'test-model',
+                usage: { promptTokens: 100, completionTokens: 10, cachedPromptTokens: 0 },
+              },
+            }
+          : { ok: false, error: { kind: 'unavailable', message: 'HTTP 503 after 5 attempt(s)', retryable: true } };
+      },
+    };
+
+    const result = await createCachedLabeller({ provider: flaky, cache, evidence: NO_EVIDENCE }).label(requests(8));
+
+    // Calls 1-2 fail, 3 succeeds (reset), 4-6 fail three in a row: calls 7 and 8 are never made.
+    expect(calls).toBe(6);
+    expect(result.outcomes).toHaveLength(1);
+    expect(result.summary.failures.map((f) => f.reason.startsWith('skipped:'))).toEqual([
+      false, false, false, false, false, true, true,
+    ]);
   });
 
   it('rejects an injected label and does not cache it', async () => {
