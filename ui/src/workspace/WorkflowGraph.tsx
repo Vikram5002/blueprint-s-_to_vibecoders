@@ -47,6 +47,12 @@ export interface WorkflowGraphProps {
    * prohibitions are never drawn as edges, only reachable from the node.
    */
   readonly prohibitions?: readonly Constraint[];
+  /**
+   * The per-node status pickers, for seeing all six states on mock data.
+   * Off for a real plan: there they would only suggest a status nothing
+   * actually reported.
+   */
+  readonly demoControls?: boolean;
 }
 
 /**
@@ -66,7 +72,7 @@ export interface WorkflowGraphProps {
  * inspection uses — see ADR-001. Selecting a node clears the selected edge
  * and vice versa, so the panel always shows exactly one thing at a time.
  */
-export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX.Element {
+export function WorkflowGraph({ schema, prohibitions, demoControls = true }: WorkflowGraphProps): JSX.Element {
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<DomainName | null>(null);
   const [viewingDomain, setViewingDomain] = useState<DomainName | null>(null);
@@ -214,20 +220,22 @@ export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX
             }}
             proOptions={{ hideAttribution: true }}
           >
-            <Background color="#2a2a2e" gap={22} />
+            <Background color="#26262b" gap={20} size={1.2} />
             <Controls showInteractive={false} />
             <MiniMap
               pannable
               zoomable
-              nodeColor="#48484a"
+              nodeColor="#4b4b58"
               nodeStrokeWidth={0}
-              maskColor="rgba(12, 12, 14, 0.72)"
-              bgColor="#151517"
+              nodeBorderRadius={6}
+              maskColor="rgba(10, 10, 12, 0.7)"
+              bgColor="#111114"
+              style={{ width: 150, height: 100 }}
             />
           </ReactFlow>
         </div>
 
-        <aside className="w-72 flex-shrink-0 overflow-y-auto border-l border-slate-800 bg-slate-950 p-4">
+        <div className="w-72 flex-shrink-0 overflow-y-auto border-l border-white/[0.06] bg-black/20 p-4">
           {selectedDomain !== null && prohibitions !== undefined ? (
             <DomainProhibitions
               domain={selectedDomain}
@@ -252,6 +260,8 @@ export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX
             </>
           )}
 
+          {demoControls && (
+          <>
           <h3 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-slate-400">
             Node status (demo controls)
           </h3>
@@ -267,7 +277,7 @@ export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX
                       [domain]: event.target.value as GenerationStatus,
                     }))
                   }
-                  className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-slate-200"
+                  className="h-7 rounded-lg border border-white/[0.08] bg-white/[0.05] pl-2 text-slate-200"
                 >
                   {GENERATION_STATUSES.map((status) => (
                     <option key={status} value={status}>
@@ -278,7 +288,9 @@ export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX
               </div>
             ))}
           </div>
-        </aside>
+          </>
+          )}
+        </div>
       </div>
 
       {viewingDomain !== null && viewingSpec !== null && (
@@ -294,7 +306,7 @@ export function WorkflowGraph({ schema, prohibitions }: WorkflowGraphProps): JSX
 
 function EdgeInspection({ edge }: { edge: WorkflowEdge }): JSX.Element {
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900 p-3 text-xs">
+    <div className="anim-view rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 text-xs">
       <div className="mb-2 text-slate-300">
         <span className="font-semibold">{DOMAIN_LABEL[edge.from]}</span> depends on{' '}
         <span className="font-semibold">{DOMAIN_LABEL[edge.to]}</span>

@@ -1,6 +1,7 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { GENERATION_STATUS_LABEL, type GenerationStatus } from './generation-status';
 import type { DomainName } from './project-schema-types';
+import { Icon, type IconName } from '../design/Icon';
 
 export interface WorkflowNodeData extends Record<string, unknown> {
   readonly domain: DomainName;
@@ -70,6 +71,14 @@ const DOMAIN_LABEL: Readonly<Record<DomainName, string>> = {
   security: 'Security',
 };
 
+/** Each layer keeps one icon and one colour everywhere it appears (this graph, the plan review, the project report). */
+const DOMAIN_MARK: Readonly<Record<DomainName, { readonly icon: IconName; readonly tone: string }>> = {
+  frontend: { icon: 'pages', tone: 'bg-sky-500/[0.16] text-sky-300' },
+  backend: { icon: 'server', tone: 'bg-violet-500/[0.16] text-violet-300' },
+  database: { icon: 'database', tone: 'bg-emerald-500/[0.16] text-emerald-300' },
+  security: { icon: 'lock', tone: 'bg-amber-500/[0.16] text-amber-300' },
+};
+
 /**
  * Not draggable (`draggable: false` set by WorkflowGraph on every node) —
  * position comes only from `computeLayout`, and letting a user drag a node
@@ -87,17 +96,22 @@ export function WorkflowNode({ data, selected }: NodeProps): JSX.Element {
 
   return (
     <div
-      className={`min-w-[210px] rounded-2xl border ${style.border} ${style.bg} p-3.5 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.8)] backdrop-blur transition-shadow duration-300 ease-apple hover:shadow-[0_14px_36px_-10px_rgba(0,0,0,0.9)] ${selected ? 'ring-2 ring-sky-500/70 ring-offset-2 ring-offset-slate-900' : ''}`}
+      className={`min-w-[220px] rounded-2xl border ${style.border} ${style.bg} p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_16px_40px_-18px_rgba(0,0,0,0.9)] backdrop-blur transition-[box-shadow,transform] duration-300 ease-apple hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_22px_48px_-18px_rgba(0,0,0,0.95)] ${selected ? 'ring-2 ring-violet-400/70 ring-offset-2 ring-offset-[#0c0c0e]' : ''}`}
       data-domain={node.domain}
       data-status={node.status}
       data-selected={selected ? 'true' : 'false'}
     >
       <Handle type="target" position={Position.Top} />
 
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-[15px] font-semibold tracking-tight text-slate-50">{DOMAIN_LABEL[node.domain]}</span>
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2">
+          <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${DOMAIN_MARK[node.domain].tone}`}>
+            <Icon name={DOMAIN_MARK[node.domain].icon} size={14} />
+          </span>
+          <span className="text-[14px] font-semibold tracking-tight text-slate-50">{DOMAIN_LABEL[node.domain]}</span>
+        </span>
         <span
-          className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${style.text} ${style.pill}`}
+          className={`flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${style.text} ${style.pill}`}
         >
           <span
             className={`h-1.5 w-1.5 rounded-full ${style.dot} ${node.status === 'generating' ? 'animate-pulse' : ''}`}
@@ -116,7 +130,7 @@ export function WorkflowNode({ data, selected }: NodeProps): JSX.Element {
           event.stopPropagation();
           node.onViewComponents(node.domain);
         }}
-        className="w-full rounded-lg bg-white/[0.08] px-2 py-1.5 text-xs font-medium text-slate-200 hover:bg-white/[0.14]"
+        className="w-full rounded-lg border border-white/[0.06] bg-white/[0.05] px-2 py-1.5 text-xs font-medium text-slate-300 hover:border-white/[0.12] hover:bg-white/[0.1] hover:text-slate-100"
       >
         View components
       </button>

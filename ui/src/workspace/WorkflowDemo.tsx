@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { Icon } from '../design/Icon';
 import { SegmentedControl } from '../design/SegmentedControl';
 import { WorkflowGraph } from './WorkflowGraph';
 import { GenerateApplicationPanel } from './GenerateApplicationPanel';
@@ -70,7 +71,7 @@ export function WorkflowDemo(): JSX.Element {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-white/[0.08] bg-slate-950/60 px-4 py-2.5">
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-white/[0.06] bg-black/10 px-4 py-2.5">
         <SegmentedControl<Mode>
           ariaLabel="Where the schema comes from"
           kind="toggles"
@@ -141,12 +142,12 @@ export function WorkflowDemo(): JSX.Element {
 
       <div className="flex min-h-0 flex-1 flex-col">
         {mode === 'mock' ? (
-          <>
-            <div className="min-h-0 flex-1">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <GraphFrame>
               <WorkflowGraph key={scenario} schema={mockSchema} />
-            </div>
+            </GraphFrame>
             <GenerateApplicationPanel key={mockSchema.sessionId} schema={mockSchema} />
-          </>
+          </div>
         ) : (
           <LiveWorkflow key={loadedSession?.id ?? 'fresh'} initialSession={loadedSession} />
         )}
@@ -272,7 +273,7 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
     <div className="flex h-full min-h-0 flex-col">
       <form
         onSubmit={handleSubmit}
-        className="flex flex-shrink-0 gap-2 border-b border-slate-800 bg-slate-950 px-4 py-2"
+        className="flex flex-shrink-0 items-start gap-2 border-b border-white/[0.06] px-4 py-3"
       >
         {/* A textarea, not an input: a revised prompt keeps its "Changes to the plan" list on separate lines. */}
         <textarea
@@ -287,28 +288,29 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
           placeholder="Describe the app you want to build..."
           disabled={state.kind === 'in-flight'}
           rows={Math.min(6, prompt.split('\n').length)}
-          className="min-w-0 flex-1 resize-none rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500"
+          className="focus-glow min-w-0 flex-1 resize-none rounded-xl border border-white/[0.08] bg-black/25 px-3.5 py-2 text-[13px] leading-relaxed text-slate-100 placeholder:text-slate-500 focus-visible:outline-none"
         />
-        <button
-          type="submit"
-          disabled={state.kind === 'in-flight' || prompt.trim() === ''}
-          className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <button type="submit" disabled={state.kind === 'in-flight' || prompt.trim() === ''} className="btn btn-primary self-start">
+          <Icon name="sparkles" size={14} />
           Generate
         </button>
       </form>
 
       <div className="min-h-0 flex-1">
         {state.kind === 'idle' && (
-          <div className="flex h-full items-center justify-center text-sm text-slate-500">
-            Enter a prompt above to generate a real ProjectSchema.
+          <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.07] bg-white/[0.03] text-violet-300">
+              <Icon name="flow" size={22} />
+            </span>
+            <p className="text-sm text-slate-400">Enter a prompt above to generate a real ProjectSchema.</p>
+            <p className="max-w-sm text-xs text-slate-500">The plan appears here as a graph - pages, API, data and security, and the rules between them.</p>
           </div>
         )}
 
         {state.kind === 'in-flight' && (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-slate-300">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-sky-400" />
-            <div>{JOB_STATUS_LABEL[state.status]}</div>
+            <span className="spinner !h-7 !w-7 !border-[2.5px]" />
+            <div className="mt-1 font-medium">{JOB_STATUS_LABEL[state.status]}</div>
             <div className="text-xs text-slate-500">
               {(elapsedMs / 1000).toFixed(1)}s elapsed
               {elapsedMs > SLOW_PROVIDER_HINT_MS
@@ -320,7 +322,7 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
 
         {state.kind === 'failed' && (
           <div className="flex h-full items-center justify-center p-6">
-            <div className="max-w-md rounded-lg border border-red-700/50 bg-red-950/20 p-4 text-sm">
+            <div className="max-w-md rounded-2xl border border-red-400/25 bg-red-500/[0.07] p-4 text-sm">
               <div className="mb-1 font-semibold text-red-300">Generation failed</div>
               <p className="text-red-200">{state.message}</p>
             </div>
@@ -328,15 +330,18 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
         )}
 
         {state.kind === 'succeeded' && (
-          <div className="flex h-full min-h-0 flex-col">
-            <div className="min-h-0 flex-1">
+          <div className="h-full min-h-0 overflow-y-auto">
+            <GraphFrame>
               <WorkflowGraph
                 key={`${state.result.schema.sessionId}:${planVersion}`}
                 schema={state.result.schema}
                 prohibitions={state.result.prohibitions}
+                demoControls={false}
               />
+            </GraphFrame>
+            <div className="mx-4 mt-3 overflow-hidden rounded-2xl border border-violet-400/[0.14] bg-violet-500/[0.04]">
+              <PlanChangeBar onRevise={(change) => handleRevise(state.result.schema.sessionId, change)} />
             </div>
-            <PlanChangeBar onRevise={(change) => handleRevise(state.result.schema.sessionId, change)} />
             <GenerateApplicationPanel
               key={`${state.result.schema.sessionId}:${planVersion}`}
               schema={state.result.schema}
@@ -344,6 +349,18 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The graph's own frame: a fixed, generous height, so the plan is always
+ * fully visible and the results below scroll instead of squeezing it.
+ */
+function GraphFrame({ children }: { readonly children: ReactNode }): JSX.Element {
+  return (
+    <div className="mx-4 mt-4 h-[clamp(420px,58vh,680px)] overflow-hidden rounded-2xl border border-white/[0.07] bg-black/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+      {children}
     </div>
   );
 }

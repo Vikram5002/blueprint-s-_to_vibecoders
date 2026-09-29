@@ -14,6 +14,7 @@ import { useWorkspaceStore } from './store';
 import { ComponentEditor } from './ComponentEditor';
 import type { ApplicationJob, ApplicationJobError, GenerationPhase } from './application-job-types';
 import type { ProjectSchema } from './project-schema-types';
+import { Icon } from '../design/Icon';
 
 /**
  * The final milestone's real UI surface: turns an already-generated
@@ -191,15 +192,16 @@ export function GenerateApplicationPanel({
     !state.job.result.build.buildOk;
 
   return (
-    <div className="border-t border-slate-800 bg-slate-950 p-4">
+    <div className="px-4 pb-8 pt-2">
       {state.kind !== 'in-flight' && (
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             data-testid="generate-application"
             onClick={() => void handleGenerate()}
-            className="rounded-lg border border-emerald-700 bg-emerald-950/30 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-900/40"
+            className={`btn ${state.kind === 'done' ? 'btn-secondary btn-sm' : 'btn-primary'}`}
           >
+            <Icon name={state.kind === 'done' ? 'history' : 'play'} size={13} className={state.kind === 'done' ? '' : 'fill-current'} />
             {state.kind === 'done' ? 'Generate again (full, uses tokens)' : 'Generate Application'}
           </button>
           {state.kind === 'done' && state.restored && (
@@ -212,8 +214,8 @@ export function GenerateApplicationPanel({
       )}
 
       {state.kind === 'in-flight' && (
-        <div className="flex items-center gap-3 text-sm text-slate-300">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-600 border-t-emerald-400" />
+        <div className="card flex items-center gap-3 !rounded-xl px-4 py-3 text-sm text-slate-200">
+          <span className="spinner !h-[18px] !w-[18px]" />
           <span>
             {state.phase === undefined
               ? 'Queued…'
@@ -226,14 +228,14 @@ export function GenerateApplicationPanel({
       )}
 
       {state.kind === 'error' && (
-        <div className="mt-3 rounded-lg border border-red-700/50 bg-red-950/20 p-3 text-sm">
+        <div className="mt-3 rounded-xl border border-red-400/25 bg-red-500/[0.07] p-3.5 text-sm">
           <div className="mb-1 font-semibold text-red-300">Application generation failed</div>
           <p className="text-red-200">{state.message}</p>
         </div>
       )}
 
       {canContinue && state.kind === 'done' && (
-        <div data-testid="continue-panel" className="mt-3 rounded-lg border border-sky-700/50 bg-sky-950/10 p-3">
+        <div data-testid="continue-panel" className="mt-3 rounded-xl border border-sky-400/20 bg-sky-500/[0.06] p-3.5">
           <div className="mb-1 text-xs font-semibold text-sky-300">
             This run stopped partway - {savedComponents} of {totalComponents} components were already written.
           </div>
@@ -245,15 +247,16 @@ export function GenerateApplicationPanel({
             type="button"
             data-testid="continue-run"
             onClick={() => void handleContinue(state.job.id)}
-            className="rounded-lg border border-sky-600 bg-sky-950/40 px-3 py-1.5 text-xs font-medium text-sky-200 hover:bg-sky-900/40"
+            className="btn btn-primary btn-sm"
           >
+            <Icon name="play" size={12} className="fill-current" />
             Continue generation ({totalComponents - savedComponents} left)
           </button>
         </div>
       )}
 
       {canRepair && state.kind === 'done' && (
-        <div data-testid="repair-panel" className="mt-3 rounded-lg border border-amber-700/50 bg-amber-950/10 p-3">
+        <div data-testid="repair-panel" className="mt-3 rounded-xl border border-amber-400/20 bg-amber-500/[0.06] p-3.5">
           <div className="mb-1 text-xs font-semibold text-amber-300">This run did not build. Fix it without regenerating everything?</div>
           <p className="mb-2 text-[11px] text-amber-200/80">
             Only the files the compiler still rejects are rewritten - a few model calls instead of one per component.
@@ -266,14 +269,15 @@ export function GenerateApplicationPanel({
               onChange={(event) => setInstruction(event.target.value)}
               placeholder="e.g. keep the product list on the catalog page; the checkout form must post to /api/orders"
               rows={2}
-              className="min-w-[280px] flex-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 placeholder:text-slate-500"
+              className="focus-glow min-w-[280px] flex-1 rounded-lg border border-white/[0.08] bg-black/25 px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-500"
             />
             <button
               type="button"
               data-testid="repair-run"
               onClick={() => void handleRepair(state.job.id)}
-              className="rounded-lg border border-amber-600 bg-amber-950/40 px-3 py-1.5 text-xs font-medium text-amber-200 hover:bg-amber-900/40"
+              className="btn btn-secondary btn-sm"
             >
+              <Icon name="wand" size={13} />
               Fix build errors
             </button>
           </div>
@@ -349,11 +353,12 @@ function ApplicationJobReport({ job, schema }: { readonly job: ApplicationJob; r
           href={applicationJobDownloadUrl(job.id)}
           data-testid="download-zip"
           title={PACK_NOTE}
-          className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1 text-xs font-medium text-slate-100 hover:bg-slate-700"
+          className="btn btn-primary btn-sm ml-auto"
         >
+          <Icon name="download" size={13} />
           Download generated project (.zip)
         </a>
-        <span className="text-[11px] text-slate-500">{PACK_NOTE}</span>
+        <span className="basis-full text-right text-[11px] text-slate-500">{PACK_NOTE}</span>
       </div>
 
       {result.build.failureOutput !== undefined && (
@@ -602,12 +607,11 @@ function Badge({
 }): JSX.Element {
   return (
     <span
-      className={
-        ok
-          ? 'rounded-lg border border-emerald-700 bg-emerald-950/30 px-2 py-1 text-xs text-emerald-300'
-          : 'rounded-lg border border-red-700 bg-red-950/30 px-2 py-1 text-xs text-red-300'
-      }
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
+        ok ? 'bg-emerald-500/[0.09] text-emerald-300 ring-emerald-400/20' : 'bg-red-500/[0.1] text-red-300 ring-red-400/25'
+      }`}
     >
+      <Icon name={ok ? 'check' : 'x'} size={12} strokeWidth={2.4} />
       {ok ? okLabel : failLabel}
     </span>
   );
