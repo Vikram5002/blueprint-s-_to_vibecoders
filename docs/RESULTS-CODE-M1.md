@@ -38,8 +38,17 @@ the adapter was the only difference.
 | Backend (n = 36), A | 41.7% | 86.1% | +44.4 |
 | Security (n = 10), A | 40.0% | 90.0% | +50.0 |
 
-All six of the adapter's failures are build failures; none failed Blueprint, the locator
-check or a live route.
+All six of the adapter's failures are build failures; none failed a live route.
+
+**Correction (2026-10-01): the Blueprint and locator checks in these runs were vacuous.**
+They read only each plan's `constraints`, which are business rules; none of the 14 in the
+26 reference plans compiled, so no rule was evaluated. Re-checked afterwards against rules
+compiled from each plan's `dependsOn` (the check the pipeline now runs, `plan-rules.ts`):
+0 violations and 0 locator findings in all 131 first-attempt candidate files of both
+models, the 26 references and the 91 teacher projects, while planted faults were caught
+144/144 (imports) and 144/144 (runtime lookups) with 0/58 false alarms. So A is unchanged;
+B and C were not re-scored (their files were not kept). Scripts:
+`presentations/paper/reference/analysis/`.
 
 ## Results - frontend and database
 
@@ -53,9 +62,10 @@ references. The route check (D) does not apply: these files own no API route. C 
 | Frontend (n = 11), A / B | 36.4% / 63.6% | 72.7% / 81.8% | +36.3 / +18.2 |
 | Database (n = 9), A / B | 0.0% / 11.1% | 33.3% / 88.9% | +33.3 / +77.8 |
 
-The gain holds outside the domains that dominate the training data. It is smaller on first
-attempt than for backend and security, and repair matters more (database 33% → 89%). n = 20
-is small: treat these as direction, not precision.
+The gain holds for these domains too, even though they supplied most of the accepted
+training files (frontend 168 and database 105 of 403). It is smaller on first attempt than
+for backend and security, and repair matters more (database 33% → 89%). n = 20 is small:
+treat these as direction, not precision.
 
 ## Ship bar (`GPU-COMPUTE-PROPOSAL.md` §6)
 
