@@ -100,7 +100,10 @@ export function createProjectRoutes(deps: ProjectRouteDeps): Hono {
     const outcome = await work().catch((cause: unknown) => err(`unexpected: ${String(cause)}`));
     const finishedAt = new Date().toISOString();
     if (!outcome.ok) {
-      job = { ...job, status: 'failed', message: outcome.error, finishedAt };
+      // Drop the last progress value: "failed" shown beside 80% reads as
+      // though the work nearly finished.
+      const { percent: _lastPercent, ...rest } = job;
+      job = { ...rest, status: 'failed', message: outcome.error, finishedAt };
       return;
     }
     deps.holder.replace(outcome.value.context);

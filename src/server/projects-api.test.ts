@@ -162,6 +162,20 @@ describe('project routes', () => {
     expect(holder.current()).toBe(home);
   });
 
+  it('drops the last progress value when an analysis fails', async () => {
+    const app = routes({
+      analyse: async (_root, options) => {
+        options.onProgress('Parsing files 8 of 10', 80);
+        return err('the parser ran out of memory');
+      },
+    });
+    await mkdir(join(dir, 'other'), { recursive: true });
+    await post(app, '/analyse', { kind: 'local', path: join(dir, 'other') });
+    const job = await waitForJob(app);
+    expect(job.status).toBe('failed');
+    expect(job.percent).toBeUndefined();
+  });
+
   it('refuses a second analysis while one is running', async () => {
     let release: () => void = () => {};
     const gate = new Promise<void>((resolve) => (release = resolve));
