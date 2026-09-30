@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
+import { LIVE_RESULT_TIMEOUT_MS, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
 
 /**
  * The one remaining precisely-scoped gap (see docs/GENERATION.md): the
@@ -73,7 +74,7 @@ async function startCli(): Promise<RunningCli> {
 }
 
 test.describe('Single-component fixture: live verification of the build-failure retry\'s attributed branch', () => {
-  test.setTimeout(300_000);
+  test.setTimeout(LIVE_TEST_TIMEOUT_MS);
 
   let cli: RunningCli;
 
@@ -105,7 +106,7 @@ test.describe('Single-component fixture: live verification of the build-failure 
     await expect(generateButton).toBeHidden();
 
     const buildBadge = page.getByText(/npm run build: (passed|failed)/);
-    await expect(buildBadge).toBeVisible({ timeout: 280_000 });
+    await expect(buildBadge).toBeVisible({ timeout: LIVE_RESULT_TIMEOUT_MS });
 
     const installBadge = page.getByText(/npm install: (passed|failed)/);
     await expect(installBadge).toHaveText('npm install: passed');

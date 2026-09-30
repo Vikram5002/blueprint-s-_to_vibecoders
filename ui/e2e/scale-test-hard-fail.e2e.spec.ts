@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
+import { LIVE_RESULT_TIMEOUT_MS, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
 
 /**
  * Item 2's live verification (post-Milestone-4): reproduces a genuine
@@ -82,7 +83,7 @@ test.describe('real "Generate Application" flow against the scale-test fixture -
   // 9 components vs. the known-tension fixture's 3 - ADR-002/Milestone 3's
   // own measured timing put a 9-component generate+verify+retry+install+
   // build run at roughly 100s; generous headroom over that.
-  test.setTimeout(300_000);
+  test.setTimeout(LIVE_TEST_TIMEOUT_MS);
 
   let cli: RunningCli;
 
@@ -117,7 +118,7 @@ test.describe('real "Generate Application" flow against the scale-test fixture -
     await expect(generateButton).toBeHidden();
 
     const buildBadge = page.getByText(/npm run build: (passed|failed)/);
-    await expect(buildBadge).toBeVisible({ timeout: 280_000 });
+    await expect(buildBadge).toBeVisible({ timeout: LIVE_RESULT_TIMEOUT_MS });
 
     const installBadge = page.getByText(/npm install: (passed|failed)/);
     await expect(installBadge).toBeVisible();

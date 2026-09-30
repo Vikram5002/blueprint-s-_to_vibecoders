@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
+import { LIVE_RESULT_TIMEOUT_MS, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
 
 /**
  * Part 4's live verification: drives the REAL "Generate from prompt" path
@@ -65,7 +66,7 @@ async function startCli(): Promise<RunningCli> {
 }
 
 test.describe('Part 4: live verification of Item 3 (service-locator check) and Part 3 (build-failure retry)', () => {
-  test.setTimeout(300_000);
+  test.setTimeout(LIVE_TEST_TIMEOUT_MS);
 
   let cli: RunningCli;
 
@@ -102,7 +103,7 @@ test.describe('Part 4: live verification of Item 3 (service-locator check) and P
     await expect(generateAppButton).toBeHidden();
 
     const buildBadge = page.getByText(/npm run build: (passed|failed)/);
-    await expect(buildBadge).toBeVisible({ timeout: 280_000 });
+    await expect(buildBadge).toBeVisible({ timeout: LIVE_RESULT_TIMEOUT_MS });
 
     const installBadge = page.getByText(/npm install: (passed|failed)/);
     await expect(installBadge).toHaveText('npm install: passed');
