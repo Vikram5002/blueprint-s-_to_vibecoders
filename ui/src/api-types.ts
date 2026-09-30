@@ -289,8 +289,7 @@ export interface SnapshotDiffBody {
 }
 
 export type DiffResponse =
-  | { ok: true; diff: SnapshotDiffBody }
-  | { ok: false; reason: string; available: string[] };
+  { ok: true; diff: SnapshotDiffBody } | { ok: false; reason: string; available: string[] };
 
 export interface DriftPointResponse {
   commit: string;
@@ -363,7 +362,13 @@ export interface ViolationResponse {
 
 export interface ViolationsResponse {
   violations: ViolationResponse[];
-  unchecked: { constraintId: string; reason: string; explanation: string; rawText: string; source: string }[];
+  unchecked: {
+    constraintId: string;
+    reason: string;
+    explanation: string;
+    rawText: string;
+    source: string;
+  }[];
   summary: {
     constraints: number;
     checked: number;
@@ -387,7 +392,12 @@ export interface SnapshotBody {
   moduleCount: number;
   edgeCount: number;
   violationCount: number;
-  violations: { id: string; severity: 'high' | 'medium' | 'low'; explanation: string; kind: string }[];
+  violations: {
+    id: string;
+    severity: 'high' | 'medium' | 'low';
+    explanation: string;
+    kind: string;
+  }[];
   drift: { score: number; explanation: string };
 }
 

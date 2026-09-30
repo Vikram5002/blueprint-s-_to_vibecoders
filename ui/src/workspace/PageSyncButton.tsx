@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { fetchApplicationJob, saveRunPage, syncRunPage, type SyncedField } from './workflow-api-client';
+import {
+  fetchApplicationJob,
+  saveRunPage,
+  syncRunPage,
+  type SyncedField,
+} from './workflow-api-client';
 import { useWorkspaceStore, type PageOrigin } from './store';
 import { FIELD_TYPES } from './page-builder-catalogue';
 import type { CanvasElement } from './page-builder-types';
@@ -34,7 +39,11 @@ function failureMessage(job: ApplicationJob): string {
  * success the canvas moves to that new run, so further edits and the zip
  * download include the new backend.
  */
-export function PageSyncButton({ origin, pageName, elements }: PageSyncButtonProps): JSX.Element | null {
+export function PageSyncButton({
+  origin,
+  pageName,
+  elements,
+}: PageSyncButtonProps): JSX.Element | null {
   const openPageInBuilder = useWorkspaceStore((state) => state.openPageInBuilder);
   const notifyRunSaved = useWorkspaceStore((state) => state.notifyRunSaved);
   const [state, setState] = useState<SyncState>({ kind: 'idle' });
@@ -54,12 +63,18 @@ export function PageSyncButton({ origin, pageName, elements }: PageSyncButtonPro
     setState({ kind: 'running', fields: [], phase: 'saving the page' });
     try {
       const theme = useWorkspaceStore.getState().pageBuilder.theme;
-      const layout = { id: `${origin.runId}:${origin.path}`, pageName, elements, ...(theme === undefined ? {} : { theme }) };
+      const layout = {
+        id: `${origin.runId}:${origin.path}`,
+        pageName,
+        elements,
+        ...(theme === undefined ? {} : { theme }),
+      };
       await saveRunPage(origin.runId, layout);
       const started = await syncRunPage(origin.runId, origin.path);
       const job = await waitFor(started.id, started.fields);
       notifyRunSaved();
-      if (job.status === 'succeeded') openPageInBuilder({ ...origin, runId: job.id, edited: true }, layout);
+      if (job.status === 'succeeded')
+        openPageInBuilder({ ...origin, runId: job.id, edited: true }, layout);
       setState({ kind: 'done', job, fields: started.fields });
     } catch (cause) {
       setState({ kind: 'error', message: cause instanceof Error ? cause.message : String(cause) });
@@ -82,12 +97,18 @@ export function PageSyncButton({ origin, pageName, elements }: PageSyncButtonPro
       {state.kind === 'running' && (
         <span data-testid="sync-status" className="text-slate-400">
           {state.phase}
-          {state.fields.length > 0 && ` - fields: ${state.fields.map((f) => `${f.name} (${f.kind})`).join(', ')}`}
+          {state.fields.length > 0 &&
+            ` - fields: ${state.fields.map((f) => `${f.name} (${f.kind})`).join(', ')}`}
         </span>
       )}
       {state.kind === 'done' && state.job.status === 'succeeded' && (
-        <span data-testid="sync-status" className={build?.buildOk === true ? 'text-emerald-300' : 'text-amber-300'}>
-          {build?.buildOk === true ? 'Backend and database updated - the project builds. ' : 'Generated, but the build still fails - see the run in the Workflow tab. '}
+        <span
+          data-testid="sync-status"
+          className={build?.buildOk === true ? 'text-emerald-300' : 'text-amber-300'}
+        >
+          {build?.buildOk === true
+            ? 'Backend and database updated - the project builds. '
+            : 'Generated, but the build still fails - see the run in the Workflow tab. '}
           Stored fields: {state.fields.map((f) => f.name).join(', ')}.
         </span>
       )}

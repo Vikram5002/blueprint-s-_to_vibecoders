@@ -2,11 +2,24 @@ import { describe, expect, it } from 'vitest';
 import { clampToCanvas, reorder, resizeRect, snapMove } from './page-builder-geometry';
 import type { CanvasElement } from './page-builder-types';
 
-const el = (id: string): CanvasElement => ({ id, type: 'text', x: 0, y: 0, width: 10, height: 10, label: '', colorToken: 'primary' });
+const el = (id: string): CanvasElement => ({
+  id,
+  type: 'text',
+  x: 0,
+  y: 0,
+  width: 10,
+  height: 10,
+  label: '',
+  colorToken: 'primary',
+});
 
 describe('snapMove', () => {
   it('snaps to the 8px grid when nothing is near', () => {
-    expect(snapMove({ x: 203, y: 309, width: 100, height: 40 }, [])).toEqual({ x: 200, y: 312, guides: [] });
+    expect(snapMove({ x: 203, y: 309, width: 100, height: 40 }, [])).toEqual({
+      x: 200,
+      y: 312,
+      guides: [],
+    });
   });
 
   it("aligns a left edge with another element's left edge and reports the guide", () => {
@@ -23,7 +36,10 @@ describe('snapMove', () => {
   });
 
   it('never leaves the canvas', () => {
-    expect(snapMove({ x: 1250, y: -30, width: 100, height: 40 }, [])).toMatchObject({ x: 1180, y: 0 });
+    expect(snapMove({ x: 1250, y: -30, width: 100, height: 40 }, [])).toMatchObject({
+      x: 1180,
+      y: 0,
+    });
   });
 });
 
@@ -44,14 +60,24 @@ describe('resizeRect', () => {
   });
 
   it('stops at the canvas edges', () => {
-    expect(resizeRect(start, 'nw', -500, -500)).toMatchObject({ x: 0, y: 0, width: 300, height: 200 });
+    expect(resizeRect(start, 'nw', -500, -500)).toMatchObject({
+      x: 0,
+      y: 0,
+      width: 300,
+      height: 200,
+    });
     expect(resizeRect(start, 'se', 5000, 5000)).toMatchObject({ width: 1180, height: 700 });
   });
 });
 
 describe('clampToCanvas', () => {
   it('shrinks an oversize rect to the canvas', () => {
-    expect(clampToCanvas({ x: -5, y: 10, width: 2000, height: 900 })).toEqual({ x: 0, y: 0, width: 1280, height: 800 });
+    expect(clampToCanvas({ x: -5, y: 10, width: 2000, height: 900 })).toEqual({
+      x: 0,
+      y: 0,
+      width: 1280,
+      height: 800,
+    });
   });
 });
 

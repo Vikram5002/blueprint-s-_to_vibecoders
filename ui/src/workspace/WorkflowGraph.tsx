@@ -72,7 +72,11 @@ export interface WorkflowGraphProps {
  * inspection uses — see ADR-001. Selecting a node clears the selected edge
  * and vice versa, so the panel always shows exactly one thing at a time.
  */
-export function WorkflowGraph({ schema, prohibitions, demoControls = true }: WorkflowGraphProps): JSX.Element {
+export function WorkflowGraph({
+  schema,
+  prohibitions,
+  demoControls = true,
+}: WorkflowGraphProps): JSX.Element {
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<DomainName | null>(null);
   const [viewingDomain, setViewingDomain] = useState<DomainName | null>(null);
@@ -109,7 +113,8 @@ export function WorkflowGraph({ schema, prohibitions, demoControls = true }: Wor
 
   const handleNodesChange = useCallback((changes: readonly NodeChange[]) => {
     const dimensionChanges = changes.filter(
-      (change): change is Extract<NodeChange, { type: 'dimensions' }> => change.type === 'dimensions',
+      (change): change is Extract<NodeChange, { type: 'dimensions' }> =>
+        change.type === 'dimensions',
     );
     if (dimensionChanges.length === 0) return;
     setMeasuredDimensions((current) => {
@@ -261,34 +266,34 @@ export function WorkflowGraph({ schema, prohibitions, demoControls = true }: Wor
           )}
 
           {demoControls && (
-          <>
-          <h3 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Node status (demo controls)
-          </h3>
-          <div className="space-y-2">
-            {(Object.keys(schema.domains) as DomainName[]).map((domain) => (
-              <div key={domain} className="flex items-center justify-between gap-2 text-xs">
-                <span className="text-slate-300">{DOMAIN_LABEL[domain]}</span>
-                <select
-                  value={statuses[domain]}
-                  onChange={(event) =>
-                    setStatuses((current) => ({
-                      ...current,
-                      [domain]: event.target.value as GenerationStatus,
-                    }))
-                  }
-                  className="h-7 rounded-lg border border-white/[0.08] bg-white/[0.05] pl-2 text-slate-200"
-                >
-                  {GENERATION_STATUSES.map((status) => (
-                    <option key={status} value={status}>
-                      {GENERATION_STATUS_LABEL[status]}
-                    </option>
-                  ))}
-                </select>
+            <>
+              <h3 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Node status (demo controls)
+              </h3>
+              <div className="space-y-2">
+                {(Object.keys(schema.domains) as DomainName[]).map((domain) => (
+                  <div key={domain} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-slate-300">{DOMAIN_LABEL[domain]}</span>
+                    <select
+                      value={statuses[domain]}
+                      onChange={(event) =>
+                        setStatuses((current) => ({
+                          ...current,
+                          [domain]: event.target.value as GenerationStatus,
+                        }))
+                      }
+                      className="h-7 rounded-lg border border-white/[0.08] bg-white/[0.05] pl-2 text-slate-200"
+                    >
+                      {GENERATION_STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {GENERATION_STATUS_LABEL[status]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          </>
+            </>
           )}
         </div>
       </div>

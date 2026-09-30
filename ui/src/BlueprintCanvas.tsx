@@ -11,12 +11,7 @@ import {
 } from '@xyflow/react';
 import { BlueprintNode, type BlueprintNodeData } from './BlueprintNode';
 import { BlueprintSeedsPanel } from './BlueprintSeedsPanel';
-import {
-  fetchBlueprint,
-  fetchModules,
-  compileBlueprintGraph,
-  saveBlueprintGraph,
-} from './api';
+import { fetchBlueprint, fetchModules, compileBlueprintGraph, saveBlueprintGraph } from './api';
 import type {
   BlueprintGraph,
   BlueprintGraphEdge,
@@ -81,8 +76,12 @@ export function BlueprintCanvas(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchModules().then(setModules).catch((cause: unknown) => setError(String(cause)));
-    fetchBlueprint().then(setSaved).catch((cause: unknown) => setError(String(cause)));
+    fetchModules()
+      .then(setModules)
+      .catch((cause: unknown) => setError(String(cause)));
+    fetchBlueprint()
+      .then(setSaved)
+      .catch((cause: unknown) => setError(String(cause)));
   }, []);
 
   const touchedDerivedIds = useMemo(() => {
@@ -129,17 +128,24 @@ export function BlueprintCanvas(): JSX.Element {
     setAuthoredNodes((current) => [...current, { id, phrase: 'new-module' }]);
     setAuthoredPositions((current) => ({
       ...current,
-      [id]: { x: 80 + (Object.keys(current).length % 5) * 190, y: 80 + Math.floor(Object.keys(current).length / 5) * 140 },
+      [id]: {
+        x: 80 + (Object.keys(current).length % 5) * 190,
+        y: 80 + Math.floor(Object.keys(current).length / 5) * 140,
+      },
     }));
   }, []);
 
   const renameNode = useCallback((id: string, phrase: string) => {
-    setAuthoredNodes((current) => current.map((node) => (node.id === id ? { ...node, phrase } : node)));
+    setAuthoredNodes((current) =>
+      current.map((node) => (node.id === id ? { ...node, phrase } : node)),
+    );
   }, []);
 
   const removeNode = useCallback((id: string) => {
     setAuthoredNodes((current) => current.filter((node) => node.id !== id));
-    setEdges((current) => current.filter((edge) => edge.from !== id && edge.to !== id && edge.via !== id));
+    setEdges((current) =>
+      current.filter((edge) => edge.from !== id && edge.to !== id && edge.via !== id),
+    );
     setAuthoredPositions((current) => {
       const next = { ...current };
       delete next[id];
@@ -149,7 +155,9 @@ export function BlueprintCanvas(): JSX.Element {
 
   const toggleCycle = useCallback((id: string) => {
     setAuthoredNodes((current) =>
-      current.map((node) => (node.id === id ? { ...node, mustNotCycle: node.mustNotCycle !== true } : node)),
+      current.map((node) =>
+        node.id === id ? { ...node, mustNotCycle: node.mustNotCycle !== true } : node,
+      ),
     );
   }, []);
 
@@ -158,7 +166,12 @@ export function BlueprintCanvas(): JSX.Element {
     const id = newId('e');
     setEdges((current) => [
       ...current,
-      { id, from: connection.source as string, to: connection.target as string, relation: 'must-not-import' },
+      {
+        id,
+        from: connection.source as string,
+        to: connection.target as string,
+        relation: 'must-not-import',
+      },
     ]);
     setSelectedEdgeId(id);
   }, []);
@@ -191,7 +204,9 @@ export function BlueprintCanvas(): JSX.Element {
     for (const change of changes) {
       if (change.type === 'position' && change.position !== undefined) {
         setAuthoredPositions((current) =>
-          current[change.id] === undefined ? current : { ...current, [change.id]: change.position as AuthoredPosition },
+          current[change.id] === undefined
+            ? current
+            : { ...current, [change.id]: change.position as AuthoredPosition },
         );
       }
     }
@@ -242,7 +257,15 @@ export function BlueprintCanvas(): JSX.Element {
     }));
 
     return [...derived, ...authored];
-  }, [modules, touchedDerivedIds, authoredNodes, authoredPositions, renameNode, removeNode, toggleCycle]);
+  }, [
+    modules,
+    touchedDerivedIds,
+    authoredNodes,
+    authoredPositions,
+    renameNode,
+    removeNode,
+    toggleCycle,
+  ]);
 
   const flowEdges = useMemo<Edge[]>(
     () =>
@@ -262,7 +285,9 @@ export function BlueprintCanvas(): JSX.Element {
   const selectedEdge = edges.find((edge) => edge.id === selectedEdgeId) ?? null;
   const allNodeChoices = [
     ...authoredNodes.map((n) => ({ id: n.id, phrase: n.phrase })),
-    ...(modules?.nodes ?? []).filter((m) => touchedDerivedIds.has(m.id)).map((m) => ({ id: m.id, phrase: m.label })),
+    ...(modules?.nodes ?? [])
+      .filter((m) => touchedDerivedIds.has(m.id))
+      .map((m) => ({ id: m.id, phrase: m.label })),
   ];
 
   return (
@@ -287,7 +312,14 @@ export function BlueprintCanvas(): JSX.Element {
         >
           <Background color="#3a2548" gap={22} />
           <Controls showInteractive={false} />
-          <MiniMap pannable zoomable nodeColor="#9c43cc" nodeStrokeWidth={0} maskColor="rgba(12, 12, 14, 0.72)" bgColor="#151517" />
+          <MiniMap
+            pannable
+            zoomable
+            nodeColor="#9c43cc"
+            nodeStrokeWidth={0}
+            maskColor="rgba(12, 12, 14, 0.72)"
+            bgColor="#151517"
+          />
         </ReactFlow>
       </div>
 
@@ -305,10 +337,9 @@ export function BlueprintCanvas(): JSX.Element {
         )}
 
         <div className="hint" style={{ marginBottom: 10 }}>
-          Drag from a node's edge to another to draw a rule. DERIVED boxes are
-          real modules and are read-only; add a STATED box to name something
-          that is not one. Every edit compiles below through the same DSL
-          compiler a typed file uses.
+          Drag from a node's edge to another to draw a rule. DERIVED boxes are real modules and are
+          read-only; add a STATED box to name something that is not one. Every edit compiles below
+          through the same DSL compiler a typed file uses.
         </div>
 
         <button type="button" className="control" onClick={addNode} style={{ marginBottom: 12 }}>
@@ -326,7 +357,9 @@ export function BlueprintCanvas(): JSX.Element {
                 <select
                   className="v"
                   value={selectedEdge.relation}
-                  onChange={(event) => setEdgeRelation(selectedEdge.id, event.target.value as BlueprintRelation)}
+                  onChange={(event) =>
+                    setEdgeRelation(selectedEdge.id, event.target.value as BlueprintRelation)
+                  }
                 >
                   <option value="must-not-import">must not import</option>
                   <option value="may-only-import-via">may only import … via</option>
@@ -353,7 +386,12 @@ export function BlueprintCanvas(): JSX.Element {
                 </div>
               )}
             </div>
-            <button type="button" className="link" style={{ marginTop: 8 }} onClick={() => removeEdge(selectedEdge.id)}>
+            <button
+              type="button"
+              className="link"
+              style={{ marginTop: 8 }}
+              onClick={() => removeEdge(selectedEdge.id)}
+            >
               delete edge
             </button>
           </div>
@@ -369,8 +407,8 @@ export function BlueprintCanvas(): JSX.Element {
 
         {preview !== null && preview.rejected.length > 0 && (
           <div className="banner">
-            {preview.rejected.length} line(s) did not compile — a `may only
-            import via` edge probably needs its via node chosen.
+            {preview.rejected.length} line(s) did not compile — a `may only import via` edge
+            probably needs its via node chosen.
           </div>
         )}
 
@@ -382,7 +420,9 @@ export function BlueprintCanvas(): JSX.Element {
                 <div className="row" key={constraint.id} style={{ display: 'block' }}>
                   <div style={{ fontSize: 11 }}>“{constraint.rawText}”</div>
                   {!constraint.evaluable && (
-                    <span className="tag-status tag-orphaned">not checkable — a phrase did not resolve</span>
+                    <span className="tag-status tag-orphaned">
+                      not checkable — a phrase did not resolve
+                    </span>
                   )}
                 </div>
               ))}
@@ -404,14 +444,15 @@ export function BlueprintCanvas(): JSX.Element {
           <>
             <h3>Saved blueprint ({saved.constraints.length})</h3>
             <div className="hint" style={{ marginBottom: 6 }}>
-              What the next run — CLI, JSON, or an --mcp session — will check
-              against. Editing above does not change this until you save.
+              What the next run — CLI, JSON, or an --mcp session — will check against. Editing above
+              does not change this until you save.
             </div>
             <div className="rows">
               {saved.constraints.map((constraint) => (
                 <div className="row" key={constraint.id} style={{ display: 'block' }}>
                   <div style={{ fontSize: 11 }}>
-                    <span className="provenance stated-chip">{constraint.source.type}</span> “{constraint.rawText}”
+                    <span className="provenance stated-chip">{constraint.source.type}</span> “
+                    {constraint.rawText}”
                   </div>
                 </div>
               ))}

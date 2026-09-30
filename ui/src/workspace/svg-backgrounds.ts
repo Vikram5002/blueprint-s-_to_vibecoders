@@ -11,7 +11,15 @@
  * generated page (JSX attribute names), so the two can never disagree.
  */
 
-export const BACKGROUND_KINDS = ['waves', 'layered-waves', 'blob', 'blob-scene', 'peaks', 'circles', 'mesh-gradient'] as const;
+export const BACKGROUND_KINDS = [
+  'waves',
+  'layered-waves',
+  'blob',
+  'blob-scene',
+  'peaks',
+  'circles',
+  'mesh-gradient',
+] as const;
 export type BackgroundKind = (typeof BACKGROUND_KINDS)[number];
 
 export interface BackgroundSpec {
@@ -44,7 +52,13 @@ function prng(seed: number): () => number {
 /** Mixes two hex colours; t = 0 gives a, t = 1 gives b. */
 export function mix(a: string, b: string, t: number): string {
   const channel = (hex: string, i: number): number => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16);
-  return `#${[0, 1, 2].map((i) => Math.round(channel(a, i) + (channel(b, i) - channel(a, i)) * t).toString(16).padStart(2, '0')).join('')}`;
+  return `#${[0, 1, 2]
+    .map((i) =>
+      Math.round(channel(a, i) + (channel(b, i) - channel(a, i)) * t)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
 }
 
 const r1 = (n: number): number => Math.round(n * 10) / 10;
@@ -76,13 +90,27 @@ function smoothClosed(points: readonly (readonly [number, number])[]): string {
   return `${d} Z`;
 }
 
-function wavePath(width: number, height: number, baseline: number, amplitude: number, points: number, random: () => number): string {
+function wavePath(
+  width: number,
+  height: number,
+  baseline: number,
+  amplitude: number,
+  points: number,
+  random: () => number,
+): string {
   const pts: [number, number][] = [];
-  for (let i = 0; i <= points; i += 1) pts.push([(width * i) / points, baseline + (random() - 0.5) * 2 * amplitude]);
+  for (let i = 0; i <= points; i += 1)
+    pts.push([(width * i) / points, baseline + (random() - 0.5) * 2 * amplitude]);
   return `${smoothPath(pts)} L${width},${height} L0,${height} Z`;
 }
 
-function blobPath(cx: number, cy: number, radius: number, points: number, random: () => number): string {
+function blobPath(
+  cx: number,
+  cy: number,
+  radius: number,
+  points: number,
+  random: () => number,
+): string {
   const pts: [number, number][] = [];
   for (let i = 0; i < points; i += 1) {
     const angle = (Math.PI * 2 * i) / points;
@@ -115,10 +143,22 @@ function shapesFor(kind: BackgroundKind, spec: BackgroundSpec): readonly Shape[]
       }));
     }
     case 'blob':
-      return [{ d: blobPath(w / 2, h / 2, Math.min(w, h) * 0.38, 4 + k, random), fill: color, opacity: 1 }];
+      return [
+        {
+          d: blobPath(w / 2, h / 2, Math.min(w, h) * 0.38, 4 + k, random),
+          fill: color,
+          opacity: 1,
+        },
+      ];
     case 'blob-scene':
       return Array.from({ length: 2 + Math.ceil(k / 2) }, (_u, i) => ({
-        d: blobPath(random() * w, random() * h, Math.min(w, h) * (0.18 + random() * 0.22), 5 + (k % 4), random),
+        d: blobPath(
+          random() * w,
+          random() * h,
+          Math.min(w, h) * (0.18 + random() * 0.22),
+          5 + (k % 4),
+          random,
+        ),
         fill: mix(color, background, (i % 3) * 0.28),
         opacity: 0.85,
       }));
@@ -127,13 +167,24 @@ function shapesFor(kind: BackgroundKind, spec: BackgroundSpec): readonly Shape[]
       return Array.from({ length: layers }, (_u, i) => {
         const base = h * (0.3 + (0.55 * i) / layers);
         const count = 3 + k;
-        const pts = Array.from({ length: count + 1 }, (_v, j) => `${r1((w * j) / count)},${r1(base - random() * h * 0.28)}`);
-        return { d: `M0,${h} L${pts.join(' L')} L${w},${h} Z`, fill: mix(mix(color, background, 0.7), color, i / Math.max(1, layers - 1)), opacity: 1 };
+        const pts = Array.from(
+          { length: count + 1 },
+          (_v, j) => `${r1((w * j) / count)},${r1(base - random() * h * 0.28)}`,
+        );
+        return {
+          d: `M0,${h} L${pts.join(' L')} L${w},${h} Z`,
+          fill: mix(mix(color, background, 0.7), color, i / Math.max(1, layers - 1)),
+          opacity: 1,
+        };
       });
     }
     case 'circles':
       return Array.from({ length: 4 + k * 2 }, () => ({
-        circle: { cx: r1(random() * w), cy: r1(random() * h), r: r1(Math.min(w, h) * (0.03 + random() * 0.14)) },
+        circle: {
+          cx: r1(random() * w),
+          cy: r1(random() * h),
+          r: r1(Math.min(w, h) * (0.03 + random() * 0.14)),
+        },
         fill: mix(color, background, random() * 0.6),
         opacity: r1(0.35 + random() * 0.55),
       }));
@@ -143,7 +194,11 @@ function shapesFor(kind: BackgroundKind, spec: BackgroundSpec): readonly Shape[]
 }
 
 /** The background as an <svg>, in JSX or plain-HTML attribute spelling. */
-export function renderBackgroundSvg(kind: BackgroundKind, spec: BackgroundSpec, flavor: Flavor): string {
+export function renderBackgroundSvg(
+  kind: BackgroundKind,
+  spec: BackgroundSpec,
+  flavor: Flavor,
+): string {
   const fillOpacity = flavor === 'jsx' ? 'fillOpacity' : 'fill-opacity';
   const stopColor = flavor === 'jsx' ? 'stopColor' : 'stop-color';
   const open = `<svg viewBox="0 0 ${spec.width} ${spec.height}" width="100%" height="100%" preserveAspectRatio="none" aria-hidden="true">`;
@@ -155,7 +210,9 @@ export function renderBackgroundSvg(kind: BackgroundKind, spec: BackgroundSpec, 
     for (let i = 0; i < stops; i += 1) {
       const gid = `vb-${spec.id}-g${i}`;
       const fill = i % 2 === 0 ? spec.color : mix(spec.color, '#ffffff', 0.45 + random() * 0.3);
-      gradients.push(`<radialGradient id="${gid}" cx="${r1(random() * 100)}%" cy="${r1(random() * 100)}%" r="${r1(45 + random() * 40)}%"><stop offset="0%" ${stopColor}="${fill}" /><stop offset="100%" ${stopColor}="${fill}" ${flavor === 'jsx' ? 'stopOpacity' : 'stop-opacity'}="0" /></radialGradient>`);
+      gradients.push(
+        `<radialGradient id="${gid}" cx="${r1(random() * 100)}%" cy="${r1(random() * 100)}%" r="${r1(45 + random() * 40)}%"><stop offset="0%" ${stopColor}="${fill}" /><stop offset="100%" ${stopColor}="${fill}" ${flavor === 'jsx' ? 'stopOpacity' : 'stop-opacity'}="0" /></radialGradient>`,
+      );
       rects.push(`<rect width="100%" height="100%" fill="url(#${gid})" />`);
     }
     return `${open}<defs>${gradients.join('')}</defs><rect width="100%" height="100%" fill="${mix(spec.color, spec.background, 0.6)}" />${rects.join('')}</svg>`;
@@ -171,7 +228,10 @@ export function renderBackgroundSvg(kind: BackgroundKind, spec: BackgroundSpec, 
 }
 
 /** "42|6" -> seed 42, complexity 6; anything unparsable falls back to sensible defaults. */
-export function parseBackgroundLabel(label: string): { readonly seed: number; readonly complexity: number } {
+export function parseBackgroundLabel(label: string): {
+  readonly seed: number;
+  readonly complexity: number;
+} {
   const [seedText = '', complexityText = ''] = label.split('|').map((part) => part.trim());
   const seed = Number.parseInt(seedText, 10);
   const complexity = Number.parseInt(complexityText, 10);

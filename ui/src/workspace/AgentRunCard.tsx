@@ -30,7 +30,9 @@ const SETTLED: ReadonlySet<StepStatus> = new Set(['done', 'failed', 'skipped']);
 
 function headline(run: AgentRunView): { readonly text: string; readonly tone: string } {
   if (run.finishedAt === null) {
-    return run.review !== null ? { text: 'Waiting for your review', tone: 'text-violet-300' } : { text: 'Working', tone: 'text-sky-300' };
+    return run.review !== null
+      ? { text: 'Waiting for your review', tone: 'text-violet-300' }
+      : { text: 'Working', tone: 'text-sky-300' };
   }
   if (run.error !== null) return { text: 'Stopped', tone: 'text-amber-300' };
   return run.steps.some((step) => step.status === 'failed')
@@ -44,7 +46,15 @@ function formatElapsed(seconds: number): string {
 }
 
 /** One request and what the agent did with it: the request, a live timeline, the review stop, and the results. */
-export function AgentRunCard({ run, now, onRevise, onApprove, onCancel, onOpen, onEditPages }: AgentRunCardProps): JSX.Element {
+export function AgentRunCard({
+  run,
+  now,
+  onRevise,
+  onApprove,
+  onCancel,
+  onOpen,
+  onEditPages,
+}: AgentRunCardProps): JSX.Element {
   const live = run.finishedAt === null;
   const elapsed = ((run.finishedAt ?? now) - run.startedAt) / 1000;
   const settled = run.steps.filter((step) => SETTLED.has(step.status)).length;
@@ -60,13 +70,19 @@ export function AgentRunCard({ run, now, onRevise, onApprove, onCancel, onOpen, 
 
       <div className="card overflow-hidden">
         <div className="relative h-[2px] bg-white/[0.04]">
-          <div className="progress-line absolute inset-y-0 left-0" data-live={live && run.review === null} style={{ width: `${(live ? progress : 1) * 100}%` }} />
+          <div
+            className="progress-line absolute inset-y-0 left-0"
+            data-live={live && run.review === null}
+            style={{ width: `${(live ? progress : 1) * 100}%` }}
+          />
         </div>
         <div className="flex items-center gap-2.5 px-4 pb-1 pt-3.5">
           <LogoMark size={22} />
           <span className="text-[13px] font-semibold text-slate-100">VibeCoder</span>
           <span className={`flex items-center gap-1.5 text-xs font-medium ${state.tone}`}>
-            {live && run.review === null && <span className="live-dot h-1.5 w-1.5 rounded-full bg-current" />}
+            {live && run.review === null && (
+              <span className="live-dot h-1.5 w-1.5 rounded-full bg-current" />
+            )}
             {state.text}
           </span>
           <span className="ml-auto flex items-center gap-1 font-mono text-xs tabular-nums text-slate-500">
@@ -77,13 +93,23 @@ export function AgentRunCard({ run, now, onRevise, onApprove, onCancel, onOpen, 
 
         <ol className="px-4 pb-4 pt-3">
           {run.steps.map((step, index) => (
-            <li key={step.id} data-testid={`agent-step-${step.id}`} data-status={step.status} className="relative flex gap-3 pb-3.5 last:pb-0">
+            <li
+              key={step.id}
+              data-testid={`agent-step-${step.id}`}
+              data-status={step.status}
+              className="relative flex gap-3 pb-3.5 last:pb-0"
+            >
               {index < run.steps.length - 1 && (
-                <span aria-hidden="true" className={`absolute bottom-0 left-[10px] top-[24px] w-px ${SETTLED.has(step.status) ? 'bg-white/[0.12]' : 'bg-white/[0.06]'}`} />
+                <span
+                  aria-hidden="true"
+                  className={`absolute bottom-0 left-[10px] top-[24px] w-px ${SETTLED.has(step.status) ? 'bg-white/[0.12]' : 'bg-white/[0.06]'}`}
+                />
               )}
               <StepIcon status={step.status} />
               <div className="min-w-0 flex-1 pt-[1px]">
-                <div className={`text-[13.5px] ${step.status === 'waiting' ? 'text-slate-500' : step.status === 'running' ? 'font-medium text-slate-50' : 'text-slate-200'}`}>
+                <div
+                  className={`text-[13.5px] ${step.status === 'waiting' ? 'text-slate-500' : step.status === 'running' ? 'font-medium text-slate-50' : 'text-slate-200'}`}
+                >
                   {step.title}
                 </div>
                 {step.detail !== '' && (
@@ -116,17 +142,30 @@ export function AgentRunCard({ run, now, onRevise, onApprove, onCancel, onOpen, 
 
         {outcome?.job != null && outcome.schema !== null && (
           <div className="flex flex-wrap items-center gap-2 border-t border-white/[0.06] bg-white/[0.015] px-4 py-3">
-            <button type="button" data-testid="agent-open" onClick={() => onOpen(outcome)} className="btn btn-secondary btn-sm">
+            <button
+              type="button"
+              data-testid="agent-open"
+              onClick={() => onOpen(outcome)}
+              className="btn btn-secondary btn-sm"
+            >
               <Icon name="flow" size={14} />
               Open in Workflow
             </button>
             {outcome.pages.length > 0 && (
-              <button type="button" onClick={() => onEditPages(outcome)} className="btn btn-secondary btn-sm">
+              <button
+                type="button"
+                onClick={() => onEditPages(outcome)}
+                className="btn btn-secondary btn-sm"
+              >
                 <Icon name="layout" size={14} />
                 Edit pages
               </button>
             )}
-            <a href={applicationJobDownloadUrl(outcome.job.id)} title={PACK_NOTE} className="btn btn-primary btn-sm ml-auto">
+            <a
+              href={applicationJobDownloadUrl(outcome.job.id)}
+              title={PACK_NOTE}
+              className="btn btn-primary btn-sm ml-auto"
+            >
               <Icon name="download" size={14} />
               Download (.zip + project report)
             </a>
@@ -138,7 +177,8 @@ export function AgentRunCard({ run, now, onRevise, onApprove, onCancel, onOpen, 
 }
 
 function StepIcon({ status }: { readonly status: StepStatus }): JSX.Element {
-  const base = 'relative z-[1] flex h-[21px] w-[21px] flex-shrink-0 items-center justify-center rounded-full';
+  const base =
+    'relative z-[1] flex h-[21px] w-[21px] flex-shrink-0 items-center justify-center rounded-full';
   if (status === 'running') {
     return (
       <span className={`${base} bg-[#141417]`}>

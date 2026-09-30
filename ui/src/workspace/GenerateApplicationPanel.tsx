@@ -50,12 +50,17 @@ type Phase =
 
 type PanelState =
   | { readonly kind: 'idle' }
-  | { readonly kind: 'in-flight'; readonly action: 'generate' | 'repair' | 'continue'; readonly phase?: Phase }
+  | {
+      readonly kind: 'in-flight';
+      readonly action: 'generate' | 'repair' | 'continue';
+      readonly phase?: Phase;
+    }
   | { readonly kind: 'done'; readonly job: ApplicationJob; readonly restored: boolean }
   | { readonly kind: 'error'; readonly message: string };
 
 /** What a download holds besides the code - src/export/project-pack.ts. */
-export const PACK_NOTE = 'Includes docs/: a project report, how it works, API guide, viva questions and free hosting steps.';
+export const PACK_NOTE =
+  'Includes docs/: a project report, how it works, API guide, viva questions and free hosting steps.';
 
 const PHASE_LABEL: Readonly<Record<Phase, string>> = {
   generating: 'Generating component files…',
@@ -120,10 +125,16 @@ export function GenerateApplicationPanel({
     };
   }, [schema.sessionId]);
 
-  function trackProgress(action: 'generate' | 'repair' | 'continue'): (job: ApplicationJob) => void {
+  function trackProgress(
+    action: 'generate' | 'repair' | 'continue',
+  ): (job: ApplicationJob) => void {
     return (j) => {
       if (j.status === 'pending' || j.status === 'running') {
-        setState(j.phase === undefined ? { kind: 'in-flight', action } : { kind: 'in-flight', action, phase: j.phase });
+        setState(
+          j.phase === undefined
+            ? { kind: 'in-flight', action }
+            : { kind: 'in-flight', action, phase: j.phase },
+        );
       }
     };
   }
@@ -135,7 +146,10 @@ export function GenerateApplicationPanel({
 
     setState({ kind: 'in-flight', action: 'generate' });
     try {
-      const job = await generateApplicationViaApi(schema, { signal: controller.signal, onStatus: trackProgress('generate') });
+      const job = await generateApplicationViaApi(schema, {
+        signal: controller.signal,
+        onStatus: trackProgress('generate'),
+      });
       setState({ kind: 'done', job, restored: false });
       notifyRunSaved();
     } catch (cause) {
@@ -151,7 +165,10 @@ export function GenerateApplicationPanel({
 
     setState({ kind: 'in-flight', action: 'repair' });
     try {
-      const job = await repairApplicationViaApi(jobId, instruction, { signal: controller.signal, onStatus: trackProgress('repair') });
+      const job = await repairApplicationViaApi(jobId, instruction, {
+        signal: controller.signal,
+        onStatus: trackProgress('repair'),
+      });
       setState({ kind: 'done', job, restored: false });
       setInstruction('');
       notifyRunSaved();
@@ -168,7 +185,10 @@ export function GenerateApplicationPanel({
 
     setState({ kind: 'in-flight', action: 'continue' });
     try {
-      const job = await continueApplicationViaApi(jobId, { signal: controller.signal, onStatus: trackProgress('continue') });
+      const job = await continueApplicationViaApi(jobId, {
+        signal: controller.signal,
+        onStatus: trackProgress('continue'),
+      });
       setState({ kind: 'done', job, restored: false });
       notifyRunSaved();
     } catch (cause) {
@@ -182,7 +202,11 @@ export function GenerateApplicationPanel({
     0,
   );
   const savedComponents = state.kind === 'done' ? (state.job.partialFiles?.length ?? 0) : 0;
-  const canContinue = state.kind === 'done' && state.job.status === 'failed' && state.job.result === undefined && savedComponents > 0;
+  const canContinue =
+    state.kind === 'done' &&
+    state.job.status === 'failed' &&
+    state.job.result === undefined &&
+    savedComponents > 0;
 
   const canRepair =
     state.kind === 'done' &&
@@ -201,13 +225,28 @@ export function GenerateApplicationPanel({
             onClick={() => void handleGenerate()}
             className={`btn ${state.kind === 'done' ? 'btn-secondary btn-sm' : 'btn-primary'}`}
           >
-            <Icon name={state.kind === 'done' ? 'history' : 'play'} size={13} className={state.kind === 'done' ? '' : 'fill-current'} />
+            <Icon
+              name={state.kind === 'done' ? 'history' : 'play'}
+              size={13}
+              className={state.kind === 'done' ? '' : 'fill-current'}
+            />
             {state.kind === 'done' ? 'Generate again (full, uses tokens)' : 'Generate Application'}
           </button>
           {state.kind === 'done' && state.restored && (
             <span data-testid="restored-run-note" className="text-[11px] text-slate-500">
-              Showing this session&apos;s last saved run ({state.job.kind === 'repair' ? 'repair' : state.job.kind === 'page-sync' ? 'page sync' : state.job.kind === 'continue' ? 'continued generation' : state.job.kind === 'import' ? 'imported project' : state.job.kind === 'edit' ? 'component edit' : 'generation'},{' '}
-              {new Date(state.job.createdAt).toLocaleString()})
+              Showing this session&apos;s last saved run (
+              {state.job.kind === 'repair'
+                ? 'repair'
+                : state.job.kind === 'page-sync'
+                  ? 'page sync'
+                  : state.job.kind === 'continue'
+                    ? 'continued generation'
+                    : state.job.kind === 'import'
+                      ? 'imported project'
+                      : state.job.kind === 'edit'
+                        ? 'component edit'
+                        : 'generation'}
+              , {new Date(state.job.createdAt).toLocaleString()})
             </span>
           )}
         </div>
@@ -235,13 +274,17 @@ export function GenerateApplicationPanel({
       )}
 
       {canContinue && state.kind === 'done' && (
-        <div data-testid="continue-panel" className="mt-3 rounded-xl border border-sky-400/20 bg-sky-500/[0.06] p-3.5">
+        <div
+          data-testid="continue-panel"
+          className="mt-3 rounded-xl border border-sky-400/20 bg-sky-500/[0.06] p-3.5"
+        >
           <div className="mb-1 text-xs font-semibold text-sky-300">
-            This run stopped partway - {savedComponents} of {totalComponents} components were already written.
+            This run stopped partway - {savedComponents} of {totalComponents} components were
+            already written.
           </div>
           <p className="mb-2 text-[11px] text-sky-200/80">
-            Continue from where it stopped: the saved components are kept as they are and only the rest are generated, then the project is
-            built and verified as usual.
+            Continue from where it stopped: the saved components are kept as they are and only the
+            rest are generated, then the project is built and verified as usual.
           </p>
           <button
             type="button"
@@ -256,11 +299,16 @@ export function GenerateApplicationPanel({
       )}
 
       {canRepair && state.kind === 'done' && (
-        <div data-testid="repair-panel" className="mt-3 rounded-xl border border-amber-400/20 bg-amber-500/[0.06] p-3.5">
-          <div className="mb-1 text-xs font-semibold text-amber-300">This run did not build. Fix it without regenerating everything?</div>
+        <div
+          data-testid="repair-panel"
+          className="mt-3 rounded-xl border border-amber-400/20 bg-amber-500/[0.06] p-3.5"
+        >
+          <div className="mb-1 text-xs font-semibold text-amber-300">
+            This run did not build. Fix it without regenerating everything?
+          </div>
           <p className="mb-2 text-[11px] text-amber-200/80">
-            Only the files the compiler still rejects are rewritten - a few model calls instead of one per component.
-            Optionally say what to change:
+            Only the files the compiler still rejects are rewritten - a few model calls instead of
+            one per component. Optionally say what to change:
           </p>
           <div className="flex flex-wrap items-start gap-2">
             <textarea
@@ -284,25 +332,35 @@ export function GenerateApplicationPanel({
         </div>
       )}
 
-      {state.kind === 'done' && state.job.status === 'succeeded' && state.job.result !== undefined && (
-        <ComponentEditor
-          job={state.job}
-          schema={schema}
-          onDone={(finished) => {
-            setState({ kind: 'done', job: finished, restored: false });
-            notifyRunSaved();
-            // The plan changed server-side; show it in the graph too.
-            fetchWorkflowSession(schema.sessionId).then(rememberSession).catch(() => {});
-          }}
-        />
-      )}
+      {state.kind === 'done' &&
+        state.job.status === 'succeeded' &&
+        state.job.result !== undefined && (
+          <ComponentEditor
+            job={state.job}
+            schema={schema}
+            onDone={(finished) => {
+              setState({ kind: 'done', job: finished, restored: false });
+              notifyRunSaved();
+              // The plan changed server-side; show it in the graph too.
+              fetchWorkflowSession(schema.sessionId)
+                .then(rememberSession)
+                .catch(() => {});
+            }}
+          />
+        )}
 
       {state.kind === 'done' && <ApplicationJobReport job={state.job} schema={schema} />}
     </div>
   );
 }
 
-function ApplicationJobReport({ job, schema }: { readonly job: ApplicationJob; readonly schema: ProjectSchema }): JSX.Element {
+function ApplicationJobReport({
+  job,
+  schema,
+}: {
+  readonly job: ApplicationJob;
+  readonly schema: ProjectSchema;
+}): JSX.Element {
   if (job.status === 'failed') {
     return (
       <div className="mt-3 rounded-lg border border-red-700/50 bg-red-950/20 p-3 text-sm">
@@ -518,7 +576,13 @@ function ApplicationJobReport({ job, schema }: { readonly job: ApplicationJob; r
  * the model's page with the static design; "Restore original" puts the
  * model's file back.
  */
-function RunPages({ job, schema }: { readonly job: ApplicationJob; readonly schema: ProjectSchema }): JSX.Element | null {
+function RunPages({
+  job,
+  schema,
+}: {
+  readonly job: ApplicationJob;
+  readonly schema: ProjectSchema;
+}): JSX.Element | null {
   const openPageInBuilder = useWorkspaceStore((state) => state.openPageInBuilder);
   const runsVersion = useWorkspaceStore((state) => state.runsVersion);
   const [pages, setPages] = useState<readonly RunPage[] | null>(null);
@@ -548,31 +612,49 @@ function RunPages({ job, schema }: { readonly job: ApplicationJob; readonly sche
   }
 
   if (error !== null) {
-    return <div className="text-[11px] text-red-300">Could not list this run&apos;s pages: {error}</div>;
+    return (
+      <div className="text-[11px] text-red-300">Could not list this run&apos;s pages: {error}</div>
+    );
   }
   if (pages === null || pages.length === 0) return null;
 
   return (
     <div data-testid="run-pages" className="rounded-lg border border-slate-700 bg-slate-900/50 p-2">
-      <div className="mb-1 text-xs font-semibold text-slate-300">Pages ({pages.length}) — open one in the Page Builder to edit its UI</div>
+      <div className="mb-1 text-xs font-semibold text-slate-300">
+        Pages ({pages.length}) — open one in the Page Builder to edit its UI
+      </div>
       <p className="mb-2 text-[11px] text-slate-500">
-        Saving from the builder replaces that page&apos;s file with your design in this run&apos;s zip. Restore original undoes it.
+        Saving from the builder replaces that page&apos;s file with your design in this run&apos;s
+        zip. Restore original undoes it.
       </p>
       <ul className="space-y-1">
         {pages.map((page) => (
-          <li key={page.path} className="flex flex-wrap items-center gap-2 rounded border border-slate-800 bg-slate-950 px-2 py-1">
+          <li
+            key={page.path}
+            className="flex flex-wrap items-center gap-2 rounded border border-slate-800 bg-slate-950 px-2 py-1"
+          >
             <span className="font-medium text-slate-200">{page.pageName}</span>
             <span className="font-mono text-[11px] text-slate-500">{page.path}</span>
-            <span className="text-[11px] text-slate-500">{page.layout.elements.length} element(s)</span>
+            <span className="text-[11px] text-slate-500">
+              {page.layout.elements.length} element(s)
+            </span>
             {page.edited && (
-              <span className="rounded border border-sky-800 bg-sky-950/40 px-1.5 py-0.5 text-[10px] text-sky-300">edited in Page Builder</span>
+              <span className="rounded border border-sky-800 bg-sky-950/40 px-1.5 py-0.5 text-[10px] text-sky-300">
+                edited in Page Builder
+              </span>
             )}
             <button
               type="button"
               data-testid={`edit-page-${page.path}`}
               onClick={() =>
                 openPageInBuilder(
-                  { runId: job.id, sessionId: job.sessionId, sessionTitle: schema.title, path: page.path, edited: page.edited },
+                  {
+                    runId: job.id,
+                    sessionId: job.sessionId,
+                    sessionTitle: schema.title,
+                    path: page.path,
+                    edited: page.edited,
+                  },
                   page.layout,
                 )
               }
@@ -608,7 +690,9 @@ function Badge({
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
-        ok ? 'bg-emerald-500/[0.09] text-emerald-300 ring-emerald-400/20' : 'bg-red-500/[0.1] text-red-300 ring-red-400/25'
+        ok
+          ? 'bg-emerald-500/[0.09] text-emerald-300 ring-emerald-400/20'
+          : 'bg-red-500/[0.1] text-red-300 ring-red-400/25'
       }`}
     >
       <Icon name={ok ? 'check' : 'x'} size={12} strokeWidth={2.4} />

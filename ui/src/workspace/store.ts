@@ -82,14 +82,20 @@ export interface WorkspaceState {
    * resizing). Discrete actions (drop, delete, template) never pass it, so
    * each is always its own step.
    */
-  readonly setElements: (update: (current: readonly CanvasElement[]) => readonly CanvasElement[], options?: { readonly coalesce?: boolean }) => void;
+  readonly setElements: (
+    update: (current: readonly CanvasElement[]) => readonly CanvasElement[],
+    options?: { readonly coalesce?: boolean },
+  ) => void;
   readonly setSelectedId: (id: string | null) => void;
   /** Loads one of a run's pages into the canvas and switches to the Page Builder tab. */
   readonly openPageInBuilder: (origin: PageOrigin, layout: PageLayout) => void;
   readonly setPageOrigin: (origin: PageOrigin | null) => void;
   readonly setPageTheme: (theme: PageTheme | undefined) => void;
   /** Canvas undo/redo: element lists before (past) and after (future) the current one. */
-  readonly pageHistory: { readonly past: readonly (readonly CanvasElement[])[]; readonly future: readonly (readonly CanvasElement[])[] };
+  readonly pageHistory: {
+    readonly past: readonly (readonly CanvasElement[])[];
+    readonly future: readonly (readonly CanvasElement[])[];
+  };
   readonly undoPage: () => void;
   readonly redoPage: () => void;
 }
@@ -101,7 +107,12 @@ let lastHistoryPush = 0;
 /** Whether the latest step came from a continuous edit - only those may absorb the next one. */
 let lastStepContinuous = false;
 
-const EMPTY_CANVAS: PageBuilderState = { pageName: 'Landing Page', elements: [], selectedId: null, origin: null };
+const EMPTY_CANVAS: PageBuilderState = {
+  pageName: 'Landing Page',
+  elements: [],
+  selectedId: null,
+  origin: null,
+};
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   sidebarCollapsed: false,
@@ -116,7 +127,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   runsVersion: 0,
   notifyRunSaved: () => set((state) => ({ runsVersion: state.runsVersion + 1 })),
   newProjectVersion: 0,
-  startNewProject: () => set((state) => ({ activeTab: 'conversation', newProjectVersion: state.newProjectVersion + 1 })),
+  startNewProject: () =>
+    set((state) => ({ activeTab: 'conversation', newProjectVersion: state.newProjectVersion + 1 })),
   importOpen: false,
   setImportOpen: (open) => set({ importOpen: open }),
   commandOpen: false,
@@ -133,17 +145,33 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
       if (after === before) return {};
       const now = Date.now();
       const continuous = options?.coalesce === true;
-      const coalesce = continuous && lastStepContinuous && now - lastHistoryPush < HISTORY_COALESCE_MS && state.pageHistory.past.length > 0;
+      const coalesce =
+        continuous &&
+        lastStepContinuous &&
+        now - lastHistoryPush < HISTORY_COALESCE_MS &&
+        state.pageHistory.past.length > 0;
       lastHistoryPush = now;
       lastStepContinuous = continuous;
-      const past = coalesce ? state.pageHistory.past : [...state.pageHistory.past, before].slice(-HISTORY_LIMIT);
-      return { pageBuilder: { ...state.pageBuilder, elements: after }, pageHistory: { past, future: [] } };
+      const past = coalesce
+        ? state.pageHistory.past
+        : [...state.pageHistory.past, before].slice(-HISTORY_LIMIT);
+      return {
+        pageBuilder: { ...state.pageBuilder, elements: after },
+        pageHistory: { past, future: [] },
+      };
     }),
-  setSelectedId: (selectedId) => set((state) => ({ pageBuilder: { ...state.pageBuilder, selectedId } })),
+  setSelectedId: (selectedId) =>
+    set((state) => ({ pageBuilder: { ...state.pageBuilder, selectedId } })),
   openPageInBuilder: (origin, layout) =>
     set({
       activeTab: 'page-builder',
-      pageBuilder: { pageName: layout.pageName, elements: layout.elements, selectedId: null, origin, ...(layout.theme === undefined ? {} : { theme: layout.theme }) },
+      pageBuilder: {
+        pageName: layout.pageName,
+        elements: layout.elements,
+        selectedId: null,
+        origin,
+        ...(layout.theme === undefined ? {} : { theme: layout.theme }),
+      },
       pageHistory: { past: [], future: [] },
     }),
   setPageOrigin: (origin) => set((state) => ({ pageBuilder: { ...state.pageBuilder, origin } })),
@@ -160,8 +188,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
       lastHistoryPush = 0;
       const stillThere = previous.some((element) => element.id === state.pageBuilder.selectedId);
       return {
-        pageBuilder: { ...state.pageBuilder, elements: previous, selectedId: stillThere ? state.pageBuilder.selectedId : null },
-        pageHistory: { past: state.pageHistory.past.slice(0, -1), future: [state.pageBuilder.elements, ...state.pageHistory.future] },
+        pageBuilder: {
+          ...state.pageBuilder,
+          elements: previous,
+          selectedId: stillThere ? state.pageBuilder.selectedId : null,
+        },
+        pageHistory: {
+          past: state.pageHistory.past.slice(0, -1),
+          future: [state.pageBuilder.elements, ...state.pageHistory.future],
+        },
       };
     }),
   redoPage: () =>
@@ -171,7 +206,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
       lastHistoryPush = 0;
       return {
         pageBuilder: { ...state.pageBuilder, elements: next },
-        pageHistory: { past: [...state.pageHistory.past, state.pageBuilder.elements], future: state.pageHistory.future.slice(1) },
+        pageHistory: {
+          past: [...state.pageHistory.past, state.pageBuilder.elements],
+          future: state.pageHistory.future.slice(1),
+        },
       };
     }),
 }));

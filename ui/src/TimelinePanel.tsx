@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { fetchDriftHistory, fetchDiff, fetchSnapshot } from './api';
-import type { DiffResponse, DriftHistoryResponse, DriftPointResponse, SnapshotResponse } from './api-types';
+import type {
+  DiffResponse,
+  DriftHistoryResponse,
+  DriftPointResponse,
+  SnapshotResponse,
+} from './api-types';
 
 /**
  * Drift over time, and what moved it.
@@ -56,9 +61,9 @@ export function TimelinePanel(): JSX.Element {
         <h2>Drift over time</h2>
         <div className="banner">{history.reason}</div>
         <div className="hint">
-          Snapshots are built on demand because each one costs a git worktree and a
-          full re-analysis. Run <span className="mono">vibe-blueprint . --history=20</span>{' '}
-          once, then reload.
+          Snapshots are built on demand because each one costs a git worktree and a full
+          re-analysis. Run <span className="mono">vibe-blueprint . --history=20</span> once, then
+          reload.
         </div>
       </div>
     );
@@ -72,7 +77,10 @@ export function TimelinePanel(): JSX.Element {
     <div>
       <h2>
         Drift over time
-        <span className="provenance stated-chip" title="Drift compares stated rules against the derived graph.">
+        <span
+          className="provenance stated-chip"
+          title="Drift compares stated rules against the derived graph."
+        >
           STATED vs DERIVED
         </span>
       </h2>
@@ -94,12 +102,17 @@ export function TimelinePanel(): JSX.Element {
             title={
               `${candidate.shortCommit} — ${candidate.subject}\n` +
               `drift ${candidate.score.toFixed(1)}` +
-              (candidate.delta === 0 ? ' (unchanged)' : ` (${candidate.delta > 0 ? '+' : ''}${candidate.delta.toFixed(1)})`) +
+              (candidate.delta === 0
+                ? ' (unchanged)'
+                : ` (${candidate.delta > 0 ? '+' : ''}${candidate.delta.toFixed(1)})`) +
               `\n${candidate.changeCount} architectural change(s)`
             }
             onClick={() => setSelected(candidate.commit)}
           >
-            <span className="bar" style={{ height: `${Math.max(3, (candidate.score / peak) * 56)}px` }} />
+            <span
+              className="bar"
+              style={{ height: `${Math.max(3, (candidate.score / peak) * 56)}px` }}
+            />
           </button>
         ))}
       </div>
@@ -203,7 +216,11 @@ function CommitDetail({
           <h3>Changes ({diff.diff.entries.length})</h3>
           <div className="rows">
             {diff.diff.entries.slice(0, 25).map((entry, index) => (
-              <div className="row" key={`${entry.kind}-${entry.key}-${index}`} style={{ display: 'block' }}>
+              <div
+                className="row"
+                key={`${entry.kind}-${entry.key}-${index}`}
+                style={{ display: 'block' }}
+              >
                 <div style={{ fontSize: 11 }}>
                   <span className="tag-reason">{entry.kind.replace(/-/g, ' ')}</span>
                   {entry.description}
@@ -231,7 +248,9 @@ function CommitDetail({
             {snapshot.snapshot.violations.map((violation) => (
               <div className="row" key={violation.id} style={{ display: 'block' }}>
                 <div style={{ fontSize: 11 }}>
-                  <span className={`tag-status tag-sev-${violation.severity}`}>{violation.severity}</span>
+                  <span className={`tag-status tag-sev-${violation.severity}`}>
+                    {violation.severity}
+                  </span>
                   {violation.explanation}
                 </div>
               </div>
@@ -269,18 +288,18 @@ function WhyItMoved({ point }: { point: DriftPointResponse }): JSX.Element {
   if (point.changeCount > 0) {
     return (
       <div className="hint" style={{ marginBottom: 8 }}>
-        <b>The score did not move, and that is correct.</b> This commit made{' '}
-        {point.changeCount} architectural change
-        {point.changeCount === 1 ? '' : 's'}, but drift only moves when a stated
-        rule breaks or is fixed — and none did.
+        <b>The score did not move, and that is correct.</b> This commit made {point.changeCount}{' '}
+        architectural change
+        {point.changeCount === 1 ? '' : 's'}, but drift only moves when a stated rule breaks or is
+        fixed — and none did.
       </div>
     );
   }
 
   return (
     <div className="hint" style={{ marginBottom: 8 }}>
-      No architectural change at this commit. Files may well have changed, but no
-      import, module, rule or violation did.
+      No architectural change at this commit. Files may well have changed, but no import, module,
+      rule or violation did.
     </div>
   );
 }

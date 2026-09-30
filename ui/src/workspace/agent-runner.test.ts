@@ -18,13 +18,35 @@ const schema = {
   provenance: 'STATED',
 } as unknown as ProjectSchema;
 
-const planned = { id: 'w', prompt: 'a shop', createdAt: 't', status: 'succeeded', result: { schema, prohibitions: [], permissions: [] } } as unknown as WorkflowJob;
+const planned = {
+  id: 'w',
+  prompt: 'a shop',
+  createdAt: 't',
+  status: 'succeeded',
+  result: { schema, prohibitions: [], permissions: [] },
+} as unknown as WorkflowJob;
 
 function job(overrides: Partial<ApplicationJob>): ApplicationJob {
-  return { id: 'j', createdAt: 't', sessionId: 's', kind: 'generate', status: 'succeeded', ...overrides } as ApplicationJob;
+  return {
+    id: 'j',
+    createdAt: 't',
+    sessionId: 's',
+    kind: 'generate',
+    status: 'succeeded',
+    ...overrides,
+  } as ApplicationJob;
 }
 const built = (buildOk: boolean, id = 'j'): ApplicationJob =>
-  job({ id, result: { files: [], regenerationLog: [], unresolvedViolations: [], unresolvedServiceLocatorFindings: [], build: { installOk: true, buildOk } } } as unknown as Partial<ApplicationJob>);
+  job({
+    id,
+    result: {
+      files: [],
+      regenerationLog: [],
+      unresolvedViolations: [],
+      unresolvedServiceLocatorFindings: [],
+      build: { installOk: true, buildOk },
+    },
+  } as unknown as Partial<ApplicationJob>);
 
 function apis(overrides: Partial<AgentApis>): { apis: AgentApis; calls: string[] } {
   const calls: string[] = [];
@@ -35,15 +57,32 @@ function apis(overrides: Partial<AgentApis>): { apis: AgentApis; calls: string[]
       generate: async () => (calls.push('generate'), built(true)),
       continueRun: async () => (calls.push('continue'), built(true, 'c')),
       repair: async () => (calls.push('repair'), built(true, 'r')),
-      pages: async () => (calls.push('pages'), [{ path: 'frontend/src/pages/home.tsx', pageName: 'Home', layout: { id: 'x', pageName: 'Home', elements: [] }, edited: false }]),
+      pages: async () => (
+        calls.push('pages'),
+        [
+          {
+            path: 'frontend/src/pages/home.tsx',
+            pageName: 'Home',
+            layout: { id: 'x', pageName: 'Home', elements: [] },
+            edited: false,
+          },
+        ]
+      ),
       ...overrides,
     },
   };
 }
 
-async function run(a: AgentApis): Promise<{ outcome: Awaited<ReturnType<typeof runAgent>>; last: Map<StepId, StepStatus> }> {
+async function run(
+  a: AgentApis,
+): Promise<{ outcome: Awaited<ReturnType<typeof runAgent>>; last: Map<StepId, StepStatus> }> {
   const last = new Map<StepId, StepStatus>();
-  const outcome = await runAgent('a shop', a, (id, status) => last.set(id, status), new AbortController().signal);
+  const outcome = await runAgent(
+    'a shop',
+    a,
+    (id, status) => last.set(id, status),
+    new AbortController().signal,
+  );
   return { outcome, last };
 }
 
@@ -59,7 +98,10 @@ describe('agent mode', () => {
 
   it('fixes a failing build, up to two rounds', async () => {
     let repairs = 0;
-    const { apis: a } = apis({ generate: async () => built(false), repair: async () => (repairs += 1, built(repairs >= 2, `r${repairs}`)) });
+    const { apis: a } = apis({
+      generate: async () => built(false),
+      repair: async () => ((repairs += 1), built(repairs >= 2, `r${repairs}`)),
+    });
     const { outcome, last } = await run(a);
     expect(repairs).toBe(2);
     expect(last.get('fix')).toBe('done');
@@ -67,13 +109,20 @@ describe('agent mode', () => {
   });
 
   it('stops fixing after two rounds and says so', async () => {
-    const { apis: a } = apis({ generate: async () => built(false), repair: async () => built(false, 'r') });
+    const { apis: a } = apis({
+      generate: async () => built(false),
+      repair: async () => built(false, 'r'),
+    });
     const { last } = await run(a);
     expect(last.get('fix')).toBe('failed');
   });
 
   it('continues a run that stopped halfway, reusing its saved components', async () => {
-    const stopped = job({ status: 'failed', partialFiles: [{ path: 'a.ts', bytes: 1 }], error: { phase: 'unexpected', message: 'quota' } } as Partial<ApplicationJob>);
+    const stopped = job({
+      status: 'failed',
+      partialFiles: [{ path: 'a.ts', bytes: 1 }],
+      error: { phase: 'unexpected', message: 'quota' },
+    } as Partial<ApplicationJob>);
     const { apis: a, calls } = apis({ generate: async () => stopped });
     const { last } = await run(a);
     expect(calls).toEqual(['plan', 'continue', 'pages']);
@@ -81,7 +130,10 @@ describe('agent mode', () => {
   });
 
   it('stops early, clearly, when planning fails', async () => {
-    const { apis: a, calls } = apis({ plan: async () => ({ id: 'w', prompt: 'a shop', createdAt: 't', status: 'failed' }) as unknown as WorkflowJob });
+    const { apis: a, calls } = apis({
+      plan: async () =>
+        ({ id: 'w', prompt: 'a shop', createdAt: 't', status: 'failed' }) as unknown as WorkflowJob,
+    });
     const { last } = await run(a);
     expect(calls).toEqual([]);
     expect(last.get('plan')).toBe('failed');
@@ -90,17 +142,28 @@ describe('agent mode', () => {
 
 describe('agent mode with a plan review', () => {
   const revised = { ...schema, title: 'Shop with admin' } as ProjectSchema;
-  const revisedJob = { ...planned, prompt: 'a shop\n\nChanges to the plan:\n- add admin' } as WorkflowJob;
+  const revisedJob = {
+    ...planned,
+    prompt: 'a shop\n\nChanges to the plan:\n- add admin',
+  } as WorkflowJob;
 
   it('asks before generating, then builds the plan the person approved', async () => {
-    const { apis: a, calls } = apis({ generate: async (s) => (calls.push(`generate:${s.title}`), built(true)) });
-    const last = new Map<StepId, StepStatus>();
-    const outcome = await runAgent('a shop', a, (id, status) => last.set(id, status), new AbortController().signal, {
-      review: async (proposed) => {
-        calls.push(`review:${proposed.title}`);
-        return { kind: 'approve', schema: revised, workflowJob: revisedJob };
-      },
+    const { apis: a, calls } = apis({
+      generate: async (s) => (calls.push(`generate:${s.title}`), built(true)),
     });
+    const last = new Map<StepId, StepStatus>();
+    const outcome = await runAgent(
+      'a shop',
+      a,
+      (id, status) => last.set(id, status),
+      new AbortController().signal,
+      {
+        review: async (proposed) => {
+          calls.push(`review:${proposed.title}`);
+          return { kind: 'approve', schema: revised, workflowJob: revisedJob };
+        },
+      },
+    );
     expect(calls).toEqual(['plan', 'review:Shop', 'generate:Shop with admin', 'pages']);
     expect(last.get('review')).toBe('done');
     expect(outcome.schema?.title).toBe('Shop with admin');
@@ -110,9 +173,15 @@ describe('agent mode with a plan review', () => {
   it('generates nothing when the person cancels at the review', async () => {
     const { apis: a, calls } = apis({});
     const last = new Map<StepId, StepStatus>();
-    const outcome = await runAgent('a shop', a, (id, status) => last.set(id, status), new AbortController().signal, {
-      review: async () => ({ kind: 'cancel' }),
-    });
+    const outcome = await runAgent(
+      'a shop',
+      a,
+      (id, status) => last.set(id, status),
+      new AbortController().signal,
+      {
+        review: async () => ({ kind: 'cancel' }),
+      },
+    );
     expect(calls).toEqual(['plan']);
     expect(last.get('review')).toBe('failed');
     expect(last.get('generate')).toBe('skipped');
@@ -120,7 +189,20 @@ describe('agent mode with a plan review', () => {
   });
 
   it('shows the review step only when one was asked for', () => {
-    expect(stepsFor(false).map((step) => step.id)).toEqual(['plan', 'generate', 'continue', 'fix', 'pages']);
-    expect(stepsFor(true).map((step) => step.id)).toEqual(['plan', 'review', 'generate', 'continue', 'fix', 'pages']);
+    expect(stepsFor(false).map((step) => step.id)).toEqual([
+      'plan',
+      'generate',
+      'continue',
+      'fix',
+      'pages',
+    ]);
+    expect(stepsFor(true).map((step) => step.id)).toEqual([
+      'plan',
+      'review',
+      'generate',
+      'continue',
+      'fix',
+      'pages',
+    ]);
   });
 });

@@ -36,7 +36,9 @@ export async function updateProviders(update: {
     body: JSON.stringify(update),
   });
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, `update providers failed: ${response.status}`));
+    throw new Error(
+      await readErrorMessage(response, `update providers failed: ${response.status}`),
+    );
   }
   return (await response.json()) as ProvidersResponse;
 }

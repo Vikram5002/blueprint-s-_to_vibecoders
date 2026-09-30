@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { pickFolderNatively } from '../projects-api-client';
-import { fetchWorkflowSession, importProjectViaApi, type ImportSource } from './workflow-api-client';
+import {
+  fetchWorkflowSession,
+  importProjectViaApi,
+  type ImportSource,
+} from './workflow-api-client';
 import { useWorkspaceStore } from './store';
 
 type DialogState =
@@ -40,15 +44,27 @@ export function ImportProjectDialog({ onClose }: { readonly onClose: () => void 
   }
 
   async function handleImport(): Promise<void> {
-    const source: ImportSource = kind === 'local' ? { kind: 'local', path } : { kind: 'git', url, branch };
-    setState({ kind: 'importing', phase: kind === 'git' ? 'Cloning the repository…' : 'Reading the project…' });
+    const source: ImportSource =
+      kind === 'local' ? { kind: 'local', path } : { kind: 'git', url, branch };
+    setState({
+      kind: 'importing',
+      phase: kind === 'git' ? 'Cloning the repository…' : 'Reading the project…',
+    });
     try {
       const { job, sessionId } = await importProjectViaApi(source, {
         onStatus: (j) => setState({ kind: 'importing', phase: PHASE[j.phase ?? ''] ?? 'Working…' }),
       });
       if (job.status === 'failed') {
         const error = job.error;
-        setState({ kind: 'error', message: error === undefined ? 'import failed' : 'message' in error ? error.message : error.failure.message });
+        setState({
+          kind: 'error',
+          message:
+            error === undefined
+              ? 'import failed'
+              : 'message' in error
+                ? error.message
+                : error.failure.message,
+        });
         return;
       }
       notifySessionSaved();
@@ -62,14 +78,25 @@ export function ImportProjectDialog({ onClose }: { readonly onClose: () => void 
 
   const busy = state.kind === 'importing';
   const ready = kind === 'local' ? path.trim() !== '' : url.trim() !== '';
-  const input = 'w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-slate-100 placeholder:text-slate-500';
+  const input =
+    'w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-slate-100 placeholder:text-slate-500';
   return (
-    <div role="dialog" aria-label="Import a project" className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4">
-      <div data-testid="import-dialog" className="w-full max-w-lg rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl">
-        <h3 className="text-sm font-semibold text-slate-100">Continue a project you have been building</h3>
+    <div
+      role="dialog"
+      aria-label="Import a project"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4"
+    >
+      <div
+        data-testid="import-dialog"
+        className="w-full max-w-lg rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl"
+      >
+        <h3 className="text-sm font-semibold text-slate-100">
+          Continue a project you have been building
+        </h3>
         <p className="mt-1 text-[11px] text-slate-400">
-          A project from this tool that you downloaded and kept working on - in a folder on this PC or pushed to Git. It opens as a session:
-          edit its pages, add or remove components, sync the backend. Your own files are kept as they are.
+          A project from this tool that you downloaded and kept working on - in a folder on this PC
+          or pushed to Git. It opens as a session: edit its pages, add or remove components, sync
+          the backend. Your own files are kept as they are.
         </p>
         <div className="mt-3 flex gap-1">
           {(['local', 'git'] as const).map((option) => (
@@ -85,21 +112,52 @@ export function ImportProjectDialog({ onClose }: { readonly onClose: () => void 
         </div>
         {kind === 'local' ? (
           <div className="mt-3 flex gap-2">
-            <input data-testid="import-path" value={path} onChange={(e) => setPath(e.target.value)} placeholder="D:\projects\my-shop" className={input} />
-            <button type="button" onClick={() => void browse()} disabled={busy} className="rounded-md border border-slate-700 px-3 text-xs text-slate-200 hover:bg-slate-800">
+            <input
+              data-testid="import-path"
+              value={path}
+              onChange={(e) => setPath(e.target.value)}
+              placeholder="D:\projects\my-shop"
+              className={input}
+            />
+            <button
+              type="button"
+              onClick={() => void browse()}
+              disabled={busy}
+              className="rounded-md border border-slate-700 px-3 text-xs text-slate-200 hover:bg-slate-800"
+            >
               Browse…
             </button>
           </div>
         ) : (
           <div className="mt-3 space-y-2">
-            <input data-testid="import-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://github.com/you/my-shop" className={input} />
-            <input value={branch} onChange={(e) => setBranch(e.target.value)} placeholder="Branch (optional - default branch)" className={input} />
+            <input
+              data-testid="import-url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://github.com/you/my-shop"
+              className={input}
+            />
+            <input
+              value={branch}
+              onChange={(e) => setBranch(e.target.value)}
+              placeholder="Branch (optional - default branch)"
+              className={input}
+            />
           </div>
         )}
         {state.kind === 'importing' && <p className="mt-3 text-xs text-slate-300">{state.phase}</p>}
-        {state.kind === 'error' && <p data-testid="import-error" className="mt-3 text-xs text-red-300">{state.message}</p>}
+        {state.kind === 'error' && (
+          <p data-testid="import-error" className="mt-3 text-xs text-red-300">
+            {state.message}
+          </p>
+        )}
         <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} disabled={busy} className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800"
+          >
             Cancel
           </button>
           <button

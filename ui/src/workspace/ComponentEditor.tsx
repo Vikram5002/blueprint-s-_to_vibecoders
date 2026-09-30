@@ -5,7 +5,12 @@ import type { ProjectSchema } from './project-schema-types';
 
 type Domain = 'frontend' | 'backend' | 'database' | 'security';
 const DOMAINS: readonly Domain[] = ['frontend', 'backend', 'database', 'security'];
-const DOMAIN_LABEL: Record<Domain, string> = { frontend: 'Pages', backend: 'API routes', database: 'Database', security: 'Security' };
+const DOMAIN_LABEL: Record<Domain, string> = {
+  frontend: 'Pages',
+  backend: 'API routes',
+  database: 'Database',
+  security: 'Security',
+};
 
 interface ComponentEditorProps {
   readonly job: ApplicationJob;
@@ -23,8 +28,14 @@ interface ComponentEditorProps {
 export function ComponentEditor({ job, schema, onDone }: ComponentEditorProps): JSX.Element {
   const [open, setOpen] = useState(false);
   const [removing, setRemoving] = useState<ReadonlySet<string>>(new Set());
-  const [added, setAdded] = useState<readonly { domain: Domain; name: string; purpose: string }[]>([]);
-  const [draft, setDraft] = useState<{ domain: Domain; name: string; purpose: string }>({ domain: 'frontend', name: '', purpose: '' });
+  const [added, setAdded] = useState<readonly { domain: Domain; name: string; purpose: string }[]>(
+    [],
+  );
+  const [draft, setDraft] = useState<{ domain: Domain; name: string; purpose: string }>({
+    domain: 'frontend',
+    name: '',
+    purpose: '',
+  });
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -45,10 +56,16 @@ export function ComponentEditor({ job, schema, onDone }: ComponentEditorProps): 
         const [domain = '', ...rest] = entry.split(':');
         return { domain, name: rest.join(':') };
       });
-      const finished = await editComponentsViaApi(job.id, { add: added, remove }, { onStatus: (j) => setStatus(j.phase ?? j.status) });
+      const finished = await editComponentsViaApi(
+        job.id,
+        { add: added, remove },
+        { onStatus: (j) => setStatus(j.phase ?? j.status) },
+      );
       setRemoving(new Set());
       setAdded([]);
-      setStatus(finished.status === 'succeeded' ? null : 'The edit run failed - see its report below.');
+      setStatus(
+        finished.status === 'succeeded' ? null : 'The edit run failed - see its report below.',
+      );
       onDone(finished);
     } catch (cause) {
       setStatus(cause instanceof Error ? cause.message : String(cause));
@@ -58,10 +75,19 @@ export function ComponentEditor({ job, schema, onDone }: ComponentEditorProps): 
   }
 
   const changes = removing.size + added.length;
-  const input = 'rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100 placeholder:text-slate-500';
+  const input =
+    'rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100 placeholder:text-slate-500';
   return (
-    <div data-testid="component-editor" className="mt-3 rounded-lg border border-violet-800/50 bg-violet-950/10 p-3">
-      <button type="button" data-testid="toggle-component-editor" onClick={() => setOpen(!open)} className="text-xs font-semibold text-violet-300">
+    <div
+      data-testid="component-editor"
+      className="mt-3 rounded-lg border border-violet-800/50 bg-violet-950/10 p-3"
+    >
+      <button
+        type="button"
+        data-testid="toggle-component-editor"
+        onClick={() => setOpen(!open)}
+        className="text-xs font-semibold text-violet-300"
+      >
         {open ? '▾' : '▸'} Add or remove components
       </button>
       {open && (
@@ -69,13 +95,20 @@ export function ComponentEditor({ job, schema, onDone }: ComponentEditorProps): 
           <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
             {DOMAINS.map((domain) => (
               <div key={domain}>
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">{DOMAIN_LABEL[domain]}</div>
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  {DOMAIN_LABEL[domain]}
+                </div>
                 <ul className="space-y-0.5">
                   {schema.domains[domain].components.map((component) => {
                     const marked = removing.has(key(domain, component.name));
                     return (
-                      <li key={component.id} className="flex items-center justify-between gap-1 text-[11px]">
-                        <span className={marked ? 'text-red-300 line-through' : 'text-slate-200'}>{component.name}</span>
+                      <li
+                        key={component.id}
+                        className="flex items-center justify-between gap-1 text-[11px]"
+                      >
+                        <span className={marked ? 'text-red-300 line-through' : 'text-slate-200'}>
+                          {component.name}
+                        </span>
                         <button
                           type="button"
                           data-testid={`remove-${component.name}`}
@@ -100,14 +133,24 @@ export function ComponentEditor({ job, schema, onDone }: ComponentEditorProps): 
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <select value={draft.domain} onChange={(e) => setDraft({ ...draft, domain: e.target.value as Domain })} className={input}>
+            <select
+              value={draft.domain}
+              onChange={(e) => setDraft({ ...draft, domain: e.target.value as Domain })}
+              className={input}
+            >
               {DOMAINS.map((domain) => (
                 <option key={domain} value={domain}>
                   {DOMAIN_LABEL[domain]}
                 </option>
               ))}
             </select>
-            <input data-testid="new-component-name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Name, e.g. Checkout Page" className={input} />
+            <input
+              data-testid="new-component-name"
+              value={draft.name}
+              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              placeholder="Name, e.g. Checkout Page"
+              className={input}
+            />
             <input
               data-testid="new-component-purpose"
               value={draft.purpose}
@@ -120,7 +163,10 @@ export function ComponentEditor({ job, schema, onDone }: ComponentEditorProps): 
               data-testid="add-component"
               disabled={draft.name.trim() === '' || draft.purpose.trim() === ''}
               onClick={() => {
-                setAdded([...added, { domain: draft.domain, name: draft.name.trim(), purpose: draft.purpose.trim() }]);
+                setAdded([
+                  ...added,
+                  { domain: draft.domain, name: draft.name.trim(), purpose: draft.purpose.trim() },
+                ]);
                 setDraft({ ...draft, name: '', purpose: '' });
               }}
               className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800 disabled:opacity-40"

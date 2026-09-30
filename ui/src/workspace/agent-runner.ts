@@ -23,10 +23,26 @@ export interface AgentStep {
 }
 
 export interface AgentApis {
-  readonly plan: (prompt: string, signal: AbortSignal, onStatus: (status: string) => void) => Promise<WorkflowJob>;
-  readonly generate: (schema: ProjectSchema, signal: AbortSignal, onStatus: (job: ApplicationJob) => void) => Promise<ApplicationJob>;
-  readonly continueRun: (jobId: string, signal: AbortSignal, onStatus: (job: ApplicationJob) => void) => Promise<ApplicationJob>;
-  readonly repair: (jobId: string, signal: AbortSignal, onStatus: (job: ApplicationJob) => void) => Promise<ApplicationJob>;
+  readonly plan: (
+    prompt: string,
+    signal: AbortSignal,
+    onStatus: (status: string) => void,
+  ) => Promise<WorkflowJob>;
+  readonly generate: (
+    schema: ProjectSchema,
+    signal: AbortSignal,
+    onStatus: (job: ApplicationJob) => void,
+  ) => Promise<ApplicationJob>;
+  readonly continueRun: (
+    jobId: string,
+    signal: AbortSignal,
+    onStatus: (job: ApplicationJob) => void,
+  ) => Promise<ApplicationJob>;
+  readonly repair: (
+    jobId: string,
+    signal: AbortSignal,
+    onStatus: (job: ApplicationJob) => void,
+  ) => Promise<ApplicationJob>;
   readonly pages: (jobId: string) => Promise<readonly RunPage[]>;
 }
 
@@ -49,11 +65,18 @@ export const INITIAL_STEPS: readonly AgentStep[] = [
   { id: 'pages', title: 'Prepare pages for editing', status: 'waiting', detail: '' },
 ];
 
-const REVIEW_STEP: AgentStep = { id: 'review', title: 'You review the plan', status: 'waiting', detail: '' };
+const REVIEW_STEP: AgentStep = {
+  id: 'review',
+  title: 'You review the plan',
+  status: 'waiting',
+  detail: '',
+};
 
 /** The timeline for one run: with a review stop after planning when the person asked for one. */
 export function stepsFor(review: boolean): readonly AgentStep[] {
-  return review ? [INITIAL_STEPS[0] as AgentStep, REVIEW_STEP, ...INITIAL_STEPS.slice(1)] : INITIAL_STEPS;
+  return review
+    ? [INITIAL_STEPS[0] as AgentStep, REVIEW_STEP, ...INITIAL_STEPS.slice(1)]
+    : INITIAL_STEPS;
 }
 
 /**
@@ -69,8 +92,10 @@ export interface AgentOptions {
   readonly review?: (schema: ProjectSchema, workflowJob: WorkflowJob) => Promise<ReviewDecision>;
 }
 
-const builds = (job: ApplicationJob): boolean => job.status === 'succeeded' && job.result?.build.installOk === true && job.result.build.buildOk;
-const stoppedHalfway = (job: ApplicationJob): boolean => job.status === 'failed' && job.result === undefined && (job.partialFiles?.length ?? 0) > 0;
+const builds = (job: ApplicationJob): boolean =>
+  job.status === 'succeeded' && job.result?.build.installOk === true && job.result.build.buildOk;
+const stoppedHalfway = (job: ApplicationJob): boolean =>
+  job.status === 'failed' && job.result === undefined && (job.partialFiles?.length ?? 0) > 0;
 
 function failureText(job: ApplicationJob): string {
   const error = job.error;
@@ -89,13 +114,25 @@ export async function runAgent(
   signal: AbortSignal,
   options: AgentOptions = {},
 ): Promise<AgentOutcome> {
-  const empty: AgentOutcome = { schema: null, job: null, pages: [], sessionCreatedAt: null, workflowJob: null };
+  const empty: AgentOutcome = {
+    schema: null,
+    job: null,
+    pages: [],
+    sessionCreatedAt: null,
+    workflowJob: null,
+  };
 
   update('plan', 'running', 'Reading your request…');
   let planned = await apis.plan(prompt, signal, (status) => update('plan', 'running', status));
   let schema = planned.result?.schema;
   if (planned.status !== 'succeeded' || schema === undefined) {
-    update('plan', 'failed', planned.error === undefined ? 'no plan was produced' : JSON.stringify(planned.error).slice(0, 200));
+    update(
+      'plan',
+      'failed',
+      planned.error === undefined
+        ? 'no plan was produced'
+        : JSON.stringify(planned.error).slice(0, 200),
+    );
     return { ...empty, workflowJob: planned };
   }
   update('plan', 'done', planSummary(schema));
@@ -114,17 +151,34 @@ export async function runAgent(
   }
 
   update('generate', 'running', 'Starting…');
-  let job = await apis.generate(schema, signal, (j) => update('generate', 'running', j.phase ?? j.status));
-  update('generate', job.status === 'succeeded' ? 'done' : 'failed', job.status === 'succeeded' ? 'generated' : failureText(job));
+  let job = await apis.generate(schema, signal, (j) =>
+    update('generate', 'running', j.phase ?? j.status),
+  );
+  update(
+    'generate',
+    job.status === 'succeeded' ? 'done' : 'failed',
+    job.status === 'succeeded' ? 'generated' : failureText(job),
+  );
 
   let continues = 0;
   while (stoppedHalfway(job) && continues < MAX_CONTINUES) {
     continues += 1;
-    update('continue', 'running', `Reusing ${job.partialFiles?.length ?? 0} saved components (attempt ${continues})…`);
-    job = await apis.continueRun(job.id, signal, (j) => update('continue', 'running', j.phase ?? j.status));
+    update(
+      'continue',
+      'running',
+      `Reusing ${job.partialFiles?.length ?? 0} saved components (attempt ${continues})…`,
+    );
+    job = await apis.continueRun(job.id, signal, (j) =>
+      update('continue', 'running', j.phase ?? j.status),
+    );
   }
   if (continues === 0) update('continue', 'skipped', 'not needed');
-  else update('continue', job.status === 'succeeded' ? 'done' : 'failed', job.status === 'succeeded' ? `finished after ${continues} continue(s)` : failureText(job));
+  else
+    update(
+      'continue',
+      job.status === 'succeeded' ? 'done' : 'failed',
+      job.status === 'succeeded' ? `finished after ${continues} continue(s)` : failureText(job),
+    );
   if (job.status !== 'succeeded') {
     update('fix', 'skipped', 'generation did not finish');
     update('pages', 'skipped', '');
@@ -135,15 +189,35 @@ export async function runAgent(
   while (!builds(job) && job.result?.build.installOk === true && rounds < MAX_FIX_ROUNDS) {
     rounds += 1;
     update('fix', 'running', `Round ${rounds}: rewriting the files the compiler rejects…`);
-    const repaired = await apis.repair(job.id, signal, (j) => update('fix', 'running', `Round ${rounds}: ${j.phase ?? j.status}`));
+    const repaired = await apis.repair(job.id, signal, (j) =>
+      update('fix', 'running', `Round ${rounds}: ${j.phase ?? j.status}`),
+    );
     if (repaired.status !== 'succeeded') break;
     job = repaired;
   }
-  if (rounds === 0) update('fix', builds(job) ? 'skipped' : 'failed', builds(job) ? 'it built first time' : 'dependencies failed to install');
-  else update('fix', builds(job) ? 'done' : 'failed', builds(job) ? `builds after ${rounds} round(s)` : `still failing after ${rounds} round(s) - open it to fix by hand`);
+  if (rounds === 0)
+    update(
+      'fix',
+      builds(job) ? 'skipped' : 'failed',
+      builds(job) ? 'it built first time' : 'dependencies failed to install',
+    );
+  else
+    update(
+      'fix',
+      builds(job) ? 'done' : 'failed',
+      builds(job)
+        ? `builds after ${rounds} round(s)`
+        : `still failing after ${rounds} round(s) - open it to fix by hand`,
+    );
 
   update('pages', 'running', 'Listing pages…');
   const pages = await apis.pages(job.id).catch(() => [] as readonly RunPage[]);
-  update('pages', 'done', pages.length === 0 ? 'no frontend pages' : `${pages.length} page(s): ${pages.map((p) => p.pageName).join(', ')}`);
+  update(
+    'pages',
+    'done',
+    pages.length === 0
+      ? 'no frontend pages'
+      : `${pages.length} page(s): ${pages.map((p) => p.pageName).join(', ')}`,
+  );
   return { schema, job, pages, sessionCreatedAt: planned.createdAt, workflowJob: planned };
 }

@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from 'react';
 import { Icon, type IconName } from '../design/Icon';
 import { filterCommands, withHeadings, type Command } from './command-palette';
 import { fetchProviders, selectProvider } from './provider-api-client';
@@ -7,7 +13,12 @@ import { useWorkspaceStore, type Tab } from './store';
 import type { ProviderStatus } from './provider-types';
 import type { WorkflowSessionSummary } from './workflow-session-types';
 
-const TABS: readonly { readonly tab: Tab; readonly label: string; readonly icon: IconName; readonly keywords: string }[] = [
+const TABS: readonly {
+  readonly tab: Tab;
+  readonly label: string;
+  readonly icon: IconName;
+  readonly keywords: string;
+}[] = [
   { tab: 'conversation', label: 'Agent', icon: 'sparkles', keywords: 'conversation build prompt' },
   { tab: 'workflow', label: 'Workflow', icon: 'flow', keywords: 'graph plan generate' },
   { tab: 'page-builder', label: 'Page builder', icon: 'layout', keywords: 'design ui canvas' },
@@ -49,7 +60,10 @@ function PaletteDialog({ onClose }: { readonly onClose: () => void }): JSX.Eleme
 
   useEffect(() => {
     listWorkflowSessions().then(setSessions, () => {});
-    fetchProviders().then((response) => setProviders(response.providers), () => {});
+    fetchProviders().then(
+      (response) => setProviders(response.providers),
+      () => {},
+    );
   }, []);
 
   useEffect(() => setActive(0), [query]);
@@ -81,7 +95,10 @@ function PaletteDialog({ onClose }: { readonly onClose: () => void }): JSX.Eleme
   }
 
   return (
-    <div className="anim-fade fixed inset-0 z-[100] flex items-start justify-center bg-black/55 px-4 pt-[13vh] backdrop-blur-[3px]" onMouseDown={onClose}>
+    <div
+      className="anim-fade fixed inset-0 z-[100] flex items-start justify-center bg-black/55 px-4 pt-[13vh] backdrop-blur-[3px]"
+      onMouseDown={onClose}
+    >
       <div
         role="dialog"
         aria-label="Command palette"
@@ -104,13 +121,23 @@ function PaletteDialog({ onClose }: { readonly onClose: () => void }): JSX.Eleme
           <span className="kbd">Esc</span>
         </div>
 
-        <div ref={listRef} className="max-h-[min(420px,60vh)] overflow-y-auto p-2" role="listbox" aria-label="Commands">
+        <div
+          ref={listRef}
+          className="max-h-[min(420px,60vh)] overflow-y-auto p-2"
+          role="listbox"
+          aria-label="Commands"
+        >
           {matches.length === 0 ? (
-            <p className="px-3 py-8 text-center text-sm text-slate-500">Nothing matches &ldquo;{query}&rdquo;.</p>
+            <p className="px-3 py-8 text-center text-sm text-slate-500">
+              Nothing matches &ldquo;{query}&rdquo;.
+            </p>
           ) : (
             withHeadings(matches).map((row) =>
               'heading' in row ? (
-                <div key={`h-${row.heading}`} className="px-3 pb-1 pt-3 text-[11px] font-medium uppercase tracking-wider text-slate-500 first:pt-1.5">
+                <div
+                  key={`h-${row.heading}`}
+                  className="px-3 pb-1 pt-3 text-[11px] font-medium uppercase tracking-wider text-slate-500 first:pt-1.5"
+                >
                   {row.heading}
                 </div>
               ) : (
@@ -125,10 +152,18 @@ function PaletteDialog({ onClose }: { readonly onClose: () => void }): JSX.Eleme
                   onClick={() => run(row.command)}
                   className="flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left text-[13.5px] text-slate-200 data-[active=true]:bg-white/[0.08] data-[active=true]:text-white"
                 >
-                  <Icon name={row.command.icon} size={16} className="flex-shrink-0 text-slate-400" />
+                  <Icon
+                    name={row.command.icon}
+                    size={16}
+                    className="flex-shrink-0 text-slate-400"
+                  />
                   <span className="min-w-0 flex-1 truncate">{row.command.label}</span>
-                  {row.command.hint !== undefined && <span className="flex-shrink-0 text-xs text-slate-500">{row.command.hint}</span>}
-                  {row.index === active && <Icon name="arrow-right" size={14} className="flex-shrink-0 text-slate-400" />}
+                  {row.command.hint !== undefined && (
+                    <span className="flex-shrink-0 text-xs text-slate-500">{row.command.hint}</span>
+                  )}
+                  {row.index === active && (
+                    <Icon name="arrow-right" size={14} className="flex-shrink-0 text-slate-400" />
+                  )}
                 </button>
               ),
             )
@@ -155,11 +190,16 @@ function PaletteDialog({ onClose }: { readonly onClose: () => void }): JSX.Eleme
 
 const dateOf = (iso: string): string => {
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(date);
+  return Number.isNaN(date.getTime())
+    ? ''
+    : new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(date);
 };
 
 /** Every command the palette offers right now, in display order. */
-function useCommands(sessions: readonly WorkflowSessionSummary[], providers: readonly ProviderStatus[]): readonly Command[] {
+function useCommands(
+  sessions: readonly WorkflowSessionSummary[],
+  providers: readonly ProviderStatus[],
+): readonly Command[] {
   const startNewProject = useWorkspaceStore((state) => state.startNewProject);
   const setImportOpen = useWorkspaceStore((state) => state.setImportOpen);
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
@@ -170,8 +210,22 @@ function useCommands(sessions: readonly WorkflowSessionSummary[], providers: rea
 
   return useMemo(() => {
     const actions: Command[] = [
-      { id: 'new-project', group: 'Actions', label: 'New project', icon: 'plus', keywords: 'create start agent build', run: startNewProject },
-      { id: 'import', group: 'Actions', label: 'Import a project from a folder or Git', icon: 'folder', keywords: 'continue open existing', run: () => setImportOpen(true) },
+      {
+        id: 'new-project',
+        group: 'Actions',
+        label: 'New project',
+        icon: 'plus',
+        keywords: 'create start agent build',
+        run: startNewProject,
+      },
+      {
+        id: 'import',
+        group: 'Actions',
+        label: 'Import a project from a folder or Git',
+        icon: 'folder',
+        keywords: 'continue open existing',
+        run: () => setImportOpen(true),
+      },
       {
         id: 'sidebar',
         group: 'Actions',
@@ -210,5 +264,15 @@ function useCommands(sessions: readonly WorkflowSessionSummary[], providers: rea
       },
     }));
     return [...actions, ...tabs, ...projects, ...models];
-  }, [sessions, providers, sidebarCollapsed, startNewProject, setImportOpen, toggleSidebar, setActiveTab, openSession, notifyProvidersChanged]);
+  }, [
+    sessions,
+    providers,
+    sidebarCollapsed,
+    startNewProject,
+    setImportOpen,
+    toggleSidebar,
+    setActiveTab,
+    openSession,
+    notifyProvidersChanged,
+  ]);
 }

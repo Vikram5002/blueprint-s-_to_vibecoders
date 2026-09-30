@@ -35,16 +35,24 @@ export function PageSwitcher({ origin, elements }: PageSwitcherProps): JSX.Eleme
   }, [origin.runId, origin.edited, runsVersion]);
 
   const current = pages?.find((page) => page.path === origin.path);
-  const unsaved = current !== undefined && JSON.stringify(current.layout.elements) !== JSON.stringify(elements);
+  const unsaved =
+    current !== undefined && JSON.stringify(current.layout.elements) !== JSON.stringify(elements);
 
   function switchTo(path: string): void {
     const next = pages?.find((page) => page.path === path);
     if (next === undefined || path === origin.path) return;
-    if (unsaved && !window.confirm(`"${current?.pageName ?? 'This page'}" has unsaved changes. Switch pages and discard them?`)) return;
+    if (
+      unsaved &&
+      !window.confirm(
+        `"${current?.pageName ?? 'This page'}" has unsaved changes. Switch pages and discard them?`,
+      )
+    )
+      return;
     openPageInBuilder({ ...origin, path: next.path, edited: next.edited }, next.layout);
   }
 
-  if (error !== null) return <span className="text-[11px] text-red-300">Could not list pages: {error}</span>;
+  if (error !== null)
+    return <span className="text-[11px] text-red-300">Could not list pages: {error}</span>;
 
   return (
     <label className="flex items-center gap-2 text-xs text-slate-400">
@@ -56,7 +64,9 @@ export function PageSwitcher({ origin, elements }: PageSwitcherProps): JSX.Eleme
         disabled={pages === null}
         className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100"
       >
-        {(pages ?? [{ path: origin.path, pageName: origin.path, edited: origin.edited } as const]).map((page) => (
+        {(
+          pages ?? [{ path: origin.path, pageName: origin.path, edited: origin.edited } as const]
+        ).map((page) => (
           <option key={page.path} value={page.path}>
             {page.pageName}
             {page.edited ? ' (edited)' : ''}
@@ -64,7 +74,11 @@ export function PageSwitcher({ origin, elements }: PageSwitcherProps): JSX.Eleme
         ))}
       </select>
       {pages !== null && <span className="text-[10px] text-slate-500">{pages.length} page(s)</span>}
-      {unsaved && <span data-testid="page-unsaved" className="text-[10px] text-amber-400">unsaved changes</span>}
+      {unsaved && (
+        <span data-testid="page-unsaved" className="text-[10px] text-amber-400">
+          unsaved changes
+        </span>
+      )}
     </label>
   );
 }

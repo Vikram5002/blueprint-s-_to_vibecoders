@@ -58,7 +58,10 @@ export function SummaryPanel({ summary }: SummaryPanelProps): JSX.Element {
           <div className="rows">
             {summary.unresolvedExamples.slice(0, 12).map((example) => (
               <div className="row" key={`${example.file}:${example.line}:${example.specifier}`}>
-                <span className="k mono" title={`${example.reason} — ${example.file}:${example.line}`}>
+                <span
+                  className="k mono"
+                  title={`${example.reason} — ${example.file}:${example.line}`}
+                >
                   {example.specifier || '(relative)'}
                 </span>
                 <span className="v mono" style={{ fontSize: 11 }}>
@@ -83,8 +86,8 @@ export function SummaryPanel({ summary }: SummaryPanelProps): JSX.Element {
         {summary.clustering.disagreementRate.toFixed(1)}%
       </div>
       <div className="hint" style={{ marginBottom: 8 }}>
-        of files are grouped somewhere other than their folder. This is a finding, not an
-        error — it is what a file tree cannot show you.
+        of files are grouped somewhere other than their folder. This is a finding, not an error — it
+        is what a file tree cannot show you.
       </div>
       <div className="rows">
         <Row k="Modules spanning folders" v={summary.clustering.crossDirectoryModules} />
@@ -110,9 +113,9 @@ export function SummaryPanel({ summary }: SummaryPanelProps): JSX.Element {
       )}
 
       <div className="hint" style={{ marginTop: 10, fontSize: 10 }}>
-        Modularity {summary.clustering.modularity.toFixed(3)} — a diagnostic, not a quality
-        score. Resolution {summary.clustering.resolution}, seed {summary.clustering.seed}, minimum
-        cluster {summary.clustering.minClusterSize}. Same input always gives the same modules.
+        Modularity {summary.clustering.modularity.toFixed(3)} — a diagnostic, not a quality score.
+        Resolution {summary.clustering.resolution}, seed {summary.clustering.seed}, minimum cluster{' '}
+        {summary.clustering.minClusterSize}. Same input always gives the same modules.
       </div>
 
       <h3>Files</h3>

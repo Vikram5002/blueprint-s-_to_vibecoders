@@ -8,7 +8,13 @@
  * simply skipped, and everything they added or moved is kept. That is what
  * lets a person and the agent work on one page at the same time.
  */
-import type { AnimationName, CanvasElement, CanvasElementType, DesignToken, PageLayout } from './page-builder-types';
+import type {
+  AnimationName,
+  CanvasElement,
+  CanvasElementType,
+  DesignToken,
+  PageLayout,
+} from './page-builder-types';
 
 export type DesignOperation =
   | {
@@ -62,7 +68,10 @@ export interface Applied {
   readonly changed: number;
 }
 
-export function applyDesignOperations(elements: readonly CanvasElement[], operations: readonly DesignOperation[]): Applied {
+export function applyDesignOperations(
+  elements: readonly CanvasElement[],
+  operations: readonly DesignOperation[],
+): Applied {
   const nextId = idAllocator(elements);
   let current = [...elements];
   let changed = 0;
@@ -81,7 +90,11 @@ export function applyDesignOperations(elements: readonly CanvasElement[], operat
       if (target === undefined) continue;
       const { op: _op, id: _id, animation, ...fields } = operation;
       const withAnimation =
-        animation === undefined ? { ...target, ...fields } : animation === null ? withoutAnimation({ ...target, ...fields }) : { ...target, ...fields, animation };
+        animation === undefined
+          ? { ...target, ...fields }
+          : animation === null
+            ? withoutAnimation({ ...target, ...fields })
+            : { ...target, ...fields, animation };
       current[index] = withAnimation;
       changed += 1;
     }
@@ -99,13 +112,19 @@ async function readErrorMessage(response: Response, fallback: string): Promise<s
   return detail?.error ?? fallback;
 }
 
-export async function designViaApi(instruction: string, layout: PageLayout, history: readonly ChatTurn[], signal?: AbortSignal): Promise<DesignReply> {
+export async function designViaApi(
+  instruction: string,
+  layout: PageLayout,
+  history: readonly ChatTurn[],
+  signal?: AbortSignal,
+): Promise<DesignReply> {
   const response = await fetch('/api/page-builder/design', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ instruction, layout, history }),
     ...(signal === undefined ? {} : { signal }),
   });
-  if (!response.ok) throw new Error(await readErrorMessage(response, `designer failed: ${response.status}`));
+  if (!response.ok)
+    throw new Error(await readErrorMessage(response, `designer failed: ${response.status}`));
   return (await response.json()) as DesignReply;
 }

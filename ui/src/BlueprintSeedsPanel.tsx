@@ -70,14 +70,16 @@ export function BlueprintSeedsPanel(): JSX.Element {
     <div className="stated" style={{ marginBottom: 18 }}>
       <h2>
         Start from current
-        <span className="provenance stated-chip" title="Proposed from the graph. Not a constraint until accepted.">
+        <span
+          className="provenance stated-chip"
+          title="Proposed from the graph. Not a constraint until accepted."
+        >
           SEEDED
         </span>
       </h2>
       <div className="hint" style={{ marginBottom: 10 }}>
-        Layering that already holds today, offered as candidate rules. Nothing
-        here is checked until you accept it — an unaccepted candidate never
-        reaches conformance.
+        Layering that already holds today, offered as candidate rules. Nothing here is checked until
+        you accept it — an unaccepted candidate never reaches conformance.
       </div>
 
       {error !== null && <div className="banner">{error}</div>}
@@ -111,13 +113,22 @@ export function BlueprintSeedsPanel(): JSX.Element {
                     “{candidate.rawText}”
                   </span>
                 </span>
-                <span className="v" title={`confidence ${(candidate.confidence * 100).toFixed(0)}%`}>
+                <span
+                  className="v"
+                  title={`confidence ${(candidate.confidence * 100).toFixed(0)}%`}
+                >
                   {(candidate.confidence * 100).toFixed(0)}%
                 </span>
               </label>
             ))}
           </div>
-          <button className="control primary" type="button" onClick={acceptSelected} disabled={busy || selected.size === 0} style={{ marginTop: 10 }}>
+          <button
+            className="control primary"
+            type="button"
+            onClick={acceptSelected}
+            disabled={busy || selected.size === 0}
+            style={{ marginTop: 10 }}
+          >
             {busy ? 'adding…' : `add ${selected.size || ''} to blueprint`}
           </button>
         </>

@@ -72,7 +72,9 @@ const DOMAIN_LABEL: Readonly<Record<DomainName, string>> = {
 };
 
 /** Each layer keeps one icon and one colour everywhere it appears (this graph, the plan review, the project report). */
-const DOMAIN_MARK: Readonly<Record<DomainName, { readonly icon: IconName; readonly tone: string }>> = {
+const DOMAIN_MARK: Readonly<
+  Record<DomainName, { readonly icon: IconName; readonly tone: string }>
+> = {
   frontend: { icon: 'pages', tone: 'bg-sky-500/[0.16] text-sky-300' },
   backend: { icon: 'server', tone: 'bg-violet-500/[0.16] text-violet-300' },
   database: { icon: 'database', tone: 'bg-emerald-500/[0.16] text-emerald-300' },
@@ -105,10 +107,14 @@ export function WorkflowNode({ data, selected }: NodeProps): JSX.Element {
 
       <div className="mb-2.5 flex items-center justify-between gap-2">
         <span className="flex items-center gap-2">
-          <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${DOMAIN_MARK[node.domain].tone}`}>
+          <span
+            className={`flex h-7 w-7 items-center justify-center rounded-lg ${DOMAIN_MARK[node.domain].tone}`}
+          >
             <Icon name={DOMAIN_MARK[node.domain].icon} size={14} />
           </span>
-          <span className="text-[14px] font-semibold tracking-tight text-slate-50">{DOMAIN_LABEL[node.domain]}</span>
+          <span className="text-[14px] font-semibold tracking-tight text-slate-50">
+            {DOMAIN_LABEL[node.domain]}
+          </span>
         </span>
         <span
           className={`flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${style.text} ${style.pill}`}

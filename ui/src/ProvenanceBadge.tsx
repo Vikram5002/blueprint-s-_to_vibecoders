@@ -20,7 +20,8 @@ const STATES: Record<LabelSource, { text: string; title: string }> = {
   },
   llm: {
     text: '~ ai',
-    title: 'Written by a language model from this module’s paths and symbols. Not a derived fact — it may be wrong.',
+    title:
+      'Written by a language model from this module’s paths and symbols. Not a derived fact — it may be wrong.',
   },
   user: {
     text: '✓ yours',

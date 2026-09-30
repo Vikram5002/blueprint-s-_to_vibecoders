@@ -43,7 +43,9 @@ export function CorrectionControls({
     setLeftFiles([]);
   };
 
-  const rightFiles = module.files.map((file) => file.path).filter((path) => !leftFiles.includes(path));
+  const rightFiles = module.files
+    .map((file) => file.path)
+    .filter((path) => !leftFiles.includes(path));
 
   return (
     <div className="corrections">

@@ -7,8 +7,9 @@ code in this directory does today.
 
 One shell, four tabs, one shared store (`store.ts`, zustand). Tab panels
 unmount when another tab is shown, so anything that must survive a tab switch
+
 - the opened session, the Page Builder canvas and its undo history - lives in
-the store, not in a panel's own state.
+  the store, not in a panel's own state.
 
 ```
 WorkspaceShell

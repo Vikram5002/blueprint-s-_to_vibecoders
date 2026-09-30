@@ -81,11 +81,15 @@ export function App(): JSX.Element {
 
   useEffect(() => {
     // Older servers have no /api/projects; the header then simply has no source badge.
-    fetchCurrentProject().then(setProject).catch(() => setProject(null));
+    fetchCurrentProject()
+      .then(setProject)
+      .catch(() => setProject(null));
   }, []);
 
   useEffect(() => {
-    fetchSummary().then(setSummary).catch((cause: unknown) => setError(String(cause)));
+    fetchSummary()
+      .then(setSummary)
+      .catch((cause: unknown) => setError(String(cause)));
   }, []);
 
   useEffect(() => {
@@ -104,11 +108,15 @@ export function App(): JSX.Element {
     if (grouping !== 'module' || modules !== null) {
       return;
     }
-    fetchModules().then(setModules).catch((cause: unknown) => setError(String(cause)));
+    fetchModules()
+      .then(setModules)
+      .catch((cause: unknown) => setError(String(cause)));
   }, [grouping, modules]);
 
   const reloadCorrections = useCallback(() => {
-    fetchCorrections().then(setCorrections).catch((cause: unknown) => setError(String(cause)));
+    fetchCorrections()
+      .then(setCorrections)
+      .catch((cause: unknown) => setError(String(cause)));
   }, []);
 
   useEffect(() => {
@@ -116,8 +124,12 @@ export function App(): JSX.Element {
   }, [reloadCorrections]);
 
   useEffect(() => {
-    fetchIntent().then(setIntent).catch((cause: unknown) => setError(String(cause)));
-    fetchViolations().then(setViolations).catch((cause: unknown) => setError(String(cause)));
+    fetchIntent()
+      .then(setIntent)
+      .catch((cause: unknown) => setError(String(cause)));
+    fetchViolations()
+      .then(setViolations)
+      .catch((cause: unknown) => setError(String(cause)));
   }, []);
 
   const saveCorrectionAndRefresh = useCallback(
@@ -158,25 +170,33 @@ export function App(): JSX.Element {
   const selectNode = useCallback((id: string) => {
     setSelectedEdge(null);
     setSelectedModule(null);
-    fetchNode(id).then(setSelectedNode).catch((cause: unknown) => setError(String(cause)));
+    fetchNode(id)
+      .then(setSelectedNode)
+      .catch((cause: unknown) => setError(String(cause)));
   }, []);
 
   const selectEdge = useCallback((id: string) => {
     setSelectedNode(null);
     setSelectedModule(null);
-    fetchEdge(id).then(setSelectedEdge).catch((cause: unknown) => setError(String(cause)));
+    fetchEdge(id)
+      .then(setSelectedEdge)
+      .catch((cause: unknown) => setError(String(cause)));
   }, []);
 
   const selectModule = useCallback((id: string) => {
     setSelectedEdge(null);
     setSelectedNode(null);
-    fetchModule(id).then(setSelectedModule).catch((cause: unknown) => setError(String(cause)));
+    fetchModule(id)
+      .then(setSelectedModule)
+      .catch((cause: unknown) => setError(String(cause)));
   }, []);
 
   const selectModuleEdge = useCallback((id: string) => {
     setSelectedNode(null);
     setSelectedModule(null);
-    fetchModuleEdge(id).then(setSelectedEdge).catch((cause: unknown) => setError(String(cause)));
+    fetchModuleEdge(id)
+      .then(setSelectedEdge)
+      .catch((cause: unknown) => setError(String(cause)));
   }, []);
 
   const toggleDirectory = useCallback((path: string) => {
@@ -193,14 +213,21 @@ export function App(): JSX.Element {
       <header className="topbar">
         <h1>Vibe-Code Blueprint</h1>
         <span className="root" title={summary?.root ?? ''}>
-          {project?.source.kind === 'git' ? project.source.url.replace(/^https:\/\//, '') : (summary?.root ?? '')}
+          {project?.source.kind === 'git'
+            ? project.source.url.replace(/^https:\/\//, '')
+            : (summary?.root ?? '')}
         </span>
         {project !== null && !project.isHome && (
           <span className="source-badge" data-kind={project.source.kind}>
             {project.source.kind === 'git' ? 'Git' : 'Other folder'}
           </span>
         )}
-        <button type="button" className="control" data-testid="change-project" onClick={() => setPickerOpen(true)}>
+        <button
+          type="button"
+          className="control"
+          data-testid="change-project"
+          onClick={() => setPickerOpen(true)}
+        >
           Change project
         </button>
         <span className="spacer" />
@@ -274,124 +301,142 @@ export function App(): JSX.Element {
       {grouping === 'blueprint' ? (
         <BlueprintCanvas />
       ) : (
-      <>
-      <div className="canvas">
-        {grouping === 'module' ? (
-          modules === null ? (
-            <div className="loading">{error ?? 'Clustering…'}</div>
-          ) : (
-            <ModuleCanvas
-              view={modules}
-              selectedModuleId={selectedModule?.id ?? null}
-              selectedEdgeId={selectedEdgeId}
-              onSelectModule={selectModule}
-              onSelectEdge={selectModuleEdge}
-            />
-          )
-        ) : graph === null ? (
-          <div className="loading">{error ?? 'Loading graph…'}</div>
-        ) : (
-          <GraphCanvas
-            graph={graph}
-            selectedNodeId={selectedNodeId}
-            selectedEdgeId={selectedEdgeId}
-            onSelectNode={selectNode}
-            onSelectEdge={selectEdge}
-            onToggleDirectory={toggleDirectory}
-            implicatedFiles={implicated}
-          />
-        )}
-      </div>
-
-      <aside className="side">
-        {error && <div className="banner">{error}</div>}
-        {notice !== null && (
-          <div className="banner" data-tone="info">
-            {notice}{' '}
-            <button type="button" className="link" onClick={() => setNotice(null)}>
-              dismiss
-            </button>
-          </div>
-        )}
-
-        {level === 'file' && graph !== null && graph.counts.nodes > FILE_LEVEL_WARNING_THRESHOLD && (
-          <div className="banner">
-            {graph.counts.nodes.toLocaleString()} file nodes on screen. This view is slow at
-            this size — the directory view is the one built for it.
-          </div>
-        )}
-
-        {selectedEdge !== null && <EvidencePanel edge={selectedEdge} />}
-
-        {selectedEdge === null && selectedModule !== null && (
-          <ModulePanel
-            module={selectedModule}
-            onSelectEdge={selectModuleEdge}
-            labelSource={modules?.nodes.find((n) => n.id === selectedModule.id)?.labelSource ?? 'mechanical'}
-            mechanicalLabel={
-              modules?.nodes.find((n) => n.id === selectedModule.id)?.mechanicalLabel ?? selectedModule.label
-            }
-            description={modules?.nodes.find((n) => n.id === selectedModule.id)?.description ?? null}
-            allModules={modules?.nodes ?? []}
-            onSaveCorrection={saveCorrectionAndRefresh}
-            savingCorrection={savingCorrection}
-          />
-        )}
-
-        {selectedEdge === null && selectedModule === null && selectedNode !== null && (
-          <NodePanel node={selectedNode} onSelectEdge={selectEdge} onSelectNode={selectNode} />
-        )}
-
-        {selectedEdge === null && selectedNode === null && selectedModule === null && (
-          <>
-            <div className="hint" style={{ marginBottom: 14 }}>
-              {grouping === 'module' ? (
-                <>
-                  Modules are derived from <b>import coupling</b>, not from folders. Nodes marked{' '}
-                  <span className="tag-disagree">n dirs</span> span more than one folder — that
-                  disagreement is the point. Click a module for the reason each file is in it.
-                </>
+        <>
+          <div className="canvas">
+            {grouping === 'module' ? (
+              modules === null ? (
+                <div className="loading">{error ?? 'Clustering…'}</div>
               ) : (
-                <>
-                  Click an <b>edge</b> to see the source lines that produced it. Click a{' '}
-                  <b>node</b> for its files and dependencies. Use <b>expand</b> on a directory to
-                  open it into individual files.
-                </>
-              )}
-            </div>
-            {corrections !== null && corrections.corrections.length > 0 && (
-              <div style={{ marginBottom: 18 }}>
-                <CorrectionsPanel corrections={corrections} onDelete={forgetCorrection} />
-              </div>
-            )}
-            {violations !== null && (
-              <div style={{ marginBottom: 18 }}>
-                <ViolationsPanel
-                  violations={violations}
-                  onHighlight={setImplicated}
-                  highlighted={implicated}
+                <ModuleCanvas
+                  view={modules}
+                  selectedModuleId={selectedModule?.id ?? null}
+                  selectedEdgeId={selectedEdgeId}
+                  onSelectModule={selectModule}
+                  onSelectEdge={selectModuleEdge}
                 />
-              </div>
+              )
+            ) : graph === null ? (
+              <div className="loading">{error ?? 'Loading graph…'}</div>
+            ) : (
+              <GraphCanvas
+                graph={graph}
+                selectedNodeId={selectedNodeId}
+                selectedEdgeId={selectedEdgeId}
+                onSelectNode={selectNode}
+                onSelectEdge={selectEdge}
+                onToggleDirectory={toggleDirectory}
+                implicatedFiles={implicated}
+              />
             )}
-            {intent !== null && (
-              <div style={{ marginBottom: 18 }}>
-                <IntentPanel intent={intent} />
-              </div>
-            )}
-            <div style={{ marginBottom: 18 }}>
-              <TimelinePanel />
-            </div>
-            {summary !== null ? <SummaryPanel summary={summary} /> : <div className="hint">Loading…</div>}
-          </>
-        )}
+          </div>
 
-        {(selectedEdge !== null || selectedNode !== null || selectedModule !== null) && (
-          <button type="button" className="link" style={{ marginTop: 16 }} onClick={clearSelection}>
-            ← back to run summary
-          </button>
-        )}
-      </aside>
-      </>
+          <aside className="side">
+            {error && <div className="banner">{error}</div>}
+            {notice !== null && (
+              <div className="banner" data-tone="info">
+                {notice}{' '}
+                <button type="button" className="link" onClick={() => setNotice(null)}>
+                  dismiss
+                </button>
+              </div>
+            )}
+
+            {level === 'file' &&
+              graph !== null &&
+              graph.counts.nodes > FILE_LEVEL_WARNING_THRESHOLD && (
+                <div className="banner">
+                  {graph.counts.nodes.toLocaleString()} file nodes on screen. This view is slow at
+                  this size — the directory view is the one built for it.
+                </div>
+              )}
+
+            {selectedEdge !== null && <EvidencePanel edge={selectedEdge} />}
+
+            {selectedEdge === null && selectedModule !== null && (
+              <ModulePanel
+                module={selectedModule}
+                onSelectEdge={selectModuleEdge}
+                labelSource={
+                  modules?.nodes.find((n) => n.id === selectedModule.id)?.labelSource ??
+                  'mechanical'
+                }
+                mechanicalLabel={
+                  modules?.nodes.find((n) => n.id === selectedModule.id)?.mechanicalLabel ??
+                  selectedModule.label
+                }
+                description={
+                  modules?.nodes.find((n) => n.id === selectedModule.id)?.description ?? null
+                }
+                allModules={modules?.nodes ?? []}
+                onSaveCorrection={saveCorrectionAndRefresh}
+                savingCorrection={savingCorrection}
+              />
+            )}
+
+            {selectedEdge === null && selectedModule === null && selectedNode !== null && (
+              <NodePanel node={selectedNode} onSelectEdge={selectEdge} onSelectNode={selectNode} />
+            )}
+
+            {selectedEdge === null && selectedNode === null && selectedModule === null && (
+              <>
+                <div className="hint" style={{ marginBottom: 14 }}>
+                  {grouping === 'module' ? (
+                    <>
+                      Modules are derived from <b>import coupling</b>, not from folders. Nodes
+                      marked <span className="tag-disagree">n dirs</span> span more than one folder
+                      — that disagreement is the point. Click a module for the reason each file is
+                      in it.
+                    </>
+                  ) : (
+                    <>
+                      Click an <b>edge</b> to see the source lines that produced it. Click a{' '}
+                      <b>node</b> for its files and dependencies. Use <b>expand</b> on a directory
+                      to open it into individual files.
+                    </>
+                  )}
+                </div>
+                {corrections !== null && corrections.corrections.length > 0 && (
+                  <div style={{ marginBottom: 18 }}>
+                    <CorrectionsPanel corrections={corrections} onDelete={forgetCorrection} />
+                  </div>
+                )}
+                {violations !== null && (
+                  <div style={{ marginBottom: 18 }}>
+                    <ViolationsPanel
+                      violations={violations}
+                      onHighlight={setImplicated}
+                      highlighted={implicated}
+                    />
+                  </div>
+                )}
+                {intent !== null && (
+                  <div style={{ marginBottom: 18 }}>
+                    <IntentPanel intent={intent} />
+                  </div>
+                )}
+                <div style={{ marginBottom: 18 }}>
+                  <TimelinePanel />
+                </div>
+                {summary !== null ? (
+                  <SummaryPanel summary={summary} />
+                ) : (
+                  <div className="hint">Loading…</div>
+                )}
+              </>
+            )}
+
+            {(selectedEdge !== null || selectedNode !== null || selectedModule !== null) && (
+              <button
+                type="button"
+                className="link"
+                style={{ marginTop: 16 }}
+                onClick={clearSelection}
+              >
+                ← back to run summary
+              </button>
+            )}
+          </aside>
+        </>
       )}
     </div>
   );

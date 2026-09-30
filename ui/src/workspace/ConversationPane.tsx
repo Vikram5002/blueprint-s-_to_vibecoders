@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { runAgent, stepsFor, type AgentOutcome, type ReviewDecision, type StepId, type StepStatus } from './agent-runner';
+import {
+  runAgent,
+  stepsFor,
+  type AgentOutcome,
+  type ReviewDecision,
+  type StepId,
+  type StepStatus,
+} from './agent-runner';
 import { AgentRunCard, type AgentRunView } from './AgentRunCard';
 import { Composer } from './Composer';
 import { STARTER_IDEAS } from './starter-ideas';
@@ -93,7 +100,10 @@ export function ConversationPane(): JSX.Element {
 
   // Follow the newest run as it grows, smoothly, like a conversation.
   const lastRun = runs[runs.length - 1];
-  const lastRunSignature = lastRun === undefined ? '' : `${runs.length}:${lastRun.steps.map((step) => step.status).join(',')}:${lastRun.review === null ? 0 : 1}:${lastRun.finishedAt ?? 0}`;
+  const lastRunSignature =
+    lastRun === undefined
+      ? ''
+      : `${runs.length}:${lastRun.steps.map((step) => step.status).join(',')}:${lastRun.review === null ? 0 : 1}:${lastRun.finishedAt ?? 0}`;
   useEffect(() => {
     const scroller = scrollRef.current;
     if (scroller !== null) scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
@@ -111,10 +121,21 @@ export function ConversationPane(): JSX.Element {
     abortRef.current = controller;
     setRuns((current) => [
       ...current,
-      { prompt: request, steps: stepsFor(reviewFirst), startedAt: Date.now(), finishedAt: null, outcome: null, error: null, review: null },
+      {
+        prompt: request,
+        steps: stepsFor(reviewFirst),
+        startedAt: Date.now(),
+        finishedAt: null,
+        outcome: null,
+        error: null,
+        review: null,
+      },
     ]);
     const update = (id: StepId, status: StepStatus, detail: string): void =>
-      updateLast((run) => ({ ...run, steps: run.steps.map((step) => (step.id === id ? { ...step, status, detail } : step)) }));
+      updateLast((run) => ({
+        ...run,
+        steps: run.steps.map((step) => (step.id === id ? { ...step, status, detail } : step)),
+      }));
     // Resolved by "Build this plan", "Cancel" or Stop - whichever comes first.
     const review = (schema: ProjectSchema, workflowJob: WorkflowJob): Promise<ReviewDecision> =>
       new Promise((resolve) => {
@@ -130,9 +151,12 @@ export function ConversationPane(): JSX.Element {
         request,
         {
           plan: (p, signal, onStatus) => generateProjectSchemaViaApi(p, { signal, onStatus }),
-          generate: (schema, signal, onStatus) => generateApplicationViaApi(schema, { signal, onStatus }),
-          continueRun: (jobId, signal, onStatus) => continueApplicationViaApi(jobId, { signal, onStatus }),
-          repair: (jobId, signal, onStatus) => repairApplicationViaApi(jobId, '', { signal, onStatus }),
+          generate: (schema, signal, onStatus) =>
+            generateApplicationViaApi(schema, { signal, onStatus }),
+          continueRun: (jobId, signal, onStatus) =>
+            continueApplicationViaApi(jobId, { signal, onStatus }),
+          repair: (jobId, signal, onStatus) =>
+            repairApplicationViaApi(jobId, '', { signal, onStatus }),
           pages: fetchRunPages,
         },
         update,
@@ -148,8 +172,16 @@ export function ConversationPane(): JSX.Element {
         ...run,
         finishedAt: Date.now(),
         review: null,
-        error: stopped ? 'Stopped. Anything already generated is saved - open the project to continue from there.' : cause instanceof Error ? cause.message : String(cause),
-        steps: run.steps.map((step) => (step.status === 'running' ? { ...step, status: 'failed' as const, detail: stopped ? 'stopped' : step.detail } : step)),
+        error: stopped
+          ? 'Stopped. Anything already generated is saved - open the project to continue from there.'
+          : cause instanceof Error
+            ? cause.message
+            : String(cause),
+        steps: run.steps.map((step) =>
+          step.status === 'running'
+            ? { ...step, status: 'failed' as const, detail: stopped ? 'stopped' : step.detail }
+            : step,
+        ),
       }));
     }
   }
@@ -159,7 +191,8 @@ export function ConversationPane(): JSX.Element {
     try {
       const job = await generateProjectSchemaViaApi({ revises: sessionId, change });
       const result = job.result;
-      if (job.status !== 'succeeded' || result === undefined) return job.error?.message ?? `job ended as ${job.status}`;
+      if (job.status !== 'succeeded' || result === undefined)
+        return job.error?.message ?? `job ended as ${job.status}`;
       updateLast((run) => ({ ...run, review: { schema: result.schema, workflowJob: job } }));
       notifySessionSaved();
       return null;
@@ -170,7 +203,12 @@ export function ConversationPane(): JSX.Element {
 
   function approve(): void {
     const pending = runs[runs.length - 1]?.review;
-    if (pending != null) decideRef.current?.({ kind: 'approve', schema: pending.schema, workflowJob: pending.workflowJob });
+    if (pending != null)
+      decideRef.current?.({
+        kind: 'approve',
+        schema: pending.schema,
+        workflowJob: pending.workflowJob,
+      });
   }
 
   function stop(): void {
@@ -201,7 +239,13 @@ export function ConversationPane(): JSX.Element {
     const firstPage = outcome.pages[0];
     if (firstPage === undefined || outcome.job === null || outcome.schema === null) return;
     openPageInBuilder(
-      { runId: outcome.job.id, sessionId: outcome.schema.sessionId, sessionTitle: outcome.schema.title, path: firstPage.path, edited: firstPage.edited },
+      {
+        runId: outcome.job.id,
+        sessionId: outcome.schema.sessionId,
+        sessionTitle: outcome.schema.title,
+        path: firstPage.path,
+        edited: firstPage.edited,
+      },
       firstPage.layout,
     );
   }
@@ -247,14 +291,23 @@ export function ConversationPane(): JSX.Element {
         </div>
       </div>
       <div className="relative flex-shrink-0 px-6 pb-5 pt-2">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-t from-[#0c0c0e] to-transparent" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-t from-[#0c0c0e] to-transparent"
+        />
         <div className="mx-auto max-w-3xl">{composer('dock')}</div>
       </div>
     </div>
   );
 }
 
-function AgentHero({ composer, onIdea }: { readonly composer: JSX.Element; readonly onIdea: (prompt: string) => void }): JSX.Element {
+function AgentHero({
+  composer,
+  onIdea,
+}: {
+  readonly composer: JSX.Element;
+  readonly onIdea: (prompt: string) => void;
+}): JSX.Element {
   const at = (index: number): CSSProperties => ({ '--i': index }) as CSSProperties;
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col items-center px-6 pb-16 pt-[9vh] text-center">
@@ -269,17 +322,27 @@ function AgentHero({ composer, onIdea }: { readonly composer: JSX.Element; reado
         <Icon name="sparkles" size={12} className="text-violet-300" />
         Agent mode
       </span>
-      <h1 className="stagger gradient-text text-[34px] font-semibold leading-[1.12] tracking-[-0.035em] sm:text-[42px]" style={at(2)}>
+      <h1
+        className="stagger gradient-text text-[34px] font-semibold leading-[1.12] tracking-[-0.035em] sm:text-[42px]"
+        style={at(2)}
+      >
         What will you build today?
       </h1>
-      <p className="stagger mt-3.5 max-w-xl text-[15px] leading-relaxed text-slate-400" style={at(3)}>
-        Describe an app in plain words. VibeCoder plans it, lets you change the plan, then builds, checks and fixes it - on its own.
+      <p
+        className="stagger mt-3.5 max-w-xl text-[15px] leading-relaxed text-slate-400"
+        style={at(3)}
+      >
+        Describe an app in plain words. VibeCoder plans it, lets you change the plan, then builds,
+        checks and fixes it - on its own.
       </p>
       <div className="stagger mt-9 w-full" style={at(4)}>
         {composer}
       </div>
       <div className="mt-10 w-full">
-        <div className="stagger mb-3 flex items-center gap-2 text-left text-xs font-medium text-slate-500" style={at(5)}>
+        <div
+          className="stagger mb-3 flex items-center gap-2 text-left text-xs font-medium text-slate-500"
+          style={at(5)}
+        >
           <span className="h-px flex-1 bg-gradient-to-r from-transparent to-white/[0.08]" />
           Start from an idea
           <span className="h-px flex-1 bg-gradient-to-l from-transparent to-white/[0.08]" />

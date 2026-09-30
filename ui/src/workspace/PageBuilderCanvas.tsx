@@ -17,15 +17,36 @@ import { useWorkspaceStore } from './store';
 import { PageSwitcher } from './PageSwitcher';
 import { PageSyncButton } from './PageSyncButton';
 import { EditorToolbar, LayersList } from './EditorToolbar';
-import { ELEMENT_CATEGORIES, ELEMENT_SPECS, FIELD_TYPES, derivedFieldName } from './page-builder-catalogue';
+import {
+  ELEMENT_CATEGORIES,
+  ELEMENT_SPECS,
+  FIELD_TYPES,
+  derivedFieldName,
+} from './page-builder-catalogue';
 import { SPIN_KEYFRAMES, extendedPreview, type PreviewPalette } from './page-builder-previews';
 import { DEFAULT_THEME, FONTS, type PageTheme } from './page-theme';
 import { ThemePanel } from './ThemePanel';
-import { HOVER_CLASS, HOVER_EFFECTS, HOVER_LABEL, MOTION_CSS, hoverHandlers, type HoverEffect } from './motion-preview';
+import {
+  HOVER_CLASS,
+  HOVER_EFFECTS,
+  HOVER_LABEL,
+  MOTION_CSS,
+  hoverHandlers,
+  type HoverEffect,
+} from './motion-preview';
 import { BACKGROUND_KINDS, parseBackgroundLabel } from './svg-backgrounds';
 
 const BACKGROUND_TYPES: ReadonlySet<string> = new Set(BACKGROUND_KINDS);
-import { HANDLES, otherRects, reorder, resizeRect, snapMove, type Guide, type Handle, type Rect } from './page-builder-geometry';
+import {
+  HANDLES,
+  otherRects,
+  reorder,
+  resizeRect,
+  snapMove,
+  type Guide,
+  type Handle,
+  type Rect,
+} from './page-builder-geometry';
 import { SECTION_TEMPLATES, instantiateTemplate, templateTop } from './page-templates';
 import {
   ANIMATION_NAMES,
@@ -44,9 +65,10 @@ import {
 } from './page-builder-types';
 
 /** Every catalogue keyframe, injected once into the canvas so the editor preview animates exactly like the generated file does. Built once at module load - it never varies. */
-const EDITOR_KEYFRAMES = ANIMATION_NAMES.map(
-  (name) => `@keyframes ${keyframesIdentifier(name)} { ${ANIMATIONS[name].keyframes} }`,
-).join('\n') + `\n${SPIN_KEYFRAMES}\n${MOTION_CSS}`;
+const EDITOR_KEYFRAMES =
+  ANIMATION_NAMES.map(
+    (name) => `@keyframes ${keyframesIdentifier(name)} { ${ANIMATIONS[name].keyframes} }`,
+  ).join('\n') + `\n${SPIN_KEYFRAMES}\n${MOTION_CSS}`;
 
 const EXTENDED: ReadonlySet<string> = new Set(EXTENDED_ELEMENT_TYPES);
 
@@ -57,7 +79,6 @@ function isExtended(type: CanvasElementType): type is ExtendedElementType {
 function isHttpUrl(value: string): boolean {
   return /^https?:\/\/\S+$/i.test(value.trim());
 }
-
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
@@ -100,7 +121,11 @@ const CATEGORY_ICON: Readonly<Record<string, IconName>> = {
   Backgrounds: 'flow',
 };
 
-function PaletteItem({ type, label, icon }: PaletteItemProps & { readonly icon: IconName }): JSX.Element {
+function PaletteItem({
+  type,
+  label,
+  icon,
+}: PaletteItemProps & { readonly icon: IconName }): JSX.Element {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `palette:${type}` });
   return (
     <button
@@ -112,7 +137,11 @@ function PaletteItem({ type, label, icon }: PaletteItemProps & { readonly icon: 
       style={{ opacity: isDragging ? 0.5 : 1 }}
       className="group flex w-full cursor-grab items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-[7px] text-left text-[12px] text-slate-300 hover:border-violet-400/30 hover:bg-white/[0.07] hover:text-slate-50 active:cursor-grabbing"
     >
-      <Icon name={icon} size={13} className="flex-shrink-0 text-slate-500 group-hover:text-violet-300" />
+      <Icon
+        name={icon}
+        size={13}
+        className="flex-shrink-0 text-slate-500 group-hover:text-violet-300"
+      />
       <span className="truncate">{label}</span>
     </button>
   );
@@ -124,18 +153,55 @@ function PaletteItem({ type, label, icon }: PaletteItemProps & { readonly icon: 
  * (pointer minus grab offset). Positioned here rather than by dnd-kit's
  * DragOverlay, which drew it 16px below where it landed.
  */
-function PaletteGhost({ type, left, top, zoom }: { readonly type: CanvasElementType; readonly left: number; readonly top: number; readonly zoom: number }): JSX.Element {
+function PaletteGhost({
+  type,
+  left,
+  top,
+  zoom,
+}: {
+  readonly type: CanvasElementType;
+  readonly left: number;
+  readonly top: number;
+  readonly zoom: number;
+}): JSX.Element {
   const spec = ELEMENT_SPECS[type];
-  const element: CanvasElement = { id: 'ghost', type, x: 0, y: 0, width: spec.width, height: spec.height, label: spec.label, colorToken: 'primary' };
+  const element: CanvasElement = {
+    id: 'ghost',
+    type,
+    x: 0,
+    y: 0,
+    width: spec.width,
+    height: spec.height,
+    label: spec.label,
+    colorToken: 'primary',
+  };
   const palette = paletteOf(useWorkspaceStore((state) => state.pageBuilder.theme));
   const visual = placedElementVisual(element, palette.theme.colors.primary, palette);
   return (
     <div
       data-testid="palette-ghost"
-      style={{ position: 'fixed', left, top, zIndex: 50, width: spec.width * zoom, height: spec.height * zoom, pointerEvents: 'none' }}
+      style={{
+        position: 'fixed',
+        left,
+        top,
+        zIndex: 50,
+        width: spec.width * zoom,
+        height: spec.height * zoom,
+        pointerEvents: 'none',
+      }}
     >
       {/* Drawn at canvas size and scaled like the canvas, so the ghost is exactly the size it will land at. */}
-      <div style={{ ...visual.style, width: spec.width, height: spec.height, transform: `scale(${zoom})`, transformOrigin: '0 0', opacity: 0.75, outline: '2px dashed #0a84ff' }}>
+      <div
+        style={{
+          ...visual.style,
+          width: spec.width,
+          height: spec.height,
+          transform: `scale(${zoom})`,
+          transformOrigin: '0 0',
+          opacity: 0.75,
+          outline: '2px dashed #0a84ff',
+        }}
+      >
         {visual.content}
       </div>
     </div>
@@ -152,20 +218,40 @@ interface PlacedElementProps {
   readonly theme: PageTheme | undefined;
 }
 
-const HANDLE_CURSOR: Readonly<Record<Handle, string>> = { n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize', ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize' };
+const HANDLE_CURSOR: Readonly<Record<Handle, string>> = {
+  n: 'ns-resize',
+  s: 'ns-resize',
+  e: 'ew-resize',
+  w: 'ew-resize',
+  ne: 'nesw-resize',
+  sw: 'nesw-resize',
+  nw: 'nwse-resize',
+  se: 'nwse-resize',
+};
 
 /**
  * Eight handles on the selected element. A handle's pointerdown stops
  * propagation so the element's own drag never starts; the resize then follows
  * the pointer on window listeners, converted to canvas px through the zoom.
  */
-function ResizeHandles({ element, zoom, onResize }: { readonly element: CanvasElement; readonly zoom: number; readonly onResize: (rect: Rect) => void }): JSX.Element {
+function ResizeHandles({
+  element,
+  zoom,
+  onResize,
+}: {
+  readonly element: CanvasElement;
+  readonly zoom: number;
+  readonly onResize: (rect: Rect) => void;
+}): JSX.Element {
   function start(handle: Handle, event: React.PointerEvent): void {
     event.stopPropagation();
     event.preventDefault();
     const origin = { x: event.clientX, y: event.clientY };
     const from: Rect = { x: element.x, y: element.y, width: element.width, height: element.height };
-    const move = (e: PointerEvent): void => onResize(resizeRect(from, handle, (e.clientX - origin.x) / zoom, (e.clientY - origin.y) / zoom));
+    const move = (e: PointerEvent): void =>
+      onResize(
+        resizeRect(from, handle, (e.clientX - origin.x) / zoom, (e.clientY - origin.y) / zoom),
+      );
     const up = (): void => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
@@ -212,22 +298,43 @@ function ResizeHandles({ element, zoom, onResize }: { readonly element: CanvasEl
 /** The colours a page is drawn with - its theme, or the default look. */
 function paletteOf(theme: PageTheme | undefined): PreviewPalette & { readonly theme: PageTheme } {
   const t = theme ?? DEFAULT_THEME;
-  return { theme: t, ink: t.text, muted: t.muted, line: t.line, surface: t.surface, background: t.background };
+  return {
+    theme: t,
+    ink: t.text,
+    muted: t.muted,
+    line: t.line,
+    surface: t.surface,
+    background: t.background,
+  };
 }
 
 function placedElementVisual(
   element: CanvasElement,
   color: string,
   palette: PreviewPalette = paletteOf(undefined),
-): { readonly style: React.CSSProperties; readonly content: React.ReactNode; readonly className?: string } {
+): {
+  readonly style: React.CSSProperties;
+  readonly content: React.ReactNode;
+  readonly className?: string;
+} {
   const base: React.CSSProperties = { fontSize: 13, boxSizing: 'border-box' };
   if (isExtended(element.type)) {
     const preview = extendedPreview(element.type, element, color, palette);
-    return { style: { ...base, ...preview.style }, content: preview.content, ...(preview.className === undefined ? {} : { className: preview.className }) };
+    return {
+      style: { ...base, ...preview.style },
+      content: preview.content,
+      ...(preview.className === undefined ? {} : { className: preview.className }),
+    };
   }
   if (element.type === 'image' && isHttpUrl(element.label)) {
     return {
-      style: { ...base, backgroundImage: `url("${element.label.trim()}")`, backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: 4 },
+      style: {
+        ...base,
+        backgroundImage: `url("${element.label.trim()}")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        borderRadius: 4,
+      },
       content: null,
     };
   }
@@ -239,7 +346,13 @@ function placedElementVisual(
       return { style: { ...base, color }, content: element.label };
     case 'button':
       return {
-        style: { ...base, backgroundColor: color, color: '#ffffff', border: 'none', borderRadius: 4 },
+        style: {
+          ...base,
+          backgroundColor: color,
+          color: '#ffffff',
+          border: 'none',
+          borderRadius: 4,
+        },
         content: element.label,
       };
     case 'link':
@@ -345,7 +458,15 @@ function placedElementVisual(
   }
 }
 
-function PlacedElement({ element, selected, onSelect, zoom, preview, onResize, theme }: PlacedElementProps): JSX.Element {
+function PlacedElement({
+  element,
+  selected,
+  onSelect,
+  zoom,
+  preview,
+  onResize,
+  theme,
+}: PlacedElementProps): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `element:${element.id}`,
   });
@@ -361,7 +482,9 @@ function PlacedElement({ element, selected, onSelect, zoom, preview, onResize, t
     width: element.width,
     height: element.height,
     // The pointer moves in screen px; inside the scaled canvas that is delta / zoom.
-    transform: transform ? `translate(${transform.x / zoom}px, ${transform.y / zoom}px)` : undefined,
+    transform: transform
+      ? `translate(${transform.x / zoom}px, ${transform.y / zoom}px)`
+      : undefined,
     outline: selected && !preview ? `${2 / zoom}px solid #0a84ff` : 'none',
     outlineOffset: 2 / zoom,
     opacity: isDragging ? 0.6 : 1,
@@ -391,9 +514,19 @@ function PlacedElement({ element, selected, onSelect, zoom, preview, onResize, t
   // (dnd-kit installs a document-wide capture-phase click-canceller for
   // the duration of any activated drag).
   if (preview) {
-    const classes = [visual.className, element.hover === undefined ? undefined : HOVER_CLASS[element.hover]].filter(Boolean).join(' ');
+    const classes = [
+      visual.className,
+      element.hover === undefined ? undefined : HOVER_CLASS[element.hover],
+    ]
+      .filter(Boolean)
+      .join(' ');
     return (
-      <div data-testid={`placed-${element.id}`} className={classes || undefined} style={{ ...baseStyle, ...visual.style }} {...hoverHandlers(element.hover)}>
+      <div
+        data-testid={`placed-${element.id}`}
+        className={classes || undefined}
+        style={{ ...baseStyle, ...visual.style }}
+        {...hoverHandlers(element.hover)}
+      >
         {visual.content}
       </div>
     );
@@ -423,7 +556,9 @@ function PlacedElement({ element, selected, onSelect, zoom, preview, onResize, t
       style={{ ...baseStyle, ...visual.style }}
     >
       {visual.content}
-      {selected && !isDragging && <ResizeHandles element={element} zoom={zoom} onResize={onResize} />}
+      {selected && !isDragging && (
+        <ResizeHandles element={element} zoom={zoom} onResize={onResize} />
+      )}
     </div>
   );
 }
@@ -476,7 +611,9 @@ export function PageBuilderCanvas(): JSX.Element {
   const [replayTick, setReplayTick] = useState(0);
   const [paletteQuery, setPaletteQuery] = useState('');
   const [draggingType, setDraggingType] = useState<CanvasElementType | null>(null);
-  const [ghostAt, setGhostAt] = useState<{ readonly left: number; readonly top: number } | null>(null);
+  const [ghostAt, setGhostAt] = useState<{ readonly left: number; readonly top: number } | null>(
+    null,
+  );
   const [guides, setGuides] = useState<readonly Guide[]>([]);
   const [preview, setPreview] = useState(false);
   const [zoomChoice, setZoomChoice] = useState<'fit' | number>('fit');
@@ -497,15 +634,32 @@ export function PageBuilderCanvas(): JSX.Element {
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     if (grab === null || canvasRect === undefined) return null;
     const size = ELEMENT_SPECS[type];
-    const rect = { x: (pointerX - grab.offsetX - canvasRect.left) / zoom, y: (pointerY - grab.offsetY - canvasRect.top) / zoom, width: size.width, height: size.height };
+    const rect = {
+      x: (pointerX - grab.offsetX - canvasRect.left) / zoom,
+      y: (pointerY - grab.offsetY - canvasRect.top) / zoom,
+      width: size.width,
+      height: size.height,
+    };
     return snapMove(rect, elements);
   }
 
   /** Where a placed element would land after a drag of (dx, dy) screen px. */
-  function moveLanding(id: string, dx: number, dy: number): { readonly x: number; readonly y: number; readonly guides: readonly Guide[] } | null {
+  function moveLanding(
+    id: string,
+    dx: number,
+    dy: number,
+  ): { readonly x: number; readonly y: number; readonly guides: readonly Guide[] } | null {
     const element = elements.find((candidate) => candidate.id === id);
     if (element === undefined) return null;
-    return snapMove({ x: element.x + dx / zoom, y: element.y + dy / zoom, width: element.width, height: element.height }, otherRects(elements, id));
+    return snapMove(
+      {
+        x: element.x + dx / zoom,
+        y: element.y + dy / zoom,
+        width: element.width,
+        height: element.height,
+      },
+      otherRects(elements, id),
+    );
   }
 
   function handleDragMove(event: DragMoveEvent): void {
@@ -515,17 +669,25 @@ export function PageBuilderCanvas(): JSX.Element {
       const pointerX = grab.pointerX + event.delta.x;
       const pointerY = grab.pointerY + event.delta.y;
       setGhostAt({ left: pointerX - grab.offsetX, top: pointerY - grab.offsetY });
-      setGuides(paletteLanding(activeId.slice('palette:'.length) as CanvasElementType, pointerX, pointerY)?.guides ?? []);
+      setGuides(
+        paletteLanding(activeId.slice('palette:'.length) as CanvasElementType, pointerX, pointerY)
+          ?.guides ?? [],
+      );
       return;
     }
-    if (activeId.startsWith('element:')) setGuides(moveLanding(activeId.slice('element:'.length), event.delta.x, event.delta.y)?.guides ?? []);
+    if (activeId.startsWith('element:'))
+      setGuides(
+        moveLanding(activeId.slice('element:'.length), event.delta.x, event.delta.y)?.guides ?? [],
+      );
   }
 
   // Zoom to fit: the whole 1280px-wide page visible at once, recomputed as the window resizes.
   useEffect(() => {
     const viewport = viewportRef.current;
     if (viewport === null) return undefined;
-    const observer = new ResizeObserver(() => setFitZoom(Math.min(1, Math.max(0.25, (viewport.clientWidth - 4) / CANVAS_WIDTH))));
+    const observer = new ResizeObserver(() =>
+      setFitZoom(Math.min(1, Math.max(0.25, (viewport.clientWidth - 4) / CANVAS_WIDTH))),
+    );
     observer.observe(viewport);
     return () => observer.disconnect();
   }, [preview]);
@@ -537,18 +699,31 @@ export function PageBuilderCanvas(): JSX.Element {
   const autoScroll = { canScroll: (element: Element) => element !== paletteRef.current };
 
   /** Where the pointer grabbed a palette item, relative to the item's top-left - what a drop is positioned from. */
-  const grabRef = useRef<{ readonly pointerX: number; readonly pointerY: number; readonly offsetX: number; readonly offsetY: number } | null>(null);
+  const grabRef = useRef<{
+    readonly pointerX: number;
+    readonly pointerY: number;
+    readonly offsetX: number;
+    readonly offsetY: number;
+  } | null>(null);
 
   function handleDragStart(event: DragStartEvent): void {
     const id = String(event.active.id);
     const isPalette = id.startsWith('palette:');
     setDraggingType(isPalette ? (id.slice('palette:'.length) as CanvasElementType) : null);
     const pointer = event.activatorEvent as PointerEvent;
-    const item = event.activatorEvent.target instanceof Element ? event.activatorEvent.target.closest('button') : null;
+    const item =
+      event.activatorEvent.target instanceof Element
+        ? event.activatorEvent.target.closest('button')
+        : null;
     const itemRect = item?.getBoundingClientRect();
     grabRef.current =
       isPalette && itemRect !== undefined
-        ? { pointerX: pointer.clientX, pointerY: pointer.clientY, offsetX: pointer.clientX - itemRect.left, offsetY: pointer.clientY - itemRect.top }
+        ? {
+            pointerX: pointer.clientX,
+            pointerY: pointer.clientY,
+            offsetX: pointer.clientX - itemRect.left,
+            offsetY: pointer.clientY - itemRect.top,
+          }
         : null;
   }
   /** The fixed 1280x800 element coordinate space. */
@@ -619,7 +794,9 @@ export function PageBuilderCanvas(): JSX.Element {
         colorToken: 'primary',
       };
       // A background belongs behind the content, like in a design tool.
-      setElements((current) => (BACKGROUND_TYPES.has(type) ? [newElement, ...current] : [...current, newElement]));
+      setElements((current) =>
+        BACKGROUND_TYPES.has(type) ? [newElement, ...current] : [...current, newElement],
+      );
       setSelectedId(newElement.id);
       return;
     }
@@ -629,22 +806,35 @@ export function PageBuilderCanvas(): JSX.Element {
       const id = activeId.slice('element:'.length);
       const landing = moveLanding(id, event.delta.x, event.delta.y);
       if (landing === null) return;
-      setElements((current) => current.map((element) => (element.id === id ? { ...element, x: landing.x, y: landing.y } : element)));
+      setElements((current) =>
+        current.map((element) =>
+          element.id === id ? { ...element, x: landing.x, y: landing.y } : element,
+        ),
+      );
     }
   }
 
   function resizeElement(id: string, rect: Rect): void {
-    setElements((current) => current.map((element) => (element.id === id ? { ...element, ...rect } : element)), { coalesce: true });
+    setElements(
+      (current) =>
+        current.map((element) => (element.id === id ? { ...element, ...rect } : element)),
+      { coalesce: true },
+    );
   }
 
   function nudgeSelected(dx: number, dy: number): void {
     if (selectedId === null) return;
-    setElements((current) =>
-      current.map((element) =>
-        element.id === selectedId
-          ? { ...element, x: clamp(element.x + dx, 0, CANVAS_WIDTH - element.width), y: clamp(element.y + dy, 0, CANVAS_HEIGHT - element.height) }
-          : element,
-      ),
+    setElements(
+      (current) =>
+        current.map((element) =>
+          element.id === selectedId
+            ? {
+                ...element,
+                x: clamp(element.x + dx, 0, CANVAS_WIDTH - element.width),
+                y: clamp(element.y + dy, 0, CANVAS_HEIGHT - element.height),
+              }
+            : element,
+        ),
       { coalesce: true },
     );
   }
@@ -662,7 +852,13 @@ export function PageBuilderCanvas(): JSX.Element {
     // No room below the existing content: the section would be moved up over
     // it. Never cover someone's work without asking.
     const overlaps = elements.length > 0 && top + template.height > CANVAS_HEIGHT;
-    if (overlaps && !window.confirm(`There is no room for "${template.name}" below your content, so it would be placed over it. Add it anyway?`)) return;
+    if (
+      overlaps &&
+      !window.confirm(
+        `There is no room for "${template.name}" below your content, so it would be placed over it. Add it anyway?`,
+      )
+    )
+      return;
     setElements((current) => [...current, ...placed]);
     setSelectedId(null);
   }
@@ -671,7 +867,11 @@ export function PageBuilderCanvas(): JSX.Element {
   useEffect(() => {
     function onKey(event: KeyboardEvent): void {
       const target = event.target as HTMLElement | null;
-      if (target !== null && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)) return;
+      if (
+        target !== null &&
+        (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)
+      )
+        return;
       const mod = event.ctrlKey || event.metaKey;
       const key = event.key.toLowerCase();
       if (mod && key === 'z' && !event.shiftKey) undoPage();
@@ -681,7 +881,10 @@ export function PageBuilderCanvas(): JSX.Element {
       else if (event.key === 'Escape') setSelectedId(null);
       else if (event.key.startsWith('Arrow') && selectedId !== null) {
         const step = event.shiftKey ? 10 : 1;
-        nudgeSelected(event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0, event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0);
+        nudgeSelected(
+          event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0,
+          event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0,
+        );
       } else return;
       event.preventDefault();
     }
@@ -723,43 +926,45 @@ export function PageBuilderCanvas(): JSX.Element {
   function updateGeometry(field: 'x' | 'y' | 'width' | 'height', raw: string): void {
     const value = Math.round(Number(raw));
     if (selectedId === null || !Number.isFinite(value)) return;
-    setElements((current) =>
-      current.map((element) => {
-        if (element.id !== selectedId) return element;
-        const next = { ...element, [field]: value };
-        const width = clamp(next.width, 1, CANVAS_WIDTH);
-        const height = clamp(next.height, 1, CANVAS_HEIGHT);
-        return {
-          ...next,
-          width,
-          height,
-          x: clamp(next.x, 0, CANVAS_WIDTH - width),
-          y: clamp(next.y, 0, CANVAS_HEIGHT - height),
-        };
-      }),
+    setElements(
+      (current) =>
+        current.map((element) => {
+          if (element.id !== selectedId) return element;
+          const next = { ...element, [field]: value };
+          const width = clamp(next.width, 1, CANVAS_WIDTH);
+          const height = clamp(next.height, 1, CANVAS_HEIGHT);
+          return {
+            ...next,
+            width,
+            height,
+            x: clamp(next.x, 0, CANVAS_WIDTH - width),
+            y: clamp(next.y, 0, CANVAS_HEIGHT - height),
+          };
+        }),
       { coalesce: true },
     );
   }
 
   function updateSelected(patch: ElementPatch): void {
     if (selectedId === null) return;
-    setElements((current) =>
-      current.map((element) => {
-        if (element.id !== selectedId) return element;
-        // Clearing drops the key entirely rather than setting it to
-        // undefined: canvas-layout.ts's contract is "absent means no
-        // animation", and JSON.stringify would drop an explicit undefined on
-        // the way to the API anyway - so storing one would only create a
-        // shape the rest of the pipeline never sees.
-        const { animation, field, hover, reveal, ...rest } = { ...element, ...patch };
-        return {
-          ...rest,
-          ...(animation === undefined ? {} : { animation }),
-          ...(field === undefined ? {} : { field }),
-          ...(hover === undefined ? {} : { hover }),
-          ...(reveal === true ? { reveal } : {}),
-        };
-      }),
+    setElements(
+      (current) =>
+        current.map((element) => {
+          if (element.id !== selectedId) return element;
+          // Clearing drops the key entirely rather than setting it to
+          // undefined: canvas-layout.ts's contract is "absent means no
+          // animation", and JSON.stringify would drop an explicit undefined on
+          // the way to the API anyway - so storing one would only create a
+          // shape the rest of the pipeline never sees.
+          const { animation, field, hover, reveal, ...rest } = { ...element, ...patch };
+          return {
+            ...rest,
+            ...(animation === undefined ? {} : { animation }),
+            ...(field === undefined ? {} : { field }),
+            ...(hover === undefined ? {} : { hover }),
+            ...(reveal === true ? { reveal } : {}),
+          };
+        }),
       { coalesce: true },
     );
   }
@@ -768,7 +973,12 @@ export function PageBuilderCanvas(): JSX.Element {
     setGenerating(true);
     setError(null);
     try {
-      const file = await generatePageFile({ id: 'page-builder-v1', pageName, elements, ...(theme === undefined ? {} : { theme }) });
+      const file = await generatePageFile({
+        id: 'page-builder-v1',
+        pageName,
+        elements,
+        ...(theme === undefined ? {} : { theme }),
+      });
       setGenerated(file);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -785,7 +995,12 @@ export function PageBuilderCanvas(): JSX.Element {
     setError(null);
     setSavedNote(null);
     try {
-      await saveRunPage(origin.runId, { id: `${origin.runId}:${origin.path}`, pageName, elements, ...(theme === undefined ? {} : { theme }) });
+      await saveRunPage(origin.runId, {
+        id: `${origin.runId}:${origin.path}`,
+        pageName,
+        elements,
+        ...(theme === undefined ? {} : { theme }),
+      });
       setPageOrigin({ ...origin, edited: true });
       setSavedNote(`Saved to ${origin.path} - the zip download now includes this design.`);
       notifyRunSaved();
@@ -803,7 +1018,9 @@ export function PageBuilderCanvas(): JSX.Element {
     try {
       await restoreRunPage(origin.runId, origin.path);
       setPageOrigin({ ...origin, edited: false });
-      setSavedNote(`Restored the model's original ${origin.path}. Your design stays on the canvas until you save it again.`);
+      setSavedNote(
+        `Restored the model's original ${origin.path}. Your design stays on the canvas until you save it again.`,
+      );
       notifyRunSaved();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -824,7 +1041,11 @@ export function PageBuilderCanvas(): JSX.Element {
               Editing <span className="font-semibold">{pageName}</span> from{' '}
               <span className="font-semibold">{origin.sessionTitle}</span>
               <span className="ml-1 font-mono text-[11px] text-sky-400">{origin.path}</span>
-              {origin.edited && <span className="ml-2 rounded border border-sky-700 px-1.5 py-0.5 text-[10px]">saved edit</span>}
+              {origin.edited && (
+                <span className="ml-2 rounded border border-sky-700 px-1.5 py-0.5 text-[10px]">
+                  saved edit
+                </span>
+              )}
             </span>
             <button
               type="button"
@@ -871,7 +1092,9 @@ export function PageBuilderCanvas(): JSX.Element {
         )}
 
         {savedNote !== null && (
-          <div className="rounded-lg border border-emerald-800/60 bg-emerald-950/20 px-3 py-2 text-xs text-emerald-200">{savedNote}</div>
+          <div className="rounded-lg border border-emerald-800/60 bg-emerald-950/20 px-3 py-2 text-xs text-emerald-200">
+            {savedNote}
+          </div>
         )}
 
         <div className="flex items-center gap-3">
@@ -894,12 +1117,28 @@ export function PageBuilderCanvas(): JSX.Element {
             disabled={generating || elements.length === 0}
             className="btn btn-primary btn-sm ml-auto"
           >
-            {generating ? <span className="spinner !h-3 !w-3" /> : <Icon name="sparkles" size={13} />}
+            {generating ? (
+              <span className="spinner !h-3 !w-3" />
+            ) : (
+              <Icon name="sparkles" size={13} />
+            )}
             {generating ? 'Generating…' : 'Generate'}
           </button>
         </div>
 
-        <DndContext sensors={sensors} autoScroll={autoScroll} onDragStart={handleDragStart} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragCancel={() => { setDraggingType(null); setGhostAt(null); setGuides([]); grabRef.current = null; }}>
+        <DndContext
+          sensors={sensors}
+          autoScroll={autoScroll}
+          onDragStart={handleDragStart}
+          onDragMove={handleDragMove}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => {
+            setDraggingType(null);
+            setGhostAt(null);
+            setGuides([]);
+            grabRef.current = null;
+          }}
+        >
           <ThemePanel theme={theme} onChange={setPageTheme} />
           <EditorToolbar
             zoom={zoom}
@@ -913,35 +1152,52 @@ export function PageBuilderCanvas(): JSX.Element {
             onPreview={setPreview}
             onTemplate={addTemplate}
           />
-          <div className={preview ? 'grid grid-cols-1' : 'grid grid-cols-1 gap-4 lg:grid-cols-[160px_1fr_260px]'}>
+          <div
+            className={
+              preview ? 'grid grid-cols-1' : 'grid grid-cols-1 gap-4 lg:grid-cols-[160px_1fr_260px]'
+            }
+          >
             {!preview && (
-            <aside ref={paletteRef} className="max-h-[800px] space-y-2 overflow-y-auto rounded-2xl border border-white/[0.06] bg-black/20 p-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Elements
-              </h4>
-              <input
-                type="search"
-                value={paletteQuery}
-                onChange={(event) => setPaletteQuery(event.target.value)}
-                placeholder="Search elements"
-                data-testid="palette-filter"
-                className="focus-glow h-8 w-full rounded-lg border border-white/[0.08] bg-black/25 px-2.5 text-xs text-slate-100 placeholder:text-slate-500"
-              />
-              {ELEMENT_CATEGORIES.map((category) => {
-                const query = paletteQuery.trim().toLowerCase();
-                const types = category.types.filter((type) => query === '' || ELEMENT_SPECS[type].palette.toLowerCase().includes(query));
-                if (types.length === 0) return null;
-                return (
-                  <section key={category.name} className="space-y-1.5 pt-1">
-                    <h5 className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{category.name}</h5>
-                    {types.map((type) => (
-                      <PaletteItem key={type} type={type} label={ELEMENT_SPECS[type].palette} icon={CATEGORY_ICON[category.name] ?? 'layout'} />
-                    ))}
-                  </section>
-                );
-              })}
-              <p className="pt-2 text-[10px] text-slate-500">Drag any element onto the canvas.</p>
-            </aside>
+              <aside
+                ref={paletteRef}
+                className="max-h-[800px] space-y-2 overflow-y-auto rounded-2xl border border-white/[0.06] bg-black/20 p-3"
+              >
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Elements
+                </h4>
+                <input
+                  type="search"
+                  value={paletteQuery}
+                  onChange={(event) => setPaletteQuery(event.target.value)}
+                  placeholder="Search elements"
+                  data-testid="palette-filter"
+                  className="focus-glow h-8 w-full rounded-lg border border-white/[0.08] bg-black/25 px-2.5 text-xs text-slate-100 placeholder:text-slate-500"
+                />
+                {ELEMENT_CATEGORIES.map((category) => {
+                  const query = paletteQuery.trim().toLowerCase();
+                  const types = category.types.filter(
+                    (type) =>
+                      query === '' || ELEMENT_SPECS[type].palette.toLowerCase().includes(query),
+                  );
+                  if (types.length === 0) return null;
+                  return (
+                    <section key={category.name} className="space-y-1.5 pt-1">
+                      <h5 className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                        {category.name}
+                      </h5>
+                      {types.map((type) => (
+                        <PaletteItem
+                          key={type}
+                          type={type}
+                          label={ELEMENT_SPECS[type].palette}
+                          icon={CATEGORY_ICON[category.name] ?? 'layout'}
+                        />
+                      ))}
+                    </section>
+                  );
+                })}
+                <p className="pt-2 text-[10px] text-slate-500">Drag any element onto the canvas.</p>
+              </aside>
             )}
 
             {/*
@@ -972,272 +1228,322 @@ export function PageBuilderCanvas(): JSX.Element {
             >
               {/* The scaled canvas's layout box: the canvas is scaled with a transform, which does not change its layout size. */}
               <div style={{ width: CANVAS_WIDTH * zoom, height: CANVAS_HEIGHT * zoom }}>
-              <div
-                ref={canvasRef}
-                data-testid="page-builder-canvas"
-                // Only a click on the canvas BACKGROUND clears the selection.
-                // Without the target check this fired for clicks on placed
-                // elements too, since those bubble - so selecting an element
-                // by clicking it set `selectedId` on pointerup and then
-                // immediately cleared it on the click that followed, and the
-                // Inspector snapped back to "select an element". An element
-                // was therefore only ever editable in the instant after it
-                // was dropped (which auto-selects); clicking it again to
-                // rename or recolour it could never work. Checked here
-                // rather than with stopPropagation() on the child, because
-                // PlacedElement's own comment documents why interfering with
-                // its pointer events breaks dnd-kit's drag cleanup.
-                onClick={(event) => {
-                  if (event.target === event.currentTarget) setSelectedId(null);
-                }}
-                style={{
-                  width: CANVAS_WIDTH,
-                  height: CANVAS_HEIGHT,
-                  position: 'relative',
-                  transform: `scale(${zoom})`,
-                  transformOrigin: '0 0',
-                  // A faint 8px dot grid while editing - what elements snap to.
-                  backgroundColor: paletteOf(theme).theme.background,
-                  color: paletteOf(theme).theme.text,
-                  fontFamily: FONTS[paletteOf(theme).theme.bodyFont].stack,
-                  backgroundImage: preview ? undefined : `radial-gradient(circle, ${paletteOf(theme).theme.line} 1px, transparent 1px)`,
-                  backgroundSize: '16px 16px',
-                }}
-              >
-                {/*
+                <div
+                  ref={canvasRef}
+                  data-testid="page-builder-canvas"
+                  // Only a click on the canvas BACKGROUND clears the selection.
+                  // Without the target check this fired for clicks on placed
+                  // elements too, since those bubble - so selecting an element
+                  // by clicking it set `selectedId` on pointerup and then
+                  // immediately cleared it on the click that followed, and the
+                  // Inspector snapped back to "select an element". An element
+                  // was therefore only ever editable in the instant after it
+                  // was dropped (which auto-selects); clicking it again to
+                  // rename or recolour it could never work. Checked here
+                  // rather than with stopPropagation() on the child, because
+                  // PlacedElement's own comment documents why interfering with
+                  // its pointer events breaks dnd-kit's drag cleanup.
+                  onClick={(event) => {
+                    if (event.target === event.currentTarget) setSelectedId(null);
+                  }}
+                  style={{
+                    width: CANVAS_WIDTH,
+                    height: CANVAS_HEIGHT,
+                    position: 'relative',
+                    transform: `scale(${zoom})`,
+                    transformOrigin: '0 0',
+                    // A faint 8px dot grid while editing - what elements snap to.
+                    backgroundColor: paletteOf(theme).theme.background,
+                    color: paletteOf(theme).theme.text,
+                    fontFamily: FONTS[paletteOf(theme).theme.bodyFont].stack,
+                    backgroundImage: preview
+                      ? undefined
+                      : `radial-gradient(circle, ${paletteOf(theme).theme.line} 1px, transparent 1px)`,
+                    backgroundSize: '16px 16px',
+                  }}
+                >
+                  {/*
                   The same keyframes the generated file carries, by the same
                   vb-* names - so what you preview here is what that file will
                   actually do, not an approximation of it.
                 */}
-                <style>{EDITOR_KEYFRAMES}</style>
-                {elements.map((element) => (
-                  <PlacedElement
-                    key={`${element.id}:${replayTick}`}
-                    element={element}
-                    selected={element.id === selectedId}
-                    onSelect={() => setSelectedId(element.id)}
-                    zoom={zoom}
-                    preview={preview}
-                    onResize={(rect) => resizeElement(element.id, rect)}
-                    theme={theme}
-                  />
-                ))}
-                {guides.map((guide, index) => (
-                  <div
-                    key={index}
-                    data-testid="snap-guide"
-                    style={{
-                      position: 'absolute',
-                      pointerEvents: 'none',
-                      background: '#ff2d55',
-                      ...(guide.axis === 'x'
-                        ? { left: guide.at, top: 0, width: 1 / zoom, height: CANVAS_HEIGHT }
-                        : { top: guide.at, left: 0, height: 1 / zoom, width: CANVAS_WIDTH }),
-                    }}
-                  />
-                ))}
-              </div>
+                  <style>{EDITOR_KEYFRAMES}</style>
+                  {elements.map((element) => (
+                    <PlacedElement
+                      key={`${element.id}:${replayTick}`}
+                      element={element}
+                      selected={element.id === selectedId}
+                      onSelect={() => setSelectedId(element.id)}
+                      zoom={zoom}
+                      preview={preview}
+                      onResize={(rect) => resizeElement(element.id, rect)}
+                      theme={theme}
+                    />
+                  ))}
+                  {guides.map((guide, index) => (
+                    <div
+                      key={index}
+                      data-testid="snap-guide"
+                      style={{
+                        position: 'absolute',
+                        pointerEvents: 'none',
+                        background: '#ff2d55',
+                        ...(guide.axis === 'x'
+                          ? { left: guide.at, top: 0, width: 1 / zoom, height: CANVAS_HEIGHT }
+                          : { top: guide.at, left: 0, height: 1 / zoom, width: CANVAS_WIDTH }),
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
             {!preview && (
-            <aside className="max-h-[800px] space-y-3 overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 p-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Inspector
-              </h4>
-              {selected === null ? (
-                <p className="text-xs text-slate-500">
-                  Select a placed element to edit its text, color, and animation.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  <label className="block text-xs text-slate-400">
-                    Label
-                    <input
-                      type="text"
-                      value={selected.label}
-                      onChange={(event) => updateSelected({ label: event.target.value })}
-                      className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
-                    />
-                    {ELEMENT_SPECS[selected.type].hint !== undefined && (
-                      <span data-testid="label-hint" className="mt-1 block text-[10px] text-slate-500">
-                        {ELEMENT_SPECS[selected.type].hint}
-                      </span>
-                    )}
-                  </label>
-                  {BACKGROUND_TYPES.has(selected.type) && (
-                    <div className="space-y-1.5">
-                      <button
-                        type="button"
-                        data-testid="new-shape"
-                        onClick={() => updateSelected({ label: `${Math.floor(Math.random() * 100000)}|${parseBackgroundLabel(selected.label).complexity}` })}
-                        className="w-full rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-800"
-                      >
-                        ⤮ New shape
-                      </button>
-                      <label className="flex items-center gap-2 text-[11px] text-slate-400">
-                        Complexity
-                        <input
-                          type="range"
-                          min={1}
-                          max={10}
-                          data-testid="bg-complexity"
-                          value={parseBackgroundLabel(selected.label).complexity}
-                          onChange={(event) => updateSelected({ label: `${parseBackgroundLabel(selected.label).seed}|${event.target.value}` })}
-                          className="flex-1"
-                        />
-                      </label>
-                    </div>
-                  )}
-                  {FIELD_TYPES.has(selected.type) && (
+              <aside className="max-h-[800px] space-y-3 overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 p-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Inspector
+                </h4>
+                {selected === null ? (
+                  <p className="text-xs text-slate-500">
+                    Select a placed element to edit its text, color, and animation.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
                     <label className="block text-xs text-slate-400">
-                      Field name
+                      Label
                       <input
                         type="text"
-                        data-testid="field-name"
-                        value={selected.field ?? ''}
-                        placeholder={derivedFieldName(selected.label, selected.type)}
-                        onChange={(event) => {
-                          const value = event.target.value.replace(/[^A-Za-z0-9_]/g, '');
-                          updateSelected({ field: value === '' ? undefined : value });
-                        }}
-                        className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-xs text-slate-100"
+                        value={selected.label}
+                        onChange={(event) => updateSelected({ label: event.target.value })}
+                        className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
                       />
-                      <span className="mt-1 block text-[10px] text-slate-500">Sent to the backend and stored under this name. Empty = derived from the label.</span>
+                      {ELEMENT_SPECS[selected.type].hint !== undefined && (
+                        <span
+                          data-testid="label-hint"
+                          className="mt-1 block text-[10px] text-slate-500"
+                        >
+                          {ELEMENT_SPECS[selected.type].hint}
+                        </span>
+                      )}
                     </label>
-                  )}
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {(['x', 'y', 'width', 'height'] as const).map((field) => (
-                      <label key={field} className="block text-[10px] uppercase text-slate-500">
-                        {field === 'width' ? 'W' : field === 'height' ? 'H' : field}
-                        <input
-                          type="number"
-                          data-testid={`geometry-${field}`}
-                          value={selected[field]}
-                          onChange={(event) => updateGeometry(field, event.target.value)}
-                          className="mt-0.5 w-full rounded border border-slate-700 bg-slate-950 px-1 py-1 text-xs text-slate-100"
-                        />
-                      </label>
-                    ))}
-                  </div>
-                  <div>
-                    <span className="mb-1 block text-xs text-slate-400">Color</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {DESIGN_TOKEN_NAMES.map((token) => (
+                    {BACKGROUND_TYPES.has(selected.type) && (
+                      <div className="space-y-1.5">
                         <button
-                          key={token}
                           type="button"
-                          data-testid={`color-${token}`}
-                          aria-label={token}
-                          onClick={() => updateSelected({ colorToken: token as DesignToken })}
-                          style={{ backgroundColor: paletteOf(theme).theme.colors[token] }}
-                          className={`h-6 w-6 rounded-full border-2 ${
-                            selected.colorToken === token ? 'border-white' : 'border-transparent'
-                          }`}
+                          data-testid="new-shape"
+                          onClick={() =>
+                            updateSelected({
+                              label: `${Math.floor(Math.random() * 100000)}|${parseBackgroundLabel(selected.label).complexity}`,
+                            })
+                          }
+                          className="w-full rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-800"
+                        >
+                          ⤮ New shape
+                        </button>
+                        <label className="flex items-center gap-2 text-[11px] text-slate-400">
+                          Complexity
+                          <input
+                            type="range"
+                            min={1}
+                            max={10}
+                            data-testid="bg-complexity"
+                            value={parseBackgroundLabel(selected.label).complexity}
+                            onChange={(event) =>
+                              updateSelected({
+                                label: `${parseBackgroundLabel(selected.label).seed}|${event.target.value}`,
+                              })
+                            }
+                            className="flex-1"
+                          />
+                        </label>
+                      </div>
+                    )}
+                    {FIELD_TYPES.has(selected.type) && (
+                      <label className="block text-xs text-slate-400">
+                        Field name
+                        <input
+                          type="text"
+                          data-testid="field-name"
+                          value={selected.field ?? ''}
+                          placeholder={derivedFieldName(selected.label, selected.type)}
+                          onChange={(event) => {
+                            const value = event.target.value.replace(/[^A-Za-z0-9_]/g, '');
+                            updateSelected({ field: value === '' ? undefined : value });
+                          }}
+                          className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-xs text-slate-100"
                         />
+                        <span className="mt-1 block text-[10px] text-slate-500">
+                          Sent to the backend and stored under this name. Empty = derived from the
+                          label.
+                        </span>
+                      </label>
+                    )}
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {(['x', 'y', 'width', 'height'] as const).map((field) => (
+                        <label key={field} className="block text-[10px] uppercase text-slate-500">
+                          {field === 'width' ? 'W' : field === 'height' ? 'H' : field}
+                          <input
+                            type="number"
+                            data-testid={`geometry-${field}`}
+                            value={selected[field]}
+                            onChange={(event) => updateGeometry(field, event.target.value)}
+                            className="mt-0.5 w-full rounded border border-slate-700 bg-slate-950 px-1 py-1 text-xs text-slate-100"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                    <div>
+                      <span className="mb-1 block text-xs text-slate-400">Color</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {DESIGN_TOKEN_NAMES.map((token) => (
+                          <button
+                            key={token}
+                            type="button"
+                            data-testid={`color-${token}`}
+                            aria-label={token}
+                            onClick={() => updateSelected({ colorToken: token as DesignToken })}
+                            style={{ backgroundColor: paletteOf(theme).theme.colors[token] }}
+                            className={`h-6 w-6 rounded-full border-2 ${
+                              selected.colorToken === token ? 'border-white' : 'border-transparent'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="mb-1 block text-xs text-slate-400">Animation</span>
+                      <select
+                        data-testid="animation-select"
+                        value={selected.animation ?? 'none'}
+                        onChange={(event) =>
+                          updateSelected({
+                            animation:
+                              event.target.value === 'none'
+                                ? undefined
+                                : (event.target.value as AnimationName),
+                          })
+                        }
+                        className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
+                      >
+                        <option value="none">None</option>
+                        {ANIMATION_NAMES.map((name) => (
+                          <option key={name} value={name}>
+                            {ANIMATIONS[name].label}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        data-testid="replay-animations"
+                        onClick={() => setReplayTick((tick) => tick + 1)}
+                        className="mt-1.5 w-full rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
+                      >
+                        Replay animations
+                      </button>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <span className="block text-xs text-slate-400">Hover effect</span>
+                      <select
+                        data-testid="hover-select"
+                        value={selected.hover ?? 'none'}
+                        onChange={(event) =>
+                          updateSelected({
+                            hover:
+                              event.target.value === 'none'
+                                ? undefined
+                                : (event.target.value as HoverEffect),
+                          })
+                        }
+                        className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
+                      >
+                        <option value="none">None</option>
+                        {HOVER_EFFECTS.map((effect) => (
+                          <option key={effect} value={effect}>
+                            {HOVER_LABEL[effect]}
+                          </option>
+                        ))}
+                      </select>
+                      <label className="flex items-center gap-2 text-xs text-slate-400">
+                        <input
+                          type="checkbox"
+                          data-testid="reveal-toggle"
+                          checked={selected.reveal === true}
+                          onChange={(event) =>
+                            updateSelected({ reveal: event.target.checked ? true : undefined })
+                          }
+                        />
+                        Reveal on scroll
+                      </label>
+                      <span className="block text-[10px] text-slate-500">
+                        Hover effects run in Preview and on the generated page.
+                      </span>
+                    </div>
+
+                    <div className="flex gap-2 border-t border-slate-800 pt-3">
+                      <button
+                        type="button"
+                        data-testid="duplicate-element"
+                        onClick={duplicateSelected}
+                        className="flex-1 rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
+                      >
+                        Duplicate
+                      </button>
+                      <button
+                        type="button"
+                        data-testid="delete-element"
+                        onClick={deleteSelected}
+                        className="flex-1 rounded border border-red-800 px-2 py-1 text-[11px] text-red-300 hover:bg-red-950/40"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    <div className="flex gap-1">
+                      {(['back', 'backward', 'forward', 'front'] as const).map((direction) => (
+                        <button
+                          key={direction}
+                          type="button"
+                          data-testid={`order-${direction}`}
+                          onClick={() =>
+                            setElements((current) => reorder(current, selected.id, direction))
+                          }
+                          title={
+                            {
+                              back: 'Send to back',
+                              backward: 'Send backward',
+                              forward: 'Bring forward',
+                              front: 'Bring to front',
+                            }[direction]
+                          }
+                          className="flex-1 rounded border border-slate-700 px-1 py-1 text-[10px] text-slate-300 hover:bg-slate-800"
+                        >
+                          {
+                            { back: '⤓ Back', backward: '↓', forward: '↑', front: '⤒ Front' }[
+                              direction
+                            ]
+                          }
+                        </button>
                       ))}
                     </div>
                   </div>
-
-                  <div>
-                    <span className="mb-1 block text-xs text-slate-400">Animation</span>
-                    <select
-                      data-testid="animation-select"
-                      value={selected.animation ?? 'none'}
-                      onChange={(event) =>
-                        updateSelected({
-                          animation:
-                            event.target.value === 'none'
-                              ? undefined
-                              : (event.target.value as AnimationName),
-                        })
-                      }
-                      className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
-                    >
-                      <option value="none">None</option>
-                      {ANIMATION_NAMES.map((name) => (
-                        <option key={name} value={name}>
-                          {ANIMATIONS[name].label}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      data-testid="replay-animations"
-                      onClick={() => setReplayTick((tick) => tick + 1)}
-                      className="mt-1.5 w-full rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
-                    >
-                      Replay animations
-                    </button>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <span className="block text-xs text-slate-400">Hover effect</span>
-                    <select
-                      data-testid="hover-select"
-                      value={selected.hover ?? 'none'}
-                      onChange={(event) => updateSelected({ hover: event.target.value === 'none' ? undefined : (event.target.value as HoverEffect) })}
-                      className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
-                    >
-                      <option value="none">None</option>
-                      {HOVER_EFFECTS.map((effect) => (
-                        <option key={effect} value={effect}>
-                          {HOVER_LABEL[effect]}
-                        </option>
-                      ))}
-                    </select>
-                    <label className="flex items-center gap-2 text-xs text-slate-400">
-                      <input
-                        type="checkbox"
-                        data-testid="reveal-toggle"
-                        checked={selected.reveal === true}
-                        onChange={(event) => updateSelected({ reveal: event.target.checked ? true : undefined })}
-                      />
-                      Reveal on scroll
-                    </label>
-                    <span className="block text-[10px] text-slate-500">Hover effects run in Preview and on the generated page.</span>
-                  </div>
-
-                  <div className="flex gap-2 border-t border-slate-800 pt-3">
-                    <button
-                      type="button"
-                      data-testid="duplicate-element"
-                      onClick={duplicateSelected}
-                      className="flex-1 rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
-                    >
-                      Duplicate
-                    </button>
-                    <button
-                      type="button"
-                      data-testid="delete-element"
-                      onClick={deleteSelected}
-                      className="flex-1 rounded border border-red-800 px-2 py-1 text-[11px] text-red-300 hover:bg-red-950/40"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                  <div className="flex gap-1">
-                    {(['back', 'backward', 'forward', 'front'] as const).map((direction) => (
-                      <button
-                        key={direction}
-                        type="button"
-                        data-testid={`order-${direction}`}
-                        onClick={() => setElements((current) => reorder(current, selected.id, direction))}
-                        title={{ back: 'Send to back', backward: 'Send backward', forward: 'Bring forward', front: 'Bring to front' }[direction]}
-                        className="flex-1 rounded border border-slate-700 px-1 py-1 text-[10px] text-slate-300 hover:bg-slate-800"
-                      >
-                        {{ back: '⤓ Back', backward: '↓', forward: '↑', front: '⤒ Front' }[direction]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <LayersList elements={elements} selectedId={selectedId} onSelect={setSelectedId} />
-            </aside>
+                )}
+                <LayersList elements={elements} selectedId={selectedId} onSelect={setSelectedId} />
+              </aside>
             )}
           </div>
           {/* Portalled to <body>: an ancestor with backdrop-filter (the glass panels) makes position: fixed relative to itself, which drew the ghost 16px off. */}
-          {draggingType !== null && ghostAt !== null && createPortal(<PaletteGhost type={draggingType} left={ghostAt.left} top={ghostAt.top} zoom={zoom} />, document.body)}
+          {draggingType !== null &&
+            ghostAt !== null &&
+            createPortal(
+              <PaletteGhost
+                type={draggingType}
+                left={ghostAt.left}
+                top={ghostAt.top}
+                zoom={zoom}
+              />,
+              document.body,
+            )}
         </DndContext>
 
         {error !== null && (

@@ -109,7 +109,8 @@ export type ApplicationJobError =
     }
   | { readonly phase: 'unexpected'; readonly message: string };
 
-export type ApplicationRunKind = 'generate' | 'repair' | 'page-sync' | 'continue' | 'import' | 'edit';
+export type ApplicationRunKind =
+  'generate' | 'repair' | 'page-sync' | 'continue' | 'import' | 'edit';
 
 export interface ApplicationJob {
   readonly id: string;

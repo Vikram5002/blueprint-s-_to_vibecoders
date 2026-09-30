@@ -747,9 +747,15 @@ body {
   background: var(--panel-2);
 }
 
-.row .v[data-tone='good'] { color: var(--good); }
-.row .v[data-tone='bad'] { color: var(--bad); }
-.row .v[data-tone='warn'] { color: var(--warn); }
+.row .v[data-tone='good'] {
+  color: var(--good);
+}
+.row .v[data-tone='bad'] {
+  color: var(--bad);
+}
+.row .v[data-tone='warn'] {
+  color: var(--warn);
+}
 
 .banner[data-tone='good'] {
   background: rgba(48, 209, 88, 0.14);
@@ -764,17 +770,34 @@ body {
   background: var(--panel-2);
 }
 
-.evidence-group.violation header .spacer { flex: 1; }
+.evidence-group.violation header .spacer {
+  flex: 1;
+}
 
 /* A left edge coloured by severity, so the list scans at a glance without
  * reading every card. */
-.evidence-group.violation[data-severity='high'] { border-left: 3px solid var(--bad); }
-.evidence-group.violation[data-severity='medium'] { border-left: 3px solid var(--warn); }
-.evidence-group.violation[data-severity='low'] { border-left: 3px solid var(--muted); }
+.evidence-group.violation[data-severity='high'] {
+  border-left: 3px solid var(--bad);
+}
+.evidence-group.violation[data-severity='medium'] {
+  border-left: 3px solid var(--warn);
+}
+.evidence-group.violation[data-severity='low'] {
+  border-left: 3px solid var(--muted);
+}
 
-.tag-sev-high { color: var(--bad); border: 1px solid var(--bad); }
-.tag-sev-medium { color: var(--warn); border: 1px solid var(--warn); }
-.tag-sev-low { color: var(--muted); border: 1px solid var(--muted); }
+.tag-sev-high {
+  color: var(--bad);
+  border: 1px solid var(--bad);
+}
+.tag-sev-medium {
+  color: var(--warn);
+  border: 1px solid var(--warn);
+}
+.tag-sev-low {
+  color: var(--muted);
+  border: 1px solid var(--muted);
+}
 
 /* The DERIVED half of a violation: real import lines, marked as derived so it
  * cannot be confused with the quoted rule directly above it. */
@@ -817,9 +840,15 @@ body {
   vertical-align: -1px;
 }
 
-.swatch-flat { background: var(--accent-dim); }
-.swatch-changed { background: var(--accent); }
-.swatch-moved { background: var(--warn); }
+.swatch-flat {
+  background: var(--accent-dim);
+}
+.swatch-changed {
+  background: var(--accent);
+}
+.swatch-moved {
+  background: var(--warn);
+}
 
 /* Three states, three colours: nothing changed, the architecture changed but
  * broke no rule, and the score actually moved. Week 9 found the middle one is
@@ -1107,7 +1136,9 @@ body {
 
 /* --- shared-design additions --- */
 .node:hover {
-  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.7), 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 6px 18px -8px rgba(0, 0, 0, 0.7),
+    0 0 0 0.5px rgba(255, 255, 255, 0.12);
 }
 
 .canvas > * {

@@ -34,8 +34,8 @@ export function EvidencePanel({ edge }: EvidencePanelProps): JSX.Element {
 
       <div className="hint" style={{ marginBottom: 12 }}>
         {statements} import {statements === 1 ? 'statement' : 'statements'} across{' '}
-        {edge.groups.length} file {edge.groups.length === 1 ? 'pair' : 'pairs'}. Every line below
-        is quoted from the repository.
+        {edge.groups.length} file {edge.groups.length === 1 ? 'pair' : 'pairs'}. Every line below is
+        quoted from the repository.
       </div>
 
       {edge.groups.map((group) => (

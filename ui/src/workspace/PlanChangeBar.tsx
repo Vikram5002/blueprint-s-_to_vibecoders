@@ -37,7 +37,11 @@ export function PlanChangeBar({
   }
 
   return (
-    <form onSubmit={handleSubmit} data-testid="plan-change-bar" className="flex flex-shrink-0 flex-col gap-1.5 px-4 py-3">
+    <form
+      onSubmit={handleSubmit}
+      data-testid="plan-change-bar"
+      className="flex flex-shrink-0 flex-col gap-1.5 px-4 py-3"
+    >
       <div className="focus-glow flex items-center gap-2 rounded-xl border border-white/[0.08] bg-black/[0.22] pl-3 pr-1.5">
         <Icon name="wand" size={14} className="flex-shrink-0 text-violet-300" />
         <input
@@ -49,7 +53,12 @@ export function PlanChangeBar({
           data-testid="plan-change-input"
           className="h-10 min-w-0 flex-1 bg-transparent text-[13px] text-slate-100 placeholder:text-slate-500 focus-visible:outline-none disabled:opacity-60"
         />
-        <button type="submit" disabled={busy || disabled || change.trim() === ''} data-testid="plan-change-submit" className="btn btn-secondary btn-sm">
+        <button
+          type="submit"
+          disabled={busy || disabled || change.trim() === ''}
+          data-testid="plan-change-submit"
+          className="btn btn-secondary btn-sm"
+        >
           {busy && <span className="spinner !h-3 !w-3" />}
           {busy ? 'Updating plan…' : 'Update plan'}
         </button>

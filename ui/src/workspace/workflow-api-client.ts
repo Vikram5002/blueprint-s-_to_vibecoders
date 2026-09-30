@@ -17,7 +17,12 @@
  * JSON API api.ts otherwise wraps.
  */
 import type { WorkflowJob, WorkflowJobStatus } from './workflow-job-types';
-import type { ApplicationJob, ApplicationJobStatus, ApplicationRunSummary, LatestRun } from './application-job-types';
+import type {
+  ApplicationJob,
+  ApplicationJobStatus,
+  ApplicationRunSummary,
+  LatestRun,
+} from './application-job-types';
 import type { PageLayout } from './page-builder-types';
 import type { ProjectSchema } from './project-schema-types';
 import type { WorkflowSessionDetail, WorkflowSessionSummary } from './workflow-session-types';
@@ -192,11 +197,14 @@ export async function repairApplicationViaApi(
   options: GenerateApplicationViaApiOptions = {},
 ): Promise<ApplicationJob> {
   const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
-  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/repair`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ instruction }),
-  });
+  const response = await fetch(
+    `/api/workflow/application-jobs/${encodeURIComponent(jobId)}/repair`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ instruction }),
+    },
+  );
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, `repair failed: ${response.status}`));
   }
@@ -220,9 +228,15 @@ export async function repairApplicationViaApi(
  * the server reuses the component files it had saved and generates only the
  * rest, then builds and verifies as usual. Resolves with the finished job.
  */
-export async function continueApplicationViaApi(jobId: string, options: GenerateApplicationViaApiOptions = {}): Promise<ApplicationJob> {
+export async function continueApplicationViaApi(
+  jobId: string,
+  options: GenerateApplicationViaApiOptions = {},
+): Promise<ApplicationJob> {
   const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
-  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/continue`, { method: 'POST' });
+  const response = await fetch(
+    `/api/workflow/application-jobs/${encodeURIComponent(jobId)}/continue`,
+    { method: 'POST' },
+  );
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, `continue failed: ${response.status}`));
   }
@@ -254,9 +268,13 @@ export interface SessionRuns {
 }
 
 export async function fetchSessionRuns(sessionId: string): Promise<SessionRuns> {
-  const response = await fetch(`/api/workflow/sessions/${encodeURIComponent(sessionId)}/application-runs`);
+  const response = await fetch(
+    `/api/workflow/sessions/${encodeURIComponent(sessionId)}/application-runs`,
+  );
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, `fetch session runs failed: ${response.status}`));
+    throw new Error(
+      await readErrorMessage(response, `fetch session runs failed: ${response.status}`),
+    );
   }
   return (await response.json()) as SessionRuns;
 }
@@ -264,7 +282,9 @@ export async function fetchSessionRuns(sessionId: string): Promise<SessionRuns> 
 export async function fetchLatestRuns(): Promise<readonly LatestRun[]> {
   const response = await fetch('/api/workflow/application-runs/latest');
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, `fetch latest runs failed: ${response.status}`));
+    throw new Error(
+      await readErrorMessage(response, `fetch latest runs failed: ${response.status}`),
+    );
   }
   return ((await response.json()) as { runs: readonly LatestRun[] }).runs;
 }
@@ -286,22 +306,28 @@ export async function fetchRunPages(jobId: string): Promise<readonly RunPage[]> 
 }
 
 export async function saveRunPage(jobId: string, layout: PageLayout): Promise<void> {
-  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/pages`, {
-    method: 'PUT',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ layout }),
-  });
+  const response = await fetch(
+    `/api/workflow/application-jobs/${encodeURIComponent(jobId)}/pages`,
+    {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ layout }),
+    },
+  );
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, `save page failed: ${response.status}`));
   }
 }
 
 export async function restoreRunPage(jobId: string, path: string): Promise<void> {
-  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/pages/restore`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ path }),
-  });
+  const response = await fetch(
+    `/api/workflow/application-jobs/${encodeURIComponent(jobId)}/pages/restore`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path }),
+    },
+  );
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, `restore page failed: ${response.status}`));
   }
@@ -351,19 +377,28 @@ export interface SyncedField {
 }
 
 /** Starts a page-sync run: the page's backend API and database store, generated from its saved form. */
-export async function syncRunPage(jobId: string, path: string): Promise<{ readonly id: string; readonly fields: readonly SyncedField[] }> {
-  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/pages/sync`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ path }),
-  });
+export async function syncRunPage(
+  jobId: string,
+  path: string,
+): Promise<{ readonly id: string; readonly fields: readonly SyncedField[] }> {
+  const response = await fetch(
+    `/api/workflow/application-jobs/${encodeURIComponent(jobId)}/pages/sync`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path }),
+    },
+  );
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, `sync failed: ${response.status}`));
   }
   return (await response.json()) as { id: string; fields: readonly SyncedField[] };
 }
 
-async function pollJob(id: string, options: GenerateApplicationViaApiOptions): Promise<ApplicationJob> {
+async function pollJob(
+  id: string,
+  options: GenerateApplicationViaApiOptions,
+): Promise<ApplicationJob> {
   const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
   for (;;) {
     if (options.signal?.aborted) throw new DOMException('cancelled', 'AbortError');
@@ -374,7 +409,9 @@ async function pollJob(id: string, options: GenerateApplicationViaApiOptions): P
   }
 }
 
-export type ImportSource = { readonly kind: 'local'; readonly path: string } | { readonly kind: 'git'; readonly url: string; readonly branch: string };
+export type ImportSource =
+  | { readonly kind: 'local'; readonly path: string }
+  | { readonly kind: 'git'; readonly url: string; readonly branch: string };
 
 /** Imports a project a person has been building (local folder or Git) as a new session; resolves once it is built and checked. */
 export async function importProjectViaApi(
@@ -386,24 +423,37 @@ export async function importProjectViaApi(
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(source),
   });
-  if (!response.ok) throw new Error(await readErrorMessage(response, `import failed: ${response.status}`));
+  if (!response.ok)
+    throw new Error(await readErrorMessage(response, `import failed: ${response.status}`));
   const submitted = (await response.json()) as { id: string; sessionId: string };
   return { job: await pollJob(submitted.id, options), sessionId: submitted.sessionId };
 }
 
 export interface ComponentEditRequest {
-  readonly add: readonly { readonly domain: string; readonly name: string; readonly purpose: string }[];
+  readonly add: readonly {
+    readonly domain: string;
+    readonly name: string;
+    readonly purpose: string;
+  }[];
   readonly remove: readonly { readonly domain: string; readonly name: string }[];
 }
 
 /** Adds and removes components on a run - existing code is kept, only new components are generated. */
-export async function editComponentsViaApi(jobId: string, edit: ComponentEditRequest, options: GenerateApplicationViaApiOptions = {}): Promise<ApplicationJob> {
-  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/components`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(edit),
-  });
-  if (!response.ok) throw new Error(await readErrorMessage(response, `edit failed: ${response.status}`));
+export async function editComponentsViaApi(
+  jobId: string,
+  edit: ComponentEditRequest,
+  options: GenerateApplicationViaApiOptions = {},
+): Promise<ApplicationJob> {
+  const response = await fetch(
+    `/api/workflow/application-jobs/${encodeURIComponent(jobId)}/components`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(edit),
+    },
+  );
+  if (!response.ok)
+    throw new Error(await readErrorMessage(response, `edit failed: ${response.status}`));
   const submitted = (await response.json()) as SubmittedApplicationJob;
   return pollJob(submitted.id, options);
 }

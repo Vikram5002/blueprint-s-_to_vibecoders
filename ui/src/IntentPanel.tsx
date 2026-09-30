@@ -12,9 +12,12 @@ const RELATION_WORDS: Record<string, string> = {
 };
 
 const EMPTY_MESSAGE: Record<string, string> = {
-  'not-attempted': 'Documents were found but not read — reading prose needs a model, and there is no mechanical fallback. This is "not attempted", not "nothing stated".',
-  'no-documents': 'No README, AGENTS.md, CLAUDE.md or ADRs were found, so there was nothing to read.',
-  'nothing-stated': 'The documents were read and stated no dependency rules that can be checked against an import graph.',
+  'not-attempted':
+    'Documents were found but not read — reading prose needs a model, and there is no mechanical fallback. This is "not attempted", not "nothing stated".',
+  'no-documents':
+    'No README, AGENTS.md, CLAUDE.md or ADRs were found, so there was nothing to read.',
+  'nothing-stated':
+    'The documents were read and stated no dependency rules that can be checked against an import graph.',
   'extraction-failed':
     'Some documents could not be read to the end, so this list is incomplete. A rule may exist that is simply missing here — this is "we did not finish reading", not "nothing stated".',
 };
@@ -44,14 +47,17 @@ export function IntentPanel(props: IntentPanelProps): JSX.Element {
     <div className="stated">
       <h2>
         Stated intent
-        <span className="provenance stated-chip" title="Claimed in prose. Not derived from any import.">
+        <span
+          className="provenance stated-chip"
+          title="Claimed in prose. Not derived from any import."
+        >
           STATED
         </span>
       </h2>
 
       <div className="hint" style={{ marginBottom: 10 }}>
-        What the documentation says the architecture should be. Nothing here was
-        measured — Week 8 is what compares it against the graph.
+        What the documentation says the architecture should be. Nothing here was measured — Week 8
+        is what compares it against the graph.
       </div>
 
       {intent.emptyReason !== null && (
@@ -75,13 +81,17 @@ export function IntentPanel(props: IntentPanelProps): JSX.Element {
         <>
           <h3>Architectural, but not checkable ({summary.uncheckable})</h3>
           <div className="hint" style={{ marginBottom: 6 }}>
-            Real statements about the architecture that no import graph can
-            decide. Counted rather than dropped, because pretending they do not
-            exist would overstate how much of this project the tool can check.
+            Real statements about the architecture that no import graph can decide. Counted rather
+            than dropped, because pretending they do not exist would overstate how much of this
+            project the tool can check.
           </div>
           <div className="rows">
             {intent.uncheckable.slice(0, 12).map((statement, index) => (
-              <div className="row" key={`${statement.location}-${index}`} style={{ display: 'block' }}>
+              <div
+                className="row"
+                key={`${statement.location}-${index}`}
+                style={{ display: 'block' }}
+              >
                 <div style={{ fontSize: 11 }}>“{statement.rawText}”</div>
                 <div className="hint" style={{ fontSize: 10, marginTop: 2 }}>
                   <span className="tag-reason">{statement.reason.replace(/-/g, ' ')}</span>
@@ -97,9 +107,9 @@ export function IntentPanel(props: IntentPanelProps): JSX.Element {
         <>
           <h3>Subject resolution</h3>
           <div className="hint" style={{ marginBottom: 6 }}>
-            Whether each phrase in the prose could be matched to a real module.
-            Reported apart from extraction: a rule read correctly whose subject
-            was never found is a different failure from a rule never read.
+            Whether each phrase in the prose could be matched to a real module. Reported apart from
+            extraction: a rule read correctly whose subject was never found is a different failure
+            from a rule never read.
           </div>
           <div className="rows">
             <Row k="resolved to a module" v={String(summary.subjects.module)} />
@@ -141,7 +151,10 @@ function ConstraintCard({ constraint }: { constraint: ConstraintResponse }): JSX
           </span>
         )}
         {!constraint.evaluable && (
-          <span className="tag-status tag-orphaned" title="A subject could not be matched to a module.">
+          <span
+            className="tag-status tag-orphaned"
+            title="A subject could not be matched to a module."
+          >
             not checkable
           </span>
         )}

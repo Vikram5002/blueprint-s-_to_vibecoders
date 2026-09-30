@@ -31,8 +31,8 @@ export function CorrectionsPanel({ corrections, onDelete }: CorrectionsPanelProp
 
       {corrections.corrections.length === 0 ? (
         <div className="hint">
-          None yet. Select a module and use <b>rename</b>, <b>merge</b> or <b>split</b> to correct the
-          grouping — corrections are stored and reapplied on later runs.
+          None yet. Select a module and use <b>rename</b>, <b>merge</b> or <b>split</b> to correct
+          the grouping — corrections are stored and reapplied on later runs.
         </div>
       ) : (
         <>
@@ -61,8 +61,8 @@ export function CorrectionsPanel({ corrections, onDelete }: CorrectionsPanelProp
 
           {drifted.length > 0 && (
             <div className="banner" data-tone="info">
-              {drifted.length} correction{drifted.length === 1 ? ' was' : 's were'} reapplied to a module whose
-              membership has changed. Check the files below are still what you meant.
+              {drifted.length} correction{drifted.length === 1 ? ' was' : 's were'} reapplied to a
+              module whose membership has changed. Check the files below are still what you meant.
             </div>
           )}
 
@@ -85,7 +85,9 @@ function CorrectionCard({
   return (
     <div className="evidence-group" data-status={correction.status}>
       <header>
-        <span className={`tag-status tag-${correction.status}`}>{STATUS_LABEL[correction.status]}</span>
+        <span className={`tag-status tag-${correction.status}`}>
+          {STATUS_LABEL[correction.status]}
+        </span>
         {correction.kind}
         {correction.label !== null && ` → ${correction.label}`}
         {correction.status !== 'pending' && correction.status !== 'orphaned' && (
@@ -100,7 +102,8 @@ function CorrectionCard({
 
         {correction.sides.length > 0 && (
           <div className="hint mono" style={{ fontSize: 10, marginTop: 4 }}>
-            sides: {correction.sides.map((side) => `${side.label} (${side.files.length})`).join(' · ')}
+            sides:{' '}
+            {correction.sides.map((side) => `${side.label} (${side.files.length})`).join(' · ')}
           </div>
         )}
 
@@ -108,7 +111,12 @@ function CorrectionCard({
         <FileList label="left" files={correction.left} tone="left" />
         <FileList label="in neither side" files={correction.unresolved} tone="unresolved" />
 
-        <button type="button" className="link" style={{ marginTop: 6 }} onClick={() => onDelete(correction.id)}>
+        <button
+          type="button"
+          className="link"
+          style={{ marginTop: 6 }}
+          onClick={() => onDelete(correction.id)}
+        >
           forget this correction
         </button>
       </div>

@@ -58,8 +58,8 @@ export function ViolationsPanel(props: ViolationsPanelProps): JSX.Element {
               .join(', ')}
           </h3>
           <div className="hint" style={{ marginBottom: 8 }}>
-            Ranked by severity: how much the rule is trusted, times how much the
-            evidence is trusted, times how entrenched the breach is.
+            Ranked by severity: how much the rule is trusted, times how much the evidence is
+            trusted, times how entrenched the breach is.
           </div>
           <div className="rows">
             {data.violations.map((violation) => (
@@ -94,9 +94,19 @@ function ConstraintLedger({ data }: { data: ViolationsResponse }): JSX.Element {
       <div className="rows">
         <Row k="rules stated" v={String(summary.constraints)} />
         <Row k="checked against the graph" v={String(summary.checked)} />
-        <Row k="satisfied" v={String(summary.satisfied)} tone={summary.satisfied > 0 ? 'good' : undefined} />
-        <Row k="violated" v={String(summary.violated)} tone={summary.violated > 0 ? 'bad' : undefined} />
-        {summary.unchecked > 0 && <Row k="not checkable" v={String(summary.unchecked)} tone="warn" />}
+        <Row
+          k="satisfied"
+          v={String(summary.satisfied)}
+          tone={summary.satisfied > 0 ? 'good' : undefined}
+        />
+        <Row
+          k="violated"
+          v={String(summary.violated)}
+          tone={summary.violated > 0 ? 'bad' : undefined}
+        />
+        {summary.unchecked > 0 && (
+          <Row k="not checkable" v={String(summary.unchecked)} tone="warn" />
+        )}
         <Row k="drift score" v={data.drift.score.toFixed(1)} />
       </div>
 
@@ -117,9 +127,9 @@ function ConstraintLedger({ data }: { data: ViolationsResponse }): JSX.Element {
             {uncheckableStatements.total === 1 ? '' : 's'} found, not checkable.
           </b>{' '}
           Read across {uncheckableStatements.documents} document
-          {uncheckableStatements.documents === 1 ? '' : 's'}, these say something
-          architectural that no import graph can decide — style, process, runtime
-          behaviour, technology choice. They are counted, not silently dropped:{' '}
+          {uncheckableStatements.documents === 1 ? '' : 's'}, these say something architectural that
+          no import graph can decide — style, process, runtime behaviour, technology choice. They
+          are counted, not silently dropped:{' '}
           {Object.entries(uncheckableStatements.byReason)
             .filter(([, total]) => total > 0)
             .map(([reason, total]) => `${total} ${reason.replace(/-/g, ' ')}`)
@@ -142,10 +152,9 @@ function EmptyState({
   if (reason === 'no-constraints') {
     return (
       <div className="banner" data-tone="stated">
-        <b>No violations, because no rules were found.</b> The documentation in this
-        repository states nothing that can be checked against an import graph, so
-        there was nothing to compare. This is not a clean bill of health — it is an
-        unmeasured one.
+        <b>No violations, because no rules were found.</b> The documentation in this repository
+        states nothing that can be checked against an import graph, so there was nothing to compare.
+        This is not a clean bill of health — it is an unmeasured one.
       </div>
     );
   }
@@ -153,19 +162,20 @@ function EmptyState({
   if (reason === 'all-unchecked') {
     return (
       <div className="banner">
-        <b>No violations, but nothing was actually checked.</b> All{' '}
-        {summary.constraints} stated rule{summary.constraints === 1 ? '' : 's'} named
-        something that could not be matched to this repository, so none could be
-        evaluated. See the list below.
+        <b>No violations, but nothing was actually checked.</b> All {summary.constraints} stated
+        rule{summary.constraints === 1 ? '' : 's'} named something that could not be matched to this
+        repository, so none could be evaluated. See the list below.
       </div>
     );
   }
 
   return (
     <div className="banner" data-tone="good">
-      <b>No violations. All {summary.satisfied} rule{summary.satisfied === 1 ? '' : 's'} hold.</b>{' '}
-      Every constraint the documentation states was checked against the real import
-      graph and none is broken.
+      <b>
+        No violations. All {summary.satisfied} rule{summary.satisfied === 1 ? '' : 's'} hold.
+      </b>{' '}
+      Every constraint the documentation states was checked against the real import graph and none
+      is broken.
     </div>
   );
 }
@@ -212,9 +222,9 @@ function ViolationCard({
         </div>
         <div className="hint" style={{ fontSize: 10 }}>
           {violation.constraint.source.location}
-          {violation.constraint.source.line !== null && `:${violation.constraint.source.line}`} ·{' '}
-          {violation.constraint.source.type} · confidence{' '}
-          {(violation.constraint.confidence * 100).toFixed(0)}%
+          {violation.constraint.source.line !== null &&
+            `:${violation.constraint.source.line}`} · {violation.constraint.source.type} ·
+          confidence {(violation.constraint.confidence * 100).toFixed(0)}%
           {violation.constraint.lowConfidence && (
             <span className="tag-status tag-low" style={{ marginLeft: 6 }}>
               low confidence
@@ -265,9 +275,9 @@ function UncheckedList({ data }: { data: ViolationsResponse }): JSX.Element {
     <>
       <h3>Stated but not checkable ({data.unchecked.length})</h3>
       <div className="hint" style={{ marginBottom: 6 }}>
-        These rules were read correctly but name something that could not be matched
-        to this repository, so they could not be evaluated. Not counted as
-        satisfied — unevaluable and passing are different results.
+        These rules were read correctly but name something that could not be matched to this
+        repository, so they could not be evaluated. Not counted as satisfied — unevaluable and
+        passing are different results.
       </div>
       <div className="rows">
         {data.unchecked.map((entry) => (
@@ -286,7 +296,15 @@ function UncheckedList({ data }: { data: ViolationsResponse }): JSX.Element {
   );
 }
 
-function Row({ k, v, tone }: { k: string; v: string; tone?: 'good' | 'bad' | 'warn' | undefined }): JSX.Element {
+function Row({
+  k,
+  v,
+  tone,
+}: {
+  k: string;
+  v: string;
+  tone?: 'good' | 'bad' | 'warn' | undefined;
+}): JSX.Element {
   return (
     <div className="row">
       <span className="k">{k}</span>

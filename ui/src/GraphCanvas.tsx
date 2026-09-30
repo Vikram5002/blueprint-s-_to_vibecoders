@@ -1,13 +1,6 @@
 import { useMemo } from 'react';
 import { useMeasuredNodes } from './useMeasuredNodes';
-import {
-  Background,
-  Controls,
-  MiniMap,
-  ReactFlow,
-  type Edge,
-  type Node,
-} from '@xyflow/react';
+import { Background, Controls, MiniMap, ReactFlow, type Edge, type Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { DirectoryNode, type GraphNodeData } from './DirectoryNode';
 import type { GraphResponse } from './api-types';

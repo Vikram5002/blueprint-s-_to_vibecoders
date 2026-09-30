@@ -19,7 +19,10 @@ export interface Command {
 }
 
 export function filterCommands(commands: readonly Command[], query: string): readonly Command[] {
-  const words = query.toLowerCase().split(/\s+/).filter((word) => word !== '');
+  const words = query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((word) => word !== '');
   if (words.length === 0) return commands;
   return commands.filter((command) => {
     const haystack = `${command.label} ${command.keywords ?? ''} ${command.group}`.toLowerCase();
@@ -28,8 +31,14 @@ export function filterCommands(commands: readonly Command[], query: string): rea
 }
 
 /** Commands in display order, with their group headings - a heading appears once, above its first match. */
-export function withHeadings(commands: readonly Command[]): readonly ({ readonly heading: string } | { readonly command: Command; readonly index: number })[] {
-  const rows: ({ readonly heading: string } | { readonly command: Command; readonly index: number })[] = [];
+export function withHeadings(
+  commands: readonly Command[],
+): readonly (
+  { readonly heading: string } | { readonly command: Command; readonly index: number }
+)[] {
+  const rows: (
+    { readonly heading: string } | { readonly command: Command; readonly index: number }
+  )[] = [];
   let lastGroup: string | null = null;
   commands.forEach((command, index) => {
     if (command.group !== lastGroup) {

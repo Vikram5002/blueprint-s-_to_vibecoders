@@ -18,7 +18,18 @@ describe('section templates', () => {
   it('places a template below existing content with fresh, sequential ids', () => {
     const login = SECTION_TEMPLATES.find((t) => t.id === 'login');
     if (login === undefined) throw new Error('missing');
-    const existing = [{ id: 'el-1', type: 'heading' as const, x: 0, y: 0, width: 100, height: 40, label: '', colorToken: 'primary' as const }];
+    const existing = [
+      {
+        id: 'el-1',
+        type: 'heading' as const,
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 40,
+        label: '',
+        colorToken: 'primary' as const,
+      },
+    ];
     const placed = instantiateTemplate(login, templateTop(existing), 2, CANVAS_HEIGHT);
     expect(placed?.[0]?.id).toBe('el-2');
     expect(placed?.[0]?.y).toBe(56 + 20);
@@ -28,6 +39,8 @@ describe('section templates', () => {
     const faq = SECTION_TEMPLATES.find((t) => t.id === 'faq');
     if (faq === undefined) throw new Error('missing');
     const placed = instantiateTemplate(faq, 700, 1, CANVAS_HEIGHT);
-    expect(Math.max(...(placed ?? []).map((e) => e.y + e.height))).toBeLessThanOrEqual(CANVAS_HEIGHT);
+    expect(Math.max(...(placed ?? []).map((e) => e.y + e.height))).toBeLessThanOrEqual(
+      CANVAS_HEIGHT,
+    );
   });
 });

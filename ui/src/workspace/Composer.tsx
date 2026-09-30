@@ -22,7 +22,17 @@ const MAX_HEIGHT = 240;
  * the text growing with what is written, and the send button inside it. Enter
  * builds; Shift+Enter starts a new line.
  */
-export function Composer({ value, onChange, onSubmit, running, onStop, reviewFirst, onReviewFirst, variant, focusKey }: ComposerProps): JSX.Element {
+export function Composer({
+  value,
+  onChange,
+  onSubmit,
+  running,
+  onStop,
+  reviewFirst,
+  onReviewFirst,
+  variant,
+  focusKey,
+}: ComposerProps): JSX.Element {
   const textRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Grow with the text, up to a limit, instead of scrolling inside two lines.
@@ -40,7 +50,9 @@ export function Composer({ value, onChange, onSubmit, running, onStop, reviewFir
   const empty = value.trim() === '';
 
   return (
-    <div className={`focus-glow card !rounded-[22px] !bg-[#141417]/90 p-2 text-left backdrop-blur-xl ${variant === 'hero' ? 'shadow-[0_30px_80px_-40px_rgba(109,106,248,0.55)]' : ''}`}>
+    <div
+      className={`focus-glow card !rounded-[22px] !bg-[#141417]/90 p-2 text-left backdrop-blur-xl ${variant === 'hero' ? 'shadow-[0_30px_80px_-40px_rgba(109,106,248,0.55)]' : ''}`}
+    >
       <textarea
         ref={textRef}
         data-testid="agent-prompt"
@@ -78,10 +90,18 @@ export function Composer({ value, onChange, onSubmit, running, onStop, reviewFir
           Review the plan first
         </label>
         <span className="ml-auto hidden text-[11px] text-slate-500 md:inline">
-          <span className="kbd">Enter</span> to build · <span className="kbd">Shift</span> + <span className="kbd">Enter</span> new line
+          <span className="kbd">Enter</span> to build · <span className="kbd">Shift</span> +{' '}
+          <span className="kbd">Enter</span> new line
         </span>
         {running ? (
-          <button type="button" data-testid="agent-stop" onClick={onStop} aria-label="Stop" title="Stop - anything already generated is kept" className="btn btn-danger btn-icon ml-auto md:ml-0">
+          <button
+            type="button"
+            data-testid="agent-stop"
+            onClick={onStop}
+            aria-label="Stop"
+            title="Stop - anything already generated is kept"
+            className="btn btn-danger btn-icon ml-auto md:ml-0"
+          >
             <Icon name="stop" size={14} />
           </button>
         ) : (

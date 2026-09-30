@@ -290,7 +290,11 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
           rows={Math.min(6, prompt.split('\n').length)}
           className="focus-glow min-w-0 flex-1 resize-none rounded-xl border border-white/[0.08] bg-black/25 px-3.5 py-2 text-[13px] leading-relaxed text-slate-100 placeholder:text-slate-500 focus-visible:outline-none"
         />
-        <button type="submit" disabled={state.kind === 'in-flight' || prompt.trim() === ''} className="btn btn-primary self-start">
+        <button
+          type="submit"
+          disabled={state.kind === 'in-flight' || prompt.trim() === ''}
+          className="btn btn-primary self-start"
+        >
           <Icon name="sparkles" size={14} />
           Generate
         </button>
@@ -302,8 +306,13 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.07] bg-white/[0.03] text-violet-300">
               <Icon name="flow" size={22} />
             </span>
-            <p className="text-sm text-slate-400">Enter a prompt above to generate a real ProjectSchema.</p>
-            <p className="max-w-sm text-xs text-slate-500">The plan appears here as a graph - pages, API, data and security, and the rules between them.</p>
+            <p className="text-sm text-slate-400">
+              Enter a prompt above to generate a real ProjectSchema.
+            </p>
+            <p className="max-w-sm text-xs text-slate-500">
+              The plan appears here as a graph - pages, API, data and security, and the rules
+              between them.
+            </p>
           </div>
         )}
 
@@ -340,7 +349,9 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
               />
             </GraphFrame>
             <div className="mx-4 mt-3 overflow-hidden rounded-2xl border border-violet-400/[0.14] bg-violet-500/[0.04]">
-              <PlanChangeBar onRevise={(change) => handleRevise(state.result.schema.sessionId, change)} />
+              <PlanChangeBar
+                onRevise={(change) => handleRevise(state.result.schema.sessionId, change)}
+              />
             </div>
             <GenerateApplicationPanel
               key={`${state.result.schema.sessionId}:${planVersion}`}

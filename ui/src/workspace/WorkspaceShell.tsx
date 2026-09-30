@@ -43,7 +43,11 @@ export function WorkspaceShell(): JSX.Element {
             kind="tabs"
             value={activeTab}
             onChange={setActiveTab}
-            options={TABS.map((tab) => ({ value: tab.id, label: tab.label, icon: <Icon name={tab.icon} size={14} /> }))}
+            options={TABS.map((tab) => ({
+              value: tab.id,
+              label: tab.label,
+              icon: <Icon name={tab.icon} size={14} />,
+            }))}
             className="flex-shrink-0"
           />
 

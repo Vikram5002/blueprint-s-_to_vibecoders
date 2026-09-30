@@ -439,7 +439,12 @@ html .react-flow.light {
   --brand-1: #a78bfa;
   --brand-2: #6d6af8;
   --brand-3: #0a84ff;
-  --brand-gradient: linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 48%, var(--brand-3) 100%);
+  --brand-gradient: linear-gradient(
+    135deg,
+    var(--brand-1) 0%,
+    var(--brand-2) 48%,
+    var(--brand-3) 100%
+  );
   --brand-glow: 0 10px 30px -10px rgba(109, 106, 248, 0.65);
 
   /* A card is a whisper of light on the canvas, with a top highlight like glass edges catch. */
@@ -453,8 +458,7 @@ html .react-flow.light {
 .app-canvas {
   background:
     radial-gradient(900px 480px at 50% -12%, rgba(109, 106, 248, 0.13), transparent 62%),
-    radial-gradient(700px 420px at 100% 0%, rgba(10, 132, 255, 0.07), transparent 60%),
-    var(--bg-0);
+    radial-gradient(700px 420px at 100% 0%, rgba(10, 132, 255, 0.07), transparent 60%), var(--bg-0);
 }
 
 .gradient-text {
@@ -484,7 +488,9 @@ html .react-flow.light {
   transform: translateY(-2px);
   border-color: rgba(167, 139, 250, 0.35);
   background-color: rgba(255, 255, 255, 0.045);
-  box-shadow: var(--card-highlight), 0 22px 44px -22px rgba(109, 106, 248, 0.45);
+  box-shadow:
+    var(--card-highlight),
+    0 22px 44px -22px rgba(109, 106, 248, 0.45);
 }
 
 /* ---------- buttons ---------- */

@@ -49,12 +49,20 @@ function lines(start: number, size: number): readonly number[] {
 }
 
 /** The best alignment on one axis: the smallest move that lines one of `own` up with one of `targets`. */
-function align(ownStart: number, size: number, targets: readonly number[]): { readonly offset: number; readonly at: number } | null {
+function align(
+  ownStart: number,
+  size: number,
+  targets: readonly number[],
+): { readonly offset: number; readonly at: number } | null {
   let best: { offset: number; at: number } | null = null;
   for (const line of lines(ownStart, size)) {
     for (const target of targets) {
       const offset = target - line;
-      if (Math.abs(offset) <= SNAP_DISTANCE && (best === null || Math.abs(offset) < Math.abs(best.offset))) best = { offset, at: target };
+      if (
+        Math.abs(offset) <= SNAP_DISTANCE &&
+        (best === null || Math.abs(offset) < Math.abs(best.offset))
+      )
+        best = { offset, at: target };
     }
   }
   return best;
@@ -66,8 +74,18 @@ function align(ownStart: number, size: number, targets: readonly number[]): { re
  * explain the element snaps, so the editor can draw them.
  */
 export function snapMove(rect: Rect, others: readonly Rect[]): Snapped {
-  const xTargets = [0, CANVAS_WIDTH / 2, CANVAS_WIDTH, ...others.flatMap((o) => lines(o.x, o.width))];
-  const yTargets = [0, CANVAS_HEIGHT / 2, CANVAS_HEIGHT, ...others.flatMap((o) => lines(o.y, o.height))];
+  const xTargets = [
+    0,
+    CANVAS_WIDTH / 2,
+    CANVAS_WIDTH,
+    ...others.flatMap((o) => lines(o.x, o.width)),
+  ];
+  const yTargets = [
+    0,
+    CANVAS_HEIGHT / 2,
+    CANVAS_HEIGHT,
+    ...others.flatMap((o) => lines(o.y, o.height)),
+  ];
   const ax = align(rect.x, rect.width, xTargets);
   const ay = align(rect.y, rect.height, yTargets);
   const x = ax !== null ? rect.x + ax.offset : Math.round(rect.x / GRID) * GRID;
@@ -90,7 +108,8 @@ export function resizeRect(start: Rect, handle: Handle, dx: number, dy: number):
   let { x, y, width, height } = start;
   const snap = (value: number): number => Math.round(value / GRID) * GRID;
   if (handle.includes('e')) width = Math.max(MIN_SIZE, snap(start.x + start.width + dx) - start.x);
-  if (handle.includes('s')) height = Math.max(MIN_SIZE, snap(start.y + start.height + dy) - start.y);
+  if (handle.includes('s'))
+    height = Math.max(MIN_SIZE, snap(start.y + start.height + dy) - start.y);
   if (handle.includes('w')) {
     const right = start.x + start.width;
     x = Math.min(snap(start.x + dx), right - MIN_SIZE);
@@ -109,7 +128,12 @@ export function resizeRect(start: Rect, handle: Handle, dx: number, dy: number):
     height += y;
     y = 0;
   }
-  return clampToCanvas({ x, y, width: Math.min(width, CANVAS_WIDTH - x), height: Math.min(height, CANVAS_HEIGHT - y) });
+  return clampToCanvas({
+    x,
+    y,
+    width: Math.min(width, CANVAS_WIDTH - x),
+    height: Math.min(height, CANVAS_HEIGHT - y),
+  });
 }
 
 /** Everything except the element being moved, as rects - what it can align to. */
@@ -118,14 +142,24 @@ export function otherRects(elements: readonly CanvasElement[], exceptId: string)
 }
 
 /** Moves an element one step in the paint order (later = on top). */
-export function reorder(elements: readonly CanvasElement[], id: string, direction: 'forward' | 'backward' | 'front' | 'back'): readonly CanvasElement[] {
+export function reorder(
+  elements: readonly CanvasElement[],
+  id: string,
+  direction: 'forward' | 'backward' | 'front' | 'back',
+): readonly CanvasElement[] {
   const index = elements.findIndex((element) => element.id === id);
   if (index === -1) return elements;
   const list = [...elements];
   const [item] = list.splice(index, 1);
   if (item === undefined) return elements;
   const target =
-    direction === 'front' ? list.length : direction === 'back' ? 0 : direction === 'forward' ? Math.min(list.length, index + 1) : Math.max(0, index - 1);
+    direction === 'front'
+      ? list.length
+      : direction === 'back'
+        ? 0
+        : direction === 'forward'
+          ? Math.min(list.length, index + 1)
+          : Math.max(0, index - 1);
   list.splice(target, 0, item);
   return list;
 }

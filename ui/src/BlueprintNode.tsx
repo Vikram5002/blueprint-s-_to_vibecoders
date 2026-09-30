@@ -35,7 +35,9 @@ export function BlueprintNode({ id, data, selected }: NodeProps): JSX.Element {
       <div className="meta" style={{ marginBottom: 4 }}>
         <span
           className={node.kind === 'derived' ? 'provenance' : 'provenance stated-chip'}
-          title={node.kind === 'derived' ? 'A real module, traced from imports.' : 'Authored by you.'}
+          title={
+            node.kind === 'derived' ? 'A real module, traced from imports.' : 'Authored by you.'
+          }
         >
           {node.kind === 'derived' ? 'DERIVED' : 'STATED'}
         </span>
@@ -66,7 +68,12 @@ export function BlueprintNode({ id, data, selected }: NodeProps): JSX.Element {
           no cycle
         </label>
         {editable && (
-          <button type="button" className="link" onClick={() => node.onRemove?.(id)} title="Remove this node">
+          <button
+            type="button"
+            className="link"
+            onClick={() => node.onRemove?.(id)}
+            title="Remove this node"
+          >
             remove
           </button>
         )}

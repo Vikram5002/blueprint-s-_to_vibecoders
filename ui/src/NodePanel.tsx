@@ -17,14 +17,10 @@ export function NodePanel({ node, onSelectEdge, onSelectNode }: NodePanelProps):
         {node.id}
       </div>
 
-      <h3>
-        Depends on ({node.outbound.length})
-      </h3>
+      <h3>Depends on ({node.outbound.length})</h3>
       <Neighbours items={node.outbound} onSelectEdge={onSelectEdge} onSelectNode={onSelectNode} />
 
-      <h3>
-        Depended on by ({node.inbound.length})
-      </h3>
+      <h3>Depended on by ({node.inbound.length})</h3>
       <Neighbours items={node.inbound} onSelectEdge={onSelectEdge} onSelectNode={onSelectNode} />
 
       {node.externals.length > 0 && (
@@ -72,7 +68,12 @@ function Neighbours({
     <div className="rows">
       {items.map((item) => (
         <div className="row" key={item.edgeId}>
-          <button type="button" className="link" onClick={() => onSelectNode(item.id)} title={item.id}>
+          <button
+            type="button"
+            className="link"
+            onClick={() => onSelectNode(item.id)}
+            title={item.id}
+          >
             {item.id}
           </button>
           <button

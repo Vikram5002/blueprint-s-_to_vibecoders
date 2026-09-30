@@ -7,7 +7,10 @@ import { LogoMark, Wordmark } from '../design/Logo';
 import type { WorkflowSessionSummary } from './workflow-session-types';
 import type { LatestRun } from './application-job-types';
 
-type LoadState = { readonly kind: 'loading' } | { readonly kind: 'error'; readonly message: string } | { readonly kind: 'loaded' };
+type LoadState =
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'error'; readonly message: string }
+  | { readonly kind: 'loaded' };
 
 interface SessionGroup {
   readonly label: string;
@@ -17,7 +20,10 @@ interface SessionGroup {
 const DAY_MS = 86_400_000;
 
 /** Today / Yesterday / Previous 7 days / Earlier, newest first - how a person remembers when they worked on something. */
-export function groupSessions(sessions: readonly WorkflowSessionSummary[], now: Date): readonly SessionGroup[] {
+export function groupSessions(
+  sessions: readonly WorkflowSessionSummary[],
+  now: Date,
+): readonly SessionGroup[] {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const buckets: { label: string; from: number; sessions: WorkflowSessionSummary[] }[] = [
     { label: 'Today', from: startOfToday, sessions: [] },
@@ -27,10 +33,14 @@ export function groupSessions(sessions: readonly WorkflowSessionSummary[], now: 
   ];
   for (const session of sessions) {
     const time = new Date(session.createdAt).getTime();
-    const bucket = buckets.find((candidate) => (Number.isNaN(time) ? candidate.from === Number.NEGATIVE_INFINITY : time >= candidate.from));
+    const bucket = buckets.find((candidate) =>
+      Number.isNaN(time) ? candidate.from === Number.NEGATIVE_INFINITY : time >= candidate.from,
+    );
     bucket?.sessions.push(session);
   }
-  return buckets.filter((bucket) => bucket.sessions.length > 0).map(({ label, sessions: items }) => ({ label, sessions: items }));
+  return buckets
+    .filter((bucket) => bucket.sessions.length > 0)
+    .map(({ label, sessions: items }) => ({ label, sessions: items }));
 }
 
 /** The time for today's sessions, the day for older ones - short enough to sit beside a title. */
@@ -38,7 +48,10 @@ function formatWhen(iso: string, now: Date): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
   const sameDay = date.toDateString() === now.toDateString();
-  return new Intl.DateTimeFormat(undefined, sameDay ? { hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'short' }).format(date);
+  return new Intl.DateTimeFormat(
+    undefined,
+    sameDay ? { hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'short' },
+  ).format(date);
 }
 
 /**
@@ -77,7 +90,10 @@ export function Sidebar(): JSX.Element {
       })
       .catch((cause: unknown) => {
         if (cancelled) return;
-        setLoadState({ kind: 'error', message: cause instanceof Error ? cause.message : String(cause) });
+        setLoadState({
+          kind: 'error',
+          message: cause instanceof Error ? cause.message : String(cause),
+        });
       });
     return () => {
       cancelled = true;
@@ -101,7 +117,10 @@ export function Sidebar(): JSX.Element {
   const now = new Date();
   const groups = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    const matching = needle === '' ? sessions : sessions.filter((session) => session.title.toLowerCase().includes(needle));
+    const matching =
+      needle === ''
+        ? sessions
+        : sessions.filter((session) => session.title.toLowerCase().includes(needle));
     return groupSessions(matching, new Date());
   }, [sessions, query]);
 
@@ -122,7 +141,9 @@ export function Sidebar(): JSX.Element {
         collapsed ? 'w-14' : 'w-60'
       }`}
     >
-      <div className={`flex items-center pb-3 pt-3.5 ${collapsed ? 'flex-col gap-3 px-2' : 'justify-between px-3.5'}`}>
+      <div
+        className={`flex items-center pb-3 pt-3.5 ${collapsed ? 'flex-col gap-3 px-2' : 'justify-between px-3.5'}`}
+      >
         {collapsed ? <LogoMark size={26} /> : <Wordmark />}
         <button
           type="button"
@@ -165,7 +186,9 @@ export function Sidebar(): JSX.Element {
       {!collapsed && (
         <nav aria-label="Projects" className="mt-3 flex-1 overflow-y-auto px-2 pb-3">
           {loadState.kind === 'error' ? (
-            <p className="px-2 text-xs text-red-300">Could not load projects: {loadState.message}</p>
+            <p className="px-2 text-xs text-red-300">
+              Could not load projects: {loadState.message}
+            </p>
           ) : loadState.kind === 'loading' && sessions.length === 0 ? (
             <div className="space-y-2 px-1.5 pt-1" aria-label="Loading projects">
               {[0, 1, 2, 3].map((index) => (
@@ -177,11 +200,15 @@ export function Sidebar(): JSX.Element {
               No projects yet. Describe one in Agent mode and it appears here.
             </p>
           ) : groups.length === 0 ? (
-            <p className="px-2.5 pt-2 text-xs text-slate-500">Nothing matches &ldquo;{query}&rdquo;.</p>
+            <p className="px-2.5 pt-2 text-xs text-slate-500">
+              Nothing matches &ldquo;{query}&rdquo;.
+            </p>
           ) : (
             groups.map((group) => (
               <div key={group.label} className="mb-3">
-                <div className="px-2.5 pb-1 pt-1 text-[11px] font-medium text-slate-500">{group.label}</div>
+                <div className="px-2.5 pb-1 pt-1 text-[11px] font-medium text-slate-500">
+                  {group.label}
+                </div>
                 <ul className="space-y-px">
                   {group.sessions.map((session) => {
                     const current = openedSessionId === session.id;
@@ -196,12 +223,23 @@ export function Sidebar(): JSX.Element {
                           title={session.title}
                           className="group relative flex w-full items-center gap-2.5 rounded-[9px] px-2.5 py-[7px] text-left hover:bg-white/[0.045] disabled:cursor-wait aria-[current=true]:bg-white/[0.07]"
                         >
-                          {current && <span aria-hidden="true" className="absolute inset-y-2 left-0 w-[2.5px] rounded-full bg-gradient-to-b from-violet-400 to-sky-500" />}
-                          {openingId === session.id ? <span className="spinner !h-2.5 !w-2.5 !border" /> : <RunDot run={latestRuns.get(session.id)} />}
+                          {current && (
+                            <span
+                              aria-hidden="true"
+                              className="absolute inset-y-2 left-0 w-[2.5px] rounded-full bg-gradient-to-b from-violet-400 to-sky-500"
+                            />
+                          )}
+                          {openingId === session.id ? (
+                            <span className="spinner !h-2.5 !w-2.5 !border" />
+                          ) : (
+                            <RunDot run={latestRuns.get(session.id)} />
+                          )}
                           <span className="min-w-0 flex-1 truncate text-[13px] text-slate-300 group-hover:text-slate-100 group-aria-[current=true]:font-medium group-aria-[current=true]:text-slate-50">
                             {session.title}
                           </span>
-                          <span className="flex-shrink-0 text-[11px] tabular-nums text-slate-500">{formatWhen(session.createdAt, now)}</span>
+                          <span className="flex-shrink-0 text-[11px] tabular-nums text-slate-500">
+                            {formatWhen(session.createdAt, now)}
+                          </span>
                         </button>
                       </li>
                     );
@@ -213,7 +251,9 @@ export function Sidebar(): JSX.Element {
         </nav>
       )}
 
-      <div className={`mt-auto border-t border-white/[0.06] ${collapsed ? 'flex justify-center px-2 py-3' : 'px-3 py-3'}`}>
+      <div
+        className={`mt-auto border-t border-white/[0.06] ${collapsed ? 'flex justify-center px-2 py-3' : 'px-3 py-3'}`}
+      >
         <button
           type="button"
           data-testid="open-import"
@@ -233,14 +273,23 @@ export function Sidebar(): JSX.Element {
 /** Green: the last generated application built. Red: it did not (open it to fix). Hollow: never generated. */
 function RunDot({ run }: { readonly run: LatestRun | undefined }): JSX.Element {
   if (run === undefined) {
-    return <span aria-hidden="true" className="h-[7px] w-[7px] flex-shrink-0 rounded-full border border-slate-600" />;
+    return (
+      <span
+        aria-hidden="true"
+        className="h-[7px] w-[7px] flex-shrink-0 rounded-full border border-slate-600"
+      />
+    );
   }
   const built = run.status === 'succeeded' && run.buildOk;
   return (
     <span
       data-testid="run-dot"
       data-built={built}
-      title={built ? 'Last generated application built successfully' : 'Last generated application failed to build - open to fix'}
+      title={
+        built
+          ? 'Last generated application built successfully'
+          : 'Last generated application failed to build - open to fix'
+      }
       className={`h-[7px] w-[7px] flex-shrink-0 rounded-full ${built ? 'bg-emerald-400 shadow-[0_0_8px_rgba(48,209,88,0.6)]' : 'bg-red-400 shadow-[0_0_8px_rgba(255,69,58,0.5)]'}`}
     />
   );

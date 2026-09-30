@@ -1,13 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_THEME, PRESETS, contrastGrade, contrastRatio, isDark, randomTheme, themeAsCss, themeFromHue, toggleDark } from './page-theme';
+import {
+  DEFAULT_THEME,
+  PRESETS,
+  contrastGrade,
+  contrastRatio,
+  isDark,
+  randomTheme,
+  themeAsCss,
+  themeFromHue,
+  toggleDark,
+} from './page-theme';
 
 const HEX = /^#[0-9a-f]{6}$/;
-const colorsOf = (t: typeof DEFAULT_THEME): string[] => [...Object.values(t.colors), t.background, t.text, t.muted, t.surface, t.line];
+const colorsOf = (t: typeof DEFAULT_THEME): string[] => [
+  ...Object.values(t.colors),
+  t.background,
+  t.text,
+  t.muted,
+  t.surface,
+  t.line,
+];
 
 describe('page themes (editor)', () => {
   it('every preset and generated theme is valid 6-digit hex', () => {
     for (const { theme } of PRESETS) for (const c of colorsOf(theme)) expect(c).toMatch(HEX);
-    for (let hue = 0; hue < 360; hue += 37) for (const c of colorsOf(themeFromHue(hue, hue % 2 === 0))) expect(c).toMatch(HEX);
+    for (let hue = 0; hue < 360; hue += 37)
+      for (const c of colorsOf(themeFromHue(hue, hue % 2 === 0))) expect(c).toMatch(HEX);
   });
 
   it('generated themes keep body text readable (at least WCAG AA)', () => {

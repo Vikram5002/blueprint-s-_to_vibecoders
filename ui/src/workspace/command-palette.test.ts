@@ -19,7 +19,12 @@ const COMMANDS = [
 
 describe('filterCommands', () => {
   it('returns everything for an empty query, in order', () => {
-    expect(filterCommands(COMMANDS, '  ').map((c) => c.id)).toEqual(['new', 'workflow', 'fest', 'quiz']);
+    expect(filterCommands(COMMANDS, '  ').map((c) => c.id)).toEqual([
+      'new',
+      'workflow',
+      'fest',
+      'quiz',
+    ]);
   });
 
   it('matches every typed word in any order and case, including keywords and the group', () => {
@@ -42,6 +47,8 @@ describe('withHeadings', () => {
       'fest',
       'quiz',
     ]);
-    expect(rows.filter((row) => 'command' in row).map((row) => ('command' in row ? row.index : -1))).toEqual([0, 1, 2, 3]);
+    expect(
+      rows.filter((row) => 'command' in row).map((row) => ('command' in row ? row.index : -1)),
+    ).toEqual([0, 1, 2, 3]);
   });
 });

@@ -50,10 +50,18 @@ export function hoverHandlers(effect: HoverEffect | undefined): {
   readonly onMouseMove?: (event: React.MouseEvent<HTMLElement>) => void;
   readonly onMouseLeave?: (event: React.MouseEvent<HTMLElement>) => void;
 } {
-  const position = (event: React.MouseEvent<HTMLElement>): { el: HTMLElement; x: number; y: number; px: number; py: number } => {
+  const position = (
+    event: React.MouseEvent<HTMLElement>,
+  ): { el: HTMLElement; x: number; y: number; px: number; py: number } => {
     const el = event.currentTarget;
     const r = el.getBoundingClientRect();
-    return { el, x: (event.clientX - r.left) / r.width - 0.5, y: (event.clientY - r.top) / r.height - 0.5, px: event.clientX - r.left, py: event.clientY - r.top };
+    return {
+      el,
+      x: (event.clientX - r.left) / r.width - 0.5,
+      y: (event.clientY - r.top) / r.height - 0.5,
+      px: event.clientX - r.left,
+      py: event.clientY - r.top,
+    };
   };
   const reset = (event: React.MouseEvent<HTMLElement>): void => {
     event.currentTarget.style.transform = '';
