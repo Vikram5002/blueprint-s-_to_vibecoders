@@ -170,3 +170,34 @@ describe('POST /generate', () => {
     expect(response.status).toBe(400);
   });
 });
+
+describe('POST /design', () => {
+  const layout = { id: 'p', pageName: 'Landing', elements: [{ id: 'b1', type: 'button', x: 10, y: 10, width: 160, height: 40, label: 'Go', colorToken: 'primary' }] };
+  const post = (app: ReturnType<typeof createPageBuilderRoutes>, body: unknown) =>
+    app.request('/design', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+  it('returns the checked operations and the reply', async () => {
+    const answer = JSON.stringify({
+      reply: 'Added a heading and relabelled the button.',
+      operations: [
+        { op: 'add', type: 'heading', x: 40, y: 80, width: 500, height: 60, label: 'Welcome' },
+        { op: 'update', id: 'b1', label: 'Join' },
+        { op: 'add', type: 'not-a-type', x: 0, y: 0, width: 1, height: 1, label: '' },
+      ],
+    });
+    const app = createPageBuilderRoutes({
+      designer: { name: 'stub', model: 'stub', complete: async () => ({ ok: true, value: { text: answer, model: 'stub', usage: { promptTokens: 1, completionTokens: 1, cachedPromptTokens: 0 } } }) },
+    });
+    const response = await post(app, { instruction: 'add a welcome heading', layout });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { reply: string; operations: { op: string }[]; refused: number };
+    expect(body.reply).toBe('Added a heading and relabelled the button.');
+    expect(body.operations.map((operation) => operation.op)).toEqual(['add', 'update']);
+    expect(body.refused).toBe(1);
+  });
+
+  it('503s without a model and 400s without an instruction', async () => {
+    expect((await post(createPageBuilderRoutes(), { instruction: 'x', layout })).status).toBe(503);
+    expect((await post(createPageBuilderRoutes(), { instruction: ' ', layout })).status).toBe(400);
+  });
+});

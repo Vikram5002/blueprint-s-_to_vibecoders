@@ -19,6 +19,8 @@ import {
   type PageLayout,
 } from '../generate/canvas-layout.js';
 import type { PageTheme } from '../generate/page-theme.js';
+import { designPage } from '../generate/page-designer.js';
+import type { CompletionProvider } from '../llm/provider.js';
 
 const KNOWN_ELEMENT_TYPES: ReadonlySet<string> = new Set(CANVAS_ELEMENT_TYPES);
 
@@ -67,8 +69,44 @@ export function parsePageLayout(body: unknown): PageLayout | null {
   } satisfies PageLayout;
 }
 
-export function createPageBuilderRoutes(): Hono {
+export interface PageBuilderRouteDeps {
+  /**
+   * Who answers the designer agent (page-designer.ts) - the provider that
+   * writes code. Null or absent: the designer says no model is set up;
+   * Generate, which needs no model, is unaffected.
+   */
+  readonly designer?: CompletionProvider | null;
+}
+
+type HistoryTurn = { readonly role: 'user' | 'designer'; readonly text: string };
+
+function parseHistory(value: unknown): readonly HistoryTurn[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (turn): turn is HistoryTurn =>
+      typeof turn === 'object' && turn !== null && (turn.role === 'user' || turn.role === 'designer') && typeof turn.text === 'string',
+  );
+}
+
+export function createPageBuilderRoutes(deps: PageBuilderRouteDeps = {}): Hono {
   const app = new Hono();
+
+  // The designer agent: words in, checked canvas operations out. The builder
+  // applies them to its canvas as it is when they arrive (page-designer.ts).
+  app.post('/design', async (c) => {
+    const body: unknown = await c.req.json().catch(() => null);
+    const layout = parsePageLayout(body);
+    const instruction = typeof body === 'object' && body !== null ? (body as Record<string, unknown>)['instruction'] : undefined;
+    if (layout === null || typeof instruction !== 'string' || instruction.trim() === '') {
+      return c.json({ error: 'expected { instruction: string, layout: PageLayout, history?: [...] }' }, 400);
+    }
+    if (deps.designer === undefined || deps.designer === null) {
+      return c.json({ error: 'no AI model is set up - choose one in the model menu' }, 503);
+    }
+    const history = parseHistory((body as Record<string, unknown>)['history']);
+    const result = await designPage(deps.designer, { instruction, elements: layout.elements, history });
+    return result.ok ? c.json(result.value) : c.json({ error: result.error.message, reason: result.error.reason }, 502);
+  });
 
   app.post('/generate', async (c) => {
     const body: unknown = await c.req.json().catch(() => null);

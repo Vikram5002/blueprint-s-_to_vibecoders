@@ -245,7 +245,7 @@ export function createApp(
   // Page builder (Milestone 1): mounted unconditionally, unlike the two
   // routes above - layoutToComponentFile makes no LLM call, so this needs
   // no provider dependency to exist at all.
-  app.route('/api/page-builder', createPageBuilderRoutes());
+  app.route('/api/page-builder', createPageBuilderRoutes({ designer: application?.llm?.provider ?? null }));
 
   // Which model answers generation requests. Mounted only when a registry was
   // supplied, same optional-deps pattern the two route sets above already
