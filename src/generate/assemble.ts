@@ -16,7 +16,7 @@
  * project keeps generating the exact same, smaller manifest it always did -
  * calling either with no argument is unchanged from Milestone 1.
  */
-import type { Component, DomainName } from '../types/project-schema.js';
+import { componentSlug, type Component, type DomainName } from '../types/project-schema.js';
 
 export interface AssemblyDomains {
   readonly database?: boolean;
@@ -113,13 +113,7 @@ export function tsconfigFile(domains: AssemblyDomains = {}): GeneratedFile {
  * never via a local import, so there is no coupling to hide by co-locating
  * it.
  */
-export function componentSlug(name: string): string {
-  return name
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/[^A-Za-z0-9]+/g, '-')
-    .toLowerCase()
-    .replace(/^-+|-+$/g, '');
-}
+export { componentSlug };
 
 export function componentTargetPath(domain: DomainName, component: Component): string {
   const slug = componentSlug(component.name);
@@ -211,7 +205,11 @@ export function backendEntryPointFile(
 }
 
 function importIdentifier(slug: string): string {
-  return slug.replace(/-([a-z0-9])/g, (_match, char: string) => char.toUpperCase());
+  const camel = slug.replace(/-([a-z0-9])/g, (_match, char: string) => char.toUpperCase());
+  // "2FA Router" -> 2FaRouter is not a valid identifier, and the whole
+  // generated project failed to compile on it; a leading underscore makes it
+  // one without changing any name that already worked.
+  return /^[0-9]/.test(camel) ? `_${camel}` : camel;
 }
 
 /**

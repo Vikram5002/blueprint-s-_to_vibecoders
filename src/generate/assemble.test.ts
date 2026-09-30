@@ -5,6 +5,7 @@ import {
   componentTargetPath,
   frontendEntryPointFile,
   packageJsonFile,
+  pascalIdentifier,
   tsconfigFile,
 } from './assemble.js';
 import type { Component } from '../types/project-schema.js';
@@ -147,5 +148,17 @@ describe('backendEntryPointFile - public routes', () => {
   it('adds nothing when no security component authenticates', () => {
     const { contents } = backendEntryPointFile([USER_ROUTER], [RATE_LIMITER], publicRoute);
     expect(contents).not.toContain('unlessPublic');
+  });
+});
+
+describe('identifiers for names that start with a digit', () => {
+  it('imports a backend component named "2FA Router" under a valid identifier', () => {
+    const file = backendEntryPointFile([{ id: 'x', name: '2FA Router', purpose: 'p' }], []);
+    expect(file.contents).toContain("import { router as _2FaRouter } from './routes/2-fa-router';");
+    expect(file.contents).toContain("app.use('/api/2-fa-router', _2FaRouter);");
+  });
+
+  it('leaves names that already worked unchanged', () => {
+    expect(pascalIdentifier('recipe-dashboard')).toBe('RecipeDashboard');
   });
 });

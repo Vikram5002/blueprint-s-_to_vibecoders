@@ -43,6 +43,16 @@ describe('validatePageLayout', () => {
     expect(validatePageLayout(layoutWith({ pageName: '  ' }))).toEqual([{ reason: 'empty-page-name' }]);
   });
 
+  it('rejects a page name with no letters or digits, which would have no file or component name', () => {
+    expect(validatePageLayout(layoutWith({ pageName: '!!!' }))).toEqual([{ reason: 'page-name-has-no-letters', pageName: '!!!' }]);
+  });
+
+  it('gives a page name starting with a digit a valid component name', () => {
+    const file = layoutToComponentFile(layoutWith({ pageName: '1st Page' }));
+    expect(file.path).toBe('frontend/src/pages/1st-page.tsx');
+    expect(file.contents).toContain('export const _1stPage: FC = () => {');
+  });
+
   it('rejects an unrecognized color token rather than defaulting it', () => {
     const layout = layoutWith({
       elements: [

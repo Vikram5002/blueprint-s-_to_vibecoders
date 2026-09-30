@@ -109,3 +109,17 @@ export function componentId(domain: DomainName, name: string, purpose: string): 
     .digest('hex')
     .slice(0, 16);
 }
+
+/**
+ * The file-name form of a component name: "Recipe Dashboard" -> recipe-dashboard.
+ * Every generated file path and identifier derives from it, so the plan
+ * validator checks it too (a name with no letters or digits has none, and
+ * two names with the same slug would write the same file).
+ */
+export function componentSlug(name: string): string {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .toLowerCase()
+    .replace(/^-+|-+$/g, '');
+}

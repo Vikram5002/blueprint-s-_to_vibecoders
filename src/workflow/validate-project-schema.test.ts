@@ -25,6 +25,26 @@ describe('validateProjectSchema', () => {
     expect(result.ok).toBe(true);
   });
 
+  it('rejects a component name with no letters or digits, which would have no file name', () => {
+    const schema = loadFixture('todo-app.json') as { domains: { backend: { components: { name: string }[] } } };
+    const first = schema.domains.backend.components[0];
+    if (first === undefined) throw new Error('fixture has no backend component');
+    first.name = '!!!';
+    const result = validateProjectSchema(schema);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.map((rejection) => rejection.reason)).toContain('component-name-has-no-letters');
+  });
+
+  it('rejects two components in one domain that would write the same file', () => {
+    const schema = loadFixture('todo-app.json') as { domains: { backend: { components: { id: string; name: string; purpose: string }[] } } };
+    const first = schema.domains.backend.components[0];
+    if (first === undefined) throw new Error('fixture has no backend component');
+    schema.domains.backend.components.push({ ...first, id: 'different-id', name: first.name.toUpperCase().replace(/ /g, '-') });
+    const result = validateProjectSchema(schema);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.map((rejection) => rejection.reason)).toContain('duplicate-component-file');
+  });
+
   it('rejects a non-object candidate', () => {
     const result = validateProjectSchema('not an object');
     expect(result.ok).toBe(false);

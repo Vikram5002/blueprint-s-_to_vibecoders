@@ -230,6 +230,7 @@ export interface PageLayout {
 
 export type LayoutValidationError =
   | { readonly reason: 'empty-page-name' }
+  | { readonly reason: 'page-name-has-no-letters'; readonly pageName: string }
   | { readonly reason: 'unknown-color-token'; readonly elementId: string; readonly token: string }
   | { readonly reason: 'unknown-animation'; readonly elementId: string; readonly animation: string }
   | { readonly reason: 'out-of-bounds'; readonly elementId: string }
@@ -252,6 +253,9 @@ export function validatePageLayout(layout: PageLayout): readonly LayoutValidatio
   if (layout.theme !== undefined) errors.push(...validateTheme(layout.theme));
   if (layout.pageName.trim() === '') {
     errors.push({ reason: 'empty-page-name' });
+  } else if (componentSlug(layout.pageName) === '') {
+    // "!!!" would become frontend/src/pages/.tsx with no component name.
+    errors.push({ reason: 'page-name-has-no-letters', pageName: layout.pageName });
   }
 
   for (const element of layout.elements) {

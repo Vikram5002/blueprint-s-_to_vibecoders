@@ -22,7 +22,7 @@ import {
   SUBJECT_RESOLUTION_STATUSES,
   SUBJECT_UNRESOLVED_REASONS,
 } from '../types/constraints.js';
-import { DOMAIN_NAMES, type DomainName, type ValidatedProjectSchema } from '../types/project-schema.js';
+import { componentSlug, DOMAIN_NAMES, type DomainName, type ValidatedProjectSchema } from '../types/project-schema.js';
 
 export type ProjectSchemaRejection =
   | { readonly path: string; readonly reason: 'not-an-object' }
@@ -32,6 +32,8 @@ export type ProjectSchemaRejection =
   | { readonly path: string; readonly reason: 'unrecognized-domain-key'; readonly value: string }
   | { readonly path: string; readonly reason: 'self-referential-domain-dependency' }
   | { readonly path: string; readonly reason: 'duplicate-component-id'; readonly value: string }
+  | { readonly path: string; readonly reason: 'component-name-has-no-letters'; readonly value: string }
+  | { readonly path: string; readonly reason: 'duplicate-component-file'; readonly value: string }
   | { readonly path: string; readonly reason: 'invalid-constraint-relation'; readonly value: unknown }
   | { readonly path: string; readonly reason: 'wrong-provenance-literal'; readonly value: unknown }
   /**
@@ -91,8 +93,22 @@ function validateDomainSpec(
   if (!Array.isArray(candidate['components'])) {
     rejections.push({ path: `${path}.components`, reason: 'missing-or-wrong-type', expected: 'array' });
   } else {
+    // Each component becomes one file named after it (componentSlug), so a
+    // name with no letters or digits has no file name, and two names with the
+    // same slug in one domain would silently overwrite each other's file.
+    const slugs = new Set<string>();
     candidate['components'].forEach((component, index) => {
-      rejections.push(...validateComponent(component, `${path}.components[${index}]`, seenIds));
+      const componentPath = `${path}.components[${index}]`;
+      rejections.push(...validateComponent(component, componentPath, seenIds));
+      const name = isRecord(component) ? component['name'] : undefined;
+      if (!isNonEmptyString(name)) return;
+      const slug = componentSlug(name);
+      if (slug === '') {
+        rejections.push({ path: `${componentPath}.name`, reason: 'component-name-has-no-letters', value: name });
+      } else if (slugs.has(slug)) {
+        rejections.push({ path: `${componentPath}.name`, reason: 'duplicate-component-file', value: name });
+      }
+      slugs.add(slug);
     });
   }
 
