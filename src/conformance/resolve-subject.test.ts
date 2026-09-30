@@ -294,3 +294,24 @@ describe('resolution is reported separately by origin', () => {
     expect(summary.byOrigin.regex.total).toBe(0);
   });
 });
+
+describe('path rules with capital letters and inner wildcards', () => {
+  const laravel: ResolutionCandidate[] = [
+    { moduleId: 'm-http', label: 'app/Http', directories: ['app/Http/Controllers', 'app/Http/Middleware'], fileCount: 8 },
+    { moduleId: 'm-models', label: 'app/Models', directories: ['app/Models'], fileCount: 4 },
+    { moduleId: 'm-mods', label: 'src/modules', directories: ['src/billing/domain', 'src/users/domain'], fileCount: 6 },
+  ];
+  const resolveIn = (phrase: string): ReturnType<typeof resolveSubject> => resolveSubject(phrase, { candidates: laravel });
+
+  it('resolves a Laravel-style path as written, capitals included', () => {
+    expect(resolveIn('app/Http/Controllers')).toMatchObject({ status: 'PATH_PATTERN', target: 'app/Http/Controllers/**' });
+    expect(resolveIn('Controllers/')).toMatchObject({ status: 'PATH_PATTERN', target: 'app/Http/Controllers/**' });
+    expect(resolveIn('app/Models/**')).toMatchObject({ status: 'PATH_PATTERN', target: 'app/Models/**' });
+  });
+
+  it('resolves a glob with a wildcard in the middle when a real directory matches it', () => {
+    expect(resolveIn('src/*/domain')).toMatchObject({ status: 'PATH_PATTERN', target: 'src/*/domain' });
+    expect(resolveIn('**/domain/**')).toMatchObject({ status: 'PATH_PATTERN', target: '**/domain/**' });
+    expect(resolveIn('src/*/infra')).toMatchObject({ status: 'UNRESOLVED', reason: 'no-candidate' });
+  });
+});

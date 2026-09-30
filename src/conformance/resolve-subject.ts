@@ -15,6 +15,7 @@
  * sentence; deciding which module a name refers to is a matching problem over
  * data we already hold, and doing it here keeps it reproducible and inspectable.
  */
+import { hasInnerWildcard, matchesAnyDirectory, patternPrefix } from './path-pattern.js';
 import type {
   ResolvedSubject,
   SubjectResolutionSummary,
@@ -124,7 +125,9 @@ export function resolveSubject(phrase: string, options: ResolveOptions): Resolve
   // README is reported rather than silently becoming a constraint about nothing.
   if (looksLikePath(lower)) {
     const directories = options.directories ?? collectDirectories(options.candidates);
-    const resolvedPath = resolvePathPattern(normalisePattern(lower), directories);
+    // As written, not lowercased: directory names are case-sensitive
+    // (`app/Http/Controllers` in a Laravel project).
+    const resolvedPath = resolvePathPattern(normalisePattern(trimmed), directories);
     if (resolvedPath.status === 'ok') {
       return {
         phrase: trimmed,
@@ -257,7 +260,12 @@ type PathResolution =
  * `vendor/parser` exist genuinely does not pick one out.
  */
 function resolvePathPattern(pattern: string, directories: readonly string[]): PathResolution {
-  const prefix = pattern.replace(/\/?\*\*?$/, '').replace(/\*/g, '');
+  if (hasInnerWildcard(pattern)) {
+    return matchesAnyDirectory(pattern, directories)
+      ? { status: 'ok', pattern }
+      : { status: 'fail', reason: 'no-candidate', alternatives: [] };
+  }
+  const prefix = patternPrefix(pattern);
   if (prefix === '') return { status: 'fail', reason: 'no-candidate', alternatives: [] };
 
   const fromRoot = directories.some((directory) => directory === prefix || directory.startsWith(`${prefix}/`));

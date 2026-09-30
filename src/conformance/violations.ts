@@ -11,6 +11,7 @@
  */
 import { createHash } from 'node:crypto';
 import { scoreSeverity } from './severity.js';
+import { pathPatternMatcher } from './path-pattern.js';
 import type { Constraint, ResolvedSubject } from '../types/constraints.js';
 import type { ModuleEdge, ClusteringResult } from '../types/modules.js';
 import type { Evidence } from '../types/graph.js';
@@ -148,10 +149,10 @@ function filesFor(subject: ResolvedSubject, index: Index): Set<string> {
   }
 
   if (subject.status === 'PATH_PATTERN' && subject.target !== null) {
-    const prefix = subject.target.replace(/\/?\*\*?$/, '').replace(/\*/g, '');
+    const covers = pathPatternMatcher(subject.target);
     const files = new Set<string>();
     for (const file of index.moduleByFile.keys()) {
-      if (file === prefix || file.startsWith(`${prefix}/`)) files.add(file);
+      if (covers(file)) files.add(file);
     }
     return files;
   }

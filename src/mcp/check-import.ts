@@ -21,6 +21,7 @@
 import type { Constraint, ResolvedSubject } from '../types/constraints.js';
 import type { ClusteringResult } from '../types/modules.js';
 import type { FileEdge } from '../conformance/violations.js';
+import { pathPatternMatcher } from '../conformance/path-pattern.js';
 
 /**
  * Three outcomes, and the third is not a failure.
@@ -417,10 +418,10 @@ function filesFor(subject: ResolvedSubject, index: Index): Set<string> {
   }
 
   if (subject.status === 'PATH_PATTERN' && subject.target !== null) {
-    const prefix = subject.target.replace(/\/?\*\*?$/, '').replace(/\*/g, '');
+    const covers = pathPatternMatcher(subject.target);
     const files = new Set<string>();
     for (const file of index.moduleByFile.keys()) {
-      if (file === prefix || file.startsWith(`${prefix}/`)) files.add(file);
+      if (covers(file)) files.add(file);
     }
     return files;
   }
