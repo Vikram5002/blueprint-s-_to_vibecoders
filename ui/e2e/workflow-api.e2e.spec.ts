@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { startCli, type RunningCli } from './cli-server';
+import { LIVE_RESULT_TIMEOUT_MS, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
 
 /**
  * Exercises the real /api/workflow/jobs + /api/workflow/jobs/:id HTTP
@@ -27,7 +28,7 @@ import { startCli, type RunningCli } from './cli-server';
  */
 /** Not aggressive on purpose — Gemini measures 3-16s, the local model 10.7-27s (ADR-002). */
 const POLL_INTERVAL_MS = 2_000;
-const POLL_TIMEOUT_MS = 60_000;
+const POLL_TIMEOUT_MS = LIVE_RESULT_TIMEOUT_MS;
 
 interface WorkflowJobResponse {
   readonly id: string;
@@ -41,7 +42,7 @@ interface WorkflowJobResponse {
 }
 
 test.describe('real workflow API — POST /jobs, GET /jobs/:id', () => {
-  test.setTimeout(120_000);
+  test.setTimeout(LIVE_TEST_TIMEOUT_MS);
 
   let cli: RunningCli;
 

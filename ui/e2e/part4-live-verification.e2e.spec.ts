@@ -46,7 +46,7 @@ test.describe('Part 4: live verification of Item 3 (service-locator check) and P
 
     // Real Layer 2 schema generation, live.
     const generateAppButton = page.getByRole('button', { name: 'Generate Application' });
-    await expect(generateAppButton).toBeVisible({ timeout: 60_000 });
+    await expect(generateAppButton).toBeVisible({ timeout: LIVE_RESULT_TIMEOUT_MS });
 
     await generateAppButton.click();
     await expect(generateAppButton).toBeHidden();
