@@ -124,40 +124,22 @@ export interface ProviderStatus {
 }
 
 /**
- * How long to wait for the local inference server to answer before calling it
- * unreachable. Short on purpose: this runs to render a picker, not to serve a
- * request, and a hung probe would stall the UI. The real request timeout is
- * `local.ts`'s own 300s, which is a completely different question - "is
- * anything listening" vs "how long may generation take".
- *
- * Sized for a tunnelled origin rather than loopback: a cloud-GPU tunnel's
- * first request crosses a real network and can take a second or two to
- * establish, and reporting a working Colab server as "not running" because
- * a loopback-sized budget expired would be worse than a slightly slower
- * picker.
- */
-const LOCAL_PROBE_TIMEOUT_MS = 4_000;
-
-/**
  * Is the local inference server up?
  *
- * ANY HTTP response counts, including a 404: `local_inference_server.py`
- * exposes only `POST /complete` and has no health endpoint, so a GET to the
- * base URL is expected to be refused by the route table - which still proves
- * a server is listening and is exactly what this needs to know. Only a
- * transport-level failure (connection refused, DNS, timeout) means "not
- * running".
+ * Only when `GET /models` answers with the server's own model list.
+ * Counting any HTTP answer as "up" was wrong for every tunnelled setup: a
+ * Colab, Lightning or cloudflared tunnel answers with its own 404 or 502
+ * page while the inference server behind it is stopped, so the picker showed
+ * a ready model and every request then failed. `local_inference_server.py`
+ * (and the Modal deployment, which runs it) serves `GET /models`; a
+ * transport failure, a timeout, an error status or any other body means
+ * "not running".
  */
 export async function probeLocalServer(
   baseUrl: string = DEFAULT_LOCAL_BASE_URL,
   fetchImpl: typeof fetch = fetch,
 ): Promise<boolean> {
-  try {
-    await fetchImpl(baseUrl, { method: 'GET', signal: AbortSignal.timeout(LOCAL_PROBE_TIMEOUT_MS) });
-    return true;
-  } catch {
-    return false;
-  }
+  return (await probeModels(baseUrl, fetchImpl)) !== null;
 }
 
 export interface ProviderRegistry {
@@ -358,9 +340,8 @@ export function createProviderRegistry(options: ProviderRegistryOptions = {}): P
         ),
       ]);
       const byService = new Map(serviceStatuses.map((entry) => [entry.id, entry]));
-      // Reachable is one fact; "serves the code model" is another, and a
-      // server too old to have /models answers neither way - so the served
-      // names are reported when known and the detail degrades gracefully.
+      // Up means /models answered (probeLocalServer); fetched again here for
+      // the names it serves, reported when known.
       const served = codeUp ? await probeModels(codeUrl, fetchImpl) : null;
       return SELECTABLE_PROVIDERS.map((id) => {
         const service = byService.get(id);
@@ -379,7 +360,7 @@ export function createProviderRegistry(options: ProviderRegistryOptions = {}): P
               ? names.length > 0
                 ? `Reachable at ${url} - serving ${names.join(', ')}`
                 : `Reachable at ${url}`
-              : `No server responding at ${url} - start local_inference_server.py first`,
+              : `No inference server answering at ${url} (a tunnel's own page does not count) - start local_inference_server.py there first`,
           };
         }
         const available = choice.apiKey !== null;

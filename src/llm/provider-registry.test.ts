@@ -11,8 +11,14 @@ import type { CompletionProvider, CompletionResult } from './provider.js';
 
 const GEMINI_ENV = { GEMINI_API_KEY: 'g-key' } as NodeJS.ProcessEnv;
 
-/** Any HTTP answer at all means a server is listening; only a transport failure means it is not. */
-const reachable = (async () => new Response('not found', { status: 404 })) as typeof fetch;
+/** The inference server's own GET /models answer: the only thing that counts as "running". */
+const reachable = (async () =>
+  new Response(JSON.stringify({ models: [{ name: 'local:test', base: 'b', adapter: 'a' }], default: 'local:test' }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  })) as typeof fetch;
+/** What a tunnel answers with when the server behind it is stopped. */
+const tunnelWithNothingBehindIt = (async () => new Response('<html>404 Not Found</html>', { status: 404 })) as typeof fetch;
 const refused = (async () => {
   throw new Error('ECONNREFUSED');
 }) as typeof fetch;
@@ -209,7 +215,7 @@ describe('local base URL - pointing at a machine that is not this one', () => {
       initial: null,
       fetchImpl: (async (url: unknown) => {
         probed.push(String(url));
-        return new Response('', { status: 404 });
+        return reachable(String(url));
       }) as typeof fetch,
     });
     registry.setLocalBaseUrl('https://abc-def.trycloudflare.com');
@@ -219,7 +225,7 @@ describe('local base URL - pointing at a machine that is not this one', () => {
     // origin of its own, follows the planner's tunnel too. (Ollama is probed
     // at its own address, which is loopback by design.)
     const localProbes = probed.filter((url) => !url.includes(':11434'));
-    expect(localProbes[0]).toBe('https://abc-def.trycloudflare.com');
+    expect(localProbes[0]).toBe('https://abc-def.trycloudflare.com/models');
     expect(localProbes.every((url) => url.startsWith('https://abc-def.trycloudflare.com'))).toBe(true);
     expect(local?.available).toBe(true);
     expect(local?.detail).toContain('https://abc-def.trycloudflare.com');
@@ -240,8 +246,12 @@ describe('local base URL - pointing at a machine that is not this one', () => {
 });
 
 describe('probeLocalServer', () => {
-  it('treats any HTTP response as "a server is listening"', async () => {
+  it('treats the server answering GET /models with its model list as running', async () => {
     await expect(probeLocalServer('http://127.0.0.1:8712', reachable)).resolves.toBe(true);
+  });
+
+  it("does not count a tunnel's own error page as a running server", async () => {
+    await expect(probeLocalServer('https://abc.trycloudflare.com', tunnelWithNothingBehindIt)).resolves.toBe(false);
   });
 
   it('treats a transport failure as "not running"', async () => {
@@ -432,16 +442,17 @@ describe('local code base URL - the coder may share the planner\'s server or hav
     expect(code?.detail).toContain('https://coder.trycloudflare.com');
     expect(code?.detail).toContain('local-code:qwen2.5-coder-7b-instruct+code-adapter');
     expect(probed).toContain('https://coder.trycloudflare.com/models');
-    expect(probed).toContain('http://127.0.0.1:8712');
+    expect(probed).toContain('http://127.0.0.1:8712/models');
     // The planner entry never gains the coder's model list.
     expect(status.find((entry) => entry.id === 'local')?.detail).not.toContain('serving');
   });
 
-  it('still reports the coder as reachable when the server predates /models', async () => {
-    const registry = createProviderRegistry({ env: {}, initial: null, fetchImpl: reachable });
+  it('reports a server that predates /models as not running - its 404 cannot be told apart from a tunnel page', async () => {
+    // Still selectable in the picker; this only decides the "not set up" note.
+    const oldServer = (async () => new Response('', { status: 404 })) as typeof fetch;
+    const registry = createProviderRegistry({ env: {}, initial: null, fetchImpl: oldServer });
     const code = (await registry.status()).find((entry) => entry.id === 'local-code');
-    expect(code?.available).toBe(true);
-    expect(code?.detail).toBe('Reachable at http://127.0.0.1:8712');
+    expect(code?.available).toBe(false);
   });
 
   it('reports the coder as down at its own origin, naming the script to start', async () => {
