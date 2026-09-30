@@ -554,10 +554,12 @@ function evaluateProspective(
     case 'must-not-cycle': {
       const constrained = modulesFor(constraint.subject, index);
       const path = shortestPath(to.modules, from.modules, index.outbound);
-      if (path === null) return null;
-
       // Ignore a loop entirely inside one module: the constraint is about the
       // module as a unit, and file-level cycles within it are not its subject.
+      // Both files in one module give a one-module "path", which is exactly
+      // that case - the detector skips it the same way.
+      if (path === null || path.length < 2) return null;
+
       const loop = [...path, path[0] as string];
       if (!loop.some((moduleId) => constrained.has(moduleId))) return null;
 

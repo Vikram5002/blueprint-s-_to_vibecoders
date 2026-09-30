@@ -298,6 +298,12 @@ describe('cycles, which depend on the graph that already exists', () => {
     ]);
     expect(result.verdict).toBe('allowed');
   });
+
+  it('allows an import between two files of the same module, as the detector does', () => {
+    const core = [module('m-core', ['src/core/a.ts', 'src/core/b.ts'])];
+    const rule = [constraint('must-not-cycle', subject('m-core'), subject('m-core'))];
+    expect(check('src/core/a.ts', 'src/core/b.ts', rule, core, []).verdict).toBe('allowed');
+  });
 });
 
 describe('path-pattern rules stay as narrow as they were written', () => {
