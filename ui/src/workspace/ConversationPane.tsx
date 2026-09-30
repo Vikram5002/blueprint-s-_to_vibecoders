@@ -71,6 +71,19 @@ export function ConversationPane(): JSX.Element {
     return () => clearInterval(timer);
   }, [running]);
 
+  // The browser tab says what the agent is doing, so a person on another tab can tell at a glance.
+  const lastForTitle = runs[runs.length - 1];
+  const tabTitle =
+    lastForTitle === undefined || lastForTitle.finishedAt !== null
+      ? 'VibeCoder'
+      : lastForTitle.review !== null
+        ? '● Review the plan - VibeCoder'
+        : `● ${lastForTitle.steps.find((step) => step.status === 'running')?.title ?? 'Working'} - VibeCoder`;
+  useEffect(() => {
+    document.title = tabTitle;
+  }, [tabTitle]);
+  useEffect(() => () => void (document.title = 'VibeCoder'), []);
+
   // "New project": a clean page, unless a run is still going (it is never thrown away mid-flight).
   useEffect(() => {
     if (newProjectVersion === 0) return;
