@@ -63,6 +63,14 @@ export interface HistoryOptions {
    */
   readonly constraints?: readonly Constraint[];
   readonly onProgress?: (done: number, total: number, commit: CommitRef) => void;
+  /**
+   * Called with each snapshot the moment it is built, so a caller can persist
+   * it right away: an interrupted walk (Ctrl+C, a crash) then keeps every
+   * commit it finished instead of losing the lot.
+   */
+  readonly onSnapshot?: (snapshot: Snapshot) => void;
+  /** Called for a commit that could not be checked out; the walk carries on with the next one. */
+  readonly onSkip?: (commit: CommitRef, reason: string) => void;
 }
 
 async function git(cwd: string, args: readonly string[]): Promise<string> {
@@ -88,7 +96,9 @@ export async function listCommits(root: string, count: number): Promise<CommitRe
     'log',
     `--max-count=${count}`,
     '--date=iso-strict',
-    `--pretty=format:%H${FIELD}%ad${FIELD}%s${RECORD}`,
+    // %cd, the committer date: %ad is the author date, which rebases and
+    // cherry-picks leave out of order.
+    `--pretty=format:%H${FIELD}%cd${FIELD}%s${RECORD}`,
   ]);
 
   return output
@@ -115,17 +125,28 @@ export async function snapshotHistory(options: HistoryOptions): Promise<Snapshot
   const commits = await listCommits(options.root, options.count);
   const correctionIds = (options.corrections ?? []).map((correction) => correction.id);
   const constraints = options.constraints ?? [];
+  // When the target is a folder inside the repository, analyse that same
+  // folder in every worktree - not the whole repository - so each snapshot
+  // is comparable with the current run.
+  const prefix = await git(options.root, ['rev-parse', '--show-prefix']);
   const workRoot = await mkdtemp(join(tmpdir(), 'vibe-history-'));
   const snapshots: Snapshot[] = [];
 
   try {
     for (const [index, commit] of commits.entries()) {
       const path = join(workRoot, commit.sha.slice(0, 12));
-      await git(options.root, ['worktree', 'add', '--detach', '--quiet', path, commit.sha]);
+      const added = await git(options.root, ['worktree', 'add', '--detach', '--quiet', path, commit.sha]).then(
+        () => null,
+        (cause: unknown) => String(cause),
+      );
+      if (added !== null) {
+        options.onSkip?.(commit, added);
+        continue;
+      }
 
       try {
         const analysed = await analyseRepository({
-          root: path,
+          root: prefix === '' ? path : join(path, prefix),
           ...(options.corrections === undefined ? {} : { cluster: { corrections: options.corrections } }),
         });
         if (!analysed.ok) continue;
@@ -139,20 +160,20 @@ export async function snapshotHistory(options: HistoryOptions): Promise<Snapshot
          */
         const conformance = checkConformance({ graph, clustering, constraints });
 
-        snapshots.push(
-          buildSnapshot({
-            commit: commit.sha,
-            committedAt: commit.committedAt,
-            subject: commit.subject,
-            clustering,
-            labels,
-            fileEdges: fileEdgesFrom(graph),
-            constraints,
-            conformance,
-            activeCorrections: correctionIds,
-            fileCount: parse.files.length,
-          }),
-        );
+        const snapshot = buildSnapshot({
+          commit: commit.sha,
+          committedAt: commit.committedAt,
+          subject: commit.subject,
+          clustering,
+          labels,
+          fileEdges: fileEdgesFrom(graph),
+          constraints,
+          conformance,
+          activeCorrections: correctionIds,
+          fileCount: parse.files.length,
+        });
+        snapshots.push(snapshot);
+        options.onSnapshot?.(snapshot);
 
         options.onProgress?.(index + 1, commits.length, commit);
       } finally {
