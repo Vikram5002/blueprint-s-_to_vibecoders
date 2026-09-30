@@ -273,6 +273,18 @@ describe('saved application runs', () => {
       expect(runs.get(id)).toBeDefined();
     }, 120_000);
 
+    it('keeps a failed import after a restart, under a session that says what failed', async () => {
+      const project = join(root, 'nothing-here');
+      await mkdir(project, { recursive: true });
+      const response = await post('/import', { kind: 'local', path: project });
+      expect(response.status).toBe(202);
+      const { id, sessionId } = (await response.json()) as { id: string; sessionId: string };
+      for (let i = 0; i < 600 && !['succeeded', 'failed'].includes(jobs.get(id)?.status ?? ''); i += 1) await new Promise((r) => setTimeout(r, 100));
+      expect(jobs.get(id)?.status).toBe('failed');
+      expect(runs.get(id)?.status).toBe('failed');
+      expect(sessions.get(sessionId)?.title).toBe('Import failed: nothing-here');
+    }, 120_000);
+
     it("edits a run's components: validates the change and updates the session plan", async () => {
       const job = await finishedRun(jobs, runs, join(root, 'generated'), { installOk: true, buildOk: true });
       // An existing session: its plan must be updated in place, not left as it was.

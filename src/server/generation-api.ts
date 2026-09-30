@@ -277,13 +277,27 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
     const job = jobs.create({ sessionId, kind: 'import' });
     const root = join(deps.generationRoot, job.id);
     const sessions = deps.sessions;
+    // A failed import has no plan, and runs are only ever listed under a
+    // session, so it is recorded under a session of its own with an empty
+    // plan - otherwise the failure would be gone after a restart.
+    const recordFailure = (failed: ApplicationJob): void => {
+      // The session exists when the import got as far as reading the files.
+      const schema = sessions.get(sessionId)?.schema ?? failedImportSchema(sessionId, source);
+      if (schema === null) return;
+      if (sessions.get(sessionId) === undefined) saveSessionSchema(sessions, schema, schema.originalPrompt);
+      persist(failed, schema);
+    };
     runImportJob(jobs, job.id, source, { sessionId, root, cloneRoot: deps.cloneRoot ?? '', sessions })
       .then((schema) => {
         const finished = jobs.get(job.id);
-        if (finished !== undefined && schema !== null) persist(finished, schema);
+        if (finished === undefined) return;
+        if (schema !== null) persist(finished, schema);
+        else if (finished.status === 'failed') recordFailure(finished);
       })
       .catch((cause) => {
-        jobs.set({ ...(jobs.get(job.id) ?? job), status: 'failed', error: { phase: 'unexpected', message: `unexpected: ${String(cause)}` } });
+        const failed: ApplicationJob = { ...(jobs.get(job.id) ?? job), status: 'failed', error: { phase: 'unexpected', message: `unexpected: ${String(cause)}` } };
+        jobs.set(failed);
+        recordFailure(failed);
       });
     return c.json({ id: job.id, status: job.status, sessionId }, 202);
   });
@@ -843,6 +857,22 @@ async function runPageSyncJob(
 // ---- import and component edits ---------------------------------------------
 
 type ImportSource = { readonly kind: 'local'; readonly path: string } | { readonly kind: 'git'; readonly url: string; readonly branch: string };
+
+/** An empty plan that names what failed to import, so the failure has a session to be listed under. */
+function failedImportSchema(sessionId: string, source: ImportSource): ValidatedProjectSchema | null {
+  const where = source.kind === 'local' ? source.path : source.url;
+  const name = source.kind === 'local' ? basename(source.path) : source.url.replace(/\.git$/, '').split('/').pop() ?? source.url;
+  const empty = { components: [], dependsOn: [] };
+  const validated = validateProjectSchema({
+    sessionId,
+    title: `Import failed: ${name}`,
+    originalPrompt: `Imported from ${where}`,
+    domains: { frontend: empty, backend: empty, database: empty, security: empty },
+    constraints: [],
+    provenance: 'STATED',
+  });
+  return validated.ok ? validated.value : null;
+}
 
 function parseImportSource(body: unknown): ImportSource | string {
   if (typeof body !== 'object' || body === null) return 'expected { kind: "local", path } or { kind: "git", url, branch? }';
