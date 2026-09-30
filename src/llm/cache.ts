@@ -15,7 +15,7 @@
  * Stored as one JSON file under `.vibe/`, which is git-ignored by default.
  */
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
 export interface CachedLabel {
@@ -89,7 +89,7 @@ export async function loadLabelCache(root: string): Promise<LabelCache> {
       if (!dirty) {
         return true;
       }
-      const written = await serialised(path, async () => {
+      const written = await serialised(path, () => withFileLock(path, async () => {
         // Several jobs share one cache file, each with its own copy loaded at
         // its start. Merge what the others have saved since, so the last
         // writer does not drop their entries.
@@ -97,11 +97,45 @@ export async function loadLabelCache(root: string): Promise<LabelCache> {
           if (!entries.has(key)) entries.set(key, value);
         }
         return writeAtomically(path, entries);
-      });
+      }));
       dirty = !written;
       return written;
     },
   };
+}
+
+const LOCK_WAIT_MS = 10_000;
+/** A lock older than this was left by a process that died mid-flush. */
+const STALE_LOCK_MS = 30_000;
+
+/**
+ * One flush per file at a time across processes too (a CLI run and the
+ * server can share a project's cache): an exclusive-create lock file beside
+ * the cache. If the lock cannot be taken in time the flush reports failure,
+ * which callers already treat as "not cached this time", never as fatal.
+ */
+async function withFileLock(path: string, work: () => Promise<boolean>): Promise<boolean> {
+  const lockPath = `${path}.lock`;
+  await mkdir(posix.dirname(path), { recursive: true }).catch(() => undefined);
+  const deadline = Date.now() + LOCK_WAIT_MS;
+  for (;;) {
+    const handle = await open(lockPath, 'wx').catch(() => null);
+    if (handle !== null) {
+      await handle.close();
+      try {
+        return await work();
+      } finally {
+        await rm(lockPath, { force: true }).catch(() => undefined);
+      }
+    }
+    const held = await stat(lockPath).catch(() => null);
+    if (held !== null && Date.now() - held.mtimeMs > STALE_LOCK_MS) {
+      await rm(lockPath, { force: true }).catch(() => undefined);
+      continue;
+    }
+    if (Date.now() > deadline) return false;
+    await new Promise((resolve) => setTimeout(resolve, 25 + Math.random() * 50));
+  }
 }
 
 /** One flush per file at a time, within this process. */
