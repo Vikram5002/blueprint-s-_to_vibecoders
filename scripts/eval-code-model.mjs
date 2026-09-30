@@ -47,6 +47,7 @@ import { generateAndVerifyProject, verifyGeneratedProject, writeProjectFiles } f
 import { installBuildAndRepair, runCommand } from '../dist/generate/build-and-repair.js';
 import { runRuntimeCheck, routeResultsFor } from '../dist/generate/runtime-check.js';
 import { detectServiceLocatorEvasion } from '../dist/generate/detect-service-locator-evasion.js';
+import { planConstraints } from '../dist/generate/plan-rules.js';
 import { createComponentCodeGenerator } from '../dist/generate/component-codegen.js';
 import { generateComponentFile } from '../dist/generate/generate-project.js';
 import { componentTargetPath } from '../dist/generate/assemble.js';
@@ -158,7 +159,7 @@ function cloneProject(sourceRoot, target) {
 async function checkProject(root, schema, files, buildOk) {
   const verified = buildOk ? await verifyGeneratedProject(root, schema) : null;
   const violations = verified === null ? [] : verified.ok ? verified.value : [{ kind: 'pipeline-error', message: verified.error.message }];
-  const locator = detectServiceLocatorEvasion(files, schema.constraints);
+  const locator = detectServiceLocatorEvasion(files, planConstraints(schema));
   const runtime = buildOk ? await runRuntimeCheck(root, schema) : { started: false, routes: [], ok: false, serverOutput: 'build failed - server not started' };
   return { buildOk, violations, locator, runtime, perComponent: new Map(routeResultsFor(schema, runtime).map((e) => [e.targetPath, e])) };
 }

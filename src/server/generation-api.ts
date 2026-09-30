@@ -50,6 +50,7 @@ import {
 } from '../generate/verify-and-regenerate.js';
 import { installBuildAndRepair, summarise, type BuildOutcome, type BuildPhase, type FileSummary } from '../generate/build-and-repair.js';
 import { detectServiceLocatorEvasion } from '../generate/detect-service-locator-evasion.js';
+import { planConstraints } from '../generate/plan-rules.js';
 import { findComponentByTargetPath } from '../generate/generate-project.js';
 import { extractLayoutFromComponent } from '../generate/extract-layout.js';
 import { layoutToComponentFile, pageLayoutTargetPath, validatePageLayout, type PageLayout } from '../generate/canvas-layout.js';
@@ -779,7 +780,7 @@ async function runRepairJob(
     files: summarise(built.value.files),
     regenerationLog: built.value.regenerationLog,
     unresolvedViolations: verified.value,
-    unresolvedServiceLocatorFindings: detectServiceLocatorEvasion(built.value.files, schema.constraints),
+    unresolvedServiceLocatorFindings: detectServiceLocatorEvasion(built.value.files, planConstraints(schema)),
     build: built.value.build,
   });
 }
@@ -834,7 +835,7 @@ async function runPageSyncJob(
     files: summarise(built.value.files),
     regenerationLog: built.value.regenerationLog,
     unresolvedViolations: verified.value,
-    unresolvedServiceLocatorFindings: detectServiceLocatorEvasion(built.value.files, plan.schema.constraints),
+    unresolvedServiceLocatorFindings: detectServiceLocatorEvasion(built.value.files, planConstraints(plan.schema)),
     build: built.value.build,
   });
 }
@@ -906,7 +907,7 @@ async function runImportJob(store: ApplicationJobStore, jobId: string, source: I
     files: summarise(files),
     regenerationLog: [],
     unresolvedViolations: verified.ok ? verified.value : [],
-    unresolvedServiceLocatorFindings: detectServiceLocatorEvasion(files, schema.constraints),
+    unresolvedServiceLocatorFindings: detectServiceLocatorEvasion(files, planConstraints(schema)),
     build: { installOk: install.ok, buildOk: install.ok && build.ok, ...(install.ok && build.ok ? {} : { failureOutput: install.ok ? build.output : install.output }) },
   });
   return schema;

@@ -39,6 +39,7 @@ import { installBuildAndRepair, MAX_FAILURE_OUTPUT_CHARS } from '../dist/generat
 import { createFileJudge } from '../dist/generate/file-acceptance.js';
 import { runRuntimeCheck, routeResultsFor } from '../dist/generate/runtime-check.js';
 import { detectServiceLocatorEvasion } from '../dist/generate/detect-service-locator-evasion.js';
+import { planConstraints } from '../dist/generate/plan-rules.js';
 import { createComponentCodeGenerator } from '../dist/generate/component-codegen.js';
 import { generateComponentFile, findComponentByTargetPath } from '../dist/generate/generate-project.js';
 
@@ -290,7 +291,7 @@ for (const { sourceFile, pair } of plans) {
   if (built.value.regenerationLog.length > 0) {
     const reverified = await verifyGeneratedProject(root, schema);
     violations = reverified.ok ? reverified.value : [...violations, { kind: 'pipeline-error', message: reverified.error.message }];
-    locatorFindings = detectServiceLocatorEvasion(finalFiles, schema.constraints);
+    locatorFindings = detectServiceLocatorEvasion(finalFiles, planConstraints(schema));
   }
 
   const runtime = buildOk

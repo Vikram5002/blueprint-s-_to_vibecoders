@@ -41,6 +41,7 @@ import {
   detectServiceLocatorEvasion,
   type SuspectedServiceLocatorEvasion,
 } from './detect-service-locator-evasion.js';
+import { blueprintText, planConstraints } from './plan-rules.js';
 
 export interface RegenerationAttempt {
   readonly component: Component;
@@ -147,7 +148,7 @@ const BLUEPRINT_FILE_NAME = 'generated.blueprint';
  */
 async function writeBlueprintFile(root: string, schema: ValidatedProjectSchema): Promise<string> {
   const path = join(root, BLUEPRINT_FILE_NAME);
-  const text = schema.constraints.map((constraint) => constraint.rawText).join('\n');
+  const text = blueprintText(schema);
   await writeFile(path, `${text}\n`, 'utf8');
   return path;
 }
@@ -476,7 +477,7 @@ export async function generateAndVerifyProject(
   // cleanly and still exhibit a suspected evasion (that is the entire
   // limitation this check exists to narrow), so this must never be
   // skipped just because firstCheck.value is empty.
-  const firstLocatorFindings = detectServiceLocatorEvasion(generated.value.files, schema.constraints);
+  const firstLocatorFindings = detectServiceLocatorEvasion(generated.value.files, planConstraints(schema));
 
   if (firstCheck.value.length === 0 && firstLocatorFindings.length === 0) {
     return ok({
@@ -581,7 +582,7 @@ export async function generateAndVerifyProject(
   // docs/GENERATION.md's own real example of this happening) - such a
   // component must be reported 'still-violating', not 'fixed', even though
   // Blueprint's own second check reports it clean.
-  const secondLocatorFindings = detectServiceLocatorEvasion(files, schema.constraints);
+  const secondLocatorFindings = detectServiceLocatorEvasion(files, planConstraints(schema));
 
   const stillViolatingFiles = filesStillViolating(secondCheck.value);
   const stillEvadingFiles = new Set(secondLocatorFindings.map((finding) => finding.file));
