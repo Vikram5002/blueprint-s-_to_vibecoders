@@ -22,8 +22,8 @@
  * been fetched.
  */
 import { spawn } from 'node:child_process';
-import { mkdir, rm } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { mkdir, readdir, rm } from 'node:fs/promises';
+import { basename, dirname, join } from 'node:path';
 import { err, ok, type Result } from '../types/result.js';
 
 export interface GitSource {
@@ -109,26 +109,46 @@ const DEFAULT_CLONE_TIMEOUT_MS = 10 * 60_000;
 const MAX_ERROR_OUTPUT_CHARS = 2_000;
 
 /**
- * Clones `url` into `directory`, replacing any earlier clone there. `url` is
- * passed to git as-is, so callers must validate it with `parseGitUrl` first;
- * tests pass a local repository path, which is why this does not re-check.
+ * Clones `url` next to `directory`, into a fresh folder named after it, and
+ * then removes the earlier clones of the same repository where it can.
+ * `url` is passed to git as-is, so callers must validate it with
+ * `parseGitUrl` first; tests pass a local repository path, which is why this
+ * does not re-check.
+ *
+ * Never deletes before cloning: the clone being replaced may be the project
+ * open right now, with its .vibe/blueprint.db held open inside it, and
+ * Windows refuses to delete an open file (EBUSY). An earlier clone that is
+ * still in use is left alone and removed by a later clone.
  */
 export async function cloneRepository(url: string, directory: string, options: CloneOptions = {}): Promise<Result<CloneResult, string>> {
-  await rm(directory, { recursive: true, force: true });
+  const target = `${directory}@${Date.now().toString(36)}`;
   await mkdir(dirname(directory), { recursive: true });
 
   const args = ['clone', '--depth', '1', '--single-branch', '--progress'];
   if (options.branch !== undefined && options.branch !== '') args.push('--branch', options.branch);
-  args.push('--', url, directory);
+  args.push('--', url, target);
 
   const cloned = await runGit(args, options.timeoutMs ?? DEFAULT_CLONE_TIMEOUT_MS, options.onProgress);
   if (!cloned.ok) {
-    await rm(directory, { recursive: true, force: true });
+    await rm(target, { recursive: true, force: true }).catch(() => undefined);
     return err(explainCloneFailure(cloned.error));
   }
 
-  const head = await runGit(['-C', directory, 'rev-parse', 'HEAD'], 30_000);
-  return ok({ directory, commit: head.ok ? head.value.trim() : '' });
+  await removeEarlierClones(directory, target);
+  const head = await runGit(['-C', target, 'rev-parse', 'HEAD'], 30_000);
+  return ok({ directory: target, commit: head.ok ? head.value.trim() : '' });
+}
+
+/** Best effort: a clone that is still open (see cloneRepository) stays until the next clone. */
+async function removeEarlierClones(directory: string, keep: string): Promise<void> {
+  const name = basename(directory);
+  const entries = await readdir(dirname(directory)).catch(() => [] as string[]);
+  for (const entry of entries) {
+    if (entry !== name && !entry.startsWith(`${name}@`)) continue;
+    const path = join(dirname(directory), entry);
+    if (path === keep) continue;
+    await rm(path, { recursive: true, force: true }).catch(() => undefined);
+  }
 }
 
 function runGit(

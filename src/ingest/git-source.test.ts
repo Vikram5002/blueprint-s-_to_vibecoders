@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import Database from 'better-sqlite3';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -91,18 +92,37 @@ describe('cloneRepository (against a local repository, no network)', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     // Git for Windows may convert line endings on checkout; the content is what matters.
-    const cloned = (await readFile(join(destination, 'index.ts'), 'utf8')).replace(/\r\n/g, '\n');
+    const cloned = (await readFile(join(result.value.directory, 'index.ts'), 'utf8')).replace(/\r\n/g, '\n');
     expect(cloned).toBe('export const x = 1;\n');
     expect(result.value.commit).toMatch(/^[0-9a-f]{40}$/);
   });
 
-  it('replaces an earlier clone in the same folder rather than failing or merging', async () => {
+  it('replaces an earlier clone rather than failing or merging', async () => {
     const destination = join(root, 'clones', 'repo');
-    await cloneRepository(`file://${origin.replace(/\\/g, '/')}`, destination);
-    await writeFile(join(destination, 'stale.txt'), 'left from before', 'utf8');
+    const first = await cloneRepository(`file://${origin.replace(/\\/g, '/')}`, destination);
+    if (!first.ok) throw new Error(first.error);
+    await writeFile(join(first.value.directory, 'stale.txt'), 'left from before', 'utf8');
     const again = await cloneRepository(`file://${origin.replace(/\\/g, '/')}`, destination);
-    expect(again.ok).toBe(true);
-    expect(existsSync(join(destination, 'stale.txt'))).toBe(false);
+    if (!again.ok) throw new Error(again.error);
+    expect(again.value.directory).not.toBe(first.value.directory);
+    expect(existsSync(join(again.value.directory, 'stale.txt'))).toBe(false);
+    expect(existsSync(first.value.directory)).toBe(false);
+  });
+
+  it('re-clones while the earlier clone still has a database open inside it', async () => {
+    const destination = join(root, 'clones', 'open-repo');
+    const first = await cloneRepository(`file://${origin.replace(/\\/g, '/')}`, destination);
+    if (!first.ok) throw new Error(first.error);
+    await mkdir(join(first.value.directory, '.vibe'), { recursive: true });
+    const db = new Database(join(first.value.directory, '.vibe', 'blueprint.db'));
+    db.exec('CREATE TABLE t (x INTEGER)');
+    try {
+      const again = await cloneRepository(`file://${origin.replace(/\\/g, '/')}`, destination);
+      expect(again.ok).toBe(true);
+      if (again.ok) expect(existsSync(join(again.value.directory, 'index.ts'))).toBe(true);
+    } finally {
+      db.close();
+    }
   });
 
   it('reports a missing branch in plain words and leaves no half-made folder behind', async () => {
@@ -111,5 +131,6 @@ describe('cloneRepository (against a local repository, no network)', () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toContain('branch does not exist');
     expect(existsSync(destination)).toBe(false);
+    expect((await readdir(join(root, 'clones'))).some((name) => name.startsWith('missing-branch'))).toBe(false);
   });
 });

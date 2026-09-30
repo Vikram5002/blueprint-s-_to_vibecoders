@@ -881,6 +881,7 @@ async function runImportJob(store: ApplicationJobStore, jobId: string, source: I
     directory = cloneDirectoryFor(context.cloneRoot, parsed.value);
     const cloned = await cloneRepository(parsed.value.url, directory, source.branch === '' ? {} : { branch: source.branch });
     if (!cloned.ok) return pipelineError(cloned.error);
+    directory = cloned.value.directory;
     title = parsed.value.url.replace(/\.git$/, '').split('/').pop() ?? 'Imported project';
   }
 
