@@ -212,6 +212,15 @@ describe('local code base URL over /api/providers', () => {
     expect(registry.localCodeBaseUrl()).toBe('https://coder.trycloudflare.com');
   });
 
+  it('applies nothing when any field of the request is invalid', async () => {
+    const { app, registry } = routes(null);
+    const before = registry.localBaseUrl();
+    const response = await post(app, { localBaseUrl: 'https://planner.trycloudflare.com', localCodeBaseUrl: 'not a url' });
+
+    expect(response.status).toBe(400);
+    expect(registry.localBaseUrl()).toBe(before);
+  });
+
   it('accepts the coder URL and the code-provider switch in ONE request', async () => {
     const { app, registry } = routes(null);
     const response = await post(app, { codeProvider: 'local-code', localCodeBaseUrl: 'https://coder.trycloudflare.com' });

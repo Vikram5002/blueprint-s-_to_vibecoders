@@ -11,7 +11,7 @@
  * could never tell you which ones you are missing.
  */
 import { Hono } from 'hono';
-import { CODE_PROVIDER_SAME, SELECTABLE_PROVIDERS, type ProviderRegistry } from '../llm/provider-registry.js';
+import { CODE_PROVIDER_SAME, isValidBaseUrl, SELECTABLE_PROVIDERS, type ProviderRegistry } from '../llm/provider-registry.js';
 import type { ProviderName } from '../llm/select-provider.js';
 
 export interface ProviderRouteDeps {
@@ -56,26 +56,28 @@ export function createProviderRoutes(deps: ProviderRouteDeps): Hono {
     // Colab tunnel AND switching to it is one user action, and splitting it
     // into two round trips would leave a visible window where `local` is
     // selected but still aimed at the previous, dead origin.
+    //
+    // Every field is checked before any is applied, so a request that fails
+    // leaves the settings exactly as they were rather than half-changed.
     const requestedUrl =
       typeof body === 'object' && body !== null ? (body as { localBaseUrl?: unknown }).localBaseUrl : undefined;
-    if (requestedUrl !== undefined) {
-      if (typeof requestedUrl !== 'string' || !deps.registry.setLocalBaseUrl(requestedUrl)) {
-        return c.json({ error: 'localBaseUrl must be an http(s) URL, e.g. https://something.trycloudflare.com' }, 400);
-      }
+    if (requestedUrl !== undefined && (typeof requestedUrl !== 'string' || !isValidBaseUrl(requestedUrl))) {
+      return c.json({ error: 'localBaseUrl must be an http(s) URL, e.g. https://something.trycloudflare.com' }, 400);
     }
 
     const requestedCodeUrl =
       typeof body === 'object' && body !== null ? (body as { localCodeBaseUrl?: unknown }).localCodeBaseUrl : undefined;
-    if (requestedCodeUrl !== undefined) {
-      if (typeof requestedCodeUrl !== 'string' || !deps.registry.setLocalCodeBaseUrl(requestedCodeUrl)) {
-        return c.json({ error: 'localCodeBaseUrl must be an http(s) URL, e.g. https://something.trycloudflare.com' }, 400);
-      }
+    if (requestedCodeUrl !== undefined && (typeof requestedCodeUrl !== 'string' || !isValidBaseUrl(requestedCodeUrl))) {
+      return c.json({ error: 'localCodeBaseUrl must be an http(s) URL, e.g. https://something.trycloudflare.com' }, 400);
     }
 
     const codeProvider = parseCodeProviderRequest(body);
     if (codeProvider === false) {
       return c.json({ error: `codeProvider must be '${CODE_PROVIDER_SAME}' or one of ${SELECTABLE_PROVIDERS.join(', ')}` }, 400);
     }
+
+    if (typeof requestedUrl === 'string') deps.registry.setLocalBaseUrl(requestedUrl);
+    if (typeof requestedCodeUrl === 'string') deps.registry.setLocalCodeBaseUrl(requestedCodeUrl);
     if (codeProvider !== undefined) deps.registry.selectCode(codeProvider);
 
     const provider = parseProviderRequest(body);

@@ -212,6 +212,11 @@ export interface ProviderRegistryOptions {
   readonly fetchImpl?: typeof fetch;
 }
 
+/** True when `candidate` would be accepted by setLocalBaseUrl / setLocalCodeBaseUrl. */
+export function isValidBaseUrl(candidate: string): boolean {
+  return normaliseBaseUrl(candidate) !== null;
+}
+
 /** http(s) only, and a parseable origin: anything else would be stored, probed, and fail later with a confusing transport error instead of being rejected where it was typed. */
 function normaliseBaseUrl(candidate: string): string | null {
   const trimmed = candidate.trim().replace(/\/+$/, '');
