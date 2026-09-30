@@ -1,3 +1,4 @@
+import { Icon, type IconName } from '../design/Icon';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -83,7 +84,23 @@ interface PaletteItemProps {
  * container clips a child translated outside it, so a palette item that moved
  * itself vanished the moment it left the palette (found live, 2026-09-27).
  */
-function PaletteItem({ type, label }: PaletteItemProps): JSX.Element {
+/** One icon per palette category, so a long list scans by shape as well as by name. */
+const CATEGORY_ICON: Readonly<Record<string, IconName>> = {
+  Layout: 'layout',
+  Text: 'edit',
+  Media: 'play',
+  Marketing: 'sparkles',
+  Forms: 'check',
+  Data: 'database',
+  Navigation: 'arrow-right',
+  Overlays: 'pages',
+  Page: 'bolt',
+  Feedback: 'clock',
+  Motion: 'wand',
+  Backgrounds: 'flow',
+};
+
+function PaletteItem({ type, label, icon }: PaletteItemProps & { readonly icon: IconName }): JSX.Element {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `palette:${type}` });
   return (
     <button
@@ -93,9 +110,10 @@ function PaletteItem({ type, label }: PaletteItemProps): JSX.Element {
       type="button"
       data-testid={`palette-${type}`}
       style={{ opacity: isDragging ? 0.5 : 1 }}
-      className="block w-full cursor-grab rounded border border-slate-700 bg-slate-800 px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-700 active:cursor-grabbing"
+      className="group flex w-full cursor-grab items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-[7px] text-left text-[12px] text-slate-300 hover:border-violet-400/30 hover:bg-white/[0.07] hover:text-slate-50 active:cursor-grabbing"
     >
-      {label}
+      <Icon name={icon} size={13} className="flex-shrink-0 text-slate-500 group-hover:text-violet-300" />
+      <span className="truncate">{label}</span>
     </button>
   );
 }
@@ -866,7 +884,7 @@ export function PageBuilderCanvas(): JSX.Element {
                 type="text"
                 value={pageName}
                 onChange={(event) => setPageName(event.target.value)}
-                className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100"
+                className="focus-glow h-8 rounded-lg border border-white/[0.08] bg-black/25 px-2.5 text-[13px] text-slate-100"
               />
             </label>
           )}
@@ -874,8 +892,9 @@ export function PageBuilderCanvas(): JSX.Element {
             type="button"
             onClick={() => void handleGenerate()}
             disabled={generating || elements.length === 0}
-            className="ml-auto rounded-lg border border-emerald-700 bg-emerald-950/30 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-900/40 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn btn-primary btn-sm ml-auto"
           >
+            {generating ? <span className="spinner !h-3 !w-3" /> : <Icon name="sparkles" size={13} />}
             {generating ? 'Generating…' : 'Generate'}
           </button>
         </div>
@@ -896,7 +915,7 @@ export function PageBuilderCanvas(): JSX.Element {
           />
           <div className={preview ? 'grid grid-cols-1' : 'grid grid-cols-1 gap-4 lg:grid-cols-[160px_1fr_260px]'}>
             {!preview && (
-            <aside ref={paletteRef} className="max-h-[800px] space-y-2 overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 p-3">
+            <aside ref={paletteRef} className="max-h-[800px] space-y-2 overflow-y-auto rounded-2xl border border-white/[0.06] bg-black/20 p-3">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                 Elements
               </h4>
@@ -906,7 +925,7 @@ export function PageBuilderCanvas(): JSX.Element {
                 onChange={(event) => setPaletteQuery(event.target.value)}
                 placeholder="Search elements"
                 data-testid="palette-filter"
-                className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
+                className="focus-glow h-8 w-full rounded-lg border border-white/[0.08] bg-black/25 px-2.5 text-xs text-slate-100 placeholder:text-slate-500"
               />
               {ELEMENT_CATEGORIES.map((category) => {
                 const query = paletteQuery.trim().toLowerCase();
@@ -916,7 +935,7 @@ export function PageBuilderCanvas(): JSX.Element {
                   <section key={category.name} className="space-y-1.5 pt-1">
                     <h5 className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{category.name}</h5>
                     {types.map((type) => (
-                      <PaletteItem key={type} type={type} label={ELEMENT_SPECS[type].palette} />
+                      <PaletteItem key={type} type={type} label={ELEMENT_SPECS[type].palette} icon={CATEGORY_ICON[category.name] ?? 'layout'} />
                     ))}
                   </section>
                 );
