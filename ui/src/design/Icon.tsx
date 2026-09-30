@@ -42,6 +42,9 @@ const PATHS = {
   stop: <rect x="7" y="7" width="10" height="10" rx="2.2" fill="currentColor" stroke="none" />,
   check: <path d="M5 12.5l4.2 4.2L19 7" />,
   x: <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,
+  trash: (
+    <path d="M5 7h14M10 11v6M14 11v6M6.5 7l.9 11.2A2 2 0 0 0 9.4 20h5.2a2 2 0 0 0 2-1.8L17.5 7M9.5 7V4.8a.8.8 0 0 1 .8-.8h3.4a.8.8 0 0 1 .8.8V7" />
+  ),
   minus: <path d="M6 12h12" />,
   'chevron-down': <path d="M6 9l6 6 6-6" />,
   'chevron-right': <path d="M9 6l6 6-6 6" />,

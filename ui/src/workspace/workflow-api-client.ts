@@ -349,6 +349,20 @@ export async function listWorkflowSessions(): Promise<readonly WorkflowSessionSu
   return body.sessions;
 }
 
+/**
+ * Deletes a session with its saved runs and generated projects. The server
+ * refuses (409) while one of its jobs is still running; that message is
+ * thrown as-is so the sidebar can show it.
+ */
+export async function deleteWorkflowSession(id: string): Promise<void> {
+  const response = await fetch(`/api/workflow/sessions/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `delete session failed: ${response.status}`));
+  }
+}
+
 export async function fetchWorkflowSession(id: string): Promise<WorkflowSessionDetail> {
   const response = await fetch(`/api/workflow/sessions/${encodeURIComponent(id)}`);
   if (!response.ok) {

@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useWorkspaceStore } from './store';
-import { fetchLatestRuns, fetchWorkflowSession, listWorkflowSessions } from './workflow-api-client';
+import {
+  deleteWorkflowSession,
+  fetchLatestRuns,
+  fetchWorkflowSession,
+  listWorkflowSessions,
+} from './workflow-api-client';
 import { ImportProjectDialog } from './ImportProjectDialog';
 import { Icon } from '../design/Icon';
 import { LogoMark, Wordmark } from '../design/Logo';
@@ -78,6 +83,14 @@ export function Sidebar(): JSX.Element {
   const [loadState, setLoadState] = useState<LoadState>({ kind: 'loading' });
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  /** The row asking "Delete?" - a second click is required, so one stray click deletes nothing. */
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<{
+    readonly id: string;
+    readonly message: string;
+  } | null>(null);
+  const notifySessionSaved = useWorkspaceStore((state) => state.notifySessionSaved);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,6 +136,23 @@ export function Sidebar(): JSX.Element {
         : sessions.filter((session) => session.title.toLowerCase().includes(needle));
     return groupSessions(matching, new Date());
   }, [sessions, query]);
+
+  async function handleDelete(id: string): Promise<void> {
+    setDeletingId(id);
+    try {
+      await deleteWorkflowSession(id);
+      setSessions((list) => list.filter((session) => session.id !== id));
+      setConfirmingId(null);
+      // A deleted project cannot stay open; start fresh rather than showing a plan that no longer exists.
+      if (openedSessionId === id) startNewProject();
+      notifySessionSaved();
+    } catch (cause) {
+      setConfirmingId(null);
+      setDeleteError({ id, message: cause instanceof Error ? cause.message : String(cause) });
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function handleOpen(id: string): Promise<void> {
     setOpeningId(id);
@@ -212,8 +242,9 @@ export function Sidebar(): JSX.Element {
                 <ul className="space-y-px">
                   {group.sessions.map((session) => {
                     const current = openedSessionId === session.id;
+                    const confirming = confirmingId === session.id;
                     return (
-                      <li key={session.id}>
+                      <li key={session.id} className="group/row relative">
                         <button
                           type="button"
                           data-testid="session-item"
@@ -237,10 +268,59 @@ export function Sidebar(): JSX.Element {
                           <span className="min-w-0 flex-1 truncate text-[13px] text-slate-300 group-hover:text-slate-100 group-aria-[current=true]:font-medium group-aria-[current=true]:text-slate-50">
                             {session.title}
                           </span>
-                          <span className="flex-shrink-0 text-[11px] tabular-nums text-slate-500">
+                          <span className="flex-shrink-0 text-[11px] tabular-nums text-slate-500 transition-opacity group-focus-within/row:opacity-0 group-hover/row:opacity-0">
                             {formatWhen(session.createdAt, now)}
                           </span>
                         </button>
+                        {confirming ? (
+                          <div
+                            className="absolute inset-y-0 right-1 flex items-center gap-1 rounded-[9px] bg-[#0e0e11] pl-2"
+                            onKeyDown={(event) => {
+                              if (event.key === 'Escape') setConfirmingId(null);
+                            }}
+                          >
+                            <button
+                              type="button"
+                              data-testid="confirm-delete-session"
+                              onClick={() => void handleDelete(session.id)}
+                              disabled={deletingId === session.id}
+                              className="rounded-[7px] bg-red-500/15 px-2 py-0.5 text-[11px] font-medium text-red-300 hover:bg-red-500/25 disabled:cursor-wait"
+                            >
+                              {deletingId === session.id ? 'Deleting…' : 'Delete'}
+                            </button>
+                            <button
+                              type="button"
+                              // Focus moves into the confirmation the person just opened.
+                              autoFocus
+                              onClick={() => setConfirmingId(null)}
+                              className="rounded-[7px] px-2 py-0.5 text-[11px] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            data-testid="delete-session"
+                            onClick={() => {
+                              setDeleteError(null);
+                              setConfirmingId(session.id);
+                            }}
+                            aria-label={`Delete ${session.title}`}
+                            title="Delete this project, its runs and generated files"
+                            className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-[7px] text-slate-500 opacity-0 transition-opacity hover:bg-white/[0.06] hover:text-red-300 focus-visible:opacity-100 group-hover/row:opacity-100"
+                          >
+                            <Icon name="trash" size={13} />
+                          </button>
+                        )}
+                        {deleteError?.id === session.id && (
+                          <p
+                            role="alert"
+                            className="px-2.5 pb-1 pt-0.5 text-[11px] leading-snug text-red-300"
+                          >
+                            {deleteError.message}
+                          </p>
+                        )}
                       </li>
                     );
                   })}
