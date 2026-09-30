@@ -55,6 +55,7 @@ import {
 import type { AnalysisContext } from './context.js';
 import { createContextHolder, type ContextHolder } from './context-holder.js';
 import { createProjectRoutes, type ProjectRouteDeps } from './projects-api.js';
+import { localOriginOnly } from './local-origin.js';
 import type { CompletionProvider } from '../llm/provider.js';
 import type { LabelCache } from '../llm/cache.js';
 
@@ -99,6 +100,7 @@ export function createApp(
   projects?: Omit<ProjectRouteDeps, 'holder'>,
 ): Hono {
   const app = new Hono();
+  app.use('*', localOriginOnly());
   // Every analysis route reads the project on each request, so the UI can
   // switch projects without restarting the server (see context-holder.ts).
   const holder = 'current' in project ? project : createContextHolder(project);

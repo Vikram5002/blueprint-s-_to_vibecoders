@@ -147,6 +147,13 @@ describe('binding', () => {
     await second.close();
     await expect(fetch(second.url).then(() => 'up')).rejects.toBeDefined();
   }, 60_000);
+
+  it('refuses a request sent by another website', async () => {
+    const response = await fetch(`${server.url}/api/summary`, { headers: { origin: 'https://evil.example' } });
+    expect(response.status).toBe(403);
+    const own = await fetch(`${server.url}/api/summary`, { headers: { origin: server.url } });
+    expect(own.status).toBe(200);
+  });
 });
 
 describe('GET /api/summary', () => {
