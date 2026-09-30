@@ -181,8 +181,8 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
       onProgress: (done, total, commit) =>
         io.writeErr(`  snapshot ${done}/${total} — ${commit.sha.slice(0, 7)} ${commit.subject.slice(0, 50)}`),
       onSnapshot: (snapshot) => snapshotStore.save(snapshot),
-      onSkip: (commit, reason) => io.writeErr(`  skipped ${commit.sha.slice(0, 7)}: could not check it out (${reason.split('
-')[0]})`),
+      onSkip: (commit, reason) =>
+        io.writeErr(`  skipped ${commit.sha.slice(0, 7)}: could not check it out (${reason.split(/\r?\n/)[0] ?? ''})`),
     });
 
     io.writeOut(formatDriftHistory(buildDriftHistory(snapshots)));
