@@ -78,7 +78,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
    * analysis, so it is answered immediately while the pipeline runs alongside.
    */
   if (options.mcp) {
-    return await runMcp(options, io, version);
+    return await runMcp(options, io);
   }
 
   const run = await runPipeline({
@@ -263,9 +263,8 @@ async function waitForShutdown(server: RunningServer, io: CliIo): Promise<void> 
 async function runMcp(
   options: { readonly targetPath: string; readonly exportFiles: boolean; readonly blueprintFile: string | null },
   io: CliIo,
-  version: string,
 ): Promise<number> {
-  io.writeErr(`vibe-blueprint ${version}`);
+  // runCli has already printed the version banner.
   io.writeErr('Serving MCP on stdio. No port is open.');
 
   /**
