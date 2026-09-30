@@ -25,6 +25,7 @@ import { buildViolationsResponse } from '../server/violations-api.js';
 import { buildIntentResponse } from '../server/intent-api.js';
 import type { AnalysisContext } from '../server/context.js';
 import type { ExportMeta } from './agents-md.js';
+import { displayLocation, displayRoot } from './display-location.js';
 
 /**
  * Escapes a JSON payload for embedding in a `<script>` element.
@@ -62,10 +63,16 @@ export function buildExportPayload(context: AnalysisContext, meta: ExportMeta): 
   const violations = buildViolationsResponse(context);
   const intent = buildIntentResponse(context);
 
+  // Shared reports carry no path from the machine that made them (display-location.ts).
+  const located = <T extends { readonly source: { readonly location: string } }>(item: T): T => ({
+    ...item,
+    source: { ...item.source, location: displayLocation(context.root, item.source.location) },
+  });
+
   return {
     generatedAt: meta.generatedAt,
     commit: meta.commit,
-    root: context.root,
+    root: displayRoot(context.root),
     counts: {
       files: context.graph.graph.order,
       edges: context.graph.graph.size,
@@ -83,7 +90,7 @@ export function buildExportPayload(context: AnalysisContext, meta: ExportMeta): 
       to: edge.to,
       importCount: edge.importCount,
     })),
-    constraints: intent.constraints,
+    constraints: intent.constraints.map(located),
     intentEmptyReason: intent.emptyReason,
     uncheckable: {
       total: intent.summary.uncheckable,
@@ -95,7 +102,7 @@ export function buildExportPayload(context: AnalysisContext, meta: ExportMeta): 
       documentsIncomplete: intent.summary.incompleteDocuments,
       modelUnavailable: intent.degraded,
     },
-    violations: violations.violations,
+    violations: violations.violations.map((violation) => ({ ...violation, constraint: located(violation.constraint) })),
     violationsEmptyReason: violations.emptyReason,
     summary: violations.summary,
     drift: violations.drift,

@@ -25,6 +25,7 @@
 import type { AnalysisContext } from '../server/context.js';
 import { buildViolationsResponse } from '../server/violations-api.js';
 import { buildIntentResponse } from '../server/intent-api.js';
+import { displayLocation } from './display-location.js';
 
 export const BEGIN_MARKER = '<!-- BEGIN vibe-blueprint -->';
 export const END_MARKER = '<!-- END vibe-blueprint -->';
@@ -68,7 +69,7 @@ function machineBlock(context: AnalysisContext, meta: ExportMeta): unknown {
       evaluable: constraint.evaluable,
       confidence: constraint.confidence,
       rawText: constraint.rawText,
-      source: `${constraint.source.location}${constraint.source.line === null ? '' : `:${constraint.source.line}`}`,
+      source: `${displayLocation(context.root, constraint.source.location)}${constraint.source.line === null ? '' : `:${constraint.source.line}`}`,
       provenance: 'STATED',
     })),
     violations: violations.violations.map((violation) => ({
@@ -145,7 +146,7 @@ export function renderAgentsMarkdown(context: AnalysisContext, meta: ExportMeta)
     lines.push(emptyConstraintNote(intent.emptyReason));
   } else {
     for (const constraint of intent.constraints) {
-      const where = `${constraint.source.location}${constraint.source.line === null ? '' : `:${constraint.source.line}`}`;
+      const where = `${displayLocation(context.root, constraint.source.location)}${constraint.source.line === null ? '' : `:${constraint.source.line}`}`;
       lines.push(
         `- **${constraint.relation}** — ${constraint.subject.phrase} → ${constraint.object.phrase}` +
           `${constraint.via === null ? '' : ` (via ${constraint.via.phrase})`}` +

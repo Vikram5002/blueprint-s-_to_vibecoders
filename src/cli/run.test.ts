@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
@@ -103,6 +103,26 @@ describe('runCli', () => {
     expect(err.join('\n')).toContain('cannot read the blueprint file');
     expect(err.join('\n')).not.toContain('ENOENT');
     expect(existsSync(join(root, '.vibe'))).toBe(false);
+  });
+
+  it('writes exports that carry no absolute path from this machine', async () => {
+    const root = await makeRepo({
+      'api/a.ts': "import { b } from '../db/b';\nexport const a = b;\n",
+      'db/b.ts': 'export const b = 1;\n',
+    });
+    const elsewhere = await makeRepo({ 'rules.txt': 'api must not import db\n' });
+    const { io } = captureIo();
+
+    const code = await runCli([root, '--no-serve', '--export', `--blueprint=${join(elsewhere, 'rules.txt')}`], io, '0.1.0');
+
+    expect(code).toBe(EXIT_OK);
+    for (const name of ['AGENTS.md', 'blueprint.html']) {
+      const text = await readFile(join(root, name), 'utf8');
+      expect(text, name).toContain('rules.txt');
+      for (const path of [root, elsewhere, tmpdir()]) {
+        expect(text.includes(path) || text.includes(path.replace(/\\/g, '/')) || text.includes(JSON.stringify(path).slice(1, -1)), `${name} leaks ${path}`).toBe(false);
+      }
+    }
   });
 
   describe('--blueprint (Type-1 authoring)', () => {
