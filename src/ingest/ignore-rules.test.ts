@@ -16,6 +16,18 @@ describe('isAlwaysSkipped', () => {
     expect(isAlwaysSkipped('src')).toBe(false);
     expect(isAlwaysSkipped('distribution')).toBe(false);
   });
+
+  it('skips tool directories at any depth', () => {
+    expect(isAlwaysSkipped('packages/a/node_modules')).toBe(true);
+    expect(isAlwaysSkipped('src/pkg/__pycache__')).toBe(true);
+  });
+
+  it('skips build-output names only at the root, where they are output rather than source', () => {
+    expect(isAlwaysSkipped('build')).toBe(true);
+    expect(isAlwaysSkipped('src/pip/_internal/operations/build')).toBe(false);
+    expect(isAlwaysSkipped('packages/a/dist')).toBe(false);
+    expect(isAlwaysSkipped('src/generated')).toBe(false);
+  });
 });
 
 describe('isIgnored', () => {

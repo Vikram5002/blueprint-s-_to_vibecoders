@@ -15,17 +15,21 @@ import type { Ignore } from 'ignore';
  * Layer 3 code-generation pipeline writes real scaffolded projects to disk
  * (see src/generate/) — never analysed by a normal `vibe-blueprint .` run on
  * this repo, the same way this tool never analyses its own `.vibe` database.
+ *
+ * Tool directories are skipped at any depth. Build-output names (`dist`,
+ * `build`, `generated`) only at the repository root: deeper down they are
+ * often real source - pip keeps code in src/pip/_internal/operations/build/ -
+ * and a nested build output is normally covered by .gitignore anyway.
  */
 export const ALWAYS_SKIPPED_DIRECTORIES: ReadonlySet<string> = new Set([
   'node_modules',
   '.git',
-  'dist',
-  'build',
   '__pycache__',
   '.venv',
   '.vibe',
-  'generated',
 ]);
+
+export const ROOT_SKIPPED_DIRECTORIES: ReadonlySet<string> = new Set(['dist', 'build', 'generated']);
 
 export interface IgnoreMatcher {
   /** Repo-relative directory the patterns are anchored to. `''` is the root. */
@@ -33,8 +37,11 @@ export interface IgnoreMatcher {
   readonly matcher: Ignore;
 }
 
-export function isAlwaysSkipped(directoryName: string): boolean {
-  return ALWAYS_SKIPPED_DIRECTORIES.has(directoryName);
+/** `relativePath` is the directory's repo-relative path; its last segment is the name. */
+export function isAlwaysSkipped(relativePath: string): boolean {
+  const segments = relativePath.split('/');
+  const name = segments[segments.length - 1] ?? '';
+  return ALWAYS_SKIPPED_DIRECTORIES.has(name) || (segments.length === 1 && ROOT_SKIPPED_DIRECTORIES.has(name));
 }
 
 /** Builds a matcher for one `.gitignore` file's contents. */

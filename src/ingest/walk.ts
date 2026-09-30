@@ -153,7 +153,7 @@ async function handleEntry(
   }
 
   if (kind === 'directory') {
-    if (isAlwaysSkipped(entry.name) || isIgnored(relativePath, true, matchers)) {
+    if (isAlwaysSkipped(relativePath) || isIgnored(relativePath, true, matchers)) {
       context.stats.directoriesSkipped += 1;
       return;
     }
