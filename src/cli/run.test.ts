@@ -93,6 +93,18 @@ describe('runCli', () => {
     expect(existsSync(missing)).toBe(false);
   });
 
+  it('stops before analysing, with a plain message, when the --blueprint file is missing', async () => {
+    const root = await makeRepo({ 'src/index.ts': 'export const a = 1;' });
+    const { io, err } = captureIo();
+
+    const code = await runCli([root, '--no-serve', `--blueprint=${join(root, 'missing.txt')}`], io, '0.1.0');
+
+    expect(code).toBe(EXIT_FAILURE);
+    expect(err.join('\n')).toContain('cannot read the blueprint file');
+    expect(err.join('\n')).not.toContain('ENOENT');
+    expect(existsSync(join(root, '.vibe'))).toBe(false);
+  });
+
   describe('--blueprint (Type-1 authoring)', () => {
     it('compiles an authored rule, reports a violation for it, and writes the spec/JSON outputs', async () => {
       const root = await makeRepo({

@@ -90,6 +90,17 @@ export async function runPipeline(options: RunOptions): Promise<Result<RunResult
     });
   }
 
+  // Read an authored blueprint before any work: a mistyped path should stop
+  // the run straight away with a plain message, not after a full analysis
+  // (and model calls) with a raw ENOENT.
+  let blueprintText: string | null = null;
+  if (options.blueprintFile !== undefined) {
+    blueprintText = await readFile(options.blueprintFile, 'utf8').catch(() => null);
+    if (blueprintText === null) {
+      return err({ stage: 'walk', message: `cannot read the blueprint file: ${options.blueprintFile}` });
+    }
+  }
+
   const db = openDatabase(databasePathFor(options.root));
   const store = createCorrectionsStore(db);
   const corrections = store.list();
@@ -144,8 +155,8 @@ export async function runPipeline(options: RunOptions): Promise<Result<RunResult
   const blueprintStore = createBlueprintStore(db);
   let blueprintCompile: CompileBlueprintResult | null = null;
 
-  if (options.blueprintFile !== undefined) {
-    const text = await readFile(options.blueprintFile, 'utf8');
+  if (options.blueprintFile !== undefined && blueprintText !== null) {
+    const text = blueprintText;
     const directories = [...new Set(analysed.value.clustering.modules.flatMap((m) => m.directories))].sort();
     blueprintCompile = compileBlueprint({
       text,
