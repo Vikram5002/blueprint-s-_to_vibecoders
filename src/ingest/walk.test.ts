@@ -189,7 +189,7 @@ describe('walkRepository', () => {
     expect(result.value.stats.symlinksSkipped).toBe(1);
   });
 
-  it('follows an in-repo symlink exactly once', async () => {
+  it('does not follow an in-repo symlink, whose files the walk already reaches', async () => {
     const root = await makeRepo({ 'src/one.ts': '' });
 
     const linked = await symlink(join(root, 'src'), join(root, 'alias'), 'dir').then(
@@ -202,6 +202,7 @@ describe('walkRepository', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    expect(result.value.files.map((file) => file.path)).toEqual(['alias/one.ts', 'src/one.ts']);
+    expect(result.value.files.map((file) => file.path)).toEqual(['src/one.ts']);
+    expect(result.value.stats.symlinksSkipped).toBe(1);
   });
 });

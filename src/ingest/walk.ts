@@ -2,13 +2,13 @@
  * Stage 1a: repository walking.
  *
  * Deterministic. Reads the filesystem, honours .gitignore, detects languages,
- * and refuses to follow symlinks that escape the repository root.
+ * and never follows symlinks (see classifyEntry).
  *
  * CLAUDE.md: prefer partial results over failure. A directory that cannot be
  * read is recorded in `stats.errors` and the walk continues.
  */
 import { readdir, readFile, realpath, stat } from 'node:fs/promises';
-import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { join, resolve } from 'node:path';
 import type { Dirent } from 'node:fs';
 import { detectLanguage, type Language } from './language.js';
 import { createIgnoreMatcher, isAlwaysSkipped, isIgnored, type IgnoreMatcher } from './ignore-rules.js';
@@ -79,7 +79,6 @@ interface WalkContext {
   readonly files: DiscoveredFile[];
   readonly stats: WalkStats;
   readonly queue: DirectoryTask[];
-  readonly followedLinkTargets: Set<string>;
 }
 
 export async function walkRepository(options: WalkOptions): Promise<Result<WalkResult, WalkFailure>> {
@@ -96,7 +95,6 @@ export async function walkRepository(options: WalkOptions): Promise<Result<WalkR
     files: [],
     stats: createStats(),
     queue: [{ absolutePath: root, relativePath: '', matchers: [] }],
-    followedLinkTargets: new Set(),
   };
 
   for (let task = context.queue.pop(); task !== undefined; task = context.queue.pop()) {
@@ -146,7 +144,7 @@ async function handleEntry(
   const absolutePath = join(task.absolutePath, entry.name);
   const relativePath = task.relativePath === '' ? entry.name : `${task.relativePath}/${entry.name}`;
 
-  const kind = await classifyEntry(entry, absolutePath, context);
+  const kind = await classifyEntry(entry);
   if (kind === 'skip') {
     context.stats.symlinksSkipped += 1;
     return;
@@ -182,39 +180,19 @@ async function handleEntry(
 type EntryKind = 'directory' | 'file' | 'skip';
 
 /**
- * Resolves what an entry actually is. Symlinks are followed only when their
- * target stays inside the repository root and has not been followed already,
- * which keeps the walk finite in the presence of link cycles.
+ * Resolves what an entry actually is. Symlinks are never followed: one that
+ * escapes the repository root is out of scope, and one that stays inside it
+ * points at files the walk reaches anyway under their real path, so
+ * following it would put the same files in the graph twice.
  */
-async function classifyEntry(entry: Dirent, absolutePath: string, context: WalkContext): Promise<EntryKind> {
+async function classifyEntry(entry: Dirent): Promise<EntryKind> {
   if (entry.isDirectory()) {
     return 'directory';
   }
   if (entry.isFile()) {
     return 'file';
   }
-  if (!entry.isSymbolicLink()) {
-    return 'skip';
-  }
-
-  const target = await realpath(absolutePath).catch(() => null);
-  if (target === null || !isInsideRoot(context.rootReal, target)) {
-    return 'skip';
-  }
-
-  const targetStat = await stat(absolutePath).catch(() => null);
-  if (targetStat === null) {
-    return 'skip';
-  }
-  if (targetStat.isFile()) {
-    return 'file';
-  }
-  if (!targetStat.isDirectory() || context.followedLinkTargets.has(target)) {
-    return 'skip';
-  }
-
-  context.followedLinkTargets.add(target);
-  return 'directory';
+  return 'skip';
 }
 
 /** Adds this directory's own `.gitignore` to the inherited matcher stack. */
@@ -253,11 +231,6 @@ async function readEntries(directory: string): Promise<Dirent[] | null> {
 async function fileSize(absolutePath: string): Promise<number> {
   const info = await stat(absolutePath).catch(() => null);
   return info?.size ?? 0;
-}
-
-function isInsideRoot(rootReal: string, candidate: string): boolean {
-  const rel = relative(rootReal, candidate);
-  return rel !== '' && !rel.startsWith(`..${sep}`) && rel !== '..' && !isAbsolute(rel);
 }
 
 function createStats(): WalkStats {
