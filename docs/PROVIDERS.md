@@ -76,6 +76,13 @@ What was checked, and how:
 - **Ollama is probed, not assumed**: the picker lists the models it has
   downloaded and names the `ollama pull` command when the chosen one is
   missing (Ollama 0.34 lists "none" as `"data": null`).
+- **The local model counts as running only when `GET /models` lists its
+  models** (2026-10-01). Any HTTP answer used to count, but a Colab,
+  Lightning or cloudflared tunnel answers with its own 404 or 502 page while
+  the inference server behind it is stopped, so the picker showed a ready
+  model and every request failed. `local_inference_server.py` and the Modal
+  deployment serve `GET /models`; a server older than that endpoint shows as
+  "not set up" but can still be selected.
 
 ---
 
