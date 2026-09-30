@@ -63,6 +63,8 @@ export interface ApplicationRunsStore<TJob = unknown, TLayout = unknown> {
   getPageLayout(runId: string, path: string): StoredPageLayout<TLayout> | undefined;
   listPageLayouts(runId: string): StoredPageLayout<TLayout>[];
   deletePageLayout(runId: string, path: string): void;
+  /** Deletes every run of a session and their saved page layouts, in one transaction. Returns the deleted run ids. */
+  deleteForSession(sessionId: string): string[];
 }
 
 interface RunRow {
@@ -193,6 +195,14 @@ export function createApplicationRunsStore<TJob = unknown, TLayout = unknown>(
     deletePageLayout: (runId, path) => {
       db.prepare('DELETE FROM page_layouts WHERE run_id = ? AND path = ?').run(runId, path);
     },
+
+    deleteForSession: (sessionId) =>
+      db.transaction(() => {
+        const ids = (db.prepare('SELECT id FROM application_runs WHERE session_id = ?').all(sessionId) as readonly { id: string }[]).map((row) => row.id);
+        for (const id of ids) db.prepare('DELETE FROM page_layouts WHERE run_id = ?').run(id);
+        db.prepare('DELETE FROM application_runs WHERE session_id = ?').run(sessionId);
+        return ids;
+      })(),
   };
 }
 

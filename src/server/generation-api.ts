@@ -37,7 +37,7 @@
  *   file back.
  */
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Hono } from 'hono';
 import {
@@ -132,6 +132,10 @@ export interface ApplicationJobStore {
   get(id: string): ApplicationJob | undefined;
   set(job: ApplicationJob): void;
   activeCount(): number;
+  /** Every job of a session, finished or not. */
+  forSession(sessionId: string): ApplicationJob[];
+  /** Forgets a job - after its session is deleted, so its deleted files are never served. */
+  remove(id: string): void;
 }
 
 /** What a saved run holds: the finished job plus the schema it was generated from, so a repair needs nothing else. */
@@ -164,6 +168,10 @@ export function createApplicationJobStore(): ApplicationJobStore {
     },
     get: (id) => jobs.get(id),
     set: (job) => jobs.set(job.id, job),
+    forSession: (sessionId) => [...jobs.values()].filter((job) => job.sessionId === sessionId),
+    remove: (id) => {
+      jobs.delete(id);
+    },
     activeCount() {
       let count = 0;
       for (const job of jobs.values()) {
@@ -472,6 +480,27 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
   });
 
   // ---- Saved runs per session -------------------------------------------
+
+  // Deletes a session with everything it owns: its saved runs and page edits,
+  // and each run's generated project on disk (node_modules included, so tens
+  // of MB per run). Refused while one of its jobs is still working, because
+  // that job is writing into the folders this would remove.
+  app.delete('/sessions/:id', async (c) => {
+    if (deps.sessions === undefined) return c.json({ error: 'sessions need the local database' }, 503);
+    const sessionId = c.req.param('id');
+    if (deps.sessions.get(sessionId) === undefined) return c.json({ error: `unknown session: ${sessionId}` }, 404);
+    const own = jobs.forSession(sessionId);
+    if (own.some((job) => job.status === 'pending' || job.status === 'running')) {
+      return c.json({ error: 'this session has a job still running - wait for it to finish, then delete' }, 409);
+    }
+    const runIds = new Set([...(runs?.deleteForSession(sessionId) ?? []), ...own.map((job) => job.id)]);
+    deps.sessions.remove(sessionId);
+    for (const id of runIds) jobs.remove(id);
+    await Promise.all(
+      [...runIds].map((id) => rm(join(deps.generationRoot, id), { recursive: true, force: true, maxRetries: 3 }).catch(() => undefined)),
+    );
+    return c.json({ deleted: sessionId, runs: runIds.size });
+  });
 
   app.get('/sessions/:id/application-runs', (c) => {
     const sessionId = c.req.param('id');

@@ -409,3 +409,55 @@ describe('saved application runs', () => {
     });
   });
 });
+
+describe('deleting a session', () => {
+  let root: string;
+  let db: BlueprintDatabase;
+  let runs: GenerationRunsStore;
+  let jobs: ApplicationJobStore;
+  let sessions: WorkflowSessionsStore;
+  let app: ReturnType<typeof createGenerationRoutes>;
+
+  beforeEach(async () => {
+    root = await mkdtemp(join(tmpdir(), 'vibe-session-delete-'));
+    db = openDatabase(databasePathFor(root));
+    runs = createApplicationRunsStore(db);
+    jobs = createApplicationJobStore();
+    sessions = createWorkflowSessionsStore(db);
+    app = createGenerationRoutes({ llm: null, generationRoot: join(root, 'generated'), jobs, runs, sessions });
+    const schema = schemaWithOnePage();
+    sessions.save({ id: schema.sessionId, title: schema.title, prompt: 'p', createdAt: new Date().toISOString(), schema, prohibitions: [], permissions: [] });
+  });
+
+  afterEach(async () => {
+    db.close();
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it('removes the session, its saved runs and page edits, and each run\'s generated project on disk', async () => {
+    const job = await finishedRun(jobs, runs, join(root, 'generated'), { installOk: true, buildOk: true });
+    runs.savePageLayout({ runId: job.id, path: PAGE_PATH, layout: { id: 'l', pageName: 'Product Catalog', elements: [] }, originalSource: ORIGINAL_PAGE });
+
+    const response = await app.request('/sessions/session-runs-test', { method: 'DELETE' });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ deleted: 'session-runs-test', runs: 1 });
+    expect(sessions.get('session-runs-test')).toBeUndefined();
+    expect(runs.get(job.id)).toBeUndefined();
+    expect(runs.listPageLayouts(job.id)).toEqual([]);
+    expect((await app.request(`/application-jobs/${job.id}`)).status).toBe(404);
+    await expect(readFile(join(root, 'generated', job.id, ...PAGE_PATH.split('/')), 'utf8')).rejects.toThrow();
+  });
+
+  it('answers 404 for a session that does not exist', async () => {
+    expect((await app.request('/sessions/no-such-session', { method: 'DELETE' })).status).toBe(404);
+  });
+
+  it('refuses while one of the session\'s jobs is still running, and deletes nothing', async () => {
+    const running = jobs.create({ sessionId: 'session-runs-test', kind: 'generate' });
+    jobs.set({ ...running, status: 'running' });
+
+    expect((await app.request('/sessions/session-runs-test', { method: 'DELETE' })).status).toBe(409);
+    expect(sessions.get('session-runs-test')).toBeDefined();
+  });
+});

@@ -57,6 +57,8 @@ export interface WorkflowSessionsStore {
    * and creation time, so it stays one entry in the sidebar.
    */
   revise(id: string, revision: { readonly title: string; readonly prompt: string; readonly schema: ValidatedProjectSchema; readonly prohibitions: readonly Constraint[]; readonly permissions: readonly WorkflowPermission[] }): void;
+  /** Deletes a session. True when one existed. Its runs are the runs store's to delete. */
+  remove(id: string): boolean;
 }
 
 export function createWorkflowSessionsStore(db: BlueprintDatabase): WorkflowSessionsStore {
@@ -91,6 +93,8 @@ export function createWorkflowSessionsStore(db: BlueprintDatabase): WorkflowSess
         body: JSON.stringify({ schema, prohibitions, permissions } satisfies StoredBody),
       });
     },
+
+    remove: (id) => db.prepare('DELETE FROM workflow_sessions WHERE id = ?').run(id).changes > 0,
 
     list: () =>
       (
