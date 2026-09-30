@@ -15,7 +15,7 @@
  * Stored as one JSON file under `.vibe/`, which is git-ignored by default.
  */
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
 export interface CachedLabel {
@@ -73,18 +73,7 @@ export function cachePathFor(root: string): string {
  */
 export async function loadLabelCache(root: string): Promise<LabelCache> {
   const path = cachePathFor(root);
-  const entries = new Map<string, CachedLabel>();
-
-  const raw = await readFile(path, 'utf8').catch(() => null);
-  if (raw !== null) {
-    const parsed = safeParse(raw);
-    if (parsed !== null && parsed.version === CACHE_VERSION) {
-      for (const [key, value] of Object.entries(parsed.entries)) {
-        entries.set(key, value);
-      }
-    }
-  }
-
+  const entries = await readEntries(path);
   let dirty = false;
 
   return {
@@ -100,19 +89,64 @@ export async function loadLabelCache(root: string): Promise<LabelCache> {
       if (!dirty) {
         return true;
       }
-      // Sorted keys so the file is stable between runs and diffs cleanly.
-      const sorted = Object.fromEntries([...entries.entries()].sort((a, b) => a[0].localeCompare(b[0])));
-      const payload: CacheFile = { version: CACHE_VERSION, entries: sorted };
-
-      const written = await mkdir(posix.dirname(path), { recursive: true })
-        .then(() => writeFile(path, JSON.stringify(payload, null, 2), 'utf8'))
-        .then(() => true)
-        .catch(() => false);
-
+      const written = await serialised(path, async () => {
+        // Several jobs share one cache file, each with its own copy loaded at
+        // its start. Merge what the others have saved since, so the last
+        // writer does not drop their entries.
+        for (const [key, value] of await readEntries(path)) {
+          if (!entries.has(key)) entries.set(key, value);
+        }
+        return writeAtomically(path, entries);
+      });
       dirty = !written;
       return written;
     },
   };
+}
+
+/** One flush per file at a time, within this process. */
+const pendingWrites = new Map<string, Promise<unknown>>();
+
+async function serialised<T>(path: string, work: () => Promise<T>): Promise<T> {
+  const previous = pendingWrites.get(path) ?? Promise.resolve();
+  const next = previous.catch(() => undefined).then(work);
+  pendingWrites.set(path, next);
+  try {
+    return await next;
+  } finally {
+    if (pendingWrites.get(path) === next) pendingWrites.delete(path);
+  }
+}
+
+async function readEntries(path: string): Promise<Map<string, CachedLabel>> {
+  const entries = new Map<string, CachedLabel>();
+  const raw = await readFile(path, 'utf8').catch(() => null);
+  if (raw !== null) {
+    const parsed = safeParse(raw);
+    if (parsed !== null && parsed.version === CACHE_VERSION) {
+      for (const [key, value] of Object.entries(parsed.entries)) {
+        entries.set(key, value);
+      }
+    }
+  }
+  return entries;
+}
+
+/** Writes a temporary file and renames it over the cache, so a reader never sees half a file. */
+async function writeAtomically(path: string, entries: ReadonlyMap<string, CachedLabel>): Promise<boolean> {
+  // Sorted keys so the file is stable between runs and diffs cleanly.
+  const sorted = Object.fromEntries([...entries.entries()].sort((a, b) => a[0].localeCompare(b[0])));
+  const payload: CacheFile = { version: CACHE_VERSION, entries: sorted };
+  const temporary = `${path}.${process.pid}.${Date.now().toString(36)}.tmp`;
+  try {
+    await mkdir(posix.dirname(path), { recursive: true });
+    await writeFile(temporary, JSON.stringify(payload, null, 2), 'utf8');
+    await rename(temporary, path);
+    return true;
+  } catch {
+    await rm(temporary, { force: true }).catch(() => undefined);
+    return false;
+  }
 }
 
 function safeParse(raw: string): CacheFile | null {
