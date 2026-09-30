@@ -33,14 +33,10 @@ test.describe('Sessions sidebar: real, server-persisted generation runs', () => 
   test('a live generation is saved as a session, survives a reload, and reopens into the same graph', async ({
     page,
   }) => {
-    // Deliberately does not assert the sidebar starts empty: this fixture's
-    // own .vibe/blueprint.db is shared with every other live e2e spec that
-    // generates against the same FIXTURE_PATH (page-builder.e2e.spec.ts,
-    // single-component-build-failure.e2e.spec.ts), so a prior run - in this
-    // suite or a previous one - may have already left sessions behind. This
-    // test identifies ITS OWN session by the schema's real, model-produced
-    // title text instead, which is robust regardless of run order or what
-    // else has accumulated there.
+    // Each spec now serves its own fresh copy of the fixture (cli-server.ts),
+    // so the sidebar starts empty here; the test still identifies ITS OWN
+    // session by the schema's real, model-produced title text rather than by
+    // position, which stays correct however many sessions the run creates.
     await page.goto(`${cli.baseUrl}/workspace.html`);
 
     await page.getByRole('tab', { name: 'Workflow' }).click();
