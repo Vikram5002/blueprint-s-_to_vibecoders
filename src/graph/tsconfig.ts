@@ -68,7 +68,26 @@ async function loadParent(
   configDir: string,
   seen: ReadonlySet<string>,
 ): Promise<TsconfigPaths> {
-  const extendsPath = asString(raw.extends);
+  // Since TypeScript 5.0 `extends` may be an array; later entries override
+  // earlier ones, field by field.
+  const parents = Array.isArray(raw.extends) ? raw.extends : [raw.extends];
+  let inherited = EMPTY_TSCONFIG;
+  for (const entry of parents) {
+    const parent = await loadOneParent(root, asString(entry), configDir, seen);
+    inherited = {
+      baseUrl: parent.baseUrl ?? inherited.baseUrl,
+      paths: parent.paths.size > 0 ? parent.paths : inherited.paths,
+    };
+  }
+  return inherited;
+}
+
+async function loadOneParent(
+  root: string,
+  extendsPath: string | null,
+  configDir: string,
+  seen: ReadonlySet<string>,
+): Promise<TsconfigPaths> {
   if (extendsPath === null || !extendsPath.startsWith('.')) {
     // A bare `extends` names a package; those live in node_modules, which is
     // outside the repository, so there is nothing to read.
