@@ -135,3 +135,30 @@ describe('installBuildAndRepair', () => {
     60_000,
   );
 });
+
+describe('runCommand timeout', () => {
+  it('stops a command that never exits and reports it as failed', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'vibe-hang-'));
+    try {
+      await writeProjectFiles(dir, [{ path: 'hang.js', contents: 'setInterval(() => undefined, 1000);\n' }], false);
+      const started = Date.now();
+      const result = await runCommand('node', ['hang.js'], dir, 1_000);
+      expect(result.ok).toBe(false);
+      expect(result.output).toMatch(/stopped: no result after 1 s/);
+      expect(Date.now() - started).toBeLessThan(15_000);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it('still reports an ordinary success', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'vibe-ok-'));
+    try {
+      await writeProjectFiles(dir, [{ path: 'ok.js', contents: 'console.log("done");\n' }], false);
+      const result = await runCommand('node', ['ok.js'], dir, 30_000);
+      expect(result).toEqual({ ok: true, output: expect.stringContaining('done') });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30_000);
+});

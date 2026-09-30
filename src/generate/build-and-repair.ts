@@ -12,7 +12,7 @@
  * that stayed behind is progress reporting, which here is an `onPhase`
  * callback instead of a job-store write.
  */
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import type { ValidatedProjectSchema } from '../types/project-schema.js';
 import type { CompletionProvider } from '../llm/provider.js';
 import type { LabelCache } from '../llm/cache.js';
@@ -64,15 +64,60 @@ export interface InstallBuildAndRepairOptions {
   readonly onPhase?: (phase: BuildPhase) => void;
 }
 
-export function runCommand(command: string, args: readonly string[], cwd: string): Promise<CommandResult> {
+/**
+ * Ceiling on one npm install or build. A hung install, or a build script
+ * that never exits, would otherwise hold its job in "running" - and one of
+ * the job slots with it - until the server restarts.
+ */
+export const COMMAND_TIMEOUT_MS = 10 * 60_000;
+
+const WINDOWS = process.platform === 'win32';
+
+export function runCommand(
+  command: string,
+  args: readonly string[],
+  cwd: string,
+  timeoutMs: number = COMMAND_TIMEOUT_MS,
+): Promise<CommandResult> {
   return new Promise((resolve) => {
     let output = '';
-    const child = spawn(command, args, { cwd, shell: true });
-    child.stdout.on('data', (chunk: Buffer) => (output += chunk.toString()));
-    child.stderr.on('data', (chunk: Buffer) => (output += chunk.toString()));
-    child.on('close', (code) => resolve({ ok: code === 0, output: output.slice(-MAX_FAILURE_OUTPUT_CHARS) }));
-    child.on('error', (cause) => resolve({ ok: false, output: String(cause) }));
+    let timedOut = false;
+    // On Windows `npm` is npm.cmd, which Node starts only through a shell;
+    // every caller passes fixed arguments, never text from a request.
+    // Elsewhere no shell, and a process group of its own so a timeout can
+    // stop the scripts npm started, not only npm.
+    const child = spawn(command, args, { cwd, shell: WINDOWS, detached: !WINDOWS, windowsHide: true });
+    const timer = setTimeout(() => {
+      timedOut = true;
+      stopTree(child);
+    }, timeoutMs);
+    timer.unref();
+    child.stdout?.on('data', (chunk: Buffer) => (output += chunk.toString()));
+    child.stderr?.on('data', (chunk: Buffer) => (output += chunk.toString()));
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      const note = timedOut ? `\n${command} ${args.join(' ')} stopped: no result after ${Math.round(timeoutMs / 1000)} s` : '';
+      resolve({ ok: !timedOut && code === 0, output: (output + note).slice(-MAX_FAILURE_OUTPUT_CHARS) });
+    });
+    child.on('error', (cause) => {
+      clearTimeout(timer);
+      resolve({ ok: false, output: String(cause) });
+    });
   });
+}
+
+/** Stops a command and everything it started: `taskkill /T` on Windows, the process group elsewhere. */
+function stopTree(child: ChildProcess): void {
+  if (child.pid === undefined) return;
+  if (WINDOWS) {
+    spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true }).on('error', () => child.kill());
+    return;
+  }
+  try {
+    process.kill(-child.pid, 'SIGKILL');
+  } catch {
+    child.kill('SIGKILL');
+  }
 }
 
 export function summarise(files: readonly GeneratedFile[]): FileSummary[] {
