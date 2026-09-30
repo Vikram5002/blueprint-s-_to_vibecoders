@@ -65,6 +65,18 @@ describe('validatePageLayout', () => {
     });
     expect(validatePageLayout(layout)).toEqual([{ reason: 'out-of-bounds', elementId: 'e1' }]);
   });
+
+  it('rejects an element id that would break out of the generated data-testid attribute', () => {
+    const id = 'x" onClick={() => alert(1)} data-a="';
+    const layout = layoutWith({ elements: [elementOf({ type: 'text', id })] });
+    expect(validatePageLayout(layout)).toEqual([{ reason: 'invalid-element-id', elementId: id }]);
+    expect(() => layoutToComponentFile(layout)).toThrow(/invalid-element-id/);
+  });
+
+  it('accepts the el-N ids the builder, templates and designer produce', () => {
+    const layout = layoutWith({ elements: [elementOf({ type: 'text', id: 'el-42' })] });
+    expect(validatePageLayout(layout)).toEqual([]);
+  });
 });
 
 describe('pageLayoutTargetPath', () => {

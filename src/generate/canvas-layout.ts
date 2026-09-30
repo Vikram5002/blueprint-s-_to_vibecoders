@@ -233,6 +233,7 @@ export type LayoutValidationError =
   | { readonly reason: 'unknown-color-token'; readonly elementId: string; readonly token: string }
   | { readonly reason: 'unknown-animation'; readonly elementId: string; readonly animation: string }
   | { readonly reason: 'out-of-bounds'; readonly elementId: string }
+  | { readonly reason: 'invalid-element-id'; readonly elementId: string }
   | { readonly reason: 'invalid-field-name'; readonly elementId: string; readonly field: string }
   | { readonly reason: 'duplicate-field-name'; readonly elementId: string; readonly field: string }
   | ThemeError
@@ -243,6 +244,8 @@ export type LayoutValidationError =
  * out-of-bounds element or default an unrecognized token, per the same
  * "never guess" discipline the rest of this pipeline already follows.
  */
+const ELEMENT_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
+
 export function validatePageLayout(layout: PageLayout): readonly LayoutValidationError[] {
   const errors: LayoutValidationError[] = [];
 
@@ -252,6 +255,12 @@ export function validatePageLayout(layout: PageLayout): readonly LayoutValidatio
   }
 
   for (const element of layout.elements) {
+    // The id is written raw into `data-testid="..."` in the generated page,
+    // so anything beyond this plain shape could close the attribute and
+    // inject live JSX. The builder, templates and designer all use `el-N`.
+    if (!ELEMENT_ID.test(element.id)) {
+      errors.push({ reason: 'invalid-element-id', elementId: element.id });
+    }
     if (!(element.colorToken in DESIGN_TOKENS)) {
       errors.push({ reason: 'unknown-color-token', elementId: element.id, token: element.colorToken });
     }
