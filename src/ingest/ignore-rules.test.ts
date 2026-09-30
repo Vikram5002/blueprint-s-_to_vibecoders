@@ -61,6 +61,15 @@ describe('isIgnored', () => {
     expect(isIgnored('packages/a/keep.log', false, stack)).toBe(true);
   });
 
+  it('lets a deeper .gitignore re-include what a parent ignored, as git does', () => {
+    const nested = createIgnoreMatcher('packages/a', '!important.log\n');
+    const stack = [rootMatcher, nested];
+
+    expect(isIgnored('packages/a/important.log', false, stack)).toBe(false);
+    expect(isIgnored('packages/a/other.log', false, stack)).toBe(true);
+    expect(isIgnored('important.log', false, stack)).toBe(true);
+  });
+
   it('returns false with no matchers', () => {
     expect(isIgnored('anything.ts', false, [])).toBe(false);
   });

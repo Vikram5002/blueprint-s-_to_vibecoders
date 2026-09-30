@@ -53,22 +53,27 @@ export function createIgnoreMatcher(base: string, gitignoreContents: string): Ig
  * Tests a repo-relative path against every matcher whose base directory is an
  * ancestor of it. Directories must be passed with `isDirectory` set so that
  * `dir/`-style patterns match.
+ *
+ * `matchers` is ordered root first, and a deeper .gitignore overrides a
+ * shallower one, as in git: a `!keep.ts` in a subfolder re-includes a file
+ * its parent's rules ignored.
  */
 export function isIgnored(
   relativePath: string,
   isDirectory: boolean,
   matchers: readonly IgnoreMatcher[],
 ): boolean {
+  let ignored = false;
   for (const { base, matcher } of matchers) {
     const scoped = scopePath(relativePath, base);
     if (scoped === null || scoped === '') {
       continue;
     }
-    if (matcher.ignores(isDirectory ? `${scoped}/` : scoped)) {
-      return true;
-    }
+    const verdict = matcher.test(isDirectory ? `${scoped}/` : scoped);
+    if (verdict.ignored) ignored = true;
+    else if (verdict.unignored) ignored = false;
   }
-  return false;
+  return ignored;
 }
 
 /** Re-expresses a repo-relative path as relative to `base`, or null if outside it. */
