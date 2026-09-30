@@ -8,6 +8,15 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cloneDirectoryFor, cloneRepository, parseGitUrl, validateBranch } from './git-source.js';
 
 describe('parseGitUrl', () => {
+  it('keeps a non-default port, and gives it a folder name Windows accepts', () => {
+    const parsed = parseGitUrl('https://git.example.com:8443/o/r');
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.value.url).toBe('https://git.example.com:8443/o/r');
+    expect(parsed.value.host).toBe('git.example.com_8443');
+    expect(parseGitUrl('https://github.com:443/o/r')).toMatchObject({ ok: true, value: { url: 'https://github.com/o/r', host: 'github.com' } });
+  });
+
   it('normalises the common forms of a GitHub URL to one canonical HTTPS URL', () => {
     for (const input of [
       'https://github.com/Owner/Repo',

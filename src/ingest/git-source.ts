@@ -74,8 +74,12 @@ export function parseGitUrl(input: string): Result<GitSource, string> {
     return err('The repository path contains characters that are not allowed.');
   }
 
-  const host = parsed.hostname.toLowerCase();
-  return ok({ url: `https://${host}/${segments.join('/')}`, host, segments });
+  // `parsed.host` keeps a non-default port (https://host:8443/o/r); without
+  // it the clone silently went to port 443. The folder name uses `_` for the
+  // colon, which Windows does not allow in a path.
+  const address = parsed.host.toLowerCase();
+  const host = parsed.port === '' ? address : `${parsed.hostname.toLowerCase()}_${parsed.port}`;
+  return ok({ url: `https://${address}/${segments.join('/')}`, host, segments });
 }
 
 /** Where a repository's clone lives: one stable folder per URL, so re-analysing the same URL replaces its clone instead of piling up copies. */
