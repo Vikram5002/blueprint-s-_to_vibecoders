@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { startCli, type RunningCli } from './cli-server';
-import { LIVE_RESULT_TIMEOUT_MS, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
+import { expectLiveResult, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
 
 /**
  * Live coverage for the Sessions sidebar's real persistence path
@@ -52,7 +52,7 @@ test.describe('Sessions sidebar: real, server-persisted generation runs', () => 
     // success). If provider credentials are missing in this environment the
     // job fails fast with a clear error rather than hanging, so this would
     // time out loudly rather than silently pass either way.
-    await page.waitForSelector('.react-flow__node', { timeout: LIVE_RESULT_TIMEOUT_MS });
+    await expectLiveResult(page, page.locator('.react-flow__node').first());
 
     // The sidebar has no dependency on which tab is active - switching away
     // and back is what a real user does, and is exactly what exposed the

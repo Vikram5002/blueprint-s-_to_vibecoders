@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { LIVE_RESULT_TIMEOUT_MS, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
+import { expectLiveResult, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
 import { startCli, type RunningCli } from './cli-server';
 
 /**
@@ -67,14 +67,16 @@ test.describe('real "Generate Application" flow against the scale-test fixture -
     await expect(generateButton).toBeHidden();
 
     const buildBadge = page.getByText(/npm run build: (passed|failed)/);
-    await expect(buildBadge).toBeVisible({ timeout: LIVE_RESULT_TIMEOUT_MS });
+    await expectLiveResult(page, buildBadge);
 
     const installBadge = page.getByText(/npm install: (passed|failed)/);
     await expect(installBadge).toBeVisible();
     await expect(installBadge).toHaveText('npm install: passed');
 
-    const auditLogHeading = page.getByText(/Auto-regeneration audit log/);
-    await expect(auditLogHeading).toBeVisible();
+    // A model that never writes the forbidden import makes no retry, so no
+    // audit log - a legitimate outcome, as in generate-application.e2e.spec.ts,
+    // checked below by the report saying every rule holds.
+    const retried = await page.getByText(/Auto-regeneration audit log/).isVisible();
 
     // More than one of this schema's components can independently need a
     // retry (the audit log lists one entry per retried component), so
@@ -83,7 +85,13 @@ test.describe('real "Generate Application" flow against the scale-test fixture -
     // exactly one match.
     const fixedCount = await page.getByText('FIXED on retry').count();
     const stillViolatingCount = await page.getByText('STILL VIOLATING — review item').count();
-    const outcome = stillViolatingCount > 0 ? 'still-violating' : fixedCount > 0 ? 'fixed' : 'unknown';
+    const outcome = !retried
+      ? 'clean-first-attempt'
+      : stillViolatingCount > 0
+        ? 'still-violating'
+        : fixedCount > 0
+          ? 'fixed'
+          : 'unknown';
     console.log(
       `[scale-test hard-fail e2e] real retry outcome observed in the browser: ${outcome} ` +
         `(${fixedCount} fixed, ${stillViolatingCount} still-violating)`,

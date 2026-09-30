@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { LIVE_RESULT_TIMEOUT_MS, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
+import { expectLiveResult, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
 import { startCli, type RunningCli } from './cli-server';
 
 /**
@@ -71,7 +71,7 @@ test.describe('real "Generate Application" flow, driven from the actual browser 
     await expect(generateButton).toBeHidden();
 
     const buildBadge = page.getByText(/npm run build: (passed|failed)/);
-    await expect(buildBadge).toBeVisible({ timeout: LIVE_RESULT_TIMEOUT_MS });
+    await expectLiveResult(page, buildBadge);
 
     const installBadge = page.getByText(/npm install: (passed|failed)/);
     await expect(installBadge).toBeVisible();

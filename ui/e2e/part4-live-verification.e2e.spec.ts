@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { LIVE_RESULT_TIMEOUT_MS, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
+import { expectLiveResult, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
 import { startCli, type RunningCli } from './cli-server';
 
 /**
@@ -46,13 +46,13 @@ test.describe('Part 4: live verification of Item 3 (service-locator check) and P
 
     // Real Layer 2 schema generation, live.
     const generateAppButton = page.getByRole('button', { name: 'Generate Application' });
-    await expect(generateAppButton).toBeVisible({ timeout: LIVE_RESULT_TIMEOUT_MS });
+    await expectLiveResult(page, generateAppButton);
 
     await generateAppButton.click();
     await expect(generateAppButton).toBeHidden();
 
     const buildBadge = page.getByText(/npm run build: (passed|failed)/);
-    await expect(buildBadge).toBeVisible({ timeout: LIVE_RESULT_TIMEOUT_MS });
+    await expectLiveResult(page, buildBadge);
 
     const installBadge = page.getByText(/npm install: (passed|failed)/);
     await expect(installBadge).toHaveText('npm install: passed');
