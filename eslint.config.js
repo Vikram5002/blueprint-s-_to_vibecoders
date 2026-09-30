@@ -28,6 +28,9 @@ export const config = tseslint.config(
       'src/graph/fixtures/**',
       // Built UI bundle, not source.
       'src/server/static/**',
+      // Reports, papers and their one-off analysis scripts: untracked
+      // working material, not part of the tool.
+      'presentations/**',
     ],
   },
   js.configs.recommended,
