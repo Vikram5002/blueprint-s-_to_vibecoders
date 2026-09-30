@@ -5,6 +5,8 @@ describe('detectLanguage', () => {
   it('detects every extension listed in the Phase 1 spec', () => {
     expect(detectLanguage('a.ts')).toBe('typescript');
     expect(detectLanguage('a.tsx')).toBe('typescript');
+    expect(detectLanguage('a.mts')).toBe('typescript');
+    expect(detectLanguage('a.cts')).toBe('typescript');
     expect(detectLanguage('a.js')).toBe('javascript');
     expect(detectLanguage('a.jsx')).toBe('javascript');
     expect(detectLanguage('a.mjs')).toBe('javascript');
@@ -15,7 +17,7 @@ describe('detectLanguage', () => {
 
   it('exposes exactly the spec extension list', () => {
     expect([...SUPPORTED_EXTENSIONS].sort()).toEqual(
-      ['.cjs', '.js', '.jsx', '.mjs', '.php', '.py', '.ts', '.tsx'].sort(),
+      ['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.php', '.py', '.ts', '.tsx'].sort(),
     );
   });
 

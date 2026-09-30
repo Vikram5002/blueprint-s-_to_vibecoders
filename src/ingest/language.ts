@@ -18,6 +18,9 @@ export const SUPPORTED_LANGUAGES: readonly Language[] = [
 const EXTENSION_TO_LANGUAGE = new Map<string, Language>([
   ['.ts', 'typescript'],
   ['.tsx', 'typescript'],
+  // ES-module and CommonJS TypeScript; the resolver already maps .mjs/.cjs imports to them.
+  ['.mts', 'typescript'],
+  ['.cts', 'typescript'],
   ['.js', 'javascript'],
   ['.jsx', 'javascript'],
   ['.mjs', 'javascript'],

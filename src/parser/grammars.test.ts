@@ -28,6 +28,8 @@ describe('grammarPathFor', () => {
 describe('grammarKeyForPath', () => {
   it('selects the tsx grammar only for .tsx', () => {
     expect(grammarKeyForPath('src/component.tsx')).toBe('tsx');
+    expect(grammarKeyForPath('src/esm.mts')).toBe('typescript');
+    expect(grammarKeyForPath('src/cjs.cts')).toBe('typescript');
     expect(grammarKeyForPath('src/module.ts')).toBe('typescript');
   });
 

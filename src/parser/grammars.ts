@@ -39,6 +39,8 @@ const GRAMMAR_FILENAMES: Readonly<Record<GrammarKey, string>> = {
 const EXTENSION_TO_GRAMMAR: ReadonlyMap<string, GrammarKey> = new Map([
   ['.ts', 'typescript'],
   ['.tsx', 'tsx'],
+  ['.mts', 'typescript'],
+  ['.cts', 'typescript'],
   ['.js', 'javascript'],
   ['.jsx', 'javascript'],
   ['.mjs', 'javascript'],
