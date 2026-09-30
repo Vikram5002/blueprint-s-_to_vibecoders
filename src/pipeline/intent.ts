@@ -80,11 +80,17 @@ export async function extractIntent(options: IntentOptions): Promise<IntentRunRe
      *
      * So the honest degraded result is empty, flagged, and reported as "not
      * attempted" rather than "none found".
+     *
+     * Degraded only when something went unread: with no documents at all
+     * the stated rules are complete, not missing. Flagging that case too made
+     * check_import answer cannot-determine ("a rule in an unread document
+     * could forbid this") for every import in a repository with no
+     * documents, even when every rule it has was authored and checked.
      */
     return {
       constraints: [],
       uncheckable: [],
-      summary: emptySummary(documents.length, true),
+      summary: emptySummary(documents.length, documents.length > 0),
       usage: NO_USAGE,
       failures: [],
     };
