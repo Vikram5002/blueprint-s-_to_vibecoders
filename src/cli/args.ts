@@ -57,7 +57,7 @@ export interface CliOptions {
 }
 
 export interface ArgError {
-  readonly kind: 'unknown-option' | 'too-many-arguments';
+  readonly kind: 'unknown-option' | 'too-many-arguments' | 'invalid-value';
   readonly message: string;
 }
 
@@ -94,6 +94,16 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
 
   const json = parsed.values.json === true;
   const mcp = parsed.values.mcp === true;
+  const history = parseHistory(parsed.values['history']);
+  if (history === 'invalid') {
+    return err({
+      kind: 'invalid-value',
+      message: `--history expects a whole number of commits from ${MIN_HISTORY} to ${MAX_HISTORY}, got "${String(parsed.values['history'])}"`,
+    });
+  }
+  if (parsed.values.blueprint === '') {
+    return err({ kind: 'invalid-value', message: '--blueprint expects a file path, for example --blueprint=rules.txt' });
+  }
 
   return ok({
     targetPath: parsed.positionals[0] ?? '.',
@@ -104,7 +114,7 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
     // defeat that, so it implies --no-serve. --mcp owns stdout for the same
     // reason and additionally must not open a port.
     serve: parsed.values['no-serve'] !== true && !json && !mcp,
-    history: parseHistory(parsed.values['history']),
+    history,
     mcp,
     exportFiles: parsed.values.export === true,
     help: parsed.values.help === true,
@@ -117,13 +127,18 @@ function describeParseFailure(cause: unknown): string {
   return cause instanceof Error ? cause.message : 'could not parse arguments';
 }
 
+const MIN_HISTORY = 2;
+const MAX_HISTORY = 200;
+
 /**
- * `--history=N`. Absent means no history walk; a bad value means none either,
- * rather than a crash or a silent 0 — this is an expensive opt-in and doing
- * something unexpected with a typo would be worse than doing nothing.
+ * `--history=N`. Absent means no history walk. A bad value is refused with
+ * a usage error: this is an expensive opt-in, so a typo must neither start
+ * something unexpected (`5x` read as 5, 99999 quietly capped) nor be dropped
+ * without a word, leaving the person wondering where their chart went.
  */
-function parseHistory(value: unknown): number | null {
+function parseHistory(value: unknown): number | null | 'invalid' {
   if (typeof value !== 'string') return null;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 1 ? Math.min(parsed, 200) : null;
+  if (!/^\d+$/.test(value)) return 'invalid';
+  const count = Number(value);
+  return count >= MIN_HISTORY && count <= MAX_HISTORY ? count : 'invalid';
 }

@@ -59,16 +59,19 @@ describe('parseArguments', () => {
     expect(parse(['--history=20']).history).toBe(20);
   });
 
-  it('ignores a nonsensical history count rather than guessing', () => {
-    // An expensive opt-in doing something unexpected on a typo is worse than
-    // it doing nothing.
-    expect(parse(['--history=abc']).history).toBeNull();
-    expect(parse(['--history=0']).history).toBeNull();
-    expect(parse(['--history=-5']).history).toBeNull();
+  it('refuses a nonsensical history count with a usage error rather than guessing or ignoring it', () => {
+    for (const value of ['abc', '0', '1', '-5', '5x', '2.5', '99999']) {
+      const result = parseArguments([`--history=${value}`]);
+      expect(result.ok, value).toBe(false);
+      if (!result.ok) expect(result.error.kind).toBe('invalid-value');
+    }
+    expect(parse(['--history=200']).history).toBe(200);
+    expect(parse(['--history=2']).history).toBe(2);
   });
 
-  it('caps the history walk, so a typo cannot start a thousand analyses', () => {
-    expect(parse(['--history=99999']).history).toBe(200);
+  it('refuses an empty --blueprint path', () => {
+    const result = parseArguments(['--blueprint=']);
+    expect(result.ok).toBe(false);
   });
 
   it('does not serve or open when emitting JSON', () => {
