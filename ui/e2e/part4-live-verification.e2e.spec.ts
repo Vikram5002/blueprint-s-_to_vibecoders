@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import { resolve } from 'node:path';
 import { LIVE_RESULT_TIMEOUT_MS, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
+import { startCli, type RunningCli } from './cli-server';
 
 /**
  * Part 4's live verification: drives the REAL "Generate from prompt" path
@@ -15,55 +13,6 @@ import { LIVE_RESULT_TIMEOUT_MS, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
  * generate-application.e2e.spec.ts's own live run against the known-tension
  * fixture (see this session's Part 4 report).
  */
-
-const REPO_ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)), '../..');
-const CLI_PATH = resolve(REPO_ROOT, 'dist/cli.js');
-const FIXTURE_PATH = resolve(REPO_ROOT, 'src/graph/fixtures/ts-monorepo');
-
-interface RunningCli {
-  readonly baseUrl: string;
-  stop(): Promise<void>;
-}
-
-async function startCli(): Promise<RunningCli> {
-  const child: ChildProcessWithoutNullStreams = spawn(process.execPath, [CLI_PATH, FIXTURE_PATH, '--no-open'], {
-    cwd: REPO_ROOT,
-    stdio: 'pipe',
-  });
-
-  const baseUrl = await new Promise<string>((resolveUrl, rejectUrl) => {
-    let stdout = '';
-    let stderr = '';
-    const timeout = setTimeout(() => {
-      rejectUrl(new Error(`CLI did not print a server URL within 30s.\nstdout: ${stdout}\nstderr: ${stderr}`));
-    }, 30_000);
-
-    child.stdout.on('data', (chunk: Buffer) => {
-      stdout += chunk.toString();
-      const match = /http:\/\/127\.0\.0\.1:\d+/.exec(stdout);
-      if (match) {
-        clearTimeout(timeout);
-        resolveUrl(match[0]);
-      }
-    });
-    child.stderr.on('data', (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
-    child.on('exit', (code) => {
-      clearTimeout(timeout);
-      rejectUrl(new Error(`CLI exited early with code ${code} before printing a server URL.\nstderr: ${stderr}`));
-    });
-  });
-
-  return {
-    baseUrl,
-    stop: () =>
-      new Promise<void>((resolveStop) => {
-        child.once('exit', () => resolveStop());
-        child.kill();
-      }),
-  };
-}
 
 test.describe('Part 4: live verification of Item 3 (service-locator check) and Part 3 (build-failure retry)', () => {
   test.setTimeout(LIVE_TEST_TIMEOUT_MS);

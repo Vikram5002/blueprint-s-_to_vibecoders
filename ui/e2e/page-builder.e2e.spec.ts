@@ -1,10 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { spawn, execFileSync, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
-import { resolve, join } from 'node:path';
+import { join } from 'node:path';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { startCli, type RunningCli } from './cli-server';
 
 const require = createRequire(import.meta.url);
 
@@ -24,55 +24,6 @@ const require = createRequire(import.meta.url);
  * the builder - not trusting that "the code looks plausible" is the same
  * as "the code renders correctly."
  */
-
-const REPO_ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)), '../..');
-const CLI_PATH = resolve(REPO_ROOT, 'dist/cli.js');
-const FIXTURE_PATH = resolve(REPO_ROOT, 'src/graph/fixtures/ts-monorepo');
-
-interface RunningCli {
-  readonly baseUrl: string;
-  stop(): Promise<void>;
-}
-
-async function startCli(): Promise<RunningCli> {
-  const child: ChildProcessWithoutNullStreams = spawn(process.execPath, [CLI_PATH, FIXTURE_PATH, '--no-open'], {
-    cwd: REPO_ROOT,
-    stdio: 'pipe',
-  });
-
-  const baseUrl = await new Promise<string>((resolveUrl, rejectUrl) => {
-    let stdout = '';
-    let stderr = '';
-    const timeout = setTimeout(() => {
-      rejectUrl(new Error(`CLI did not print a server URL within 45s.\nstdout: ${stdout}\nstderr: ${stderr}`));
-    }, 45_000);
-
-    child.stdout.on('data', (chunk: Buffer) => {
-      stdout += chunk.toString();
-      const match = /http:\/\/127\.0\.0\.1:\d+/.exec(stdout);
-      if (match) {
-        clearTimeout(timeout);
-        resolveUrl(match[0]);
-      }
-    });
-    child.stderr.on('data', (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
-    child.on('exit', (code) => {
-      clearTimeout(timeout);
-      rejectUrl(new Error(`CLI exited early with code ${code} before printing a server URL.\nstderr: ${stderr}`));
-    });
-  });
-
-  return {
-    baseUrl,
-    stop: () =>
-      new Promise<void>((resolveStop) => {
-        child.once('exit', () => resolveStop());
-        child.kill();
-      }),
-  };
-}
 
 /**
  * Manual pointer sequence, not `locator.dragTo()` - @dnd-kit's PointerSensor
