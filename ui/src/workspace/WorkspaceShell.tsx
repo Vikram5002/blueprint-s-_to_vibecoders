@@ -5,6 +5,7 @@ import { WorkflowDemo } from './WorkflowDemo';
 import { PageBuilderCanvas } from './PageBuilderCanvas';
 import { ProviderPicker } from './ProviderPicker';
 import { CommandPalette } from './CommandPalette';
+import { DesignerChat } from './DesignerChat';
 import { useWorkspaceStore, type Tab } from './store';
 import { SegmentedControl } from '../design/SegmentedControl';
 import { Icon, type IconName } from '../design/Icon';
@@ -66,7 +67,12 @@ export function WorkspaceShell(): JSX.Element {
         {/* Keyed on the tab so each view fades in when it is switched to. Opacity only: a moving parent would shift the page builder's drop maths and React Flow's fit-to-view while it settles (caught by the page-builder e2e tests). */}
         <div key={activeTab} className="anim-fade flex min-h-0 min-w-0 flex-1 flex-col">
           {activeTab === 'conversation' && <ConversationPane />}
-          {activeTab === 'page-builder' && <PageBuilderCanvas />}
+          {activeTab === 'page-builder' && (
+            <>
+              <PageBuilderCanvas />
+              <DesignerChat />
+            </>
+          )}
           {activeTab === 'verification' && <VerificationDemo />}
           {activeTab === 'workflow' && <WorkflowDemo />}
         </div>
