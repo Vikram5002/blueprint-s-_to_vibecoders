@@ -187,6 +187,10 @@ test.describe('Page builder Milestone 1: real drag-and-drop, real deterministic 
 
     const canvas = page.getByTestId('page-builder-canvas');
     await expect(canvas).toBeVisible();
+    // Exact-pixel assertions below assume 1 screen px = 1 canvas px. The canvas
+    // opens fitted to the window, whose zoom depends on how much room the rest
+    // of the workspace leaves - so pin it to 100% rather than inherit that.
+    await page.getByRole('button', { name: '100%' }).click();
     const canvasBox = await canvas.boundingBox();
     if (canvasBox === null) throw new Error('canvas has no bounding box');
 
@@ -207,12 +211,15 @@ test.describe('Page builder Milestone 1: real drag-and-drop, real deterministic 
     // regardless of the palette item's own dimensions.
     const GRAB_INSET = 5;
     const buttonPalette = page.getByTestId('palette-button');
+    // The palette scrolls (over 140 elements); a box measured off-screen would start the drag on empty space.
+    await buttonPalette.scrollIntoViewIfNeeded();
     const buttonPaletteBox = await buttonPalette.boundingBox();
     if (buttonPaletteBox === null) throw new Error('button palette item has no bounding box');
     await dragTo(
       page,
       { x: buttonPaletteBox.x + GRAB_INSET, y: buttonPaletteBox.y + GRAB_INSET },
-      { x: canvasBox.x + 200 + GRAB_INSET, y: canvasBox.y + 100 + GRAB_INSET },
+      // Targets on the 8px snap grid (page-builder-geometry.ts), so snapping leaves them exactly where aimed.
+      { x: canvasBox.x + 200 + GRAB_INSET, y: canvasBox.y + 96 + GRAB_INSET },
     );
 
     const placedButtons = page.locator('[data-testid^="placed-"]');
@@ -220,12 +227,13 @@ test.describe('Page builder Milestone 1: real drag-and-drop, real deterministic 
 
     // Real drag 2: the text palette item, onto a different canvas position.
     const textPalette = page.getByTestId('palette-text');
+    await textPalette.scrollIntoViewIfNeeded();
     const textPaletteBox = await textPalette.boundingBox();
     if (textPaletteBox === null) throw new Error('text palette item has no bounding box');
     await dragTo(
       page,
       { x: textPaletteBox.x + GRAB_INSET, y: textPaletteBox.y + GRAB_INSET },
-      { x: canvasBox.x + 200 + GRAB_INSET, y: canvasBox.y + 300 + GRAB_INSET },
+      { x: canvasBox.x + 200 + GRAB_INSET, y: canvasBox.y + 304 + GRAB_INSET },
     );
 
     await expect(placedButtons).toHaveCount(2);
@@ -387,9 +395,9 @@ test.describe('Page builder Milestone 1: real drag-and-drop, real deterministic 
         throw new Error('rendered elements have no bounding box');
       }
       expect(Math.round(buttonRenderedBox.x)).toBe(200);
-      expect(Math.round(buttonRenderedBox.y)).toBe(100);
+      expect(Math.round(buttonRenderedBox.y)).toBe(96);
       expect(Math.round(textRenderedBox.x)).toBe(200);
-      expect(Math.round(textRenderedBox.y)).toBe(300);
+      expect(Math.round(textRenderedBox.y)).toBe(304);
 
       // Exact color, matching the real DESIGN_TOKENS.danger hex.
       const buttonColor = await renderedButton.evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -449,6 +457,7 @@ test.describe('Page builder: the Inspector is reachable and usable at a real win
     await page.getByRole('tab', { name: 'Page builder' }).click();
 
     const canvasBox = await page.getByTestId('page-builder-canvas').boundingBox();
+    await page.getByTestId('palette-button').scrollIntoViewIfNeeded();
     const paletteBox = await page.getByTestId('palette-button').boundingBox();
     if (canvasBox === null || paletteBox === null) throw new Error('missing bounding box');
 
