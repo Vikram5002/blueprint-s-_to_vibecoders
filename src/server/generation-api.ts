@@ -502,6 +502,23 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
     return c.json({ deleted: sessionId, runs: runIds.size });
   });
 
+  // Deletes one run: its saved record and page edits, and its generated
+  // project on disk. Refused while any job of its session is still working -
+  // a repair, continue or page sync reads its parent run's folder, which may
+  // be this one.
+  app.delete('/application-runs/:id', async (c) => {
+    const id = c.req.param('id');
+    const job = findJob(id);
+    if (job === undefined) return c.json({ error: `unknown application run: ${id}` }, 404);
+    if (jobs.forSession(job.sessionId).some((other) => other.status === 'pending' || other.status === 'running')) {
+      return c.json({ error: 'a job of this session is still running - wait for it to finish, then delete' }, 409);
+    }
+    runs?.delete(id);
+    jobs.remove(id);
+    await rm(join(deps.generationRoot, id), { recursive: true, force: true, maxRetries: 3 }).catch(() => undefined);
+    return c.json({ deleted: id });
+  });
+
   app.get('/sessions/:id/application-runs', (c) => {
     const sessionId = c.req.param('id');
     const list = runs?.listForSession(sessionId) ?? [];

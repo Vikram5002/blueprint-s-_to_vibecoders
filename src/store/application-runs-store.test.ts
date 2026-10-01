@@ -63,6 +63,21 @@ describe('createApplicationRunsStore', () => {
     expect(store.latestRuns().map((entry) => entry.id)).toEqual(['b', 'other']);
   });
 
+  it('deletes one run with its page layouts and leaves the session\'s other runs alone', () => {
+    const store = createApplicationRunsStore<FakeJob, { readonly n: number }>(db);
+    store.save(run({ id: 'a', createdAt: '2026-01-01T00:00:00.000Z' }));
+    store.save(run({ id: 'b', createdAt: '2026-01-02T00:00:00.000Z' }));
+    store.savePageLayout({ runId: 'b', path: 'frontend/src/pages/home.tsx', layout: { n: 1 }, originalSource: 'x' });
+    store.savePageLayout({ runId: 'a', path: 'frontend/src/pages/home.tsx', layout: { n: 1 }, originalSource: 'y' });
+
+    expect(store.delete('b')).toBe(true);
+    expect(store.delete('b')).toBe(false);
+    expect(store.get('b')).toBeUndefined();
+    expect(store.listPageLayouts('b')).toEqual([]);
+    expect(store.latestForSession('session-1')?.id).toBe('a');
+    expect(store.listPageLayouts('a')).toHaveLength(1);
+  });
+
   describe('page layouts', () => {
     it('keeps the ORIGINAL source across repeated saves of the same page, so restore always has the model\'s file', () => {
       const store = createApplicationRunsStore<FakeJob, { readonly n: number }>(db);
