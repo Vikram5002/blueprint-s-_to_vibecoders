@@ -167,6 +167,7 @@ export function Sidebar(): JSX.Element {
 
   return (
     <aside
+      aria-label="Projects sidebar"
       className={`relative flex h-full flex-shrink-0 flex-col border-r border-white/[0.06] bg-[#0e0e11] transition-[width] duration-300 ease-apple ${
         collapsed ? 'w-14' : 'w-60'
       }`}

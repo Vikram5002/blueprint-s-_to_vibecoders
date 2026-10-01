@@ -355,6 +355,7 @@ export function BlueprintCanvas(): JSX.Element {
               <div className="row">
                 <span className="k">relation</span>
                 <select
+                  aria-label="Relation"
                   className="v"
                   value={selectedEdge.relation}
                   onChange={(event) =>
@@ -370,6 +371,7 @@ export function BlueprintCanvas(): JSX.Element {
                 <div className="row">
                   <span className="k">via</span>
                   <select
+                    aria-label="Via"
                     className="v"
                     value={selectedEdge.via ?? ''}
                     onChange={(event) => setEdgeVia(selectedEdge.id, event.target.value)}

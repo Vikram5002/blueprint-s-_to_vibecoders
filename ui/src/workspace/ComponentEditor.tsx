@@ -134,6 +134,7 @@ export function ComponentEditor({ job, schema, onDone }: ComponentEditorProps): 
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select
+              aria-label="Domain"
               value={draft.domain}
               onChange={(e) => setDraft({ ...draft, domain: e.target.value as Domain })}
               className={input}

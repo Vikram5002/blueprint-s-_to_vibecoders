@@ -1159,12 +1159,13 @@ export function PageBuilderCanvas(): JSX.Element {
           >
             {!preview && (
               <aside
+                aria-label="Element palette"
                 ref={paletteRef}
                 className="max-h-[800px] space-y-2 overflow-y-auto rounded-2xl border border-white/[0.06] bg-black/20 p-3"
               >
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                   Elements
-                </h4>
+                </h2>
                 <input
                   type="search"
                   value={paletteQuery}
@@ -1182,9 +1183,9 @@ export function PageBuilderCanvas(): JSX.Element {
                   if (types.length === 0) return null;
                   return (
                     <section key={category.name} className="space-y-1.5 pt-1">
-                      <h5 className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                      <h3 className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                         {category.name}
-                      </h5>
+                      </h3>
                       {types.map((type) => (
                         <PaletteItem
                           key={type}
@@ -1299,12 +1300,15 @@ export function PageBuilderCanvas(): JSX.Element {
             </div>
 
             {!preview && (
-              <aside className="max-h-[800px] space-y-3 overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 p-3">
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <aside
+                aria-label="Element properties"
+                className="max-h-[800px] space-y-3 overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 p-3"
+              >
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                   Inspector
-                </h4>
+                </h2>
                 {selected === null ? (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-400">
                     Select a placed element to edit its text, color, and animation.
                   </p>
                 ) : (
@@ -1414,6 +1418,7 @@ export function PageBuilderCanvas(): JSX.Element {
                     <div>
                       <span className="mb-1 block text-xs text-slate-400">Animation</span>
                       <select
+                        aria-label="Animation"
                         data-testid="animation-select"
                         value={selected.animation ?? 'none'}
                         onChange={(event) =>
@@ -1446,6 +1451,7 @@ export function PageBuilderCanvas(): JSX.Element {
                     <div className="space-y-1.5">
                       <span className="block text-xs text-slate-400">Hover effect</span>
                       <select
+                        aria-label="Hover effect"
                         data-testid="hover-select"
                         value={selected.hover ?? 'none'}
                         onChange={(event) =>
@@ -1554,9 +1560,9 @@ export function PageBuilderCanvas(): JSX.Element {
 
         {generated !== null && (
           <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
-            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
               Generated: {generated.path}
-            </h4>
+            </h2>
             <pre
               data-testid="generated-code"
               className="max-h-96 overflow-auto text-[11px] leading-snug text-emerald-300"

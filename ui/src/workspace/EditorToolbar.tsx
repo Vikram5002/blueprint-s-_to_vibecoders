@@ -57,6 +57,7 @@ export function EditorToolbar(props: EditorToolbarProps): JSX.Element {
       </button>
       <span className="mx-1 h-4 w-px bg-slate-700" />
       <select
+        aria-label="Add a template"
         data-testid="add-template"
         value=""
         onChange={(event) => {

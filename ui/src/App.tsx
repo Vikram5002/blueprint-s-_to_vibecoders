@@ -298,146 +298,153 @@ export function App(): JSX.Element {
         />
       )}
 
-      {grouping === 'blueprint' ? (
-        <BlueprintCanvas />
-      ) : (
-        <>
-          <div className="canvas">
-            {grouping === 'module' ? (
-              modules === null ? (
-                <div className="loading">{error ?? 'Clustering…'}</div>
+      {/* display: contents keeps the grid layout while giving screen readers a main landmark. */}
+      <main style={{ display: 'contents' }}>
+        {grouping === 'blueprint' ? (
+          <BlueprintCanvas />
+        ) : (
+          <>
+            <div className="canvas">
+              {grouping === 'module' ? (
+                modules === null ? (
+                  <div className="loading">{error ?? 'Clustering…'}</div>
+                ) : (
+                  <ModuleCanvas
+                    view={modules}
+                    selectedModuleId={selectedModule?.id ?? null}
+                    selectedEdgeId={selectedEdgeId}
+                    onSelectModule={selectModule}
+                    onSelectEdge={selectModuleEdge}
+                  />
+                )
+              ) : graph === null ? (
+                <div className="loading">{error ?? 'Loading graph…'}</div>
               ) : (
-                <ModuleCanvas
-                  view={modules}
-                  selectedModuleId={selectedModule?.id ?? null}
+                <GraphCanvas
+                  graph={graph}
+                  selectedNodeId={selectedNodeId}
                   selectedEdgeId={selectedEdgeId}
-                  onSelectModule={selectModule}
-                  onSelectEdge={selectModuleEdge}
+                  onSelectNode={selectNode}
+                  onSelectEdge={selectEdge}
+                  onToggleDirectory={toggleDirectory}
+                  implicatedFiles={implicated}
                 />
-              )
-            ) : graph === null ? (
-              <div className="loading">{error ?? 'Loading graph…'}</div>
-            ) : (
-              <GraphCanvas
-                graph={graph}
-                selectedNodeId={selectedNodeId}
-                selectedEdgeId={selectedEdgeId}
-                onSelectNode={selectNode}
-                onSelectEdge={selectEdge}
-                onToggleDirectory={toggleDirectory}
-                implicatedFiles={implicated}
-              />
-            )}
-          </div>
+              )}
+            </div>
 
-          <aside className="side">
-            {error && <div className="banner">{error}</div>}
-            {notice !== null && (
-              <div className="banner" data-tone="info">
-                {notice}{' '}
-                <button type="button" className="link" onClick={() => setNotice(null)}>
-                  dismiss
-                </button>
-              </div>
-            )}
-
-            {level === 'file' &&
-              graph !== null &&
-              graph.counts.nodes > FILE_LEVEL_WARNING_THRESHOLD && (
-                <div className="banner">
-                  {graph.counts.nodes.toLocaleString()} file nodes on screen. This view is slow at
-                  this size — the directory view is the one built for it.
+            <aside className="side">
+              {error && <div className="banner">{error}</div>}
+              {notice !== null && (
+                <div className="banner" data-tone="info">
+                  {notice}{' '}
+                  <button type="button" className="link" onClick={() => setNotice(null)}>
+                    dismiss
+                  </button>
                 </div>
               )}
 
-            {selectedEdge !== null && <EvidencePanel edge={selectedEdge} />}
+              {level === 'file' &&
+                graph !== null &&
+                graph.counts.nodes > FILE_LEVEL_WARNING_THRESHOLD && (
+                  <div className="banner">
+                    {graph.counts.nodes.toLocaleString()} file nodes on screen. This view is slow at
+                    this size — the directory view is the one built for it.
+                  </div>
+                )}
 
-            {selectedEdge === null && selectedModule !== null && (
-              <ModulePanel
-                module={selectedModule}
-                onSelectEdge={selectModuleEdge}
-                labelSource={
-                  modules?.nodes.find((n) => n.id === selectedModule.id)?.labelSource ??
-                  'mechanical'
-                }
-                mechanicalLabel={
-                  modules?.nodes.find((n) => n.id === selectedModule.id)?.mechanicalLabel ??
-                  selectedModule.label
-                }
-                description={
-                  modules?.nodes.find((n) => n.id === selectedModule.id)?.description ?? null
-                }
-                allModules={modules?.nodes ?? []}
-                onSaveCorrection={saveCorrectionAndRefresh}
-                savingCorrection={savingCorrection}
-              />
-            )}
+              {selectedEdge !== null && <EvidencePanel edge={selectedEdge} />}
 
-            {selectedEdge === null && selectedModule === null && selectedNode !== null && (
-              <NodePanel node={selectedNode} onSelectEdge={selectEdge} onSelectNode={selectNode} />
-            )}
+              {selectedEdge === null && selectedModule !== null && (
+                <ModulePanel
+                  module={selectedModule}
+                  onSelectEdge={selectModuleEdge}
+                  labelSource={
+                    modules?.nodes.find((n) => n.id === selectedModule.id)?.labelSource ??
+                    'mechanical'
+                  }
+                  mechanicalLabel={
+                    modules?.nodes.find((n) => n.id === selectedModule.id)?.mechanicalLabel ??
+                    selectedModule.label
+                  }
+                  description={
+                    modules?.nodes.find((n) => n.id === selectedModule.id)?.description ?? null
+                  }
+                  allModules={modules?.nodes ?? []}
+                  onSaveCorrection={saveCorrectionAndRefresh}
+                  savingCorrection={savingCorrection}
+                />
+              )}
 
-            {selectedEdge === null && selectedNode === null && selectedModule === null && (
-              <>
-                <div className="hint" style={{ marginBottom: 14 }}>
-                  {grouping === 'module' ? (
-                    <>
-                      Modules are derived from <b>import coupling</b>, not from folders. Nodes
-                      marked <span className="tag-disagree">n dirs</span> span more than one folder
-                      — that disagreement is the point. Click a module for the reason each file is
-                      in it.
-                    </>
-                  ) : (
-                    <>
-                      Click an <b>edge</b> to see the source lines that produced it. Click a{' '}
-                      <b>node</b> for its files and dependencies. Use <b>expand</b> on a directory
-                      to open it into individual files.
-                    </>
+              {selectedEdge === null && selectedModule === null && selectedNode !== null && (
+                <NodePanel
+                  node={selectedNode}
+                  onSelectEdge={selectEdge}
+                  onSelectNode={selectNode}
+                />
+              )}
+
+              {selectedEdge === null && selectedNode === null && selectedModule === null && (
+                <>
+                  <div className="hint" style={{ marginBottom: 14 }}>
+                    {grouping === 'module' ? (
+                      <>
+                        Modules are derived from <b>import coupling</b>, not from folders. Nodes
+                        marked <span className="tag-disagree">n dirs</span> span more than one
+                        folder — that disagreement is the point. Click a module for the reason each
+                        file is in it.
+                      </>
+                    ) : (
+                      <>
+                        Click an <b>edge</b> to see the source lines that produced it. Click a{' '}
+                        <b>node</b> for its files and dependencies. Use <b>expand</b> on a directory
+                        to open it into individual files.
+                      </>
+                    )}
+                  </div>
+                  {corrections !== null && corrections.corrections.length > 0 && (
+                    <div style={{ marginBottom: 18 }}>
+                      <CorrectionsPanel corrections={corrections} onDelete={forgetCorrection} />
+                    </div>
                   )}
-                </div>
-                {corrections !== null && corrections.corrections.length > 0 && (
+                  {violations !== null && (
+                    <div style={{ marginBottom: 18 }}>
+                      <ViolationsPanel
+                        violations={violations}
+                        onHighlight={setImplicated}
+                        highlighted={implicated}
+                      />
+                    </div>
+                  )}
+                  {intent !== null && (
+                    <div style={{ marginBottom: 18 }}>
+                      <IntentPanel intent={intent} />
+                    </div>
+                  )}
                   <div style={{ marginBottom: 18 }}>
-                    <CorrectionsPanel corrections={corrections} onDelete={forgetCorrection} />
+                    <TimelinePanel />
                   </div>
-                )}
-                {violations !== null && (
-                  <div style={{ marginBottom: 18 }}>
-                    <ViolationsPanel
-                      violations={violations}
-                      onHighlight={setImplicated}
-                      highlighted={implicated}
-                    />
-                  </div>
-                )}
-                {intent !== null && (
-                  <div style={{ marginBottom: 18 }}>
-                    <IntentPanel intent={intent} />
-                  </div>
-                )}
-                <div style={{ marginBottom: 18 }}>
-                  <TimelinePanel />
-                </div>
-                {summary !== null ? (
-                  <SummaryPanel summary={summary} />
-                ) : (
-                  <div className="hint">Loading…</div>
-                )}
-              </>
-            )}
+                  {summary !== null ? (
+                    <SummaryPanel summary={summary} />
+                  ) : (
+                    <div className="hint">Loading…</div>
+                  )}
+                </>
+              )}
 
-            {(selectedEdge !== null || selectedNode !== null || selectedModule !== null) && (
-              <button
-                type="button"
-                className="link"
-                style={{ marginTop: 16 }}
-                onClick={clearSelection}
-              >
-                ← back to run summary
-              </button>
-            )}
-          </aside>
-        </>
-      )}
+              {(selectedEdge !== null || selectedNode !== null || selectedModule !== null) && (
+                <button
+                  type="button"
+                  className="link"
+                  style={{ marginTop: 16 }}
+                  onClick={clearSelection}
+                >
+                  ← back to run summary
+                </button>
+              )}
+            </aside>
+          </>
+        )}
+      </main>
     </div>
   );
 }

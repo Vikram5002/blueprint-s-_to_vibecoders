@@ -64,7 +64,7 @@ function CodeBlock({
                 isHighlighted ? 'border-l-2 border-red-500 bg-red-500/20' : ''
               }`}
             >
-              <span className="w-8 flex-shrink-0 select-none text-right text-slate-600">
+              <span className="w-8 flex-shrink-0 select-none text-right text-slate-400">
                 {lineNumber}
               </span>
               <span className="whitespace-pre text-slate-200">{line}</span>
@@ -112,7 +112,7 @@ function VerifiedResult({
       data-outcome="verified"
     >
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+        <span className="rounded-full bg-emerald-700 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
           Verified
         </span>
         <span className="text-sm text-emerald-300">
@@ -123,9 +123,9 @@ function VerifiedResult({
       <CodeBlock code={code} />
 
       <div className="mt-4">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-400">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-400">
           Constraints checked ({checked.length})
-        </h3>
+        </h2>
         {checked.length === 0 ? (
           <p className="rounded border border-red-600 bg-red-950/40 p-2 text-sm text-red-300">
             Internal error: a &quot;verified&quot; result must never carry an empty checked list.

@@ -248,9 +248,9 @@ export function WorkflowGraph({
             />
           ) : (
             <>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
                 Edge inspection
-              </h3>
+              </h2>
               {selectedEdge === null ? (
                 <p className="text-xs text-slate-500">
                   Click an edge to see the rule it represents
@@ -267,14 +267,15 @@ export function WorkflowGraph({
 
           {demoControls && (
             <>
-              <h3 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <h2 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-slate-400">
                 Node status (demo controls)
-              </h3>
+              </h2>
               <div className="space-y-2">
                 {(Object.keys(schema.domains) as DomainName[]).map((domain) => (
                   <div key={domain} className="flex items-center justify-between gap-2 text-xs">
                     <span className="text-slate-300">{DOMAIN_LABEL[domain]}</span>
                     <select
+                      aria-label={`${DOMAIN_LABEL[domain]} status`}
                       value={statuses[domain]}
                       onChange={(event) =>
                         setStatuses((current) => ({
@@ -354,9 +355,9 @@ function DomainProhibitions({
 }): JSX.Element {
   return (
     <div>
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
         {DOMAIN_LABEL[domain]}: not allowed to depend on
-      </h3>
+      </h2>
       {prohibitions.length === 0 ? (
         <p className="text-xs text-slate-500">No prohibitions compiled for this domain.</p>
       ) : (
