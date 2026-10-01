@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   applicationJobDownloadUrl,
+  deleteApplicationRun,
   deleteWorkflowSession,
   fetchApplicationJob,
   fetchWorkflowJob,
@@ -385,6 +386,32 @@ describe('deleteWorkflowSession', () => {
 
     await expect(deleteWorkflowSession('s-1')).rejects.toThrow(
       'this session has a job still running',
+    );
+  });
+});
+
+describe('deleteApplicationRun', () => {
+  it('sends DELETE for the encoded run id', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ deleted: 'r/1' }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await deleteApplicationRun('r/1');
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/workflow/application-runs/r%2F1', {
+      method: 'DELETE',
+    });
+  });
+
+  it("throws the server's own message, such as the refusal while a job is running", async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(jsonResponse({ error: 'a job of this session is still running' }, 409)),
+    );
+
+    await expect(deleteApplicationRun('r-1')).rejects.toThrow(
+      'a job of this session is still running',
     );
   });
 });

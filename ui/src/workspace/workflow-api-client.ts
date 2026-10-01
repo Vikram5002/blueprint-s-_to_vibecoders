@@ -363,6 +363,20 @@ export async function deleteWorkflowSession(id: string): Promise<void> {
   }
 }
 
+/**
+ * Deletes one saved run and its generated project; the session's other runs
+ * stay. The server refuses (409) while a job of the session is running, and
+ * that message is thrown as-is.
+ */
+export async function deleteApplicationRun(id: string): Promise<void> {
+  const response = await fetch(`/api/workflow/application-runs/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `delete run failed: ${response.status}`));
+  }
+}
+
 export async function fetchWorkflowSession(id: string): Promise<WorkflowSessionDetail> {
   const response = await fetch(`/api/workflow/sessions/${encodeURIComponent(id)}`);
   if (!response.ok) {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   applicationJobDownloadUrl,
+  deleteApplicationRun,
   fetchRunPages,
   fetchSessionRuns,
   fetchWorkflowSession,
@@ -43,6 +44,10 @@ import { Icon } from '../design/Icon';
  * a new job from that run's files that regenerates only what tsc still
  * names - a handful of calls, not one per component. "Generate again" is
  * the full, costlier regeneration, labelled as such.
+ *
+ * "Delete this run" removes the shown run and its generated files (after an
+ * inline confirm, so one stray click deletes nothing), then shows the
+ * session's next newest run, or an empty panel when none is left.
  */
 
 type Phase =
@@ -57,6 +62,12 @@ type PanelState =
     }
   | { readonly kind: 'done'; readonly job: ApplicationJob; readonly restored: boolean }
   | { readonly kind: 'error'; readonly message: string };
+
+type RunDeleteState =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'confirming' }
+  | { readonly kind: 'deleting' }
+  | { readonly kind: 'failed'; readonly message: string };
 
 /** What a download holds besides the code - src/export/project-pack.ts. */
 export const PACK_NOTE =
@@ -88,6 +99,7 @@ export function GenerateApplicationPanel({
   const [state, setState] = useState<PanelState>({ kind: 'idle' });
   const [elapsedMs, setElapsedMs] = useState(0);
   const [instruction, setInstruction] = useState('');
+  const [runDelete, setRunDelete] = useState<RunDeleteState>({ kind: 'none' });
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -110,6 +122,7 @@ export function GenerateApplicationPanel({
     abortRef.current?.abort();
     setState({ kind: 'idle' });
     setInstruction('');
+    setRunDelete({ kind: 'none' });
     let cancelled = false;
     fetchSessionRuns(schema.sessionId)
       .then((runs) => {
@@ -197,6 +210,26 @@ export function GenerateApplicationPanel({
     }
   }
 
+  async function handleDeleteRun(id: string): Promise<void> {
+    setRunDelete({ kind: 'deleting' });
+    try {
+      await deleteApplicationRun(id);
+      setRunDelete({ kind: 'none' });
+      notifyRunSaved();
+      const remaining = await fetchSessionRuns(schema.sessionId).catch(() => null);
+      setState(
+        remaining?.latest
+          ? { kind: 'done', job: remaining.latest, restored: true }
+          : { kind: 'idle' },
+      );
+    } catch (cause) {
+      setRunDelete({
+        kind: 'failed',
+        message: cause instanceof Error ? cause.message : String(cause),
+      });
+    }
+  }
+
   const totalComponents = (['frontend', 'backend', 'database', 'security'] as const).reduce(
     (count, domain) => count + schema.domains[domain].components.length,
     0,
@@ -249,7 +282,52 @@ export function GenerateApplicationPanel({
               , {new Date(state.job.createdAt).toLocaleString()})
             </span>
           )}
+          {state.kind === 'done' &&
+            (runDelete.kind === 'confirming' || runDelete.kind === 'deleting' ? (
+              <span
+                className="ml-auto flex items-center gap-1"
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') setRunDelete({ kind: 'none' });
+                }}
+              >
+                <span className="text-[11px] text-slate-400">Delete this run and its files?</span>
+                <button
+                  type="button"
+                  data-testid="confirm-delete-run"
+                  onClick={() => void handleDeleteRun(state.job.id)}
+                  disabled={runDelete.kind === 'deleting'}
+                  className="rounded-[7px] bg-red-500/15 px-2 py-0.5 text-[11px] font-medium text-red-300 hover:bg-red-500/25 disabled:cursor-wait"
+                >
+                  {runDelete.kind === 'deleting' ? 'Deleting…' : 'Delete'}
+                </button>
+                <button
+                  type="button"
+                  // Focus moves into the confirmation the person just opened.
+                  autoFocus
+                  onClick={() => setRunDelete({ kind: 'none' })}
+                  className="rounded-[7px] px-2 py-0.5 text-[11px] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200"
+                >
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                data-testid="delete-run"
+                onClick={() => setRunDelete({ kind: 'confirming' })}
+                title="Delete this run and its generated files; the project's other runs stay"
+                className="btn btn-ghost btn-sm ml-auto text-slate-400 hover:text-red-300"
+              >
+                <Icon name="trash" size={12} />
+                Delete this run
+              </button>
+            ))}
         </div>
+      )}
+      {runDelete.kind === 'failed' && (
+        <p role="alert" data-testid="delete-run-error" className="mt-2 text-[11px] text-red-300">
+          {runDelete.message}
+        </p>
       )}
 
       {state.kind === 'in-flight' && (
