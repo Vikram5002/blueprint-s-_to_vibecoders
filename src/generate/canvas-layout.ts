@@ -212,7 +212,12 @@ export interface CanvasElement {
   readonly reveal?: boolean;
 }
 
-/** Fixed 1280x800 canvas per the approved v1 scope - responsive/breakpoint support is explicitly deferred, not reconciled with LayoutSchema's own breakpoints concept in this pass. */
+/**
+ * The design canvas is 1280x800. A generated page keeps that exact layout and
+ * scales it down to fit a narrower window (FIT_SCALE_HOOK), so it never
+ * overflows sideways on a phone or a small laptop. Breakpoint reflow is not
+ * attempted: the person designed one layout, and that is what is shown.
+ */
 export const CANVAS_WIDTH = 1280;
 export const CANVAS_HEIGHT = 800;
 
@@ -337,6 +342,20 @@ function reactImport(values: readonly string[], types: readonly string[]): strin
  * page using motion gets exactly the helpers, hooks and CSS it uses
  * (canvas-motion.ts). A page with neither is byte-identical to before.
  */
+/** Scales the page down to the window's width, never up; measured again on resize. */
+const FIT_SCALE_HOOK = [
+  'function useFitScale(width: number): number {',
+  '  const [scale, setScale] = useState(1);',
+  '  useEffect(() => {',
+  '    const fit = (): void => setScale(Math.min(1, window.innerWidth / width));',
+  '    fit();',
+  "    window.addEventListener('resize', fit);",
+  "    return () => window.removeEventListener('resize', fit);",
+  '  }, [width]);',
+  '  return scale;',
+  '}',
+].join('\n');
+
 function pageSource(layout: PageLayout, componentName: string, fields: readonly FormField[]): string {
   const isForm = fields.length > 0;
   const namesOf = new Map<string, string[]>();
@@ -364,22 +383,26 @@ function pageSource(layout: PageLayout, componentName: string, fields: readonly 
   const root = isForm ? 'form' : 'div';
   const rootOpen = isForm ? '<form onSubmit={(event) => void handleSubmit(event)} style=' : '<div style=';
   return (
-    reactImport([...(isForm ? ['useState'] : []), ...motion.values, ...widgets.values, ...formWidgets.values, ...content.values], [...(isForm ? ['FormEvent'] : []), ...motion.types, ...formWidgets.types]) +
+    reactImport(['useEffect', 'useState', ...motion.values, ...widgets.values, ...formWidgets.values, ...content.values], [...(isForm ? ['FormEvent'] : []), ...motion.types, ...formWidgets.types]) +
     '\n' +
     (motion.helpers === '' ? '' : `${motion.helpers}\n\n`) +
     (widgets.helpers === '' ? '' : `${widgets.helpers}\n\n`) +
     (formWidgets.helpers === '' ? '' : `${formWidgets.helpers}\n\n`) +
     (content.helpers === '' ? '' : `${content.helpers}\n\n`) +
+    `${FIT_SCALE_HOOK}\n\n` +
     `export const ${componentName}: FC = () => {\n` +
+    `  const scale = useFitScale(${CANVAS_WIDTH});\n` +
     (isForm ? submitHandlerSource(fields, pageApiPath(layout.pageName)) : '') +
     motion.hooks +
     '  return (\n' +
-    `    ${rootOpen}{{ position: 'relative', width: ${CANVAS_WIDTH}, height: ${CANVAS_HEIGHT}${themeRootStyle(layout.theme)} }}>\n` +
+    `    <div style={{ width: ${CANVAS_WIDTH} * scale, height: ${CANVAS_HEIGHT} * scale, overflow: 'hidden' }}>\n` +
+    `    ${rootOpen}{{ position: 'relative', width: ${CANVAS_WIDTH}, height: ${CANVAS_HEIGHT}, transform: 'scale(' + scale + ')', transformOrigin: 'top left'${themeRootStyle(layout.theme)} }}>\n` +
     renderThemeBlock(layout.theme) +
     renderKeyframesBlock(layout.elements, [...motion.css, ...widgets.css, ...formWidgets.css, ...content.css]) +
     `${elementsJsx}\n` +
     (isForm ? "      <p role=\"status\" style={{ position: 'absolute', left: 16, bottom: 8, margin: 0, fontSize: 14, color: '#475569' }}>{status}</p>\n" : '') +
     `    </${root}>\n` +
+    '    </div>\n' +
     '  );\n' +
     '};\n'
   );

@@ -78,11 +78,12 @@ describe('a page with inputs', () => {
     expect(syntaxErrors(source)).toEqual([]);
   });
 
-  it('leaves a page without inputs exactly as before - no form, no state', () => {
+  it('leaves a page without inputs without a form - its only state is the fit-to-screen scale', () => {
     const plain = layoutToComponentFile(page([element({ type: 'heading', label: 'Hi' })])).contents;
     expect(plain).not.toContain('<form');
-    expect(plain).not.toContain('useState');
-    expect(plain.startsWith("import type { FC } from 'react';")).toBe(true);
+    expect(plain).not.toContain('handleSubmit');
+    expect(plain.match(/useState\(/g)).toHaveLength(1);
+    expect(plain.startsWith("import { useEffect, useState, type FC } from 'react';")).toBe(true);
   });
 });
 

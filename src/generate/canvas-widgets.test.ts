@@ -14,7 +14,7 @@ describe('widgets', () => {
 
   it('a modal page gets the modal helper and a state import, nothing else', () => {
     const code = source([element('modal', 'Open|Title|Body')]);
-    expect(code).toContain("import { useState, type FC } from 'react';");
+    expect(code).toContain("import { useEffect, useState, type FC } from 'react';");
     expect(code).toContain('function VbModal(');
     expect(code).not.toContain('function VbCookieBanner(');
   });

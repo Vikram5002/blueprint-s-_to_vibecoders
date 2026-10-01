@@ -279,3 +279,15 @@ describe('layoutToComponentFile', () => {
     });
   });
 });
+
+describe('fit to screen', () => {
+  it('scales the 1280x800 page down to the window width, never up, keeping the layout', () => {
+    const code = layoutToComponentFile({ id: 'l', pageName: 'Home', elements: [] }).contents;
+    expect(code).toContain('function useFitScale(width: number): number {');
+    expect(code).toContain('Math.min(1, window.innerWidth / width)');
+    expect(code).toContain("window.addEventListener('resize', fit);");
+    expect(code).toContain('const scale = useFitScale(1280);');
+    expect(code).toContain("<div style={{ width: 1280 * scale, height: 800 * scale, overflow: 'hidden' }}>");
+    expect(code).toContain("position: 'relative', width: 1280, height: 800, transform: 'scale(' + scale + ')', transformOrigin: 'top left'");
+  });
+});

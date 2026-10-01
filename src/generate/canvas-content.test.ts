@@ -10,7 +10,8 @@ describe('content blocks', () => {
     const bars = source([element('bar-chart', 'Jan 12|Feb 24')]);
     expect(bars.match(/<rect /g)).toHaveLength(2);
     expect(bars).toContain('>24</text>');
-    expect(bars).not.toContain('useState');
+    // The fit-to-screen hook is the page's only state; the chart itself has none.
+    expect(bars.match(/useState\(/g)).toHaveLength(1);
   });
 
   it('computes a calendar month with the marked days', () => {

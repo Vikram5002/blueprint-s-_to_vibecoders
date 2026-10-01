@@ -31,9 +31,10 @@ describe('motion elements', () => {
     expect(counterOnly).toContain('<VbCounter to={500} />+');
   });
 
-  it('a shimmer needs CSS only - no React hooks', () => {
+  it('a shimmer needs CSS only - no React hooks beyond the fit-to-screen scale', () => {
     const shimmer = source([element({ type: 'text-shimmer' })]);
-    expect(shimmer.startsWith("import type { FC } from 'react';")).toBe(true);
+    expect(shimmer.startsWith("import { useEffect, useState, type FC } from 'react';")).toBe(true);
+    expect(shimmer).not.toContain('useRef');
     expect(shimmer).toContain('@keyframes vb-shimmer');
   });
 
