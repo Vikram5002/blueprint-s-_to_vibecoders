@@ -24,6 +24,12 @@ describe('componentSlug', () => {
   it('strips characters that are not alphanumeric or hyphen', () => {
     expect(componentSlug('User Router!!')).toBe('user-router');
   });
+
+  it('folds accented letters to their base letter instead of dropping them', () => {
+    expect(componentSlug('Café Menu')).toBe('cafe-menu');
+    expect(componentSlug('CrèmeBrûléeRouter')).toBe('creme-brulee-router');
+    expect(componentSlug('Ñandú')).toBe('nandu');
+  });
 });
 
 describe('componentTargetPath', () => {
