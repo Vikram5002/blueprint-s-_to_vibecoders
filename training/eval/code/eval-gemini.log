@@ -1,0 +1,32 @@
+candidate: gemini:gemini-3.5-flash; reference projects: 26; scratch: capture\code\work\eval-gemini
+[gemini] using API key 1/7
+(node:20524) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+A  session-gold-002 backend/src/routes/boards-api.ts
+[gemini] using API key 1/7
+C  session-gold-002 whole project
+[gemini] using API key 1/7
+A  session-gold-003 backend/src/routes/weather-api.ts
+[gemini] using API key 1/7
+[gemini] key 1/7 exhausted (transient failure) - rotating to key 2/7
+[gemini] using API key 2/7
+[gemini] key 2/7 exhausted (transient failure) - rotating to key 3/7
+[gemini] using API key 3/7
+[gemini] key 3/7 exhausted (transient failure) - rotating to key 4/7
+[gemini] using API key 4/7
+[gemini] key 4/7 exhausted (transient failure) - rotating to key 5/7
+[gemini] using API key 5/7
+[gemini] key 5/7 exhausted (transient failure) - rotating to key 6/7
+[gemini] using API key 6/7
+[gemini] key 6/7 exhausted (transient failure) - rotating to key 7/7
+[gemini] using API key 7/7
+C  session-gold-003 whole project
+[gemini] using API key 7/7
+A  session-gold-006 backend/src/routes/catalog-api.ts
+[gemini] using API key 7/7
+A  session-gold-006 backend/src/routes/orders-api.ts
+[gemini] using API key 7/7
+
+provider unavailable at session-gold-006 backend/src/routes/payment-gateway-adapter.ts: daily free-tier quota exhausted (GenerateRequestsPerDayPerProjectPerModel-FreeTier). This resets at midnight Pacific; retrying now cannot help. (all 7 configured key(s) exhausted)
+Stopping without recording it. Rerun the same command later; finished work is kept and skipped.
+exit 3

@@ -31,6 +31,7 @@ pdsf/adapter.zip
 # >100MB. Capture JSONL and eval JSON ARE committed - only these are not.
 capture/code/work/
 capture/code/gold-reference/
+capture/code/gold-reference-qwen3/
 # Run folders keep summary.json (committed); the adapter itself is >100MB.
 training/runs/*/adapter/
 training/runs/*/adapter.zip

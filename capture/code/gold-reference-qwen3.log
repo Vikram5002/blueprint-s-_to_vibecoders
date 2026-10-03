@@ -1,0 +1,105 @@
+reference provider: openai-compatible:reference; output: capture/code/gold-reference-qwen3
+-- session-gold-001 (Team Task Board)
+(node:32368) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+   FAIL build-failed
+
+reference projects passing: 0
+reference provider: openai-compatible:reference; output: capture/code/gold-reference-qwen3
+-- session-gold-001: already failed, skipped
+-- session-gold-002 (Board App (Unspecified Differentiator))
+(node:31636) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+   PASS
+-- session-gold-003 (Weather App)
+   PASS
+-- session-gold-004 (Client-Only Calculator)
+   PASS
+-- session-gold-005 (Patient Records Portal)
+   FAIL build-failed
+-- session-gold-006 (Online Store)
+   PASS
+-- session-gold-007 (Recipe Sharing Site)
+   FAIL build-failed
+-- session-gold-008 (Support Agent Dashboard)
+   PASS
+-- session-gold-009 (Realtime Chat Rooms)
+   FAIL build-failed
+-- session-gold-010 (Personal Finance Tracker)
+   PASS
+-- session-gold-011 (Personal Portfolio Site)
+   PASS
+-- session-gold-012 (IoT Sensor Dashboard)
+   FAIL build-failed
+-- session-gold-013 (Online Course Platform)
+   FAIL build-failed
+-- session-gold-014 (Real Estate Listings)
+   FAIL build-failed
+-- session-gold-015 (Job Board)
+   PASS
+-- session-gold-016 (Event Ticketing)
+   FAIL build-failed
+-- session-gold-017 (Fitness Tracker With Friend Feed)
+   PASS
+-- session-gold-018 (Trip Itinerary Planner)
+   FAIL build-failed
+-- session-gold-019 (Contract Review Tool)
+   FAIL build-failed
+-- session-gold-020 (Shipment Tracking Page)
+   PASS
+-- session-gold-021 (Podcast Hosting Platform)
+   FAIL build-failed
+-- session-gold-022 (Freelance Marketplace)
+   FAIL build-failed
+-- session-gold-023 (Smart Home Control App)
+   PASS
+-- session-gold-024 (Insurance Claims Portal)
+   FAIL generation-failed
+-- session-gold-025 (Farm Management App)
+   PASS
+-- session-gold-026 (Library Catalogue)
+   PASS
+-- session-gold-027 (Car Rental Booking)
+   FAIL build-failed
+-- session-gold-028 (Nonprofit Donation Platform)
+   FAIL build-failed
+-- session-gold-029 (Simple Survey Tool)
+   PASS
+-- session-gold-030 (CI/CD Status Dashboard)
+   PASS
+-- session-gold-031 (Rec League Manager)
+   FAIL build-failed
+-- session-gold-032 (Restaurant Reservations)
+   PASS
+-- session-gold-033 (Veterinary Appointment Booking)
+   PASS
+-- session-gold-034 (Commuter Carpooling)
+   FAIL build-failed
+-- session-gold-035 (Language Learning App)
+   FAIL build-failed
+-- session-gold-036 (Gym Membership System)
+   PASS
+-- session-gold-037 (Therapy Session Booking)
+   FAIL build-failed
+-- session-gold-038 (Warehouse Inventory System)
+   PASS
+-- session-gold-039 (Crowdfunding Platform)
+   FAIL build-failed
+-- session-gold-040 (Expense Reimbursement Tool)
+   PASS
+-- session-gold-041 (Apartment Property Management)
+   FAIL build-failed
+-- session-gold-042 (Wedding RSVP Site)
+   FAIL build-failed
+-- session-gold-043 (Tutor Matching Platform)
+   FAIL build-failed
+-- session-gold-044 (Online Auction Site)
+   FAIL build-failed
+-- session-gold-045 (Volunteer Coordination Tool)
+   PASS
+-- session-gold-046 (Timesheet and Payroll Tracker)
+   PASS
+-- session-gold-047 (Office Parking Reservations)
+   PASS
+
+reference projects passing: 23
