@@ -17,6 +17,7 @@ is open, 5-minute idle shutdown, never more than one container.
 Usage (on the MSI):
     modal serve training/code/modal_eval.py
     set VIBE_CODE_RUN=code_modal_20260927_212455   (optional - that run is the default)
+    VIBE_EVAL_APP=vibe-eval-r2 VIBE_CODE_RUN2=<round-2 run> modal serve training/code/modal_eval.py
 """
 import os
 import subprocess
@@ -31,14 +32,17 @@ HF_DIR = "/hf"
 RUNS_DIR = "/runs"
 SERVER = Path(__file__).resolve().parents[2] / "pdsf" / "local_inference_server.py" if modal.is_local() else Path("/app/local_inference_server.py")
 
-app = modal.App("vibe-eval")
+# VIBE_EVAL_APP lets a second evaluation server run beside the first (round 2).
+app = modal.App(os.environ.get("VIBE_EVAL_APP", "vibe-eval"))
+# VIBE_CODE_RUN2 adds a `code2` name: a second adapter over the same base weights.
+RUN2 = os.environ.get("VIBE_CODE_RUN2", "")
 hf_cache = modal.Volume.from_name("vibe-hf-cache", create_if_missing=True)
 runs = modal.Volume.from_name("vibe-runs", create_if_missing=True)
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install("torch==2.5.1", "transformers>=4.46,<5", "peft", "bitsandbytes", "accelerate", "huggingface_hub")
-    .env({"HF_HOME": HF_DIR, "VIBE_CODE_RUN": RUN})
+    .env({"HF_HOME": HF_DIR, "VIBE_CODE_RUN": RUN, "VIBE_CODE_RUN2": RUN2})
     .add_local_file(SERVER, "/app/local_inference_server.py")
 )
 
@@ -62,5 +66,6 @@ def serve():
             "--max-new-tokens-cap", "8192",
             "--model", f"base={BASE_REPO}",
             "--model", f"code={BASE_REPO}:{adapter}",
+            *(["--model", f"code2={BASE_REPO}:{RUNS_DIR}/{os.environ['VIBE_CODE_RUN2']}/adapter"] if os.environ.get("VIBE_CODE_RUN2") else []),
         ]
     )
