@@ -54,3 +54,37 @@ A  session-gold-032 frontend/src/pages/host-stand-view.tsx
  B session-gold-033 backend/src/db/visit-records-table.ts  A:build-failed
 A  session-gold-033 frontend/src/pages/booking-calendar.tsx
 A  session-gold-033 frontend/src/pages/vet-appointment-queue.tsx
+candidate: local:code; reference projects: 23; scratch: capture\code\work\eval-qwen-coder-7b-code-indepref-frontend-database
+resuming: 53 component(s), 0 project(s) already done
+(node:26736) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ B session-gold-036 backend/src/db/members-table.ts  A:build-failed
+ B session-gold-036 backend/src/db/check-ins-table.ts  A:build-failed
+A  session-gold-036 frontend/src/pages/check-in-scanner.tsx
+A  session-gold-036 frontend/src/pages/membership-admin-panel.tsx
+ B session-gold-038 backend/src/db/stock-levels-table.ts  A:build-failed
+ B session-gold-038 backend/src/db/stock-movements-table.ts  A:build-failed
+ B session-gold-038 frontend/src/pages/inventory-grid.tsx  A:build-failed
+A  session-gold-038 frontend/src/pages/reorder-queue.tsx
+ B session-gold-040 backend/src/db/expenses-table.ts  A:build-failed
+A  session-gold-040 frontend/src/pages/expense-submission-form.tsx
+A  session-gold-040 frontend/src/pages/manager-approval-queue.tsx
+ B session-gold-045 backend/src/db/shifts-table.ts  A:build-failed
+ B session-gold-045 backend/src/db/signups-table.ts  A:build-failed
+A  session-gold-045 frontend/src/pages/shift-board.tsx
+A  session-gold-045 frontend/src/pages/coordinator-shift-panel.tsx
+!! session-gold-046 backend/src/db/clock-events-table.ts  A:build-failed  B:build-failed
+A  session-gold-046 frontend/src/pages/clock-in-out-widget.tsx
+A  session-gold-046 frontend/src/pages/manager-approval-view.tsx
+ B session-gold-047 backend/src/db/reservations-table.ts  A:build-failed
+A  session-gold-047 frontend/src/pages/spot-reservation-view.tsx
+
+--- results ---
+candidate: local:code
+scope           n        A       B    D(A)    D(B)
+all            73   47.9%  89.0%   0.0%  47.9%
+frontend       42   81.0%  88.1%   0.0%  81.0%
+database       31    3.2%  90.3%   0.0%   3.2%
+C (projects)    0     -
+
+written to training/eval/code/qwen-coder-7b-code-indepref-frontend-database.json

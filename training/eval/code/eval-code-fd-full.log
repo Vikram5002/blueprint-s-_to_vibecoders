@@ -1,0 +1,42 @@
+candidate: local:code; reference projects: 26; scratch: capture\code\work\eval-qwen-coder-7b-code-frontend-database-full
+(node:29996) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ B session-gold-002 backend/src/db/boards-table.ts  A:build-failed
+A  session-gold-002 frontend/src/pages/board-view.tsx
+A  session-gold-003 frontend/src/pages/forecast-view.tsx
+!! session-gold-004 frontend/src/pages/calculator-widget.tsx  A:build-failed  B:build-failed
+A  session-gold-006 backend/src/db/products-table.ts
+A  session-gold-006 backend/src/db/orders-table.ts
+A  session-gold-006 frontend/src/pages/product-catalog.tsx
+A  session-gold-006 frontend/src/pages/cart-checkout.tsx
+!! session-gold-006 frontend/src/pages/admin-product-panel.tsx  A:build-failed  B:build-failed
+ B session-gold-010 backend/src/db/transactions-table.ts  A:build-failed
+ B session-gold-010 backend/src/db/bank-credentials-table.ts  A:build-failed
+A  session-gold-010 frontend/src/pages/transaction-list.tsx
+A  session-gold-010 frontend/src/pages/budget-overview.tsx
+A  session-gold-011 frontend/src/pages/about-projects-pages.tsx
+A  session-gold-011 frontend/src/pages/contact-form.tsx
+ B session-gold-012 backend/src/db/readings-table.ts  A:build-failed
+ B session-gold-012 backend/src/db/devices-table.ts  A:build-failed
+A  session-gold-012 frontend/src/pages/sensor-dashboard.tsx
+A  session-gold-016 backend/src/db/events-table.ts
+ B session-gold-016 backend/src/db/tickets-table.ts  A:build-failed
+!! session-gold-016 frontend/src/pages/event-page.tsx  A:build-failed  B:build-failed
+A  session-gold-016 frontend/src/pages/organiser-event-setup.tsx
+A  session-gold-017 backend/src/db/workouts-table.ts
+ B session-gold-017 backend/src/db/follows-table.ts  A:build-failed
+A  session-gold-017 frontend/src/pages/workout-log.tsx
+A  session-gold-017 frontend/src/pages/friend-feed.tsx
+A  session-gold-020 backend/src/db/shipment-events-table.ts
+A  session-gold-020 frontend/src/pages/tracking-lookup.tsx
+A  session-gold-023 backend/src/db/devices-table.ts
+ B session-gold-023 backend/src/db/schedules-table.ts  A:build-failed
+!! session-gold-023 frontend/src/pages/device-control-panel.tsx: generation failed (unparseable-json)
+ B session-gold-023 frontend/src/pages/schedule-builder.tsx  A:build-failed
+ B session-gold-024 backend/src/db/claims-table.ts  A:build-failed
+ B session-gold-024 backend/src/db/claim-decisions-table.ts  A:build-failed
+!! session-gold-024 frontend/src/pages/claim-filing-form.tsx  A:build-failed  B:build-failed
+A  session-gold-024 frontend/src/pages/adjuster-review-queue.tsx
+ B session-gold-025 backend/src/db/fields-table.ts  A:build-failed
+A  session-gold-025 backend/src/db/applications-table.ts
+A  session-gold-025 frontend/src/pages/field-map-view.tsx

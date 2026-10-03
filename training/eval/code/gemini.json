@@ -1,0 +1,1336 @@
+{
+  "candidate": "gemini:gemini-3.5-flash",
+  "candidateModel": "gemini-3.5-flash",
+  "reference": "capture/code/gold-reference",
+  "referenceProjects": 26,
+  "nodeModulesSharing": "junction",
+  "evaluatedAt": "2026-10-03T13:35:45.800Z",
+  "rates": {
+    "n": 46,
+    "A": 1,
+    "B": 1,
+    "D_A": 1,
+    "D_B": 1,
+    "projects": 25,
+    "C": 1
+  },
+  "byDomain": {
+    "backend": {
+      "n": 36,
+      "A": 1,
+      "B": 1,
+      "D_A": 1,
+      "D_B": 1
+    },
+    "security": {
+      "n": 10,
+      "A": 1,
+      "B": 1,
+      "D_A": 1,
+      "D_B": 1
+    }
+  },
+  "rows": [
+    {
+      "sessionId": "session-gold-002",
+      "title": "Board App (Unspecified Differentiator)",
+      "component": "Boards API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/boards-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  createBoard,\n  getBoard,\n  listBoards,\n  deleteBoard,\n  createCard,\n  getCardsByBoard,\n  updateCardPosition,\n  deleteCard\n} from \"../db/boards-table\";\n\nexport const router = Router();\n\n// GET /api/boards - List all boards\nrouter.get(\"/api/boards\", (req: Request, res: Response): void => {\n  try {\n    const boards = listBoards();\n    res.status(200).json(boards);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// POST /api/boards - Create a new board\nrouter.post(\"/api/boards\", (req: Request, res: Response): void => {\n  try {\n    const { id, name } = req.body;\n    if (!id || !name || typeof id !== \"string\" || typeof name !== \"string\") {\n      res.status(400).json({ error: \"Missing or invalid id or name\" });\n      return;\n    }\n    createBoard(id, name);\n    const board = getBoard(id);\n    res.status(201).json(board);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// GET /api/boards/:id - Get a single board\nrouter.get(\"/api/boards/:id\", (req: Request, res: Response): void => {\n  try {\n    const { id } = req.params;\n    const board = getBoard(id);\n    if (!board) {\n      res.status(404).json({ error: \"Board not found\" });\n      return;\n    }\n    res.status(200).json(board);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// DELETE /api/boards/:id - Delete a board\nrouter.delete(\"/api/boards/:id\", (req: Request, res: Response): void => {\n  try {\n    const { id } = req.params;\n    const board = getBoard(id);\n    if (!board) {\n      res.status(404).json({ error: \"Board not found\" });\n      return;\n    }\n    deleteBoard(id);\n    res.status(200).json({ message: \"Board deleted successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// GET /api/boards/:id/cards - Get all cards for a board\nrouter.get(\"/api/boards/:id/cards\", (req: Request, res: Response): void => {\n  try {\n    const { id } = req.params;\n    const board = getBoard(id);\n    if (!board) {\n      res.status(404).json({ error: \"Board not found\" });\n      return;\n    }\n    const cards = getCardsByBoard(id);\n    res.status(200).json(cards);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// POST /api/boards/:id/cards - Create a card in a board\nrouter.post(\"/api/boards/:id/cards\", (req: Request, res: Response): void => {\n  try {\n    const { id: boardId } = req.params;\n    const board = getBoard(boardId);\n    if (!board) {\n      res.status(404).json({ error: \"Board not found\" });\n      return;\n    }\n\n    const { id, title, description, columnName, position } = req.body;\n    if (\n      !id ||\n      !title ||\n      typeof id !== \"string\" ||\n      typeof title !== \"string\" ||\n      typeof description !== \"string\" ||\n      typeof columnName !== \"string\" ||\n      typeof position !== \"number\"\n    ) {\n      res.status(400).json({ error: \"Invalid or missing card fields\" });\n      return;\n    }\n\n    createCard(id, boardId, title, description, columnName, position);\n    const cards = getCardsByBoard(boardId);\n    const createdCard = cards.find((c) => c.id === id);\n    res.status(201).json(createdCard);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// PATCH /api/cards/:cardId - Update card position and column\nrouter.patch(\"/api/cards/:cardId\", (req: Request, res: Response): void => {\n  try {\n    const { cardId } = req.params;\n    const { columnName, position } = req.body;\n\n    if (typeof columnName !== \"string\" || typeof position !== \"number\") {\n      res.status(400).json({ error: \"columnName and position are required and must be valid types\" });\n      return;\n    }\n\n    updateCardPosition(cardId, columnName, position);\n    res.status(200).json({ message: \"Card position updated successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// DELETE /api/cards/:cardId - Delete a card\nrouter.delete(\"/api/cards/:cardId\", (req: Request, res: Response): void => {\n  try {\n    const { cardId } = req.params;\n    deleteCard(cardId);\n    res.status(200).json({ message: \"Card deleted successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-003",
+      "title": "Weather App",
+      "component": "Weather API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/weather-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\n\nexport const router = Router();\n\ninterface ForecastDay {\n  date: string;\n  day: string;\n  tempMin: number;\n  tempMax: number;\n  condition: string;\n  humidity: number;\n}\n\ninterface ForecastResponse {\n  location: string;\n  latitude: number;\n  longitude: number;\n  forecast: ForecastDay[];\n}\n\nfunction generateMockForecast(locationName: string, lat: number, lon: number): ForecastResponse {\n  const days = [\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"];\n  const today = new Date();\n  \n  const forecast: ForecastDay[] = Array.from({ length: 5 }, (_, i: number) => {\n    const date = new Date(today);\n    date.setDate(today.getDate() + i);\n    const dayName = days[date.getDay()];\n    \n    const baseTemp = 15 + Math.sin(lat + lon + i) * 10;\n    const tempMin = Math.round(baseTemp - 5);\n    const tempMax = Math.round(baseTemp + 5);\n    \n    const conditions = [\"Sunny\", \"Partly Cloudy\", \"Cloudy\", \"Rainy\", \"Windy\"];\n    const conditionIndex = Math.abs(Math.round(lat * 10 + lon * 5 + i)) % conditions.length;\n    const condition = conditions[conditionIndex];\n\n    return {\n      date: date.toISOString().split(\"T\")[0],\n      day: dayName,\n      tempMin,\n      tempMax,\n      condition,\n      humidity: Math.abs(Math.round(Math.sin(lat - lon + i) * 30 + 60))\n    };\n  });\n\n  return {\n    location: locationName,\n    latitude: lat,\n    longitude: lon,\n    forecast\n  };\n}\n\nrouter.get(\"/forecast\", (req: Request, res: Response): void => {\n  const { lat, lon, location } = req.query;\n\n  let latitude = 40.7128;\n  let longitude = -74.0060;\n  let locationName = \"New York, NY\";\n\n  if (location) {\n    locationName = String(location);\n    let hash = 0;\n    for (let i = 0; i < locationName.length; i++) {\n      hash = locationName.charCodeAt(i) + ((hash << 5) - hash);\n    }\n    latitude = 30 + (Math.abs(hash % 100) / 100) * 20;\n    longitude = -120 + (Math.abs((hash >> 5) % 100) / 100) * 50;\n  } else if (lat && lon) {\n    latitude = Number(lat);\n    longitude = Number(lon);\n    if (isNaN(latitude) || isNaN(longitude)) {\n      res.status(400).json({ error: \"Invalid latitude or longitude parameters\" });\n      return;\n    }\n    locationName = `Coordinates (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;\n  }\n\n  const data = generateMockForecast(locationName, latitude, longitude);\n  res.json(data);\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Catalog API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/catalog-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  getAllProducts,\n  getProductById,\n  insertProduct,\n  updateProductStock,\n  type Product\n} from \"../db/products-table\";\nimport { middleware as adminOnlyWriteGuard } from \"../middleware/admin-only-write-guard\";\n\nexport const router = Router();\n\n// Read endpoints (public)\nrouter.get(\"/products\", (req: Request, res: Response): void => {\n  try {\n    const products = getAllProducts();\n    res.status(200).json(products);\n  } catch (error) {\n    res.status(500).json({ error: \"Failed to fetch products\" });\n  }\n});\n\nrouter.get(\"/products/:id\", (req: Request, res: Response): void => {\n  const id = Number(req.params.id);\n  if (isNaN(id)) {\n    res.status(400).json({ error: \"Invalid product ID\" });\n    return;\n  }\n\n  try {\n    const product = getProductById(id);\n    if (!product) {\n      res.status(404).json({ error: \"Product not found\" });\n      return;\n    }\n    res.status(200).json(product);\n  } catch (error) {\n    res.status(500).json({ error: \"Failed to fetch product\" });\n  }\n});\n\n// Write endpoints (restricted to admins)\nrouter.post(\"/products\", adminOnlyWriteGuard, (req: Request, res: Response): void => {\n  const { name, price, stockCount } = req.body;\n\n  if (typeof name !== \"string\" || typeof price !== \"number\" || typeof stockCount !== \"number\") {\n    res.status(400).json({ error: \"Missing or invalid product fields (name, price, stockCount)\" });\n    return;\n  }\n\n  try {\n    insertProduct(name, price, stockCount);\n    res.status(201).json({ message: \"Product created successfully\" });\n  } catch (error) {\n    res.status(500).json({ error: \"Failed to create product\" });\n  }\n});\n\nrouter.put(\"/products/:id/stock\", adminOnlyWriteGuard, (req: Request, res: Response): void => {\n  const id = Number(req.params.id);\n  const { stockCount } = req.body;\n\n  if (isNaN(id)) {\n    res.status(400).json({ error: \"Invalid product ID\" });\n    return;\n  }\n\n  if (typeof stockCount !== \"number\") {\n    res.status(400).json({ error: \"Invalid or missing stockCount\" });\n    return;\n  }\n\n  try {\n    const product = getProductById(id);\n    if (!product) {\n      res.status(404).json({ error: \"Product not found\" });\n      return;\n    }\n\n    updateProductStock(id, stockCount);\n    res.status(200).json({ message: \"Product stock updated successfully\" });\n  } catch (error) {\n    res.status(500).json({ error: \"Failed to update product stock\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Orders API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/orders-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getProductById, updateProductStock } from \"../db/products-table\";\nimport { insertOrder, getAllOrders, getOrderById } from \"../db/orders-table\";\n\nexport const router = Router();\n\ninterface CartItem {\n  productId: number;\n  quantity: number;\n}\n\n// POST /orders - Create an order from a cart\nrouter.post(\"/\", (req: Request, res: Response): void => {\n  const { customerId, items, paymentStatus } = req.body;\n\n  if (typeof customerId !== \"number\") {\n    res.status(400).json({ error: \"Invalid or missing customerId\" });\n    return;\n  }\n\n  if (!Array.isArray(items) || items.length === 0) {\n    res.status(400).json({ error: \"Cart items must be a non-empty array\" });\n    return;\n  }\n\n  const status = typeof paymentStatus === \"string\" ? paymentStatus : \"pending\";\n\n  // Validate stock and products first\n  const validatedItems: Array<{ id: number; name: string; price: number; quantity: number }> = [];\n\n  for (const item of items as CartItem[]) {\n    if (!item || typeof item.productId !== \"number\" || typeof item.quantity !== \"number\" || item.quantity <= 0) {\n      res.status(400).json({ error: \"Invalid cart item structure\" });\n      return;\n    }\n\n    const product = getProductById(item.productId);\n    if (!product) {\n      res.status(404).json({ error: `Product with ID ${item.productId} not found` });\n      return;\n    }\n\n    if (product.stockCount < item.quantity) {\n      res.status(400).json({ error: `Insufficient stock for product: ${product.name}` });\n      return;\n    }\n\n    validatedItems.push({\n      id: product.id,\n      name: product.name,\n      price: product.price,\n      quantity: item.quantity\n    });\n  }\n\n  // Deduct stock\n  for (const item of items as CartItem[]) {\n    const product = getProductById(item.productId)!;\n    updateProductStock(product.id, product.stockCount - item.quantity);\n  }\n\n  // Save order\n  const lineItemsString = JSON.stringify(validatedItems);\n  insertOrder(customerId, lineItemsString, status);\n\n  res.status(201).json({ message: \"Order created successfully\" });\n});\n\n// GET /orders - Retrieve all orders\nrouter.get(\"/\", (req: Request, res: Response): void => {\n  const orders = getAllOrders();\n  res.json(orders);\n});\n\n// GET /orders/:id - Retrieve a single order by ID\nrouter.get(\"/:id\", (req: Request, res: Response): void => {\n  const orderId = Number(req.params.id);\n  if (isNaN(orderId)) {\n    res.status(400).json({ error: \"Invalid order ID\" });\n    return;\n  }\n\n  const order = getOrderById(orderId);\n  if (!order) {\n    res.status(404).json({ error: \"Order not found\" });\n    return;\n  }\n\n  res.json(order);\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Payment Gateway Adapter",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/payment-gateway-adapter.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getOrderById, insertOrder } from \"../db/orders-table\";\n\nexport const router = Router();\n\n/**\n * POST /api/payments/charge\n * Simulates charging a card via an external payment processor.\n * Body parameters:\n *   - orderId: number (optional, if paying for an existing order)\n *   - customerId: number\n *   - lineItems: string\n *   - cardNumber: string\n *   - amount: number\n */\nrouter.post(\"/charge\", (req: Request, res: Response): void => {\n  const { orderId, customerId, lineItems, cardNumber, amount } = req.body;\n\n  if (!customerId || !lineItems || !cardNumber || typeof amount !== \"number\") {\n    res.status(400).json({ error: \"Missing required payment details (customerId, lineItems, cardNumber, amount)\" });\n    return;\n  }\n\n  // Simple validation simulation\n  if (cardNumber.replace(/\\s/g, \"\").length < 12) {\n    res.status(400).json({ error: \"Invalid card number format\" });\n    return;\n  }\n\n  // Simulate external payment processor logic\n  // Cards ending in '0000' are simulated as declined/failed\n  const isSuccess = !cardNumber.endsWith(\"0000\");\n  const paymentStatus = isSuccess ? \"PAID\" : \"FAILED\";\n\n  if (orderId) {\n    const existingOrder = getOrderById(Number(orderId));\n    if (!existingOrder) {\n      res.status(404).json({ error: \"Order not found\" });\n      return;\n    }\n    // In a real app we would update the order status. \n    // Since orders-table only has insertOrder, getOrderById, and getAllOrders, \n    // we will simulate the response reflecting the payment status for this order.\n    res.status(200).json({\n      success: isSuccess,\n      message: isSuccess ? \"Payment processed successfully\" : \"Payment declined by processor\",\n      orderId: existingOrder.orderId,\n      paymentStatus\n    });\n    return;\n  } else {\n    // Create a new order with the payment status\n    try {\n      insertOrder(Number(customerId), String(lineItems), paymentStatus);\n      res.status(201).json({\n        success: isSuccess,\n        message: isSuccess ? \"Payment processed and order created\" : \"Payment declined, order recorded as FAILED\",\n        paymentStatus\n      });\n      return;\n    } catch (err: any) {\n      res.status(500).json({ error: \"Failed to record order: \" + err.message });\n      return;\n    }\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Admin-Only Write Guard",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/admin-only-write-guard.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\nimport { createHmac, timingSafeEqual } from \"node:crypto\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  const method = req.method;\n  const path = req.path || req.originalUrl || \"\";\n\n  // Only guard write operations (POST, PUT, PATCH, DELETE) on product routes\n  const isProductRoute = path.includes(\"/products\");\n  const isWriteMethod = [\"POST\", \"PUT\", \"PATCH\", \"DELETE\"].includes(method);\n\n  if (!isProductRoute || !isWriteMethod) {\n    next();\n    return;\n  }\n\n  const authHeader = req.headers.authorization;\n  if (!authHeader || !authHeader.startsWith(\"Bearer \")) {\n    res.status(401).json({ error: \"Unauthorized: Missing token\" });\n    return;\n  }\n\n  const token = authHeader.substring(7).trim();\n  const parts = token.split(\".\");\n  if (parts.length !== 3) {\n    res.status(401).json({ error: \"Unauthorized: Invalid token format\" });\n    return;\n  }\n\n  const [headerB64, payloadB64, signatureB64] = parts;\n  const jwtSecret = process.env.JWT_SECRET;\n  if (!jwtSecret) {\n    // Reject every token when JWT_SECRET is unset\n    res.status(500).json({ error: \"Internal Server Error: JWT secret not configured\" });\n    return;\n  }\n\n  try {\n    const dataToSign = `${headerB64}.${payloadB64}`;\n    const hmac = createHmac(\"sha256\", jwtSecret);\n    hmac.update(dataToSign);\n    const expectedSignatureBuffer = hmac.digest();\n\n    // Base64url decode the signature\n    const signatureBuffer = Buffer.from(signatureB64, \"base64url\");\n\n    if (expectedSignatureBuffer.length !== signatureBuffer.length) {\n      res.status(401).json({ error: \"Unauthorized: Invalid signature\" });\n      return;\n    }\n\n    if (!timingSafeEqual(expectedSignatureBuffer, signatureBuffer)) {\n      res.status(401).json({ error: \"Unauthorized: Invalid signature\" });\n      return;\n    }\n\n    // Decode payload\n    const payloadJson = Buffer.from(payloadB64, \"base64url\").toString(\"utf8\");\n    const payload = JSON.parse(payloadJson);\n\n    const isAdmin = payload && (payload.role === \"admin\" || payload.isAdmin === true);\n    if (!isAdmin) {\n      res.status(403).json({ error: \"Forbidden: Admin access required\" });\n      return;\n    }\n\n    next();\n  } catch (err) {\n    res.status(401).json({ error: \"Unauthorized: Token verification failed\" });\n  }\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "Bank Sync Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/bank-sync-service.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { insertTransaction } from \"../db/transactions-table\";\nimport { getBankCredentialsByUserId } from \"../db/bank-credentials-table\";\n\nexport const router = Router();\n\n// Mock external bank provider sync logic\nfunction mockFetchExternalTransactions(token: string): Array<{\n  amount: number;\n  merchant: string;\n  date: string;\n  category: string;\n}> {\n  // In a real application, this would use the decrypted token to call a Plaid/Yodlee API.\n  // For this service, we simulate fetching 2 mock transactions based on the token length.\n  const seed = token.length;\n  return [\n    {\n      amount: -12.50 - (seed % 5),\n      merchant: \"Mock Merchant \" + (seed % 3),\n      date: new Date().toISOString().split(\"T\")[0],\n      category: \"Food & Dining\"\n    },\n    {\n      amount: -45.00 - (seed % 10),\n      merchant: \"Mock Gas Station \" + (seed % 2),\n      date: new Date().toISOString().split(\"T\")[0],\n      category: \"Auto & Transport\"\n    }\n  ];\n}\n\n// POST /api/bank-sync/sync/:userId\n// Triggers a manual sync for a user's linked bank credentials\nrouter.post(\"/sync/:userId\", (req: Request, res: Response): void => {\n  const userIdStr = req.params.userId;\n  if (!userIdStr) {\n    res.status(400).json({ error: \"Missing userId parameter\" });\n    return;\n  }\n\n  const userId = Number(userIdStr);\n  if (isNaN(userId)) {\n    res.status(400).json({ error: \"Invalid userId parameter\" });\n    return;\n  }\n\n  try {\n    const credentials = getBankCredentialsByUserId(userId);\n    if (credentials.length === 0) {\n      res.status(404).json({ error: \"No bank credentials found for this user\" });\n      return;\n    }\n\n    let syncedCount = 0;\n    for (const cred of credentials) {\n      // In a real app, we would decrypt cred.encryptedToken first.\n      // Here we simulate fetching transactions using the token.\n      const externalTxns = mockFetchExternalTransactions(cred.encryptedToken);\n      for (const tx of externalTxns) {\n        insertTransaction(tx.amount, tx.merchant, tx.date, tx.category);\n        syncedCount++;\n      }\n    }\n\n    res.status(200).json({\n      message: \"Sync completed successfully\",\n      syncedTransactionsCount: syncedCount\n    });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"An error occurred during sync\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "Categorisation API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/categorisation-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getTransactionById, db } from \"../db/transactions-table\";\n\nexport const router = Router();\n\n// Helper to update a transaction's category in the SQLite database\nfunction updateTransactionCategory(id: number, category: string): boolean {\n  try {\n    const stmt = db.prepare(\"UPDATE transactions SET category = ? WHERE id = ?\");\n    const result = stmt.run(category, id);\n    return result.changes > 0;\n  } catch (error) {\n    return false;\n  }\n}\n\n// PUT /api/transactions/:id/category\n// Updates the category tag of a specific transaction\nrouter.put(\"/transactions/:id/category\", (req: Request, res: Response): void => {\n  const id = Number(req.params.id);\n  if (isNaN(id)) {\n    res.status(400).json({ error: \"Invalid transaction ID\" });\n    return;\n  }\n\n  const { category } = req.body;\n  if (typeof category !== \"string\") {\n    res.status(400).json({ error: \"Category must be a string\" });\n    return;\n  }\n\n  const transaction = getTransactionById(id);\n  if (!transaction) {\n    res.status(404).json({ error: \"Transaction not found\" });\n    return;\n  }\n\n  const success = updateTransactionCategory(id, category);\n  if (!success) {\n    res.status(500).json({ error: \"Failed to update category\" });\n    return;\n  }\n\n  const updatedTransaction = getTransactionById(id);\n  res.status(200).json(updatedTransaction);\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "Credential Encryption",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/credential-encryption.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\nimport { createCipheriv, randomBytes, createHash } from \"node:crypto\";\n\nconst SENSITIVE_KEYS = [\"bankToken\", \"publicToken\", \"plaidToken\", \"bankCredentials\"];\n\nfunction encrypt(text: string): string {\n  const algorithm = \"aes-256-cbc\";\n  const keySource = process.env.ENCRYPTION_KEY || \"default-super-secret-key-32-bytes-long!!!\";\n  const key = createHash(\"sha256\").update(keySource).digest();\n  const iv = randomBytes(16);\n  const cipher = createCipheriv(algorithm, key, iv);\n  let encrypted = cipher.update(text, \"utf8\", \"hex\");\n  encrypted += cipher.final(\"hex\");\n  return iv.toString(\"hex\") + \":\" + encrypted;\n}\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  if (req.method !== \"POST\" && req.method !== \"PUT\" && req.method !== \"PATCH\") {\n    next();\n    return;\n  }\n\n  if (req.body && typeof req.body === \"object\") {\n    for (const key of SENSITIVE_KEYS) {\n      if (Object.prototype.hasOwnProperty.call(req.body, key)) {\n        const val = req.body[key];\n        if (typeof val === \"string\" && val.length > 0) {\n          req.body[key] = encrypt(val);\n        }\n      }\n    }\n  }\n\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-011",
+      "title": "Personal Portfolio Site",
+      "component": "Contact Form Handler",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/contact-form-handler.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\n\nexport const router = Router();\n\ninterface ContactSubmission {\n  name: string;\n  email: string;\n  message: string;\n}\n\nrouter.post(\"/\", (req: Request, res: Response): void => {\n  const { name, email, message } = req.body as Partial<ContactSubmission>;\n\n  if (!name || typeof name !== \"string\" || name.trim() === \"\") {\n    res.status(400).json({ error: \"Name is required and must be a non-empty string.\" });\n    return;\n  }\n\n  if (!email || typeof email !== \"string\" || !email.includes(\"@\")) {\n    res.status(400).json({ error: \"A valid email address is required.\" });\n    return;\n  }\n\n  if (!message || typeof message !== \"string\" || message.trim() === \"\") {\n    res.status(400).json({ error: \"Message is required and must be a non-empty string.\" });\n    return;\n  }\n\n  // Simulate sending an email by logging to the console\n  console.log(`[Contact Form Submission]`);\n  console.log(`From: ${name} <${email}>`);\n  console.log(`Message: ${message}`);\n\n  res.status(200).json({\n    success: true,\n    message: \"Your message has been sent successfully!\"\n  });\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-012",
+      "title": "IoT Sensor Dashboard",
+      "component": "Ingest API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/ingest-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { insertReading } from \"../db/readings-table\";\nimport { middleware as deviceApiKeyCheck } from \"../middleware/device-api-key-check\";\n\nexport const router = Router();\n\n// Apply the device API key check middleware to all ingest routes\nrouter.use(deviceApiKeyCheck);\n\ninterface IngestRequestBody {\n  sensorId?: number;\n  warehouseId?: number;\n  value?: number;\n  timestamp?: number;\n}\n\nrouter.post(\"/\", (req: Request, res: Response): void => {\n  const { sensorId, warehouseId, value, timestamp } = req.body as IngestRequestBody;\n\n  if (\n    sensorId === undefined ||\n    warehouseId === undefined ||\n    value === undefined ||\n    timestamp === undefined\n  ) {\n    res.status(400).json({ error: \"Missing required fields: sensorId, warehouseId, value, timestamp\" });\n    return;\n  }\n\n  if (\n    typeof sensorId !== \"number\" ||\n    typeof warehouseId !== \"number\" ||\n    typeof value !== \"number\" ||\n    typeof timestamp !== \"number\"\n  ) {\n    res.status(400).json({ error: \"Invalid field types. sensorId, warehouseId, value, and timestamp must be numbers\" });\n    return;\n  }\n\n  try {\n    insertReading(sensorId, warehouseId, value, timestamp);\n    res.status(201).json({ success: true, message: \"Reading ingested successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to ingest reading\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-012",
+      "title": "IoT Sensor Dashboard",
+      "component": "Alerting Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/alerting-service.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getReadingsBySensor, type Reading } from \"../db/readings-table\";\nimport { getDeviceById, type Device } from \"../db/devices-table\";\n\nexport const router = Router();\n\nexport interface Alert {\n  sensorId: number;\n  type: \"MISSED_HEARTBEAT\" | \"OUT_OF_RANGE\";\n  message: string;\n  timestamp: number;\n}\n\n// GET /api/alerts/check/:sensorId\n// Checks if a sensor has missed its heartbeat (e.g., no readings in the last 5 minutes) \n// or has out-of-range readings (e.g., value > 100 or value < 0).\nrouter.get(\"/check/:sensorId\", (req: Request, res: Response) => {\n  const sensorId = Number(req.params.sensorId);\n  if (isNaN(sensorId)) {\n    res.status(400).json({ error: \"Invalid sensorId\" });\n    return;\n  }\n\n  const device = getDeviceById(sensorId);\n  if (!device) {\n    res.status(404).json({ error: \"Sensor device not found\" });\n    return;\n  }\n\n  const readings = getReadingsBySensor(sensorId);\n  const alerts: Alert[] = [];\n  const now = Date.now();\n\n  if (readings.length === 0) {\n    alerts.push({\n      sensorId,\n      type: \"MISSED_HEARTBEAT\",\n      message: `No readings received at all for sensor ${sensorId}.`,\n      timestamp: now\n    });\n  } else {\n    // Sort readings descending by timestamp to find the latest\n    const sortedReadings = [...readings].sort((a, b) => b.timestamp - a.timestamp);\n    const latestReading = sortedReadings[0];\n\n    // Check missed heartbeat (e.g., 5 minutes = 300,000 ms)\n    const fiveMinutesMs = 5 * 60 * 1000;\n    if (now - latestReading.timestamp > fiveMinutesMs) {\n      alerts.push({\n        sensorId,\n        type: \"MISSED_HEARTBEAT\",\n        message: `No heartbeat received since ${new Date(latestReading.timestamp).toISOString()}.`,\n        timestamp: now\n      });\n    }\n\n    // Check for out-of-range readings in the last 24 hours\n    const oneDayMs = 24 * 60 * 60 * 1000;\n    const recentReadings = readings.filter((r: Reading) => now - r.timestamp <= oneDayMs);\n    \n    for (const r of recentReadings) {\n      if (r.value < 0 || r.value > 100) {\n        alerts.push({\n          sensorId,\n          type: \"OUT_OF_RANGE\",\n          message: `Out-of-range reading detected: ${r.value} at ${new Date(r.timestamp).toISOString()}.`,\n          timestamp: r.timestamp\n        });\n      }\n    }\n  }\n\n  res.json({\n    sensorId,\n    checkedAt: now,\n    alerts\n  });\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-012",
+      "title": "IoT Sensor Dashboard",
+      "component": "Device API Key Check",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/device-api-key-check.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  // Only intercept POST requests to ingestion endpoints\n  const isIngestPath = req.path === \"/api/readings\" || req.path === \"/api/ingest\" || req.path.startsWith(\"/api/readings/\");\n  if (req.method !== \"POST\" || !isIngestPath) {\n    next();\n    return;\n  }\n\n  // Extract API key\n  let apiKey: string | undefined;\n\n  // 1. Check header x-device-api-key\n  const headerKey = req.headers[\"x-device-api-key\"];\n  if (typeof headerKey === \"string\") {\n    apiKey = headerKey;\n  }\n\n  // 2. Check Authorization header\n  if (!apiKey) {\n    const authHeader = req.headers[\"authorization\"];\n    if (typeof authHeader === \"string\") {\n      if (authHeader.toLowerCase().startsWith(\"bearer \")) {\n        apiKey = authHeader.substring(7).trim();\n      } else {\n        apiKey = authHeader.trim();\n      }\n    }\n  }\n\n  // 3. Check request body\n  if (!apiKey && req.body && typeof req.body === \"object\") {\n    const bodyKey = req.body.apiKey || req.body.api_key;\n    if (typeof bodyKey === \"string\") {\n      apiKey = bodyKey;\n    }\n  }\n\n  if (!apiKey) {\n    res.status(401).json({ error: \"Unauthorized: Missing device API key\" });\n    return;\n  }\n\n  // Get allowed keys from environment or fallback\n  const envKeys = process.env.DEVICE_API_KEYS;\n  const allowedKeys = envKeys\n    ? envKeys.split(\",\").map((k) => k.trim())\n    : [\"dev-key-123\", \"sensor-key-abc\", \"test-api-key\"];\n\n  if (!allowedKeys.includes(apiKey)) {\n    res.status(403).json({ error: \"Forbidden: Invalid device API key\" });\n    return;\n  }\n\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-016",
+      "title": "Event Ticketing",
+      "component": "Ticketing API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/ticketing-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response, type NextFunction } from \"express\";\nimport { getEventById } from \"../db/events-table\";\nimport { insertTicket, getAllTickets } from \"../db/tickets-table\";\nimport { middleware as oversellGuard } from \"../middleware/oversell-guard\";\n\nexport const router = Router();\n\n// POST /tickets/purchase\n// Body: { eventId: number, userId: number }\nrouter.post(\n  \"/tickets/purchase\",\n  oversellGuard,\n  (req: Request, res: Response): void => {\n    const { eventId, userId } = req.body;\n\n    if (typeof eventId !== \"number\" || typeof userId !== \"number\") {\n      res.status(400).json({ error: \"Missing or invalid eventId or userId\" });\n      return;\n    }\n\n    const event = getEventById(eventId);\n    if (!event) {\n      res.status(404).json({ error: \"Event not found\" });\n      return;\n    }\n\n    // Check current inventory\n    const allTickets = getAllTickets();\n    const soldTicketsCount = allTickets.filter((t) => t.event_id === eventId).length;\n\n    if (soldTicketsCount >= event.totalTickets) {\n      res.status(400).json({ error: \"Event is sold out\" });\n      return;\n    }\n\n    // Generate a unique QR code string\n    const qrCode = `QR-EVT-${eventId}-USR-${userId}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;\n\n    try {\n      insertTicket(eventId, userId, qrCode);\n      res.status(201).json({\n        success: true,\n        message: \"Ticket purchased successfully\",\n        qrCode: qrCode\n      });\n    } catch (error: any) {\n      res.status(500).json({ error: error.message || \"Failed to purchase ticket\" });\n    }\n  }\n);\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-016",
+      "title": "Event Ticketing",
+      "component": "Email Delivery Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/email-delivery-service.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getEventById } from \"../db/events-table\";\nimport { getTicketByQRCode } from \"../db/tickets-table\";\n\nexport const router = Router();\n\n/**\n * POST /api/email/send-ticket\n * Body parameters:\n *   - qrCode: string\n *   - email: string\n *\n * Simulates sending an email with the purchased ticket and its QR code to the buyer.\n */\nrouter.post(\"/send-ticket\", (req: Request, res: Response): void => {\n  const { qrCode, email } = req.body;\n\n  if (!qrCode || typeof qrCode !== \"string\") {\n    res.status(400).json({ error: \"Missing or invalid qrCode parameter\" });\n    return;\n  }\n\n  if (!email || typeof email !== \"string\") {\n    res.status(400).json({ error: \"Missing or invalid email parameter\" });\n    return;\n  }\n\n  const ticket = getTicketByQRCode(qrCode);\n  if (!ticket) {\n    res.status(404).json({ error: \"Ticket not found\" });\n    return;\n  }\n\n  const event = getEventById(ticket.event_id);\n  if (!event) {\n    res.status(404).json({ error: \"Event associated with ticket not found\" });\n    return;\n  }\n\n  // Simulate email delivery\n  const emailSubject = `Your Ticket for ${event.name}`;\n  const emailBody = `Hello,\\n\\nThank you for your purchase! Here are your ticket details:\\n\\nEvent: ${event.name}\\nDate: ${event.date}\\nLocation: ${event.location}\\nQR Code: ${ticket.qr_code}\\n\\nEnjoy the event!`;\n\n  // In a real application, we would integrate with an email provider (e.g., Nodemailer, SendGrid).\n  // For this service, we simulate success and return the email details.\n  res.status(200).json({\n    success: true,\n    message: `Ticket email successfully sent to ${email}`,\n    deliveryDetails: {\n      to: email,\n      subject: emailSubject,\n      body: emailBody,\n      sentAt: new Date().toISOString()\n    }\n  });\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-016",
+      "title": "Event Ticketing",
+      "component": "Oversell Guard",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/oversell-guard.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\ninterface EventCapacity {\n  id: string;\n  capacity: number;\n  sold: number;\n}\n\n// In-memory store to track event capacities and sold tickets\nconst eventsDb: Record<string, EventCapacity> = {\n  \"concert-2024\": { id: \"concert-2024\", capacity: 100, sold: 98 },\n  \"sold-out-event\": { id: \"sold-out-event\", capacity: 50, sold: 50 },\n  \"limited-event\": { id: \"limited-event\", capacity: 5, sold: 4 }\n};\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  // Only guard ticket purchase requests\n  const isPurchaseRoute = \n    req.method === \"POST\" && \n    (req.path.includes(\"/purchase\") || req.path.includes(\"/tickets\"));\n\n  if (!isPurchaseRoute) {\n    next();\n    return;\n  }\n\n  // Try to extract eventId from path or body\n  let eventId: string | undefined = undefined;\n  \n  // Match /api/events/:eventId/purchase or similar\n  const pathMatch = req.path.match(/\\/events\\/([^/]+)/);\n  if (pathMatch && pathMatch[1]) {\n    eventId = pathMatch[1];\n  } else if (req.body && typeof req.body.eventId === \"string\") {\n    eventId = req.body.eventId;\n  }\n\n  if (!eventId) {\n    // If we can't identify the event, let the request pass to be handled by validation routes\n    next();\n    return;\n  }\n\n  // Determine quantity to purchase\n  let quantity = 1;\n  if (req.body && req.body.quantity !== undefined) {\n    const parsedQuantity = Number(req.body.quantity);\n    if (!isNaN(parsedQuantity) && parsedQuantity > 0) {\n      quantity = parsedQuantity;\n    }\n  }\n\n  // Retrieve or initialize event capacity tracking\n  let event = eventsDb[eventId];\n  if (!event) {\n    // Default fallback for dynamic events not pre-seeded\n    event = {\n      id: eventId,\n      capacity: 150,\n      sold: 0\n    };\n    eventsDb[eventId] = event;\n  }\n\n  // Check if the purchase would exceed capacity\n  if (event.sold + quantity > event.capacity) {\n    res.status(400).json({\n      error: \"Sold Out\",\n      message: `Cannot purchase ${quantity} ticket(s). Only ${event.capacity - event.sold} remaining.`\n    });\n    return;\n  }\n\n  // Reserve the tickets\n  event.sold += quantity;\n\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-017",
+      "title": "Fitness Tracker With Friend Feed",
+      "component": "Workouts API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/workouts-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  insertWorkout,\n  getWorkoutsByUserId,\n  type Workout\n} from \"../db/workouts-table\";\nimport {\n  getFollowing,\n  type Follow\n} from \"../db/follows-table\";\n\nexport const router = Router();\n\n// POST /api/workouts\n// Logs a new workout for the authenticated user (passed in headers or query for simplicity)\nrouter.post(\"/\", (req: Request, res: Response): void => {\n  const userIdStr = req.headers[\"x-user-id\"] || req.query.userId;\n  if (!userIdStr) {\n    res.status(400).json({ error: \"Missing user ID in x-user-id header or userId query parameter\" });\n    return;\n  }\n\n  const userId = Number(userIdStr);\n  if (isNaN(userId)) {\n    res.status(400).json({ error: \"Invalid user ID\" });\n    return;\n  }\n\n  const { exercise, sets, reps } = req.body;\n  if (!exercise || typeof exercise !== \"string\") {\n    res.status(400).json({ error: \"Missing or invalid exercise name\" });\n    return;\n  }\n\n  const setsNum = Number(sets);\n  const repsNum = Number(reps);\n  if (isNaN(setsNum) || isNaN(repsNum)) {\n    res.status(400).json({ error: \"Sets and reps must be valid numbers\" });\n    return;\n  }\n\n  try {\n    insertWorkout(userId, exercise, setsNum, repsNum);\n    res.status(201).json({ message: \"Workout logged successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to log workout\" });\n  }\n});\n\n// GET /api/workouts/feed\n// Serves a feed of workouts from users that the current user follows\nrouter.get(\"/feed\", (req: Request, res: Response): void => {\n  const userIdStr = req.headers[\"x-user-id\"] || req.query.userId;\n  if (!userIdStr) {\n    res.status(400).json({ error: \"Missing user ID in x-user-id header or userId query parameter\" });\n    return;\n  }\n\n  const userId = Number(userIdStr);\n  if (isNaN(userId)) {\n    res.status(400).json({ error: \"Invalid user ID\" });\n    return;\n  }\n\n  try {\n    const following: Follow[] = getFollowing(userId);\n    const feedWorkouts: Workout[] = [];\n\n    for (const follow of following) {\n      const workouts = getWorkoutsByUserId(follow.following_id);\n      feedWorkouts.push(...workouts);\n    }\n\n    // Sort workouts by ID descending (assuming higher ID means newer)\n    feedWorkouts.sort((a, b) => b.id - a.id);\n\n    res.status(200).json(feedWorkouts);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to retrieve feed\" });\n  }\n});\n\n// GET /api/workouts/user/:userId\n// Retrieves workouts for a specific user\nrouter.get(\"/user/:userId\", (req: Request, res: Response): void => {\n  const targetUserId = Number(req.params.userId);\n  if (isNaN(targetUserId)) {\n    res.status(400).json({ error: \"Invalid target user ID\" });\n    return;\n  }\n\n  try {\n    const workouts = getWorkoutsByUserId(targetUserId);\n    res.status(200).json(workouts);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to retrieve workouts\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-020",
+      "title": "Shipment Tracking Page",
+      "component": "Tracking API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/tracking-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  getShipmentEventsByTrackingNumber,\n  type ShipmentEvent\n} from \"../db/shipment-events-table\";\n\nexport const router = Router();\n\nrouter.get(\"/api/tracking/:trackingNumber\", (req: Request, res: Response): void => {\n  const { trackingNumber } = req.params;\n\n  if (!trackingNumber) {\n    res.status(400).json({ error: \"Tracking number is required\" });\n    return;\n  }\n\n  try {\n    const events: ShipmentEvent[] = getShipmentEventsByTrackingNumber(trackingNumber);\n\n    if (events.length === 0) {\n      res.status(404).json({ error: \"Shipment not found\" });\n      return;\n    }\n\n    // Sort events by timestamp descending (newest first) or ascending. \n    // Let's sort by timestamp ascending to show history chronologically.\n    const sortedEvents = [...events].sort((a, b) => a.timestamp - b.timestamp);\n\n    res.json({\n      trackingNumber,\n      events: sortedEvents\n    });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal server error\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-023",
+      "title": "Smart Home Control App",
+      "component": "Device Control API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/device-control-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response, type NextFunction } from \"express\";\nimport { getDeviceById, type Device } from \"../db/devices-table\";\nimport { middleware } from \"../middleware/owner-only-device-control\";\n\nexport const router = Router();\n\n// Apply the owner-only device control middleware to all routes in this router\nrouter.use(middleware);\n\n/**\n * POST /api/devices/:id/command\n * Sends a command to a registered smart home device.\n * Expects JSON body: { \"command\": \"ON\" | \"OFF\" | string }\n */\nrouter.post(\"/:id/command\", (req: Request, res: Response): void => {\n  const deviceId = Number(req.params.id);\n  if (isNaN(deviceId)) {\n    res.status(400).json({ error: \"Invalid device ID\" });\n    return;\n  }\n\n  const device = getDeviceById(deviceId);\n  if (!device) {\n    res.status(404).json({ error: \"Device not found\" });\n    return;\n  }\n\n  const { command } = req.body;\n  if (!command || typeof command !== \"string\") {\n    res.status(400).json({ error: \"Command is required and must be a string\" });\n    return;\n  }\n\n  // Simulate sending command to the physical device\n  // In a real application, this would communicate via MQTT, Zigbee, HTTP, etc.\n  const success = true;\n\n  if (success) {\n    // Update the device's last known state in memory/db representation\n    device.lastKnownState = command;\n    res.status(200).json({\n      message: `Command '${command}' sent successfully to device ${deviceId}`,\n      device: {\n        id: device.id,\n        type: device.type,\n        lastKnownState: device.lastKnownState\n      }\n    });\n  } else {\n    res.status(500).json({ error: \"Failed to send command to device\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-023",
+      "title": "Smart Home Control App",
+      "component": "Scheduler Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/scheduler-service.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response, type NextFunction } from \"express\";\nimport {\n  getSchedules,\n  getScheduleById,\n  insertSchedule,\n  updateSchedule,\n  deleteSchedule,\n  type Schedule\n} from \"../db/schedules-table\";\nimport { middleware } from \"../middleware/owner-only-device-control\";\n\nexport const router = Router();\n\n// GET /schedules - Retrieve all schedules\nrouter.get(\"/\", (req: Request, res: Response) => {\n  try {\n    const schedules = getSchedules();\n    res.status(200).json(schedules);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to fetch schedules\" });\n  }\n});\n\n// GET /schedules/:id - Retrieve a single schedule by ID\nrouter.get(\"/:id\", (req: Request, res: Response) => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid schedule ID\" });\n      return;\n    }\n    const schedule = getScheduleById(id);\n    if (!schedule) {\n      res.status(404).json({ error: \"Schedule not found\" });\n      return;\n    }\n    res.status(200).json(schedule);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to fetch schedule\" });\n  }\n});\n\n// POST /schedules - Create a new schedule (protected by owner-only middleware)\nrouter.post(\"/\", middleware, (req: Request, res: Response) => {\n  try {\n    const { triggerTime, targetDevice, action } = req.body;\n    if (typeof triggerTime !== \"string\" || typeof targetDevice !== \"string\" || typeof action !== \"string\") {\n      res.status(400).json({ error: \"Missing or invalid fields: triggerTime, targetDevice, action are required strings\" });\n      return;\n    }\n    insertSchedule(triggerTime, targetDevice, action);\n    res.status(201).json({ message: \"Schedule created successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to create schedule\" });\n  }\n});\n\n// PUT /schedules/:id - Update an existing schedule (protected by owner-only middleware)\nrouter.put(\"/:id\", middleware, (req: Request, res: Response) => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid schedule ID\" });\n      return;\n    }\n    const existing = getScheduleById(id);\n    if (!existing) {\n      res.status(404).json({ error: \"Schedule not found\" });\n      return;\n    }\n    const { triggerTime, targetDevice, action } = req.body;\n    if (typeof triggerTime !== \"string\" || typeof targetDevice !== \"string\" || typeof action !== \"string\") {\n      res.status(400).json({ error: \"Missing or invalid fields: triggerTime, targetDevice, action are required strings\" });\n      return;\n    }\n    updateSchedule(id, triggerTime, targetDevice, action);\n    res.status(200).json({ message: \"Schedule updated successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to update schedule\" });\n  }\n});\n\n// DELETE /schedules/:id - Delete a schedule (protected by owner-only middleware)\nrouter.delete(\"/:id\", middleware, (req: Request, res: Response) => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid schedule ID\" });\n      return;\n    }\n    const existing = getScheduleById(id);\n    if (!existing) {\n      res.status(404).json({ error: \"Schedule not found\" });\n      return;\n    }\n    deleteSchedule(id);\n    res.status(200).json({ message: \"Schedule deleted successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to delete schedule\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-023",
+      "title": "Smart Home Control App",
+      "component": "Owner-Only Device Control",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/owner-only-device-control.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\nimport { createHmac, timingSafeEqual } from \"node:crypto\";\n\nfunction verifyJwt(token: string, secret: string): any | null {\n  const parts = token.split(\".\");\n  if (parts.length !== 3) {\n    return null;\n  }\n  const [headerB64, payloadB64, signatureB64] = parts;\n\n  const hmac = createHmac(\"sha256\", secret);\n  hmac.update(`${headerB64}.${payloadB64}`);\n  const expectedSignature = hmac.digest(\"base64url\");\n\n  const bufExpected = Buffer.from(expectedSignature);\n  const bufActual = Buffer.from(signatureB64);\n\n  if (bufExpected.length !== bufActual.length) {\n    return null;\n  }\n\n  if (!timingSafeEqual(bufExpected, bufActual)) {\n    return null;\n  }\n\n  try {\n    const payloadStr = Buffer.from(payloadB64, \"base64url\").toString(\"utf8\");\n    return JSON.parse(payloadStr);\n  } catch {\n    return null;\n  }\n}\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  const path = req.path || \"\";\n  const method = req.method || \"\";\n\n  // Only intercept write/control operations on devices\n  const isDeviceRoute = path.startsWith(\"/api/devices\") || path.startsWith(\"/devices\");\n  const isControlMethod = [\"POST\", \"PUT\", \"PATCH\", \"DELETE\"].includes(method.toUpperCase());\n\n  if (!isDeviceRoute || !isControlMethod) {\n    next();\n    return;\n  }\n\n  const jwtSecret = process.env.JWT_SECRET;\n  if (!jwtSecret) {\n    res.status(403).json({ error: \"Access denied. Configuration error.\" });\n    return;\n  }\n\n  const authHeader = req.headers.authorization;\n  if (!authHeader || !authHeader.startsWith(\"Bearer \")) {\n    res.status(401).json({ error: \"Unauthorized. Missing token.\" });\n    return;\n  }\n\n  const token = authHeader.substring(7);\n  const payload = verifyJwt(token, jwtSecret);\n\n  if (!payload) {\n    res.status(401).json({ error: \"Unauthorized. Invalid token.\" });\n    return;\n  }\n\n  // Check if the user is the registered owner\n  const isOwner = payload.role === \"owner\" || payload.isOwner === true;\n  if (!isOwner) {\n    res.status(403).json({ error: \"Forbidden. Only the home owner can control or reschedule devices.\" });\n    return;\n  }\n\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-024",
+      "title": "Insurance Claims Portal",
+      "component": "Claims API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/claims-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response, type NextFunction } from \"express\";\nimport {\n  type Claim,\n  insertClaim,\n  getClaimsByPolicyholderId,\n  getClaimById,\n  updateClaimStatus\n} from \"../db/claims-table\";\nimport {\n  type ClaimDecision,\n  insertClaimDecision,\n  getClaimDecisionsByClaimId\n} from \"../db/claim-decisions-table\";\nimport { middleware as reasonRequiredGuard } from \"../middleware/reason-required-guard\";\n\nexport const router = Router();\n\n// GET /claims?policyholderId=123\nrouter.get(\"/\", (req: Request, res: Response): void => {\n  const policyholderIdStr = req.query.policyholderId;\n  if (!policyholderIdStr) {\n    res.status(400).json({ error: \"Missing policyholderId query parameter\" });\n    return;\n  }\n\n  const policyholderId = Number(policyholderIdStr);\n  if (isNaN(policyholderId)) {\n    res.status(400).json({ error: \"Invalid policyholderId\" });\n    return;\n  }\n\n  try {\n    const claims = getClaimsByPolicyholderId(policyholderId);\n    res.json(claims);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to fetch claims\" });\n  }\n});\n\n// GET /claims/:id\nrouter.get(\"/:id\", (req: Request, res: Response): void => {\n  const id = Number(req.params.id);\n  if (isNaN(id)) {\n    res.status(400).json({ error: \"Invalid claim ID\" });\n    return;\n  }\n\n  try {\n    const claim = getClaimById(id);\n    if (!claim) {\n      res.status(404).json({ error: \"Claim not found\" });\n      return;\n    }\n    res.json(claim);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to fetch claim\" });\n  }\n});\n\n// POST /claims\nrouter.post(\"/\", (req: Request, res: Response): void => {\n  const { policyholderId, details, status } = req.body;\n\n  if (policyholderId === undefined || details === undefined || status === undefined) {\n    res.status(400).json({ error: \"Missing required fields: policyholderId, details, status\" });\n    return;\n  }\n\n  const parsedPolicyholderId = Number(policyholderId);\n  if (isNaN(parsedPolicyholderId)) {\n    res.status(400).json({ error: \"Invalid policyholderId\" });\n    return;\n  }\n\n  try {\n    insertClaim(parsedPolicyholderId, String(details), String(status));\n    res.status(201).json({ message: \"Claim created successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to create claim\" });\n  }\n});\n\n// GET /claims/:id/decisions\nrouter.get(\"/:id/decisions\", (req: Request, res: Response): void => {\n  const claimId = Number(req.params.id);\n  if (isNaN(claimId)) {\n    res.status(400).json({ error: \"Invalid claim ID\" });\n    return;\n  }\n\n  try {\n    const decisions = getClaimDecisionsByClaimId(claimId);\n    res.json(decisions);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to fetch decisions\" });\n  }\n});\n\n// POST /claims/:id/decisions (requires reason-required-guard middleware)\nrouter.post(\n  \"/:id/decisions\",\n  (req: Request, res: Response, next: NextFunction) => reasonRequiredGuard(req, res, next),\n  (req: Request, res: Response): void => {\n    const claimId = Number(req.params.id);\n    if (isNaN(claimId)) {\n      res.status(400).json({ error: \"Invalid claim ID\" });\n      return;\n    }\n\n    const { adjusterId, decision, reasonText } = req.body;\n    if (adjusterId === undefined || decision === undefined || reasonText === undefined) {\n      res.status(400).json({ error: \"Missing required fields: adjusterId, decision, reasonText\" });\n      return;\n    }\n\n    const parsedAdjusterId = Number(adjusterId);\n    if (isNaN(parsedAdjusterId)) {\n      res.status(400).json({ error: \"Invalid adjusterId\" });\n      return;\n    }\n\n    try {\n      const claim = getClaimById(claimId);\n      if (!claim) {\n        res.status(404).json({ error: \"Claim not found\" });\n        return;\n      }\n\n      insertClaimDecision(parsedAdjusterId, String(decision), String(reasonText), claimId);\n      updateClaimStatus(claimId, String(decision));\n\n      res.status(201).json({ message: \"Decision recorded and claim status updated\" });\n    } catch (error: any) {\n      res.status(500).json({ error: error.message || \"Failed to record decision\" });\n    }\n  }\n);\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-024",
+      "title": "Insurance Claims Portal",
+      "component": "Decision Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/decision-service.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getClaimById, updateClaimStatus } from \"../db/claims-table\";\nimport { insertClaimDecision, getClaimDecisionsByClaimId } from \"../db/claim-decisions-table\";\nimport { middleware as reasonRequiredGuard } from \"../middleware/reason-required-guard\";\n\nexport const router = Router();\n\n// POST /decisions\n// Expects body: { claimId: number, adjusterId: number, decision: string, reasonText: string }\nrouter.post(\n  \"/\",\n  reasonRequiredGuard,\n  (req: Request, res: Response): void => {\n    const { claimId, adjusterId, decision, reasonText } = req.body;\n\n    if (!claimId || !adjusterId || !decision) {\n      res.status(400).json({ error: \"Missing required fields: claimId, adjusterId, decision\" });\n      return;\n    }\n\n    const claimIdNum = Number(claimId);\n    const adjusterIdNum = Number(adjusterId);\n    const decisionStr = String(decision).trim();\n    const reasonStr = reasonText ? String(reasonText).trim() : \"\";\n\n    if (isNaN(claimIdNum) || isNaN(adjusterIdNum)) {\n      res.status(400).json({ error: \"claimId and adjusterId must be valid numbers\" });\n      return;\n    }\n\n    const claim = getClaimById(claimIdNum);\n    if (!claim) {\n      res.status(404).json({ error: `Claim with ID ${claimIdNum} not found` });\n      return;\n    }\n\n    // Record the decision\n    insertClaimDecision(adjusterIdNum, decisionStr, reasonStr, claimIdNum);\n\n    // Update the claim status to match the decision (e.g., \"Approved\" or \"Denied\")\n    updateClaimStatus(claimIdNum, decisionStr);\n\n    res.status(201).json({\n      message: \"Decision recorded successfully\",\n      claimId: claimIdNum,\n      decision: decisionStr\n    });\n  }\n);\n\n// GET /decisions/claim/:claimId\nrouter.get(\n  \"/claim/:claimId\",\n  (req: Request, res: Response): void => {\n    const claimIdNum = Number(req.params.claimId);\n    if (isNaN(claimIdNum)) {\n      res.status(400).json({ error: \"Invalid claimId parameter\" });\n      return;\n    }\n\n    const decisions = getClaimDecisionsByClaimId(claimIdNum);\n    res.status(200).json(decisions);\n  }\n);\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-024",
+      "title": "Insurance Claims Portal",
+      "component": "Reason-Required Guard",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/reason-required-guard.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  const method = req.method;\n  const path = req.path;\n\n  // Only intercept POST, PUT, or PATCH requests targeting claim decision or finalisation endpoints\n  const isFinaliseRoute = /\\/claims\\/[^/]+\\/(decision|finalise|finalize)/i.test(path);\n  const isWriteMethod = [\"POST\", \"PUT\", \"PATCH\"].includes(method);\n\n  if (!isWriteMethod || !isFinaliseRoute) {\n    next();\n    return;\n  }\n\n  const body = req.body;\n  if (!body || typeof body !== \"object\") {\n    res.status(400).json({ error: \"A documented reason is required to finalise a claim decision.\" });\n    return;\n  }\n\n  const reason = body.reason;\n  if (typeof reason !== \"string\" || reason.trim() === \"\") {\n    res.status(400).json({ error: \"A documented reason is required to finalise a claim decision.\" });\n    return;\n  }\n\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-025",
+      "title": "Farm Management App",
+      "component": "Farm API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/farm-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  insertField,\n  getFieldById,\n  getAllFields,\n  updateField,\n  deleteField\n} from \"../db/fields-table\";\nimport {\n  insertApplication,\n  getApplicationsByFieldId\n} from \"../db/applications-table\";\n\nexport const router = Router();\n\n// GET /fields\nrouter.get(\"/fields\", (req: Request, res: Response): void => {\n  try {\n    const fields = getAllFields();\n    res.status(200).json(fields);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// GET /fields/:id\nrouter.get(\"/fields/:id\", (req: Request, res: Response): void => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid field ID\" });\n      return;\n    }\n    const field = getFieldById(id);\n    if (!field) {\n      res.status(404).json({ error: \"Field not found\" });\n      return;\n    }\n    res.status(200).json(field);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// POST /fields\nrouter.post(\"/fields\", (req: Request, res: Response): void => {\n  try {\n    const { name, currentCrop } = req.body;\n    if (typeof name !== \"string\" || typeof currentCrop !== \"string\") {\n      res.status(400).json({ error: \"Missing or invalid name or currentCrop\" });\n      return;\n    }\n    insertField(name, currentCrop);\n    res.status(201).json({ message: \"Field created successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// PUT /fields/:id\nrouter.put(\"/fields/:id\", (req: Request, res: Response): void => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid field ID\" });\n      return;\n    }\n    const { name, currentCrop } = req.body;\n    if (typeof name !== \"string\" || typeof currentCrop !== \"string\") {\n      res.status(400).json({ error: \"Missing or invalid name or currentCrop\" });\n      return;\n    }\n    const existing = getFieldById(id);\n    if (!existing) {\n      res.status(404).json({ error: \"Field not found\" });\n      return;\n    }\n    updateField(id, name, currentCrop);\n    res.status(200).json({ message: \"Field updated successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// DELETE /fields/:id\nrouter.delete(\"/fields/:id\", (req: Request, res: Response): void => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid field ID\" });\n      return;\n    }\n    const existing = getFieldById(id);\n    if (!existing) {\n      res.status(404).json({ error: \"Field not found\" });\n      return;\n    }\n    deleteField(id);\n    res.status(200).json({ message: \"Field deleted successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// GET /fields/:fieldId/applications\nrouter.get(\"/fields/:fieldId/applications\", (req: Request, res: Response): void => {\n  try {\n    const fieldId = Number(req.params.fieldId);\n    if (isNaN(fieldId)) {\n      res.status(400).json({ error: \"Invalid field ID\" });\n      return;\n    }\n    const existing = getFieldById(fieldId);\n    if (!existing) {\n      res.status(404).json({ error: \"Field not found\" });\n      return;\n    }\n    const applications = getApplicationsByFieldId(fieldId);\n    res.status(200).json(applications);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// POST /fields/:fieldId/applications\nrouter.post(\"/fields/:fieldId/applications\", (req: Request, res: Response): void => {\n  try {\n    const fieldId = Number(req.params.fieldId);\n    if (isNaN(fieldId)) {\n      res.status(400).json({ error: \"Invalid field ID\" });\n      return;\n    }\n    const existing = getFieldById(fieldId);\n    if (!existing) {\n      res.status(404).json({ error: \"Field not found\" });\n      return;\n    }\n    const { applicationType, amount, date } = req.body;\n    if (typeof applicationType !== \"string\" || typeof amount !== \"number\" || typeof date !== \"string\") {\n      res.status(400).json({ error: \"Missing or invalid applicationType, amount, or date\" });\n      return;\n    }\n    insertApplication(fieldId, applicationType, amount, date);\n    res.status(201).json({ message: \"Application log entry created successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-027",
+      "title": "Car Rental Booking",
+      "component": "Rentals API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/rentals-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getCarById, getAllCars } from \"../db/cars-table\";\nimport { getBookingsByCarId, insertBooking } from \"../db/bookings-table\";\n\nexport const router = Router();\n\n// Helper to check date overlap\nfunction isOverlapping(\n  start1: string,\n  end1: string,\n  start2: string,\n  end2: string\n): boolean {\n  const s1 = new Date(start1).getTime();\n  const e1 = new Date(end1).getTime();\n  const s2 = new Date(start2).getTime();\n  const e2 = new Date(end2).getTime();\n\n  return s1 <= e2 && s2 <= e1;\n}\n\n// GET /api/rentals/availability\n// Query params: startDate, endDate\nrouter.get(\"/availability\", (req: Request, res: Response): void => {\n  const { startDate, endDate } = req.query;\n\n  if (!startDate || !endDate) {\n    res.status(400).json({ error: \"startDate and endDate query parameters are required\" });\n    return;\n  }\n\n  const startStr = String(startDate);\n  const endStr = String(endDate);\n\n  if (isNaN(Date.parse(startStr)) || isNaN(Date.parse(endStr))) {\n    res.status(400).json({ error: \"Invalid date format\" });\n    return;\n  }\n\n  if (new Date(startStr) > new Date(endStr)) {\n    res.status(400).json({ error: \"startDate cannot be after endDate\" });\n    return;\n  }\n\n  const allCars = getAllCars();\n  const availableCars = allCars.filter((car) => {\n    const bookings = getBookingsByCarId(car.id);\n    const hasOverlap = bookings.some((booking) =>\n      isOverlapping(booking.startDate, booking.endDate, startStr, endStr)\n    );\n    return !hasOverlap;\n  });\n\n  res.json(availableCars);\n});\n\n// POST /api/rentals/bookings\n// Body: carId, customerId, startDate, endDate\nrouter.post(\"/bookings\", (req: Request, res: Response): void => {\n  const { carId, customerId, startDate, endDate } = req.body;\n\n  if (carId === undefined || customerId === undefined || !startDate || !endDate) {\n    res.status(400).json({ error: \"Missing required fields: carId, customerId, startDate, endDate\" });\n    return;\n  }\n\n  const parsedCarId = Number(carId);\n  const parsedCustomerId = Number(customerId);\n  const startStr = String(startDate);\n  const endStr = String(endDate);\n\n  if (isNaN(parsedCarId) || isNaN(parsedCustomerId)) {\n    res.status(400).json({ error: \"carId and customerId must be valid numbers\" });\n    return;\n  }\n\n  if (isNaN(Date.parse(startStr)) || isNaN(Date.parse(endStr))) {\n    res.status(400).json({ error: \"Invalid date format\" });\n    return;\n  }\n\n  if (new Date(startStr) > new Date(endStr)) {\n    res.status(400).json({ error: \"startDate cannot be after endDate\" });\n    return;\n  }\n\n  const car = getCarById(parsedCarId);\n  if (!car) {\n    res.status(404).json({ error: \"Car not found\" });\n    return;\n  }\n\n  const existingBookings = getBookingsByCarId(parsedCarId);\n  const hasOverlap = existingBookings.some((booking) =>\n    isOverlapping(booking.startDate, booking.endDate, startStr, endStr)\n  );\n\n  if (hasOverlap) {\n    res.status(409).json({ error: \"Car is already booked for the requested dates\" });\n    return;\n  }\n\n  insertBooking(parsedCarId, parsedCustomerId, startStr, endStr);\n  res.status(201).json({\n    message: \"Booking created successfully\",\n    booking: {\n      carId: parsedCarId,\n      customerId: parsedCustomerId,\n      startDate: startStr,\n      endDate: endStr\n    }\n  });\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-030",
+      "title": "CI/CD Status Dashboard",
+      "component": "Build Status API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/build-status-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { insertBuild, getAllBuilds, type BuildRow } from \"../db/builds-table\";\n\nexport const router = Router();\n\n// POST /api/builds - Ingest build result webhook\nrouter.post(\"/api/builds\", (req: Request, res: Response): void => {\n  try {\n    const { repo, branch, status, timestamp } = req.body;\n\n    if (typeof repo !== \"string\" || !repo.trim()) {\n      res.status(400).json({ error: \"Missing or invalid 'repo' field\" });\n      return;\n    }\n    if (typeof branch !== \"string\" || !branch.trim()) {\n      res.status(400).json({ error: \"Missing or invalid 'branch' field\" });\n      return;\n    }\n    if (typeof status !== \"string\" || !status.trim()) {\n      res.status(400).json({ error: \"Missing or invalid 'status' field\" });\n      return;\n    }\n\n    const parsedTimestamp = typeof timestamp === \"number\" ? timestamp : Date.now();\n\n    insertBuild(repo, branch, status, parsedTimestamp);\n\n    res.status(201).json({ success: true });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// GET /api/builds - Get current status of all builds\nrouter.get(\"/api/builds\", (req: Request, res: Response): void => {\n  try {\n    const builds: BuildRow[] = getAllBuilds();\n    res.status(200).json(builds);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// GET /api/builds/latest - Get latest status per repository\nrouter.get(\"/api/builds/latest\", (req: Request, res: Response): void => {\n  try {\n    const builds: BuildRow[] = getAllBuilds();\n    \n    // Group by repo and find the one with the highest timestamp\n    const latestMap = new Map<string, BuildRow>();\n    \n    for (const build of builds) {\n      const existing = latestMap.get(build.repo);\n      if (!existing || build.timestamp > existing.timestamp) {\n        latestMap.set(build.repo, build);\n      }\n    }\n\n    const latestBuilds = Array.from(latestMap.values());\n    res.status(200).json(latestBuilds);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-030",
+      "title": "CI/CD Status Dashboard",
+      "component": "Slack Notifier",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/slack-notifier.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getAllBuilds, type BuildRow } from \"../db/builds-table\";\n\nexport const router = Router();\n\n// Mock Slack Webhook URL or endpoint for demonstration purposes\n// In a real application, this would be loaded from process.env.SLACK_WEBHOOK_URL\nlet slackWebhookUrl = process.env.SLACK_WEBHOOK_URL || \"https://hooks.slack.com/services/mock/webhook\";\n\n/**\n * POST /api/slack/notify-failure\n * Checks the latest build for the main branch. If it failed, posts a notification to Slack.\n */\nrouter.post(\"/api/slack/notify-failure\", async (req: Request, res: Response): Promise<void> => {\n  try {\n    const builds: BuildRow[] = getAllBuilds();\n    \n    // Filter for main branch builds\n    const mainBuilds = builds.filter((b: BuildRow) => b.branch === \"main\");\n    \n    if (mainBuilds.length === 0) {\n      res.status(404).json({ error: \"No builds found for main branch\" });\n      return;\n    }\n\n    // Sort by timestamp descending to get the latest build\n    const latestMainBuild = mainBuilds.sort((a: BuildRow, b: BuildRow) => b.timestamp - a.timestamp)[0];\n\n    if (latestMainBuild.status.toLowerCase() !== \"failed\") {\n      res.status(200).json({\n        message: `Latest main branch build #${latestMainBuild.id} is not failed (status: ${latestMainBuild.status}). No notification sent.`\n      });\n      return;\n    }\n\n    // Construct Slack message payload\n    const slackPayload = {\n      text: `🚨 *Build Failure Alert* 🚨\\n*Repository:* ${latestMainBuild.repo}\\n*Branch:* ${latestMainBuild.branch}\\n*Build ID:* ${latestMainBuild.id}\\n*Status:* ${latestMainBuild.status.toUpperCase()}\\n*Time:* ${new Date(latestMainBuild.timestamp).toISOString()}`\n    };\n\n    // Send notification to Slack webhook\n    const response = await fetch(slackWebhookUrl, {\n      method: \"POST\",\n      headers: {\n        \"Content-Type\": \"application/json\"\n      },\n      body: JSON.stringify(slackPayload)\n    });\n\n    if (!response.ok) {\n      throw new Error(`Slack API responded with status ${response.status}`);\n    }\n\n    res.status(200).json({\n      message: \"Slack notification sent successfully\",\n      buildId: latestMainBuild.id,\n      status: latestMainBuild.status\n    });\n  } catch (error: any) {\n    res.status(500).json({\n      error: \"Failed to send Slack notification\",\n      details: error instanceof Error ? error.message : String(error)\n    });\n  }\n});\n\n/**\n * POST /api/slack/config\n * Allows updating the Slack webhook URL dynamically for testing or configuration purposes.\n */\nrouter.post(\"/api/slack/config\", (req: Request, res: Response): void => {\n  const { webhookUrl } = req.body;\n  if (typeof webhookUrl !== \"string\" || !webhookUrl.startsWith(\"http\")) {\n    res.status(400).json({ error: \"Invalid webhookUrl provided\" });\n    return;\n  }\n  slackWebhookUrl = webhookUrl;\n  res.status(200).json({ message: \"Slack webhook URL updated successfully\" });\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-031",
+      "title": "Rec League Manager",
+      "component": "League API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/league-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  getTeams,\n  getTeamById,\n  createTeam,\n  updateTeam,\n  deleteTeam,\n  type Team\n} from \"../db/teams-table\";\nimport {\n  getGames,\n  insertGame,\n  type Game\n} from \"../db/games-table\";\n\nexport const router = Router();\n\ninterface StandingsRow {\n  teamName: string;\n  played: number;\n  wins: number;\n  losses: number;\n  draws: number;\n  points: number;\n  goalsFor: number;\n  goalsAgainst: number;\n}\n\n// GET /teams\nrouter.get(\"/teams\", (req: Request, res: Response): void => {\n  try {\n    const teams = getTeams();\n    res.json(teams);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to fetch teams\" });\n  }\n});\n\n// GET /teams/:id\nrouter.get(\"/teams/:id\", (req: Request, res: Response): void => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid team ID\" });\n      return;\n    }\n    const team = getTeamById(id);\n    if (!team) {\n      res.status(404).json({ error: \"Team not found\" });\n      return;\n    }\n    res.json(team);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to fetch team\" });\n  }\n});\n\n// POST /teams\nrouter.post(\"/teams\", (req: Request, res: Response): void => {\n  try {\n    const { name, roster } = req.body;\n    if (typeof name !== \"string\" || !name.trim()) {\n      res.status(400).json({ error: \"Team name is required\" });\n      return;\n    }\n    if (!Array.isArray(roster)) {\n      res.status(400).json({ error: \"Roster must be an array of player IDs\" });\n      return;\n    }\n    const numericRoster = roster.map((id: any) => Number(id));\n    createTeam(name, numericRoster);\n    res.status(201).json({ message: \"Team created successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to create team\" });\n  }\n});\n\n// PUT /teams/:id\nrouter.put(\"/teams/:id\", (req: Request, res: Response): void => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid team ID\" });\n      return;\n    }\n    const { name, roster } = req.body;\n    if (typeof name !== \"string\" || !name.trim()) {\n      res.status(400).json({ error: \"Team name is required\" });\n      return;\n    }\n    if (!Array.isArray(roster)) {\n      res.status(400).json({ error: \"Roster must be an array of player IDs\" });\n      return;\n    }\n    const numericRoster = roster.map((id: any) => Number(id));\n    updateTeam(id, name, numericRoster);\n    res.json({ message: \"Team updated successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to update team\" });\n  }\n});\n\n// DELETE /teams/:id\nrouter.delete(\"/teams/:id\", (req: Request, res: Response): void => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid team ID\" });\n      return;\n    }\n    deleteTeam(id);\n    res.json({ message: \"Team deleted successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to delete team\" });\n  }\n});\n\n// GET /games\nrouter.get(\"/games\", (req: Request, res: Response): void => {\n  try {\n    const games = getGames();\n    res.json(games);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to fetch games\" });\n  }\n});\n\n// POST /games\nrouter.post(\"/games\", (req: Request, res: Response): void => {\n  try {\n    const { homeTeam, awayTeam, date, homeScore, awayScore } = req.body;\n    if (typeof homeTeam !== \"string\" || !homeTeam.trim()) {\n      res.status(400).json({ error: \"Home team name is required\" });\n      return;\n    }\n    if (typeof awayTeam !== \"string\" || !awayTeam.trim()) {\n      res.status(400).json({ error: \"Away team name is required\" });\n      return;\n    }\n    if (typeof date !== \"string\" || !date.trim()) {\n      res.status(400).json({ error: \"Date is required\" });\n      return;\n    }\n    if (typeof homeScore !== \"number\" || typeof awayScore !== \"number\") {\n      res.status(400).json({ error: \"Scores must be numbers\" });\n      return;\n    }\n    insertGame(homeTeam, awayTeam, date, homeScore, awayScore);\n    res.status(201).json({ message: \"Game recorded successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to record game\" });\n  }\n});\n\n// GET /standings\nrouter.get(\"/standings\", (req: Request, res: Response): void => {\n  try {\n    const teams = getTeams();\n    const games = getGames();\n\n    const standingsMap: { [teamName: string]: StandingsRow } = {};\n\n    // Initialize standings for all registered teams\n    teams.forEach((team: Team) => {\n      standingsMap[team.name] = {\n        teamName: team.name,\n        played: 0,\n        wins: 0,\n        losses: 0,\n        draws: 0,\n        points: 0,\n        goalsFor: 0,\n        goalsAgainst: 0\n      };\n    });\n\n    // Process each game\n    games.forEach((game: Game) => {\n      // Ensure teams exist in standings map (even if not in teams table, to avoid crashes)\n      if (!standingsMap[game.homeTeam]) {\n        standingsMap[game.homeTeam] = {\n          teamName: game.homeTeam,\n          played: 0,\n          wins: 0,\n          losses: 0,\n          draws: 0,\n          points: 0,\n          goalsFor: 0,\n          goalsAgainst: 0\n        };\n      }\n      if (!standingsMap[game.awayTeam]) {\n        standingsMap[game.awayTeam] = {\n          teamName: game.awayTeam,\n          played: 0,\n          wins: 0,\n          losses: 0,\n          draws: 0,\n          points: 0,\n          goalsFor: 0,\n          goalsAgainst: 0\n        };\n      }\n\n      const home = standingsMap[game.homeTeam];\n      const away = standingsMap[game.awayTeam];\n\n      home.played += 1;\n      away.played += 1;\n      home.goalsFor += game.homeScore;\n      home.goalsAgainst += game.awayScore;\n      away.goalsFor += game.awayScore;\n      away.goalsAgainst += game.homeScore;\n\n      if (game.homeScore > game.awayScore) {\n        home.wins += 1;\n        home.points += 3;\n        away.losses += 1;\n      } else if (game.awayScore > game.homeScore) {\n        away.wins += 1;\n        away.points += 3;\n        home.losses += 1;\n      } else {\n        home.draws += 1;\n        home.points += 1;\n        away.draws += 1;\n        away.points += 1;\n      }\n    });\n\n    // Convert to array and sort by points (descending), then goal difference (descending)\n    const standingsList = Object.values(standingsMap).sort((a: StandingsRow, b: StandingsRow) => {\n      if (b.points !== a.points) {\n        return b.points - a.points;\n      }\n      const aDiff = a.goalsFor - a.goalsAgainst;\n      const bDiff = b.goalsFor - b.goalsAgainst;\n      return bDiff - aDiff;\n    });\n\n    res.json(standingsList);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to compute standings\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-032",
+      "title": "Restaurant Reservations",
+      "component": "Reservations API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/reservations-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  insertReservation,\n  getReservations,\n  getReservationById,\n  updateReservation,\n  deleteReservation,\n  type Reservation\n} from \"../db/reservations-table\";\n\nexport const router = Router();\n\n// Simple table capacity mapping for availability checks\nconst TABLES = [\n  { id: \"Table 1\", capacity: 2 },\n  { id: \"Table 2\", capacity: 2 },\n  { id: \"Table 3\", capacity: 4 },\n  { id: \"Table 4\", capacity: 4 },\n  { id: \"Table 5\", capacity: 6 },\n  { id: \"Table 6\", capacity: 8 }\n];\n\n// Helper to find an available table for a given time slot and party size\nfunction findAvailableTable(timeSlot: string, partySize: number): string | null {\n  const existingReservations = getReservations();\n  const bookedTables = existingReservations\n    .filter((r: Reservation) => r.timeSlot === timeSlot)\n    .map((r: Reservation) => r.tableAssignment);\n\n  // Find tables that can accommodate the party size and are not booked\n  const suitableTables = TABLES.filter((t) => t.capacity >= partySize);\n  for (const table of suitableTables) {\n    if (!bookedTables.includes(table.id)) {\n      return table.id;\n    }\n  }\n  return null;\n}\n\n// POST /reservations - Create a booking\nrouter.post(\"/\", (req: Request, res: Response): void => {\n  const { partySize, timeSlot, guestContactInfo } = req.body;\n\n  if (!partySize || !timeSlot || !guestContactInfo) {\n    res.status(400).json({ error: \"Missing required fields: partySize, timeSlot, guestContactInfo\" });\n    return;\n  }\n\n  const size = Number(partySize);\n  if (isNaN(size) || size <= 0) {\n    res.status(400).json({ error: \"partySize must be a positive number\" });\n    return;\n  }\n\n  const tableAssignment = findAvailableTable(timeSlot, size);\n  if (!tableAssignment) {\n    res.status(409).json({ error: \"No available tables for the requested time slot and party size\" });\n    return;\n  }\n\n  try {\n    insertReservation(size, timeSlot, tableAssignment, guestContactInfo);\n    // Retrieve the newly created reservation (usually the last one)\n    const all = getReservations();\n    const created = all[all.length - 1];\n    res.status(201).json(created);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to create reservation\" });\n  }\n});\n\n// GET /reservations - Get all bookings\nrouter.get(\"/\", (req: Request, res: Response): void => {\n  try {\n    const reservations = getReservations();\n    res.status(200).json(reservations);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to retrieve reservations\" });\n  }\n});\n\n// GET /reservations/:id - Get booking by ID\nrouter.get(\"/:id\", (req: Request, res: Response): void => {\n  const id = Number(req.params.id);\n  if (isNaN(id)) {\n    res.status(400).json({ error: \"Invalid reservation ID\" });\n    return;\n  }\n\n  const reservation = getReservationById(id);\n  if (!reservation) {\n    res.status(404).json({ error: \"Reservation not found\" });\n    return;\n  }\n\n  res.status(200).json(reservation);\n});\n\n// PUT /reservations/:id - Update a booking\nrouter.put(\"/:id\", (req: Request, res: Response): void => {\n  const id = Number(req.params.id);\n  if (isNaN(id)) {\n    res.status(400).json({ error: \"Invalid reservation ID\" });\n    return;\n  }\n\n  const existing = getReservationById(id);\n  if (!existing) {\n    res.status(404).json({ error: \"Reservation not found\" });\n    return;\n  }\n\n  const { partySize, timeSlot, guestContactInfo } = req.body;\n  const updatedPartySize = partySize !== undefined ? Number(partySize) : existing.partySize;\n  const updatedTimeSlot = timeSlot !== undefined ? timeSlot : existing.timeSlot;\n  const updatedContact = guestContactInfo !== undefined ? guestContactInfo : existing.guestContactInfo;\n\n  if (isNaN(updatedPartySize) || updatedPartySize <= 0) {\n    res.status(400).json({ error: \"partySize must be a positive number\" });\n    return;\n  }\n\n  // If time slot or party size changed, we need to re-verify table availability\n  let tableAssignment = existing.tableAssignment;\n  if (updatedTimeSlot !== existing.timeSlot || updatedPartySize !== existing.partySize) {\n    // Temporarily ignore current reservation to check availability\n    const allReservations = getReservations();\n    const bookedTables = allReservations\n      .filter((r: Reservation) => r.timeSlot === updatedTimeSlot && r.id !== id)\n      .map((r: Reservation) => r.tableAssignment);\n\n    const suitableTables = TABLES.filter((t) => t.capacity >= updatedPartySize);\n    let foundTable: string | null = null;\n    for (const table of suitableTables) {\n      if (!bookedTables.includes(table.id)) {\n        foundTable = table.id;\n        break;\n      }\n    }\n\n    if (!foundTable) {\n      res.status(409).json({ error: \"No available tables for the updated time slot and party size\" });\n      return;\n    }\n    tableAssignment = foundTable;\n  }\n\n  try {\n    updateReservation(id, updatedPartySize, updatedTimeSlot, tableAssignment, updatedContact);\n    const updated = getReservationById(id);\n    res.status(200).json(updated);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to update reservation\" });\n  }\n});\n\n// DELETE /reservations/:id - Cancel a booking\nrouter.delete(\"/:id\", (req: Request, res: Response): void => {\n  const id = Number(req.params.id);\n  if (isNaN(id)) {\n    res.status(400).json({ error: \"Invalid reservation ID\" });\n    return;\n  }\n\n  const existing = getReservationById(id);\n  if (!existing) {\n    res.status(404).json({ error: \"Reservation not found\" });\n    return;\n  }\n\n  try {\n    deleteReservation(id);\n    res.status(200).json({ message: \"Reservation successfully cancelled\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to delete reservation\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-034",
+      "title": "Commuter Carpooling",
+      "component": "Carpool API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/carpool-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getRouteById, getRoutes, type Route } from \"../db/routes-table\";\nimport {\n  insertRideRequest,\n  getRideRequest,\n  getAllRideRequests,\n  updateApprovalStatus,\n  deleteRideRequest,\n  type RideRequest\n} from \"../db/ride-requests-table\";\n\nexport const router = Router();\n\n// GET /api/carpools - List all routes with their associated ride requests\nrouter.get(\"/\", (req: Request, res: Response): void => {\n  try {\n    const routes = getRoutes();\n    const requests = getAllRideRequests();\n\n    const result = routes.map((route: Route) => {\n      const routeRequests = requests.filter((reqItem: RideRequest) => reqItem.routeId === route.id);\n      return {\n        ...route,\n        requests: routeRequests\n      };\n    });\n\n    res.status(200).json(result);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// POST /api/carpools/request - Request a seat on a route\nrouter.post(\"/request\", (req: Request, res: Response): void => {\n  try {\n    const { riderId, routeId } = req.body;\n\n    if (typeof riderId !== \"number\" || typeof routeId !== \"number\") {\n      res.status(400).json({ error: \"riderId and routeId must be numbers\" });\n      return;\n    }\n\n    const route = getRouteById(routeId);\n    if (!route) {\n      res.status(404).json({ error: \"Route not found\" });\n      return;\n    }\n\n    const existing = getRideRequest(riderId, routeId);\n    if (existing) {\n      res.status(400).json({ error: \"Ride request already exists for this route\" });\n      return;\n    }\n\n    // Check seat availability\n    const allRequests = getAllRideRequests();\n    const approvedCount = allRequests.filter(\n      (r: RideRequest) => r.routeId === routeId && r.approvalStatus === \"approved\"\n    ).length;\n\n    if (approvedCount >= route.totalSeats) {\n      res.status(400).json({ error: \"No seats available on this route\" });\n      return;\n    }\n\n    insertRideRequest(riderId, routeId, \"pending\");\n    res.status(201).json({ message: \"Ride request submitted successfully\", status: \"pending\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// PUT /api/carpools/decide - Approve or decline a ride request\nrouter.put(\"/decide\", (req: Request, res: Response): void => {\n  try {\n    const { riderId, routeId, approvalStatus } = req.body;\n\n    if (typeof riderId !== \"number\" || typeof routeId !== \"number\" || typeof approvalStatus !== \"string\") {\n      res.status(400).json({ error: \"riderId, routeId, and approvalStatus are required\" });\n      return;\n    }\n\n    if (approvalStatus !== \"approved\" && approvalStatus !== \"declined\" && approvalStatus !== \"pending\") {\n      res.status(400).json({ error: \"Invalid approvalStatus. Must be approved, declined, or pending\" });\n      return;\n    }\n\n    const route = getRouteById(routeId);\n    if (!route) {\n      res.status(404).json({ error: \"Route not found\" });\n      return;\n    }\n\n    const existing = getRideRequest(riderId, routeId);\n    if (!existing) {\n      res.status(404).json({ error: \"Ride request not found\" });\n      return;\n    }\n\n    if (approvalStatus === \"approved\") {\n      const allRequests = getAllRideRequests();\n      const approvedCount = allRequests.filter(\n        (r: RideRequest) => r.routeId === routeId && r.approvalStatus === \"approved\"\n      ).length;\n\n      if (approvedCount >= route.totalSeats && existing.approvalStatus !== \"approved\") {\n        res.status(400).json({ error: \"Cannot approve. Route is already full\" });\n        return;\n      }\n    }\n\n    updateApprovalStatus(riderId, routeId, approvalStatus);\n    res.status(200).json({ message: `Ride request status updated to ${approvalStatus}` });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// DELETE /api/carpools/request - Cancel a ride request\nrouter.delete(\"/request\", (req: Request, res: Response): void => {\n  try {\n    const riderId = Number(req.query.riderId);\n    const routeId = Number(req.query.routeId);\n\n    if (isNaN(riderId) || isNaN(routeId)) {\n      res.status(400).json({ error: \"riderId and routeId query parameters must be valid numbers\" });\n      return;\n    }\n\n    const existing = getRideRequest(riderId, routeId);\n    if (!existing) {\n      res.status(404).json({ error: \"Ride request not found\" });\n      return;\n    }\n\n    deleteRideRequest(riderId, routeId);\n    res.status(200).json({ message: \"Ride request cancelled successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-035",
+      "title": "Language Learning App",
+      "component": "Learning API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/learning-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  getUserProgress,\n  updateUserProgress,\n  type ProgressRow\n} from \"../db/progress-table\";\n\nexport const router = Router();\n\n// Mock data for lessons and quizzes\ninterface Lesson {\n  id: number;\n  title: string;\n  content: string;\n}\n\ninterface Quiz {\n  id: number;\n  lessonId: number;\n  question: string;\n  options: string[];\n  correctAnswer: string;\n}\n\nconst LESSONS: Lesson[] = [\n  {\n    id: 1,\n    title: \"Introduction to Spanish\",\n    content: \"Learn basic greetings like 'Hola' (Hello) and 'Adiós' (Goodbye).\"\n  },\n  {\n    id: 2,\n    title: \"Present Tense Verbs\",\n    content: \"Learn how to conjugate regular -ar verbs like 'hablar' (to speak).\"\n  }\n];\n\nconst QUIZZES: Quiz[] = [\n  {\n    id: 1,\n    lessonId: 1,\n    question: \"What does 'Hola' mean?\",\n    options: [\"Goodbye\", \"Hello\", \"Please\", \"Thank you\"],\n    correctAnswer: \"Hello\"\n  },\n  {\n    id: 2,\n    lessonId: 2,\n    question: \"What is the 'yo' form of 'hablar'?\",\n    options: [\"hablas\", \"habla\", \"hablo\", \"hablan\"],\n    correctAnswer: \"hablo\"\n  }\n];\n\n// GET /lessons - Retrieve all lessons\nrouter.get(\"/lessons\", (req: Request, res: Response): void => {\n  res.json(LESSONS);\n});\n\n// GET /lessons/:id - Retrieve a specific lesson\nrouter.get(\"/lessons/:id\", (req: Request, res: Response): void => {\n  const lessonId = Number(req.params.id);\n  const lesson = LESSONS.find((l: Lesson) => l.id === lessonId);\n  if (!lesson) {\n    res.status(404).json({ error: \"Lesson not found\" });\n    return;\n  }\n  res.json(lesson);\n});\n\n// GET /quizzes/:lessonId - Retrieve quizzes for a specific lesson\nrouter.get(\"/quizzes/:lessonId\", (req: Request, res: Response): void => {\n  const lessonId = Number(req.params.lessonId);\n  const lessonQuizzes = QUIZZES.filter((q: Quiz) => q.lessonId === lessonId);\n  res.json(lessonQuizzes);\n});\n\n// POST /lessons/:id/complete - Complete a lesson and update user progress/streak\nrouter.post(\"/lessons/:id/complete\", (req: Request, res: Response): void => {\n  const lessonId = Number(req.params.id);\n  const userId = Number(req.body.userId);\n\n  if (isNaN(userId)) {\n    res.status(400).json({ error: \"Valid userId is required in the request body\" });\n    return;\n  }\n\n  const lesson = LESSONS.find((l: Lesson) => l.id === lessonId);\n  if (!lesson) {\n    res.status(404).json({ error: \"Lesson not found\" });\n    return;\n  }\n\n  // Retrieve existing progress or initialize a new one\n  const currentProgress = getUserProgress(userId);\n  let lessonsCompleted = 1;\n  let currentStreak = 1;\n\n  if (currentProgress) {\n    lessonsCompleted = currentProgress.lessonsCompleted + 1;\n    // Simple streak increment logic for demonstration\n    currentStreak = currentProgress.currentStreak + 1;\n  }\n\n  updateUserProgress(userId, lessonsCompleted, currentStreak);\n\n  const updatedProgress: ProgressRow = {\n    userId,\n    lessonsCompleted,\n    currentStreak\n  };\n\n  res.json({\n    message: \"Lesson completed successfully\",\n    progress: updatedProgress\n  });\n});\n\n// GET /progress/:userId - Retrieve user progress\nrouter.get(\"/progress/:userId\", (req: Request, res: Response): void => {\n  const userId = Number(req.params.userId);\n  if (isNaN(userId)) {\n    res.status(400).json({ error: \"Invalid userId parameter\" });\n    return;\n  }\n\n  const progress = getUserProgress(userId);\n  if (!progress) {\n    // Return default progress if none exists yet\n    res.json({\n      userId,\n      lessonsCompleted: 0,\n      currentStreak: 0\n    });\n    return;\n  }\n\n  res.json(progress);\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-036",
+      "title": "Gym Membership System",
+      "component": "Check-In API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/check-in-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getMemberById } from \"../db/members-table\";\nimport { insertCheckIn } from \"../db/check-ins-table\";\nimport { middleware as expiryGuard } from \"../middleware/expiry-guard\";\n\nexport const router = Router();\n\n// POST /api/check-in\n// Validates a member's code (id) and membership status before allowing check-in.\nrouter.post(\n  \"/api/check-in\",\n  expiryGuard,\n  (req: Request, res: Response): void => {\n    const { memberId } = req.body;\n\n    if (memberId === undefined || memberId === null) {\n      res.status(400).json({ error: \"Missing memberId\" });\n      return;\n    }\n\n    const parsedId = Number(memberId);\n    if (isNaN(parsedId)) {\n      res.status(400).json({ error: \"Invalid memberId format\" });\n      return;\n    }\n\n    const member = getMemberById(parsedId);\n    if (!member) {\n      res.status(404).json({ error: \"Member not found\" });\n      return;\n    }\n\n    const todayStr = new Date().toISOString().split(\"T\")[0];\n    const expiryStr = member.expiryDate;\n\n    if (expiryStr < todayStr) {\n      insertCheckIn(parsedId, \"REJECTED_EXPIRED\");\n      res.status(403).json({\n        status: \"REJECTED\",\n        reason: \"Membership expired\",\n        expiryDate: expiryStr\n      });\n      return;\n    }\n\n    insertCheckIn(parsedId, \"APPROVED\");\n    res.status(200).json({\n      status: \"APPROVED\",\n      memberId: parsedId,\n      plan: member.plan,\n      expiryDate: expiryStr\n    });\n  }\n);\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-036",
+      "title": "Gym Membership System",
+      "component": "Billing Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/billing-service.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getMemberById, getAllMembers, type Member } from \"../db/members-table\";\n\nexport const router = Router();\n\n// GET /billing/members - Get all members billing status\nrouter.get(\"/members\", (req: Request, res: Response): void => {\n  try {\n    const members = getAllMembers();\n    res.status(200).json(members);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n\n// GET /billing/members/:id - Get billing status for a specific member\nrouter.get(\"/members/:id\", (req: Request, res: Response): void => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid member ID\" });\n      return;\n    }\n    const member = getMemberById(id);\n    if (!member) {\n      res.status(404).json({ error: \"Member not found\" });\n      return;\n    }\n    res.status(200).json(member);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-036",
+      "title": "Gym Membership System",
+      "component": "Expiry Guard",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/expiry-guard.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\nimport { createHmac, timingSafeEqual } from \"node:crypto\";\n\nfunction safeByteCompare(a: string, b: string): boolean {\n  try {\n    const bufA = Buffer.from(a, \"utf8\");\n    const bufB = Buffer.from(b, \"utf8\");\n    if (bufA.length !== bufB.length) {\n      return false;\n    }\n    return timingSafeEqual(bufA, bufB);\n  } catch {\n    return false;\n  }\n}\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  const path = req.path.toLowerCase();\n  const isCheckIn = req.method === \"POST\" && (path.includes(\"check-in\") || path.includes(\"checkin\"));\n\n  if (!isCheckIn) {\n    next();\n    return;\n  }\n\n  let expiryValue: string | number | undefined = undefined;\n\n  // 1. Check request body for expiry fields\n  if (req.body && typeof req.body === \"object\") {\n    const body = req.body as Record<string, unknown>;\n    if (typeof body.expiryDate === \"string\" || typeof body.expiryDate === \"number\") {\n      expiryValue = body.expiryDate;\n    } else if (typeof body.expiry === \"string\" || typeof body.expiry === \"number\") {\n      expiryValue = body.expiry;\n    } else if (typeof body.membershipExpiry === \"string\" || typeof body.membershipExpiry === \"number\") {\n      expiryValue = body.membershipExpiry;\n    }\n  }\n\n  // 2. Check Authorization header for JWT if expiry is not in body\n  const authHeader = req.headers.authorization;\n  if (!expiryValue && authHeader && authHeader.startsWith(\"Bearer \")) {\n    const token = authHeader.substring(7).trim();\n    const secret = process.env.JWT_SECRET;\n\n    if (!secret) {\n      res.status(401).json({ error: \"Unauthorized: JWT_SECRET is not configured\" });\n      return;\n    }\n\n    const parts = token.split(\".\");\n    if (parts.length === 3) {\n      const [headerB64, payloadB64, signatureB64] = parts;\n      const dataToSign = `${headerB64}.${payloadB64}`;\n      \n      const hmac = createHmac(\"sha256\", secret);\n      hmac.update(dataToSign);\n      const expectedSignature = hmac.digest(\"base64url\");\n\n      if (safeByteCompare(signatureB64, expectedSignature)) {\n        try {\n          const payloadStr = Buffer.from(payloadB64, \"base64url\").toString(\"utf8\");\n          const payload = JSON.parse(payloadStr) as Record<string, unknown>;\n          \n          if (typeof payload.membershipExpiry === \"string\" || typeof payload.membershipExpiry === \"number\") {\n            expiryValue = payload.membershipExpiry;\n          } else if (typeof payload.expiry === \"string\" || typeof payload.expiry === \"number\") {\n            expiryValue = payload.expiry;\n          } else if (typeof payload.expiryDate === \"string\" || typeof payload.expiryDate === \"number\") {\n            expiryValue = payload.expiryDate;\n          }\n        } catch {\n          // Ignore JSON parsing errors and proceed\n        }\n      } else {\n        res.status(401).json({ error: \"Unauthorized: Invalid token signature\" });\n        return;\n      }\n    }\n  }\n\n  // 3. Validate expiry date if found\n  if (expiryValue !== undefined) {\n    const expiryDate = new Date(expiryValue);\n    if (!isNaN(expiryDate.getTime())) {\n      if (expiryDate.getTime() < Date.now()) {\n        res.status(403).json({ error: \"Membership has expired\" });\n        return;\n      }\n    }\n  }\n\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-037",
+      "title": "Therapy Session Booking",
+      "component": "Sessions API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/sessions-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response, type NextFunction } from \"express\";\nimport {\n  insertSession,\n  getSessionById,\n  getAllSessions\n} from \"../db/sessions-table\";\nimport {\n  getSessionNotes,\n  addOrUpdateSessionNotes\n} from \"../db/session-notes-table\";\nimport { middleware as notePrivacyGuard } from \"../middleware/note-privacy-guard\";\n\nexport const router = Router();\n\n// Create a new session booking\nrouter.post(\"/\", (req: Request, res: Response) => {\n  const { therapistId, clientId, scheduledTime } = req.body;\n\n  if (typeof therapistId !== \"number\" || typeof clientId !== \"number\" || typeof scheduledTime !== \"string\") {\n    res.status(400).json({ error: \"Missing or invalid therapistId, clientId, or scheduledTime\" });\n    return;\n  }\n\n  try {\n    insertSession(therapistId, clientId, scheduledTime);\n    res.status(201).json({ message: \"Session booked successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to book session\" });\n  }\n});\n\n// Get all sessions\nrouter.get(\"/\", (req: Request, res: Response) => {\n  try {\n    const sessions = getAllSessions();\n    res.status(200).json(sessions);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to retrieve sessions\" });\n  }\n});\n\n// Get notes for a specific session (guarded by privacy middleware)\nrouter.get(\"/:sessionId/notes\", notePrivacyGuard, (req: Request, res: Response) => {\n  const sessionId = Number(req.params.sessionId);\n  if (isNaN(sessionId)) {\n    res.status(400).json({ error: \"Invalid session ID\" });\n    return;\n  }\n\n  const session = getSessionById(sessionId);\n  if (!session) {\n    res.status(404).json({ error: \"Session not found\" });\n    return;\n  }\n\n  try {\n    const note = getSessionNotes(sessionId);\n    if (!note) {\n      res.status(200).json({ sessionId, notes: \"\" });\n    } else {\n      res.status(200).json(note);\n    }\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to retrieve session notes\" });\n  }\n});\n\n// Add or update notes for a specific session (guarded by privacy middleware)\nrouter.put(\"/:sessionId/notes\", notePrivacyGuard, (req: Request, res: Response) => {\n  const sessionId = Number(req.params.sessionId);\n  if (isNaN(sessionId)) {\n    res.status(400).json({ error: \"Invalid session ID\" });\n    return;\n  }\n\n  const { notes } = req.body;\n  if (typeof notes !== \"string\") {\n    res.status(400).json({ error: \"Notes must be a string\" });\n    return;\n  }\n\n  const session = getSessionById(sessionId);\n  if (!session) {\n    res.status(404).json({ error: \"Session not found\" });\n    return;\n  }\n\n  try {\n    addOrUpdateSessionNotes(sessionId, notes);\n    res.status(200).json({ message: \"Session notes updated successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to update session notes\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-037",
+      "title": "Therapy Session Booking",
+      "component": "Note Privacy Guard",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/note-privacy-guard.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { createHmac, timingSafeEqual } from \"node:crypto\";\nimport type { Request, Response, NextFunction } from \"express\";\n\n// Simple mock database of session notes to allow the guard to perform real checks\nexport interface SessionNote {\n  id: string;\n  sessionId: string;\n  therapistId: string;\n  clientId: string;\n  content: string;\n}\n\nexport const mockNotesDb: Record<string, SessionNote> = {\n  \"note-1\": {\n    id: \"note-1\",\n    sessionId: \"session-1\",\n    therapistId: \"therapist-123\",\n    clientId: \"client-456\",\n    content: \"Client is making good progress with cognitive behavioral exercises.\"\n  }\n};\n\nfunction verifyJwt(token: string): { userId: string; role: string } | null {\n  const secret = process.env.JWT_SECRET;\n  if (!secret) {\n    return null;\n  }\n\n  const parts = token.split(\".\");\n  if (parts.length !== 3) {\n    return null;\n  }\n\n  const [headerB64, payloadB64, signatureB64] = parts;\n\n  try {\n    const hmac = createHmac(\"sha256\", secret);\n    hmac.update(`${headerB64}.${payloadB64}`);\n    const expectedSignature = hmac.digest(\"base64url\");\n\n    const sigBuffer = Buffer.from(signatureB64);\n    const expectedBuffer = Buffer.from(expectedSignature);\n\n    if (sigBuffer.length !== expectedBuffer.length) {\n      return null;\n    }\n\n    if (!timingSafeEqual(sigBuffer, expectedBuffer)) {\n      return null;\n    }\n\n    const payloadStr = Buffer.from(payloadB64, \"base64url\").toString(\"utf8\");\n    const payload = JSON.parse(payloadStr);\n    if (payload && typeof payload === \"object\" && \"userId\" in payload) {\n      return payload as { userId: string; role: string };\n    }\n    return null;\n  } catch {\n    return null;\n  }\n}\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  // Only intercept requests targeting session notes\n  const isNotesPath = req.path.includes(\"/notes\");\n  if (!isNotesPath) {\n    next();\n    return;\n  }\n\n  const authHeader = req.headers.authorization;\n  if (!authHeader || !authHeader.startsWith(\"Bearer \")) {\n    res.status(401).json({ error: \"Unauthorized: Missing or invalid authorization header\" });\n    return;\n  }\n\n  const token = authHeader.substring(7);\n  const decoded = verifyJwt(token);\n  if (!decoded) {\n    res.status(401).json({ error: \"Unauthorized: Invalid token signature or payload\" });\n    return;\n  }\n\n  // Extract note ID from path if present (e.g., /api/notes/note-1)\n  const pathParts = req.path.split(\"/\");\n  const notesIndex = pathParts.indexOf(\"notes\");\n  const noteId = notesIndex !== -1 && pathParts[notesIndex + 1] ? pathParts[notesIndex + 1] : null;\n\n  let therapistId: string | null = null;\n  let clientId: string | null = null;\n\n  if (noteId && mockNotesDb[noteId]) {\n    const note = mockNotesDb[noteId];\n    therapistId = note.therapistId;\n    clientId = note.clientId;\n  } else {\n    // Fallback to checking request body or query parameters for creation/listing filters\n    const bodyTherapist = req.body && typeof req.body.therapistId === \"string\" ? req.body.therapistId : null;\n    const bodyClient = req.body && typeof req.body.clientId === \"string\" ? req.body.clientId : null;\n    const queryTherapist = req.query && typeof req.query.therapistId === \"string\" ? req.query.therapistId : null;\n    const queryClient = req.query && typeof req.query.clientId === \"string\" ? req.query.clientId : null;\n\n    therapistId = bodyTherapist || queryTherapist;\n    clientId = bodyClient || queryClient;\n  }\n\n  // If we cannot determine the therapist or client for this notes request, restrict access to be safe\n  if (!therapistId && !clientId) {\n    res.status(403).json({ error: \"Forbidden: Access to notes is restricted to the assigned therapist and client\" });\n    return;\n  }\n\n  const currentUserId = decoded.userId;\n  const isAssignedTherapist = therapistId !== null && currentUserId === therapistId;\n  const isAssignedClient = clientId !== null && currentUserId === clientId;\n\n  if (isAssignedTherapist || isAssignedClient) {\n    next();\n  } else {\n    res.status(403).json({ error: \"Forbidden: Session notes are only visible to the assigned therapist and client\" });\n  }\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-038",
+      "title": "Warehouse Inventory System",
+      "component": "Inventory API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/inventory-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  getStockLevels,\n  getStockLevelBySku,\n  updateStockLevel,\n  type StockLevel\n} from \"../db/stock-levels-table\";\nimport {\n  logStockMovement,\n  getStockMovements,\n  type StockMovement\n} from \"../db/stock-movements-table\";\n\nexport const router = Router();\n\n// GET /api/inventory/levels - Get all stock levels\nrouter.get(\"/levels\", (req: Request, res: Response): void => {\n  try {\n    const levels = getStockLevels();\n    res.status(200).json(levels);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to fetch stock levels\" });\n  }\n});\n\n// GET /api/inventory/levels/:sku - Get stock level for a specific SKU\nrouter.get(\"/levels/:sku\", (req: Request, res: Response): void => {\n  try {\n    const sku = req.params.sku;\n    const level = getStockLevelBySku(sku);\n    if (!level) {\n      res.status(404).json({ error: `Stock level for SKU ${sku} not found` });\n      return;\n    }\n    res.status(200).json(level);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to fetch stock level\" });\n  }\n});\n\n// POST /api/inventory/movements - Log a stock movement and update stock levels\nrouter.post(\"/movements\", (req: Request, res: Response): void => {\n  try {\n    const { sku, productId, quantity, movementType, locationId, reorderThreshold } = req.body;\n\n    if (!sku || typeof productId !== \"number\" || typeof quantity !== \"number\" || !movementType || typeof locationId !== \"number\") {\n      res.status(400).json({ error: \"Missing or invalid required fields: sku, productId, quantity, movementType, locationId\" });\n      return;\n    }\n\n    if (movementType !== \"in\" && movementType !== \"out\") {\n      res.status(400).json({ error: \"movementType must be 'in' or 'out'\" });\n      return;\n    }\n\n    if (quantity <= 0) {\n      res.status(400).json({ error: \"quantity must be a positive number\" });\n      return;\n    }\n\n    // Log the movement\n    logStockMovement(productId, quantity, movementType);\n\n    // Retrieve existing stock level or default to 0\n    const existingLevel = getStockLevelBySku(sku);\n    const currentQty = existingLevel ? existingLevel.currentQuantity : 0;\n    const threshold = typeof reorderThreshold === \"number\" ? reorderThreshold : (existingLevel ? existingLevel.reorderThreshold : 10);\n\n    // Calculate new quantity\n    let newQty = currentQty;\n    if (movementType === \"in\") {\n      newQty += quantity;\n    } else {\n      newQty -= quantity;\n    }\n\n    // Update stock level\n    updateStockLevel(sku, locationId, newQty, threshold);\n\n    const updatedLevel = getStockLevelBySku(sku);\n    const isBelowReorder = updatedLevel ? updatedLevel.currentQuantity < updatedLevel.reorderThreshold : false;\n\n    res.status(200).json({\n      message: \"Stock movement processed successfully\",\n      stockLevel: updatedLevel,\n      reorderAlert: isBelowReorder\n    });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to process stock movement\" });\n  }\n});\n\n// GET /api/inventory/movements - Get all stock movements\nrouter.get(\"/movements\", (req: Request, res: Response): void => {\n  try {\n    const movements = getStockMovements();\n    res.status(200).json(movements);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to fetch stock movements\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-040",
+      "title": "Expense Reimbursement Tool",
+      "component": "Expenses API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/expenses-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  getExpenses,\n  getExpenseById,\n  insertExpense,\n  updateExpenseApprovalStatus,\n  type Expense\n} from \"../db/expenses-table\";\nimport { middleware as managerScopedApproval } from \"../middleware/manager-scoped-approval\";\n\nexport const router = Router();\n\n// Get all expenses\nrouter.get(\"/\", (req: Request, res: Response): void => {\n  try {\n    const expenses = getExpenses();\n    res.status(200).json(expenses);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to fetch expenses\" });\n  }\n});\n\n// Get expense by ID\nrouter.get(\"/:id\", (req: Request, res: Response): void => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid expense ID\" });\n      return;\n    }\n    const expense = getExpenseById(id);\n    if (!expense) {\n      res.status(404).json({ error: \"Expense not found\" });\n      return;\n    }\n    res.status(200).json(expense);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to fetch expense\" });\n  }\n});\n\n// Create a new expense\nrouter.post(\"/\", (req: Request, res: Response): void => {\n  try {\n    const { employeeId, managerId, amount, receiptReference, approvalStatus } = req.body;\n    if (\n      typeof employeeId !== \"number\" ||\n      typeof managerId !== \"number\" ||\n      typeof amount !== \"number\" ||\n      typeof receiptReference !== \"string\" ||\n      typeof approvalStatus !== \"string\"\n    ) {\n      res.status(400).json({ error: \"Missing or invalid fields in request body\" });\n      return;\n    }\n\n    insertExpense(employeeId, managerId, amount, receiptReference, approvalStatus);\n    res.status(201).json({ message: \"Expense created successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to create expense\" });\n  }\n});\n\n// Update expense approval status - scoped to manager approval middleware\nrouter.patch(\"/:id/status\", managerScopedApproval, (req: Request, res: Response): void => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid expense ID\" });\n      return;\n    }\n\n    const { approvalStatus } = req.body;\n    if (typeof approvalStatus !== \"string\") {\n      res.status(400).json({ error: \"approvalStatus must be a string\" });\n      return;\n    }\n\n    const expense = getExpenseById(id);\n    if (!expense) {\n      res.status(404).json({ error: \"Expense not found\" });\n      return;\n    }\n\n    updateExpenseApprovalStatus(id, approvalStatus);\n    res.status(200).json({ message: \"Expense approval status updated successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to update expense status\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-040",
+      "title": "Expense Reimbursement Tool",
+      "component": "Payout Queue Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/payout-queue-service.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport { getExpenses, updateExpenseApprovalStatus } from \"../db/expenses-table\";\nimport { middleware as managerScopedApproval } from \"../middleware/manager-scoped-approval\";\n\nexport const router = Router();\n\n// GET /payout-queue - Retrieve all approved expenses ready for payout\nrouter.get(\"/\", (req: Request, res: Response): void => {\n  try {\n    const allExpenses = getExpenses();\n    const approvedExpenses = allExpenses.filter(\n      (expense) => expense.approvalStatus.toLowerCase() === \"approved\"\n    );\n    res.status(200).json(approvedExpenses);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to retrieve payout queue\" });\n  }\n});\n\n// POST /payout-queue/:id/pay - Mark an approved expense as paid\nrouter.post(\"/:id/pay\", managerScopedApproval, (req: Request, res: Response): void => {\n  try {\n    const expenseId = Number(req.params.id);\n    if (isNaN(expenseId)) {\n      res.status(400).json({ error: \"Invalid expense ID\" });\n      return;\n    }\n\n    const allExpenses = getExpenses();\n    const expense = allExpenses.find((e) => e.id === expenseId);\n\n    if (!expense) {\n      res.status(404).json({ error: \"Expense not found\" });\n      return;\n    }\n\n    if (expense.approvalStatus.toLowerCase() !== \"approved\") {\n      res.status(400).json({\n        error: `Expense cannot be paid because its status is '${expense.approvalStatus}' (must be 'approved')`\n      });\n      return;\n    }\n\n    updateExpenseApprovalStatus(expenseId, \"paid\");\n    res.status(200).json({\n      message: \"Expense successfully marked as paid\",\n      expenseId\n    });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to process payment\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-040",
+      "title": "Expense Reimbursement Tool",
+      "component": "Manager-Scoped Approval",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/manager-scoped-approval.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\nimport { createHmac, timingSafeEqual } from \"node:crypto\";\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  const isApprovalRoute =\n    (req.method === \"POST\" || req.method === \"PUT\" || req.method === \"PATCH\") &&\n    (req.path.includes(\"/approve\") ||\n      req.path.includes(\"/reject\") ||\n      req.path.includes(\"/status\") ||\n      (req.body && (req.body.status === \"approved\" || req.body.status === \"rejected\")));\n\n  if (!isApprovalRoute) {\n    next();\n    return;\n  }\n\n  const authHeader = req.headers.authorization;\n  if (!authHeader || !authHeader.startsWith(\"Bearer \")) {\n    res.status(401).json({ error: \"Unauthorized: Missing token\" });\n    return;\n  }\n\n  const token = authHeader.substring(7);\n  const parts = token.split(\".\");\n  if (parts.length !== 3) {\n    res.status(401).json({ error: \"Unauthorized: Invalid token format\" });\n    return;\n  }\n\n  const [headerB64, payloadB64, signatureB64] = parts;\n  const secret = process.env.JWT_SECRET;\n  if (!secret) {\n    res.status(401).json({ error: \"Unauthorized: JWT secret not configured\" });\n    return;\n  }\n\n  try {\n    const hmac = createHmac(\"sha256\", secret);\n    hmac.update(`${headerB64}.${payloadB64}`);\n    const expectedSignature = hmac.digest(\"base64url\");\n\n    const sigBuffer = Buffer.from(signatureB64, \"base64url\");\n    const expBuffer = Buffer.from(expectedSignature, \"base64url\");\n\n    if (sigBuffer.length !== expBuffer.length || !timingSafeEqual(sigBuffer, expBuffer)) {\n      res.status(401).json({ error: \"Unauthorized: Invalid signature\" });\n      return;\n    }\n\n    const payloadStr = Buffer.from(payloadB64, \"base64url\").toString(\"utf8\");\n    const payload = JSON.parse(payloadStr);\n\n    const directReports: unknown = payload.directReports || (payload.user && payload.user.directReports);\n    if (!Array.isArray(directReports)) {\n      res.status(403).json({ error: \"Forbidden: No direct reports configured for this manager\" });\n      return;\n    }\n\n    const employeeId = req.body?.employeeId || req.body?.submitterId;\n    if (!employeeId) {\n      res.status(400).json({ error: \"Bad Request: Missing employeeId or submitterId in request body\" });\n      return;\n    }\n\n    const isDirectReport = directReports.some(\n      (reportId: unknown) => String(reportId) === String(employeeId)\n    );\n\n    if (!isDirectReport) {\n      res.status(403).json({ error: \"Forbidden: You can only approve or reject expenses from your own direct reports\" });\n      return;\n    }\n\n    next();\n  } catch (err) {\n    res.status(401).json({ error: \"Unauthorized: Invalid token\" });\n  }\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-045",
+      "title": "Volunteer Coordination Tool",
+      "component": "Shifts API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/shifts-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  insertShift,\n  getShifts,\n  getShiftById,\n  updateShift,\n  deleteShift\n} from \"../db/shifts-table\";\nimport {\n  addSignup,\n  getSignupsByShift,\n  getSignupsByVolunteer\n} from \"../db/signups-table\";\n\nexport const router = Router();\n\n// GET /shifts - Retrieve all shifts\nrouter.get(\"/\", (req: Request, res: Response): void => {\n  try {\n    const shifts = getShifts();\n    res.status(200).json(shifts);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to retrieve shifts\" });\n  }\n});\n\n// GET /shifts/:id - Retrieve a single shift by ID\nrouter.get(\"/:id\", (req: Request, res: Response): void => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid shift ID\" });\n      return;\n    }\n    const shift = getShiftById(id);\n    if (!shift) {\n      res.status(404).json({ error: \"Shift not found\" });\n      return;\n    }\n    res.status(200).json(shift);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to retrieve shift\" });\n  }\n});\n\n// POST /shifts - Create a new shift\nrouter.post(\"/\", (req: Request, res: Response): void => {\n  try {\n    const { description, startTime, endTime, volunteerCapacity } = req.body;\n    if (\n      typeof description !== \"string\" ||\n      typeof startTime !== \"string\" ||\n      typeof endTime !== \"string\" ||\n      typeof volunteerCapacity !== \"number\"\n    ) {\n      res.status(400).json({ error: \"Missing or invalid shift fields\" });\n      return;\n    }\n    insertShift(description, startTime, endTime, volunteerCapacity);\n    res.status(201).json({ message: \"Shift created successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to create shift\" });\n  }\n});\n\n// PUT /shifts/:id - Update an existing shift\nrouter.put(\"/:id\", (req: Request, res: Response): void => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid shift ID\" });\n      return;\n    }\n    const existing = getShiftById(id);\n    if (!existing) {\n      res.status(404).json({ error: \"Shift not found\" });\n      return;\n    }\n    const { description, startTime, endTime, volunteerCapacity } = req.body;\n    if (\n      typeof description !== \"string\" ||\n      typeof startTime !== \"string\" ||\n      typeof endTime !== \"string\" ||\n      typeof volunteerCapacity !== \"number\"\n    ) {\n      res.status(400).json({ error: \"Missing or invalid shift fields\" });\n      return;\n    }\n    updateShift(id, description, startTime, endTime, volunteerCapacity);\n    res.status(200).json({ message: \"Shift updated successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to update shift\" });\n  }\n});\n\n// DELETE /shifts/:id - Delete a shift\nrouter.delete(\"/:id\", (req: Request, res: Response): void => {\n  try {\n    const id = Number(req.params.id);\n    if (isNaN(id)) {\n      res.status(400).json({ error: \"Invalid shift ID\" });\n      return;\n    }\n    const existing = getShiftById(id);\n    if (!existing) {\n      res.status(404).json({ error: \"Shift not found\" });\n      return;\n    }\n    deleteShift(id);\n    res.status(200).json({ message: \"Shift deleted successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to delete shift\" });\n  }\n});\n\n// POST /shifts/:id/signup - Sign up a volunteer for a shift\nrouter.post(\"/:id/signup\", (req: Request, res: Response): void => {\n  try {\n    const shiftId = Number(req.params.id);\n    if (isNaN(shiftId)) {\n      res.status(400).json({ error: \"Invalid shift ID\" });\n      return;\n    }\n    const shift = getShiftById(shiftId);\n    if (!shift) {\n      res.status(404).json({ error: \"Shift not found\" });\n      return;\n    }\n    const { volunteerId } = req.body;\n    if (typeof volunteerId !== \"number\") {\n      res.status(400).json({ error: \"Invalid or missing volunteerId\" });\n      return;\n    }\n\n    // Check capacity\n    const currentSignups = getSignupsByShift(shiftId);\n    if (currentSignups.length >= shift.volunteerCapacity) {\n      res.status(400).json({ error: \"Shift is already at full capacity\" });\n      return;\n    }\n\n    // Check if already signed up\n    const isAlreadySignedUp = currentSignups.some(\n      (s) => s.volunteerId === volunteerId\n    );\n    if (isAlreadySignedUp) {\n      res.status(400).json({ error: \"Volunteer is already signed up for this shift\" });\n      return;\n    }\n\n    addSignup(volunteerId, shiftId);\n    res.status(201).json({ message: \"Signed up successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to sign up\" });\n  }\n});\n\n// GET /shifts/:id/signups - Get all sign-ups for a specific shift\nrouter.get(\"/:id/signups\", (req: Request, res: Response): void => {\n  try {\n    const shiftId = Number(req.params.id);\n    if (isNaN(shiftId)) {\n      res.status(400).json({ error: \"Invalid shift ID\" });\n      return;\n    }\n    const shift = getShiftById(shiftId);\n    if (!shift) {\n      res.status(404).json({ error: \"Shift not found\" });\n      return;\n    }\n    const signups = getSignupsByShift(shiftId);\n    res.status(200).json(signups);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to retrieve signups\" });\n  }\n});\n\n// GET /shifts/volunteer/:volunteerId/signups - Get all sign-ups for a specific volunteer\nrouter.get(\"/volunteer/:volunteerId/signups\", (req: Request, res: Response): void => {\n  try {\n    const volunteerId = Number(req.params.volunteerId);\n    if (isNaN(volunteerId)) {\n      res.status(400).json({ error: \"Invalid volunteer ID\" });\n      return;\n    }\n    const signups = getSignupsByVolunteer(volunteerId);\n    res.status(200).json(signups);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to retrieve volunteer signups\" });\n  }\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-046",
+      "title": "Timesheet and Payroll Tracker",
+      "component": "Timesheets API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/timesheets-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  insertClockEvent,\n  getClockEventsByEmployeeId,\n  type ClockEvent\n} from \"../db/clock-events-table\";\nimport { middleware as approvedOnlyPayrollGuard } from \"../middleware/approved-only-payroll-guard\";\n\nexport const router = Router();\n\n// Helper to compute weekly hours from clock events\nfunction computeWeeklyHours(events: ClockEvent[]): number {\n  // Sort events chronologically\n  const sorted = [...events].sort((a, b) => {\n    return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();\n  });\n\n  let totalHours = 0;\n  let lastInTime: number | null = null;\n\n  for (const event of sorted) {\n    if (event.eventType === \"in\") {\n      lastInTime = new Date(event.timestamp).getTime();\n    } else if (event.eventType === \"out\" && lastInTime !== null) {\n      const outTime = new Date(event.timestamp).getTime();\n      const diffMs = outTime - lastInTime;\n      if (diffMs > 0) {\n        totalHours += diffMs / (1000 * 60 * 60);\n      }\n      lastInTime = null;\n    }\n  }\n\n  return Math.round(totalHours * 100) / 100;\n}\n\n// POST /api/timesheets/clock - Record a clock event\nrouter.post(\"/clock\", (req: Request, res: Response): void => {\n  const { employeeId, eventType } = req.body;\n\n  if (!employeeId || typeof employeeId !== \"number\") {\n    res.status(400).json({ error: \"Missing or invalid employeeId\" });\n    return;\n  }\n\n  if (eventType !== \"in\" && eventType !== \"out\") {\n    res.status(400).json({ error: \"eventType must be 'in' or 'out'\" });\n    return;\n  }\n\n  try {\n    insertClockEvent(employeeId, eventType);\n    res.status(201).json({ message: \"Clock event recorded successfully\" });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to record clock event\" });\n  }\n});\n\n// GET /api/timesheets/employee/:employeeId/hours - Compute weekly hours for an employee\nrouter.get(\"/employee/:employeeId/hours\", (req: Request, res: Response): void => {\n  const employeeId = Number(req.params.employeeId);\n\n  if (isNaN(employeeId)) {\n    res.status(400).json({ error: \"Invalid employeeId parameter\" });\n    return;\n  }\n\n  try {\n    const events = getClockEventsByEmployeeId(employeeId);\n    const weeklyHours = computeWeeklyHours(events);\n    res.json({\n      employeeId,\n      weeklyHours,\n      eventsCount: events.length\n    });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Failed to compute weekly hours\" });\n  }\n});\n\n// GET /api/timesheets/payroll-summary - Protected route demonstrating guard usage\nrouter.get(\"/payroll-summary\", approvedOnlyPayrollGuard, (req: Request, res: Response): void => {\n  res.json({ message: \"Access granted to payroll summary\" });\n});\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-046",
+      "title": "Timesheet and Payroll Tracker",
+      "component": "Payroll Export Service",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/payroll-export-service.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  getClockEventsByEmployeeId,\n  db,\n  type ClockEvent\n } from \"../db/clock-events-table\";\nimport { middleware } from \"../middleware/approved-only-payroll-guard\";\n\nexport const router = Router();\n\nconst exportHandler = (req: Request, res: Response): void => {\n  try {\n    let employeeIds: number[] = [];\n    if (req.query.employeeIds) {\n      const idsStr = req.query.employeeIds as string;\n      employeeIds = idsStr\n        .split(\",\")\n        .map((id: string) => Number(id.trim()))\n        .filter((id: number) => !isNaN(id));\n    } else {\n      try {\n        const stmt = db.prepare(\"SELECT DISTINCT employeeId FROM clock_events\");\n        const rows = stmt.all() as { employeeId: number }[];\n        employeeIds = rows.map((r: { employeeId: number }) => r.employeeId);\n      } catch (e) {\n        employeeIds = [];\n      }\n    }\n\n    const payrollRecords: Array<{\n      employeeId: number;\n      totalHours: number;\n      status: string;\n    }> = [];\n\n    for (const empId of employeeIds) {\n      const events = getClockEventsByEmployeeId(empId);\n      const sortedEvents = [...events].sort((a: ClockEvent, b: ClockEvent) => {\n        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();\n      });\n\n      let totalMs = 0;\n      let lastInTime: number | null = null;\n\n      for (const event of sortedEvents) {\n        if (event.eventType === \"in\") {\n          lastInTime = new Date(event.timestamp).getTime();\n        } else if (event.eventType === \"out\" && lastInTime !== null) {\n          totalMs += (new Date(event.timestamp).getTime() - lastInTime);\n          lastInTime = null;\n        }\n      }\n\n      const totalHours = Number((totalMs / (1000 * 60 * 60)).toFixed(2));\n      payrollRecords.push({\n        employeeId: empId,\n        totalHours,\n        status: \"Approved\"\n      });\n    }\n\n    let csvContent = \"EmployeeID,TotalHoursWorked,Status\\n\";\n    for (const record of payrollRecords) {\n      csvContent += `${record.employeeId},${record.totalHours},${record.status}\\n`;\n    }\n\n    res.setHeader(\"Content-Type\", \"text/csv\");\n    res.setHeader(\"Content-Disposition\", \"attachment; filename=payroll-export.csv\");\n    res.status(200).send(csvContent);\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal Server Error\" });\n  }\n};\n\nrouter.get(\"/\", middleware, exportHandler);\nrouter.get(\"/export\", middleware, exportHandler);\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-046",
+      "title": "Timesheet and Payroll Tracker",
+      "component": "Approved-Only Payroll Guard",
+      "domain": "security",
+      "targetPath": "backend/src/middleware/approved-only-payroll-guard.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { Request, Response, NextFunction } from \"express\";\n\ninterface Timesheet {\n  id?: string | number;\n  status?: string;\n  approved?: boolean;\n}\n\nexport function middleware(req: Request, res: Response, next: NextFunction): void {\n  const path = req.path.toLowerCase();\n  \n  // Only intercept payroll export endpoints\n  const isPayrollExport = path.includes(\"/payroll/export\") || path.includes(\"/payroll-export\");\n  if (!isPayrollExport) {\n    next();\n    return;\n  }\n\n  // If there is a request body, validate that any timesheets included are approved\n  if (req.body) {\n    // Case 1: The body itself is an array of timesheets\n    if (Array.isArray(req.body)) {\n      const hasUnapproved = req.body.some((ts: any) => {\n        if (ts && typeof ts === \"object\") {\n          return ts.status !== \"approved\" && ts.approved !== true;\n        }\n        return false;\n      });\n\n      if (hasUnapproved) {\n        res.status(400).json({\n          error: \"Cannot export payroll: One or more timesheets are not approved.\"\n        });\n        return;\n      }\n    }\n\n    // Case 2: The body contains a timesheets array property\n    if (req.body.timesheets && Array.isArray(req.body.timesheets)) {\n      const hasUnapproved = req.body.timesheets.some((ts: any) => {\n        if (ts && typeof ts === \"object\") {\n          return ts.status !== \"approved\" && ts.approved !== true;\n        }\n        return false;\n      });\n\n      if (hasUnapproved) {\n        res.status(400).json({\n          error: \"Cannot export payroll: One or more timesheets are not approved.\"\n        });\n        return;\n      }\n    }\n  }\n\n  next();\n}\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-047",
+      "title": "Office Parking Reservations",
+      "component": "Parking API",
+      "domain": "backend",
+      "targetPath": "backend/src/routes/parking-api.ts",
+      "A": true,
+      "B": true,
+      "D_A": true,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { Router, type Request, type Response } from \"express\";\nimport {\n  insertReservation,\n  getReservationsByDate,\n  getReservationByEmployeeAndDate,\n  type Reservation\n} from \"../db/reservations-table\";\n\nexport const router = Router();\n\n// Total spots available in the building\nconst TOTAL_SPOTS = 50;\n\n// GET /api/parking/status?date=YYYY-MM-DD\nrouter.get(\"/status\", (req: Request, res: Response): void => {\n  const date = req.query.date as string;\n  if (!date) {\n    res.status(400).json({ error: \"Missing date parameter\" });\n    return;\n  }\n\n  try {\n    const reservations = getReservationsByDate(date);\n    const reservedCount = reservations.length;\n    const availableCount = Math.max(0, TOTAL_SPOTS - reservedCount);\n\n    res.json({\n      date,\n      totalSpots: TOTAL_SPOTS,\n      reservedSpotsCount: reservedCount,\n      availableSpotsCount: availableCount,\n      reservations\n    });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal server error\" });\n  }\n});\n\n// POST /api/parking/reserve\nrouter.post(\"/reserve\", (req: Request, res: Response): void => {\n  const { employeeId, date } = req.body;\n\n  if (employeeId === undefined || !date) {\n    res.status(400).json({ error: \"Missing employeeId or date\" });\n    return;\n  }\n\n  const empIdNum = Number(employeeId);\n  if (isNaN(empIdNum)) {\n    res.status(400).json({ error: \"employeeId must be a valid number\" });\n    return;\n  }\n\n  try {\n    // Check if employee already has a reservation for this date\n    const existing = getReservationByEmployeeAndDate(empIdNum, date);\n    if (existing) {\n      res.status(400).json({ error: \"Employee already has a reservation for this date\" });\n      return;\n    }\n\n    // Check if spots are full\n    const currentReservations = getReservationsByDate(date);\n    if (currentReservations.length >= TOTAL_SPOTS) {\n      res.status(400).json({ error: \"No parking spots available for this date\" });\n      return;\n    }\n\n    // Find the first available spot number (1-indexed)\n    const reservedSpotNumbers = new Set(currentReservations.map((r: Reservation) => r.spotNumber));\n    let assignedSpot = -1;\n    for (let i = 1; i <= TOTAL_SPOTS; i++) {\n      if (!reservedSpotNumbers.has(i)) {\n        assignedSpot = i;\n        break;\n      }\n    }\n\n    if (assignedSpot === -1) {\n      res.status(400).json({ error: \"No parking spots available for this date\" });\n      return;\n    }\n\n    insertReservation(empIdNum, date, assignedSpot);\n\n    res.status(201).json({\n      message: \"Reservation successful\",\n      reservation: {\n        employeeId: empIdNum,\n        date,\n        spotNumber: assignedSpot\n      }\n    });\n  } catch (error: any) {\n    res.status(500).json({ error: error.message || \"Internal server error\" });\n  }\n});\n",
+      "buildOutputA": null
+    }
+  ],
+  "projects": [
+    {
+      "sessionId": "session-gold-002",
+      "title": "Board App (Unspecified Differentiator)",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/boards-api",
+          "status": 404
+        },
+        {
+          "path": "/api/boards-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-003",
+      "title": "Weather App",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/weather-api",
+          "status": 404
+        },
+        {
+          "path": "/api/weather-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "components": 4,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/catalog-api",
+          "status": 404
+        },
+        {
+          "path": "/api/catalog-api/",
+          "status": 404
+        },
+        {
+          "path": "/api/orders-api",
+          "status": 200
+        },
+        {
+          "path": "/api/orders-api/",
+          "status": 200
+        },
+        {
+          "path": "/api/payment-gateway-adapter",
+          "status": 404
+        },
+        {
+          "path": "/api/payment-gateway-adapter/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "components": 3,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/bank-sync-service",
+          "status": 404
+        },
+        {
+          "path": "/api/bank-sync-service/",
+          "status": 404
+        },
+        {
+          "path": "/api/categorisation-api",
+          "status": 404
+        },
+        {
+          "path": "/api/categorisation-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-011",
+      "title": "Personal Portfolio Site",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/contact-form-handler",
+          "status": 404
+        },
+        {
+          "path": "/api/contact-form-handler/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-012",
+      "title": "IoT Sensor Dashboard",
+      "components": 3,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/ingest-api",
+          "status": 404
+        },
+        {
+          "path": "/api/ingest-api/",
+          "status": 404
+        },
+        {
+          "path": "/api/alerting-service",
+          "status": 404
+        },
+        {
+          "path": "/api/alerting-service/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-016",
+      "title": "Event Ticketing",
+      "components": 3,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/ticketing-api",
+          "status": 404
+        },
+        {
+          "path": "/api/ticketing-api/",
+          "status": 404
+        },
+        {
+          "path": "/api/email-delivery-service",
+          "status": 404
+        },
+        {
+          "path": "/api/email-delivery-service/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-017",
+      "title": "Fitness Tracker With Friend Feed",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/workouts-api",
+          "status": 404
+        },
+        {
+          "path": "/api/workouts-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-020",
+      "title": "Shipment Tracking Page",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/tracking-api",
+          "status": 404
+        },
+        {
+          "path": "/api/tracking-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-023",
+      "title": "Smart Home Control App",
+      "components": 3,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/device-control-api",
+          "status": 404
+        },
+        {
+          "path": "/api/device-control-api/",
+          "status": 404
+        },
+        {
+          "path": "/api/scheduler-service",
+          "status": 200
+        },
+        {
+          "path": "/api/scheduler-service/",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-024",
+      "title": "Insurance Claims Portal",
+      "components": 3,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/claims-api",
+          "status": 400
+        },
+        {
+          "path": "/api/claims-api/",
+          "status": 400
+        },
+        {
+          "path": "/api/decision-service",
+          "status": 404
+        },
+        {
+          "path": "/api/decision-service/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-025",
+      "title": "Farm Management App",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/farm-api",
+          "status": 404
+        },
+        {
+          "path": "/api/farm-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-027",
+      "title": "Car Rental Booking",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/rentals-api",
+          "status": 404
+        },
+        {
+          "path": "/api/rentals-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-030",
+      "title": "CI/CD Status Dashboard",
+      "components": 2,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/build-status-api",
+          "status": 404
+        },
+        {
+          "path": "/api/build-status-api/",
+          "status": 404
+        },
+        {
+          "path": "/api/slack-notifier",
+          "status": 404
+        },
+        {
+          "path": "/api/slack-notifier/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-031",
+      "title": "Rec League Manager",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/league-api",
+          "status": 404
+        },
+        {
+          "path": "/api/league-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-032",
+      "title": "Restaurant Reservations",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/reservations-api",
+          "status": 200
+        },
+        {
+          "path": "/api/reservations-api/",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-034",
+      "title": "Commuter Carpooling",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/carpool-api",
+          "status": 404
+        },
+        {
+          "path": "/api/carpool-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-035",
+      "title": "Language Learning App",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/learning-api",
+          "status": 404
+        },
+        {
+          "path": "/api/learning-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-036",
+      "title": "Gym Membership System",
+      "components": 3,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/check-in-api",
+          "status": 404
+        },
+        {
+          "path": "/api/check-in-api/",
+          "status": 404
+        },
+        {
+          "path": "/api/billing-service",
+          "status": 404
+        },
+        {
+          "path": "/api/billing-service/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-037",
+      "title": "Therapy Session Booking",
+      "components": 2,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/sessions-api",
+          "status": 200
+        },
+        {
+          "path": "/api/sessions-api/",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-038",
+      "title": "Warehouse Inventory System",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/inventory-api",
+          "status": 404
+        },
+        {
+          "path": "/api/inventory-api/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-040",
+      "title": "Expense Reimbursement Tool",
+      "components": 3,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/expenses-api",
+          "status": 200
+        },
+        {
+          "path": "/api/expenses-api/",
+          "status": 200
+        },
+        {
+          "path": "/api/payout-queue-service",
+          "status": 200
+        },
+        {
+          "path": "/api/payout-queue-service/",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-045",
+      "title": "Volunteer Coordination Tool",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/shifts-api",
+          "status": 200
+        },
+        {
+          "path": "/api/shifts-api/",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-046",
+      "title": "Timesheet and Payroll Tracker",
+      "components": 3,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/timesheets-api",
+          "status": 404
+        },
+        {
+          "path": "/api/timesheets-api/",
+          "status": 404
+        },
+        {
+          "path": "/api/payroll-export-service",
+          "status": 404
+        },
+        {
+          "path": "/api/payroll-export-service/",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "sessionId": "session-gold-047",
+      "title": "Office Parking Reservations",
+      "components": 1,
+      "C": true,
+      "reasons": [],
+      "error": null,
+      "buildOutput": null,
+      "routes": [
+        {
+          "path": "/api/parking-api",
+          "status": 404
+        },
+        {
+          "path": "/api/parking-api/",
+          "status": 404
+        }
+      ]
+    }
+  ]
+}

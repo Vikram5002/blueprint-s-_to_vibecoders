@@ -30,3 +30,189 @@ A  session-gold-006 backend/src/routes/orders-api.ts
 provider unavailable at session-gold-006 backend/src/routes/payment-gateway-adapter.ts: daily free-tier quota exhausted (GenerateRequestsPerDayPerProjectPerModel-FreeTier). This resets at midnight Pacific; retrying now cannot help. (all 7 configured key(s) exhausted)
 Stopping without recording it. Rerun the same command later; finished work is kept and skipped.
 exit 3
+candidate: gemini:gemini-3.5-flash; reference projects: 26; scratch: capture\code\work\eval-gemini
+[gemini] using API key 1/7
+(node:19160) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+A  session-gold-002 backend/src/routes/boards-api.ts
+[gemini] using API key 1/7
+C  session-gold-002 whole project
+[gemini] using API key 1/7
+A  session-gold-003 backend/src/routes/weather-api.ts
+[gemini] using API key 1/7
+C  session-gold-003 whole project
+[gemini] using API key 1/7
+A  session-gold-006 backend/src/routes/catalog-api.ts
+[gemini] using API key 1/7
+A  session-gold-006 backend/src/routes/orders-api.ts
+[gemini] using API key 1/7
+A  session-gold-006 backend/src/routes/payment-gateway-adapter.ts
+[gemini] using API key 1/7
+A  session-gold-006 backend/src/middleware/admin-only-write-guard.ts
+[gemini] using API key 1/7
+[gemini] using API key 1/7
+[gemini] using API key 1/7
+[gemini] using API key 1/7
+C  session-gold-006 whole project
+[gemini] using API key 1/7
+A  session-gold-010 backend/src/routes/bank-sync-service.ts
+[gemini] using API key 1/7
+A  session-gold-010 backend/src/routes/categorisation-api.ts
+[gemini] using API key 1/7
+A  session-gold-010 backend/src/middleware/credential-encryption.ts
+[gemini] using API key 1/7
+[gemini] using API key 1/7
+[gemini] using API key 1/7
+C  session-gold-010 whole project
+[gemini] using API key 1/7
+A  session-gold-011 backend/src/routes/contact-form-handler.ts
+[gemini] using API key 1/7
+C  session-gold-011 whole project
+[gemini] using API key 1/7
+A  session-gold-012 backend/src/routes/ingest-api.ts
+[gemini] using API key 1/7
+[gemini] key 1/7 exhausted (daily quota) - rotating to key 2/7
+[gemini] using API key 2/7
+A  session-gold-012 backend/src/routes/alerting-service.ts
+[gemini] using API key 2/7
+A  session-gold-012 backend/src/middleware/device-api-key-check.ts
+[gemini] using API key 2/7
+[gemini] using API key 2/7
+[gemini] using API key 2/7
+C  session-gold-012 whole project
+[gemini] using API key 2/7
+A  session-gold-016 backend/src/routes/ticketing-api.ts
+[gemini] using API key 2/7
+A  session-gold-016 backend/src/routes/email-delivery-service.ts
+[gemini] using API key 2/7
+A  session-gold-016 backend/src/middleware/oversell-guard.ts
+[gemini] using API key 2/7
+[gemini] using API key 2/7
+[gemini] using API key 2/7
+C  session-gold-016 whole project
+[gemini] using API key 2/7
+A  session-gold-017 backend/src/routes/workouts-api.ts
+[gemini] using API key 2/7
+C  session-gold-017 whole project
+[gemini] using API key 2/7
+A  session-gold-020 backend/src/routes/tracking-api.ts
+[gemini] using API key 2/7
+C  session-gold-020 whole project
+[gemini] using API key 2/7
+A  session-gold-023 backend/src/routes/device-control-api.ts
+[gemini] using API key 2/7
+A  session-gold-023 backend/src/routes/scheduler-service.ts
+[gemini] using API key 2/7
+A  session-gold-023 backend/src/middleware/owner-only-device-control.ts
+[gemini] using API key 2/7
+[gemini] using API key 2/7
+[gemini] using API key 2/7
+[gemini] key 2/7 exhausted (daily quota) - rotating to key 3/7
+[gemini] using API key 3/7
+C  session-gold-023 whole project
+[gemini] using API key 3/7
+A  session-gold-024 backend/src/routes/claims-api.ts
+[gemini] using API key 3/7
+A  session-gold-024 backend/src/routes/decision-service.ts
+[gemini] using API key 3/7
+A  session-gold-024 backend/src/middleware/reason-required-guard.ts
+[gemini] using API key 3/7
+[gemini] using API key 3/7
+[gemini] using API key 3/7
+C  session-gold-024 whole project
+[gemini] using API key 3/7
+A  session-gold-025 backend/src/routes/farm-api.ts
+[gemini] using API key 3/7
+C  session-gold-025 whole project
+[gemini] using API key 3/7
+A  session-gold-027 backend/src/routes/rentals-api.ts
+[gemini] using API key 3/7
+C  session-gold-027 whole project
+[gemini] using API key 3/7
+A  session-gold-030 backend/src/routes/build-status-api.ts
+[gemini] using API key 3/7
+A  session-gold-030 backend/src/routes/slack-notifier.ts
+[gemini] using API key 3/7
+[gemini] using API key 3/7
+C  session-gold-030 whole project
+[gemini] using API key 3/7
+A  session-gold-031 backend/src/routes/league-api.ts
+[gemini] using API key 3/7
+C  session-gold-031 whole project
+[gemini] using API key 3/7
+A  session-gold-032 backend/src/routes/reservations-api.ts
+[gemini] using API key 3/7
+C  session-gold-032 whole project
+[gemini] using API key 3/7
+A  session-gold-034 backend/src/routes/carpool-api.ts
+[gemini] using API key 3/7
+C  session-gold-034 whole project
+[gemini] using API key 3/7
+[gemini] key 3/7 exhausted (daily quota) - rotating to key 4/7
+[gemini] using API key 4/7
+[gemini] key 4/7 exhausted (daily quota) - rotating to key 5/7
+[gemini] using API key 5/7
+A  session-gold-035 backend/src/routes/learning-api.ts
+[gemini] using API key 5/7
+C  session-gold-035 whole project
+[gemini] using API key 5/7
+A  session-gold-036 backend/src/routes/check-in-api.ts
+[gemini] using API key 5/7
+A  session-gold-036 backend/src/routes/billing-service.ts
+[gemini] using API key 5/7
+A  session-gold-036 backend/src/middleware/expiry-guard.ts
+[gemini] using API key 5/7
+[gemini] using API key 5/7
+[gemini] using API key 5/7
+C  session-gold-036 whole project
+[gemini] using API key 5/7
+A  session-gold-037 backend/src/routes/sessions-api.ts
+[gemini] using API key 5/7
+A  session-gold-037 backend/src/middleware/note-privacy-guard.ts
+[gemini] using API key 5/7
+[gemini] using API key 5/7
+C  session-gold-037 whole project
+[gemini] using API key 5/7
+A  session-gold-038 backend/src/routes/inventory-api.ts
+[gemini] using API key 5/7
+C  session-gold-038 whole project
+[gemini] using API key 5/7
+A  session-gold-040 backend/src/routes/expenses-api.ts
+[gemini] using API key 5/7
+A  session-gold-040 backend/src/routes/payout-queue-service.ts
+[gemini] using API key 5/7
+A  session-gold-040 backend/src/middleware/manager-scoped-approval.ts
+[gemini] using API key 5/7
+[gemini] using API key 5/7
+[gemini] using API key 5/7
+[gemini] key 5/7 exhausted (daily quota) - rotating to key 6/7
+[gemini] using API key 6/7
+C  session-gold-040 whole project
+[gemini] using API key 6/7
+A  session-gold-045 backend/src/routes/shifts-api.ts
+[gemini] using API key 6/7
+C  session-gold-045 whole project
+[gemini] using API key 6/7
+A  session-gold-046 backend/src/routes/timesheets-api.ts
+[gemini] using API key 6/7
+A  session-gold-046 backend/src/routes/payroll-export-service.ts
+[gemini] using API key 6/7
+A  session-gold-046 backend/src/middleware/approved-only-payroll-guard.ts
+[gemini] using API key 6/7
+[gemini] using API key 6/7
+[gemini] using API key 6/7
+C  session-gold-046 whole project
+[gemini] using API key 6/7
+A  session-gold-047 backend/src/routes/parking-api.ts
+[gemini] using API key 6/7
+C  session-gold-047 whole project
+
+--- results ---
+candidate: gemini:gemini-3.5-flash
+scope           n        A       B    D(A)    D(B)
+all            46  100.0% 100.0% 100.0% 100.0%
+backend        36  100.0% 100.0% 100.0% 100.0%
+security       10  100.0% 100.0% 100.0% 100.0%
+C (projects)   25  100.0%
+
+written to training/eval/code/gemini.json
