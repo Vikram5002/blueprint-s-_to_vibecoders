@@ -15,7 +15,9 @@ summary.json records it.
 Usage (on the MSI):
     modal run training/code/modal_train.py                 # train, then download
     modal run training/code/modal_train.py --resume-run code_modal_<ts>
+    VIBE_CODE_DATASET=formatted-r2 modal run training/code/modal_train.py   # round 2
 """
+import os
 import subprocess
 import sys
 import time
@@ -37,7 +39,9 @@ image = (
     .pip_install("unsloth", "trl", "peft", "bitsandbytes", "accelerate", "datasets")
     .env({"HF_HOME": HF_DIR})
     .add_local_file(REPO_LOCAL / "training" / "code" / "train_code.py", "/repo/training/code/train_code.py")
-    .add_local_file(REPO_LOCAL / "training" / "code" / "formatted" / "dataset.jsonl", "/repo/training/code/formatted/dataset.jsonl")
+    # VIBE_CODE_DATASET picks the formatted folder (round 2: formatted-r2); it is
+    # always mounted at the path train_code.py reads by default.
+    .add_local_file(REPO_LOCAL / "training" / "code" / os.environ.get("VIBE_CODE_DATASET", "formatted") / "dataset.jsonl", "/repo/training/code/formatted/dataset.jsonl")
     .add_local_file(REPO_LOCAL / "pdsf" / "local_inference_server.py", "/repo/pdsf/local_inference_server.py")
 )
 
