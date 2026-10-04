@@ -1,0 +1,20 @@
+# Never into an image: secrets, local state, data, build output.
+.env
+.env.*
+**/.vibe
+**/node_modules
+**/dist
+src/server/static
+generated
+capture
+training
+pdsf
+presentations
+coverage
+ui/test-results
+ui/playwright-report
+vscode-extension
+desktop
+.git
+*.vsix
+*.zip
