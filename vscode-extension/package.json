@@ -1,0 +1,153 @@
+{
+  "name": "vibecoder",
+  "displayName": "VibeCoder",
+  "description": "Drop a file, see which architecture rules it breaks, review a reworked version as a diff, and keep or undo it.",
+  "version": "0.1.0",
+  "publisher": "vibecoder",
+  "private": true,
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Vikram5002/blueprint-s-_to_vibecoders"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "vibecoder",
+          "title": "VibeCoder",
+          "icon": "media/vibecoder.svg"
+        }
+      ]
+    },
+    "views": {
+      "vibecoder": [
+        {
+          "id": "vibecoder.files",
+          "name": "Rework",
+          "icon": "media/vibecoder.svg"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "vibecoder.files",
+        "contents": "Drag files from the Explorer and drop them here.\nVibeCoder shows which architecture rules each file breaks, proposes a fixed version as a diff, and lets you keep or undo it.\n[Rework the open file](command:vibecoder.reworkActiveFile)\n[Settings](command:workbench.action.openSettings?%5B%22vibecoder%22%5D)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "vibecoder.reworkFile",
+        "title": "VibeCoder: Rework this file",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "vibecoder.reworkActiveFile",
+        "title": "VibeCoder: Rework the open file",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "vibecoder.undo",
+        "title": "VibeCoder: Undo this change",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "vibecoder.undoLast",
+        "title": "VibeCoder: Undo the last kept change"
+      },
+      {
+        "command": "vibecoder.restartServer",
+        "title": "VibeCoder: Restart the analysis server"
+      },
+      {
+        "command": "vibecoder.clearHistory",
+        "title": "VibeCoder: Clear the list",
+        "icon": "$(clear-all)"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "vibecoder.reworkFile",
+          "when": "!explorerResourceIsFolder",
+          "group": "vibecoder"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "vibecoder.reworkActiveFile",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "vibecoder.clearHistory",
+          "when": "view == vibecoder.files",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "vibecoder.undo",
+          "when": "view == vibecoder.files && viewItem == kept",
+          "group": "inline"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "vibecoder.reworkFile",
+          "when": "false"
+        },
+        {
+          "command": "vibecoder.undo",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "VibeCoder",
+      "properties": {
+        "vibecoder.serverUrl": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Address of a running VibeCoder server (for example a hosted one). Leave empty to start a local server for this workspace automatically."
+        },
+        "vibecoder.cliCommand": {
+          "type": "string",
+          "default": "npx --yes vibe-blueprint",
+          "markdownDescription": "Command that starts the local server. For a copy of the repository use `node <path-to-repo>/dist/cli.js`."
+        },
+        "vibecoder.accessCode": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Access code of a hosted server (hosted mode only)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "watch": "tsc -p . --watch",
+    "test": "vitest run",
+    "package": "npm run build && npx --yes @vscode/vsce package --no-dependencies --allow-missing-repository",
+    "test:e2e": "npm run build && node test/run.cjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/vscode": "~1.90.0",
+    "@vscode/test-electron": "^3.1.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}
