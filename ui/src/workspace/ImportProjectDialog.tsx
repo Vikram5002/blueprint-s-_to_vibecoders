@@ -147,9 +147,21 @@ export function ImportProjectDialog({ onClose }: { readonly onClose: () => void 
         )}
         {state.kind === 'importing' && <p className="mt-3 text-xs text-slate-300">{state.phase}</p>}
         {state.kind === 'error' && (
-          <p data-testid="import-error" className="mt-3 text-xs text-red-300">
-            {state.message}
-          </p>
+          <div className="mt-3">
+            <p data-testid="import-error" className="text-xs text-red-300">
+              {state.message}
+            </p>
+            {/* Mirrors NOT_A_VIBECODER_PROJECT (src/generate/import-project.ts); the UI cannot import src/. */}
+            {state.message.startsWith('This folder is not a VibeCoder project') && (
+              <a
+                href="/"
+                data-testid="open-analysis-view"
+                className="mt-2 inline-block rounded-md border border-sky-500/40 px-3 py-1.5 text-xs text-sky-200 hover:bg-sky-500/10"
+              >
+                Open the Analysis view
+              </a>
+            )}
+          </div>
         )}
         <div className="mt-4 flex justify-end gap-2">
           <button

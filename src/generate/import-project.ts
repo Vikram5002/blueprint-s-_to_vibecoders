@@ -78,6 +78,9 @@ export interface ImportIdentity {
   readonly prompt: string;
 }
 
+/** How a refused import begins - the UI keys its "Open the Analysis view" button on it. */
+export const NOT_A_VIBECODER_PROJECT = 'This folder is not a VibeCoder project';
+
 export function schemaFromProjectFiles(files: readonly GeneratedFile[], identity: ImportIdentity): Result<ImportedPlan, string> {
   const components: Record<DomainName, Component[]> = { frontend: [], backend: [], database: [], security: [] };
   for (const file of files) {
@@ -95,8 +98,10 @@ export function schemaFromProjectFiles(files: readonly GeneratedFile[], identity
     return {
       ok: false,
       error:
-        'no components found - this importer reads projects in this tool\'s layout (backend/src/routes, backend/src/middleware, ' +
-        'backend/src/db, frontend/src/pages). A folder with a different structure cannot be mapped without guessing.',
+        `${NOT_A_VIBECODER_PROJECT} - Import only reopens projects this tool generated (backend/src/routes, ` +
+        'backend/src/middleware, backend/src/db, frontend/src/pages); a folder with a different structure cannot be mapped ' +
+        'without guessing. To analyse any TypeScript, JavaScript, Python or PHP project, open the Analysis view and choose ' +
+        'this folder with "Change project".',
     };
   }
 

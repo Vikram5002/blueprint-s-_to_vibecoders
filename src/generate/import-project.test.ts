@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mergePackageJson, readProjectFiles, schemaFromProjectFiles } from './import-project.js';
+import { mergePackageJson, NOT_A_VIBECODER_PROJECT, readProjectFiles, schemaFromProjectFiles } from './import-project.js';
 
 const identity = { sessionId: 'import-test', title: 'Imported shop', prompt: 'Imported from a folder' };
 
@@ -61,7 +61,11 @@ describe('import a hand-continued project', () => {
   it('refuses a folder that is not in this layout, and says why', () => {
     const result = schemaFromProjectFiles([{ path: 'src/app.py', contents: 'print(1)' }], identity);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toContain('backend/src/routes');
+    if (!result.ok) {
+      expect(result.error.startsWith(NOT_A_VIBECODER_PROJECT)).toBe(true);
+      expect(result.error).toContain('backend/src/routes');
+      expect(result.error).toContain('Analysis view');
+    }
   });
 });
 
