@@ -7,7 +7,13 @@ export const config = tseslint.config(
     // on purpose. They are inputs to tests, never compiled or linted.
     ignores: [
       'dist/**',
-      'node_modules/**',
+      '**/node_modules/**',
+      // Client packages' build output: the unpacked desktop app, its packed
+      // server, the extension's compiled code and its test copy of VS Code.
+      'desktop/release/**',
+      'desktop/vendor/**',
+      'vscode-extension/dist/**',
+      'vscode-extension/.vscode-test/**',
       // Working directory: the database, caches, and — during a corpus run —
       // full clones of other people's repositories. Linting those reports
       // thousands of errors in code this project does not own, and turns
@@ -22,6 +28,7 @@ export const config = tseslint.config(
       // scripts (scripts/capture-code-batch.mjs, eval-code-model.mjs).
       'capture/code/work/**',
       'capture/code/gold-reference/**',
+      'capture/code/gold-reference-qwen3/**',
       'ui/**',
       'coverage/**',
       'src/parser/fixtures/**',
@@ -133,6 +140,30 @@ export const config = tseslint.config(
         fetch: 'readonly',
         AbortSignal: 'readonly',
       },
+    },
+  },
+  {
+    // CommonJS client packages: the desktop app (Electron main process) and
+    // the VS Code extension's end-to-end harness. Electron and VS Code load
+    // these with require(); they are clients, not part of src/.
+    files: ['desktop/**/*.cjs', 'vscode-extension/test/**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        require: 'readonly',
+        module: 'writable',
+        __dirname: 'readonly',
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        URL: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        fetch: 'readonly',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
 );
