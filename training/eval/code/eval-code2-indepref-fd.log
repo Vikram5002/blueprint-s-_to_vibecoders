@@ -1,0 +1,113 @@
+candidate: local:code2; reference projects: 23; scratch: capture\code\work\eval-qwen-coder-7b-code2-indepref-frontend-database
+(node:26916) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerab(node:30116) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, a B session-gold-002 backend/src/db/boards-table.ts  A:build-failed
+A  session-gold-002 frontend/src/pages/board-view.tsx
+A  session-gold-003 frontend/src/pages/forecast-view.tsx
+ A:build-failed
+A  session-gold-002 frontend/src/pages/board-view.tsx
+A  session-gold-003 frontend/src/pages/forecast-view.tsx
+boards-table.ts'
+    at rmSync (node:fs:1236:18)
+    at cloneProject (file:///D:/project%20blue%20print/scripts/eval-code-model.mjs:143:3)
+    at evaluate (file:///D:/project%20blue%20print/scripts/eval-code-model.mjs:299:18)
+    at async file:///D:/project%20blue%20print/scripts/eval-code-model.mjs:422:3 {
+  errno: 1,
+  code: 'EPERM',
+  path: '\\\\?\\D:\\project blue print\\capture\\code\\work\\eval-qwen-coder-7b-code2-indepref-frontend-database\\session-gold-002\\backend_src_db_boards-table.ts',
+  syscall: 'rm'
+}
+
+Node.js v24.11.0
+candidate: local:code2; reference projects: 23; scratch: capture\code\work\eval-qwen-coder-7b-code2-indepref-frontend-database
+resuming: 1 component(s), 0 project(s) already done
+(node:20724) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only conc(node:7508) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as tA  session-gold-003 frontend/src/pages/forecast-view.tsx
+de --trace-deprecation ...` to show where the warning was created)
+A  session-gold-003 frontend/src/pages/forecast-view.tsx
+candidate: local:code2; reference projects: 23; scratch: capture\code\work\eval-qwen-coder-7b-code2-indepref-frontend-database
+resuming: 3 component(s), 0 project(s) already done
+--- clean restart 13:07:19
+candidate: local:code2; reference projects: 23; scratch: capture\code\work\eval-qwen-coder-7b-code2-indepref-frontend-database
+(node:7700) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ B session-gold-002 backend/src/db/boards-table.ts  A:build-failed
+A  session-gold-002 frontend/src/pages/board-view.tsx
+A  session-gold-003 frontend/src/pages/forecast-view.tsx
+!! session-gold-004 frontend/src/pages/calculator-widget.tsx  A:build-failed  B:build-failed
+ B session-gold-006 backend/src/db/products-table.ts  A:build-failed
+ B session-gold-006 backend/src/db/orders-table.ts  A:build-failed
+A  session-gold-006 frontend/src/pages/product-catalog.tsx
+A  session-gold-006 frontend/src/pages/cart-checkout.tsx
+!! session-gold-006 frontend/src/pages/admin-product-panel.tsx  A:build-failed  B:build-failed
+ B session-gold-008 backend/src/db/refund-log-table.ts  A:build-failed
+A  session-gold-008 frontend/src/pages/customer-lookup.tsx
+A  session-gold-008 frontend/src/pages/refund-panel.tsx
+ B session-gold-010 backend/src/db/transactions-table.ts  A:build-failed
+ B session-gold-010 backend/src/db/bank-credentials-table.ts  A:build-failed
+A  session-gold-010 frontend/src/pages/transaction-list.tsx
+!! session-gold-010 frontend/src/pages/budget-overview.tsx: generation failed (unparseable-json)
+A  session-gold-011 frontend/src/pages/about-projects-pages.tsx
+A  session-gold-011 frontend/src/pages/contact-form.tsx
+!! session-gold-015 backend/src/db/postings-table.ts  A:build-failed  B:build-failed
+ B session-gold-015 backend/src/db/applications-table.ts  A:build-failed
+A  session-gold-015 frontend/src/pages/job-listings-page.tsx
+A  session-gold-015 frontend/src/pages/application-form.tsx
+A  session-gold-015 frontend/src/pages/applicant-tracker.tsx
+ B session-gold-017 backend/src/db/workouts-table.ts  A:build-failed
+ B session-gold-017 backend/src/db/follows-table.ts  A:build-failed
+A  session-gold-017 frontend/src/pages/workout-log.tsx
+A  session-gold-017 frontend/src/pages/friend-feed.tsx
+A  session-gold-020 backend/src/db/shipment-events-table.ts
+A  session-gold-020 frontend/src/pages/tracking-lookup.tsx
+ B session-gold-023 backend/src/db/devices-table.ts  A:build-failed
+ B session-gold-023 backend/src/db/schedules-table.ts  A:build-failed
+A  session-gold-023 frontend/src/pages/device-control-panel.tsx
+ B session-gold-023 frontend/src/pages/schedule-builder.tsx  A:build-failed
+ B session-gold-025 backend/src/db/fields-table.ts  A:build-failed
+ B session-gold-025 backend/src/db/applications-table.ts  A:build-failed
+A  session-gold-025 frontend/src/pages/field-map-view.tsx
+ B session-gold-025 frontend/src/pages/application-log.tsx  A:build-failed
+ B session-gold-026 backend/src/db/books-table.ts  A:build-failed
+ B session-gold-026 backend/src/db/checkouts-table.ts  A:build-failed
+A  session-gold-026 frontend/src/pages/catalogue-search.tsx
+A  session-gold-026 frontend/src/pages/staff-inventory-panel.tsx
+ B session-gold-029 backend/src/db/polls-table.ts  A:build-failed
+A  session-gold-029 frontend/src/pages/poll-builder.tsx
+A  session-gold-029 frontend/src/pages/results-view.tsx
+ B session-gold-030 backend/src/db/builds-table.ts  A:build-failed
+A  session-gold-030 frontend/src/pages/pipeline-status-grid.tsx
+!! session-gold-032 backend/src/db/reservations-table.ts  A:build-failed  B:build-failed
+ B session-gold-032 frontend/src/pages/booking-widget.tsx  A:build-failed
+A  session-gold-032 frontend/src/pages/host-stand-view.tsx
+ B session-gold-033 backend/src/db/pets-table.ts  A:build-failed
+ B session-gold-033 backend/src/db/visit-records-table.ts  A:build-failed
+ B session-gold-033 frontend/src/pages/booking-calendar.tsx  A:build-failed
+A  session-gold-033 frontend/src/pages/vet-appointment-queue.tsx
+ B session-gold-036 backend/src/db/members-table.ts  A:build-failed
+!! session-gold-036 backend/src/db/check-ins-table.ts  A:build-failed  B:build-failed
+A  session-gold-036 frontend/src/pages/check-in-scanner.tsx
+A  session-gold-036 frontend/src/pages/membership-admin-panel.tsx
+ B session-gold-038 backend/src/db/stock-levels-table.ts  A:build-failed
+!! session-gold-038 backend/src/db/stock-movements-table.ts  A:build-failed  B:build-failed
+A  session-gold-038 frontend/src/pages/inventory-grid.tsx
+A  session-gold-038 frontend/src/pages/reorder-queue.tsx
+ B session-gold-040 backend/src/db/expenses-table.ts  A:build-failed
+A  session-gold-040 frontend/src/pages/expense-submission-form.tsx
+A  session-gold-040 frontend/src/pages/manager-approval-queue.tsx
+ B session-gold-045 backend/src/db/shifts-table.ts  A:build-failed
+ B session-gold-045 backend/src/db/signups-table.ts  A:build-failed
+A  session-gold-045 frontend/src/pages/shift-board.tsx
+A  session-gold-045 frontend/src/pages/coordinator-shift-panel.tsx
+ B session-gold-046 backend/src/db/clock-events-table.ts  A:build-failed
+A  session-gold-046 frontend/src/pages/clock-in-out-widget.tsx
+A  session-gold-046 frontend/src/pages/manager-approval-view.tsx
+ B session-gold-047 backend/src/db/reservations-table.ts  A:build-failed
+A  session-gold-047 frontend/src/pages/spot-reservation-view.tsx
+
+--- results ---
+candidate: local:code2
+scope           n        A       B    D(A)    D(B)
+all            73   49.3%  90.4%   0.0%  49.3%
+frontend       42   83.3%  92.9%   0.0%  83.3%
+database       31    3.2%  87.1%   0.0%   3.2%
+C (projects)    0     -
+
+written to training/eval/code/qwen-coder-7b-code2-indepref-frontend-database.json

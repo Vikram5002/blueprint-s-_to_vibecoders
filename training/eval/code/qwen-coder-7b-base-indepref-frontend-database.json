@@ -1,0 +1,1512 @@
+{
+  "candidate": "local:base",
+  "candidateModel": "base",
+  "reference": "capture/code/gold-reference-qwen3",
+  "referenceProjects": 23,
+  "nodeModulesSharing": "junction",
+  "evaluatedAt": "2026-10-04T05:31:59.493Z",
+  "rates": {
+    "n": 73,
+    "A": 0.2191780821917808,
+    "B": 0.4520547945205479,
+    "D_A": 0,
+    "D_B": 0.2191780821917808,
+    "projects": 0,
+    "C": null
+  },
+  "byDomain": {
+    "frontend": {
+      "n": 42,
+      "A": 0.35714285714285715,
+      "B": 0.7142857142857143,
+      "D_A": 0,
+      "D_B": 0.35714285714285715
+    },
+    "database": {
+      "n": 31,
+      "A": 0.03225806451612903,
+      "B": 0.0967741935483871,
+      "D_A": 0,
+      "D_B": 0.03225806451612903
+    }
+  },
+  "rows": [
+    {
+      "sessionId": "session-gold-002",
+      "title": "Board App (Unspecified Differentiator)",
+      "component": "boards table",
+      "domain": "database",
+      "targetPath": "backend/src/db/boards-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('boards.db');\n\ninterface Board {\n  id: number;\n  title: string;\n}\n\ninterface Card {\n  id: number;\n  boardId: number;\n  content: string;\n}\n\nfunction createBoard(title: string): void {\n  const sql = 'INSERT INTO boards (title) VALUES (?)';\n  db.run(sql, [title]);\n}\n\nfunction getBoards(): Board[] {\n  const sql = 'SELECT * FROM boards';\n  const stmt = db.prepare(sql);\n  return stmt.all() as unknown as Board[];\n}\n\nfunction getCards(boardId: number): Card[] {\n  const sql = 'SELECT * FROM cards WHERE boardId = ?';\n  const stmt = db.prepare(sql);\n  return stmt.all([boardId]) as unknown as Card[];\n}\n\nfunction createCard(boardId: number, content: string): void {\n  const sql = 'INSERT INTO cards (boardId, content) VALUES (?, ?)';\n  db.run(sql, [boardId, content]);\n}\n\nexport { db, createBoard, getBoards, getCards, createCard };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/boards-table.ts(18,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/boards-table.ts(30,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/db/boards-table.ts(35,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/boards-api.ts(3,3): error TS2724: '\"../db/boards-table\"' has no exported member named 'getAllBoards'. Did you mean 'getBoards'?\r\nbackend/src/routes/boards-api.ts(4,3): error TS2305: Module '\"../db/boards-table\"' has no exported member 'getBoardById'.\r\nbackend/src/routes/boards-api.ts(5,3): error TS2305: Module '\"../db/boards-table\"' has no exported member 'getCardsByBoardId'.\r\nbackend/src/routes/boards-api.ts(6,3): error TS2305: Module '\"../db/boards-table\"' has no exported member 'insertBoard'.\r\nbackend/src/routes/boards-api.ts(7,3): error TS2305: Module '\"../db/boards-table\"' has no exported member 'insertCard'.\r\nbackend/src/routes/boards-api.ts(8,3): error TS2305: Module '\"../db/boards-table\"' has no exported member 'createBoardsTable'.\r\nbackend/src/routes/boards-api.ts(9,3): error TS2305: Module '\"../db/boards-table\"' has no exported member 'createCardsTable'.\r\n",
+      "repairRounds": 3,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/boards-table.ts(18,16): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/db/boards-table.ts(19,30): error TS2339: Property 'lastInsertRowid' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/boards-table.ts(33,27): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/db/boards-table.ts(39,16): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/db/boards-table.ts(40,30): error TS2339: Property 'lastInsertRowid' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/boards-api.ts(2,35): error TS2459: Module '\"../db/boards-table\"' declares 'db' locally, but it is not exported.\r\nbackend/src/routes/boards-api.ts(2,39): error TS2305: Module '\"../db/boards-table\"' has no exported member 'getBoardById'.\r\nbackend/src/routes/boards-api.ts(2,64): error TS2305: Module '\"../db/boards-table\"' has no exported member 'getCardsByBoardId'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-002",
+      "title": "Board App (Unspecified Differentiator)",
+      "component": "Board View",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/board-view.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface Board {\n  id: number;\n  title: string;\n}\n\ninterface Card {\n  id: number;\n  title: string;\n  description: string;\n  boardId: number;\n}\n\nconst fetchBoards = async (): Promise<Board[]> => {\n  const response = await fetch(\"/api/boards-api/boards\");\n  if (!response.ok) {\n    throw new Error(\"Failed to fetch boards\");\n  }\n  return await response.json();\n};\n\nconst fetchCardsByBoardId = async (boardId: number): Promise<Card[]> => {\n  const response = await fetch(`/api/boards-api/boards/${boardId}/cards`);\n  if (!response.ok) {\n    throw new Error(\"Failed to fetch cards\");\n  }\n  return await response.json();\n};\n\nconst BoardView: FC = () => {\n  const [boards, setBoards] = React.useState<Board[]>([]);\n  const [loading, setLoading] = React.useState<boolean>(true);\n  const [error, setError] = React.useState<string | null>(null);\n\n  React.useEffect(() => {\n    const loadBoards = async () => {\n      try {\n        const fetchedBoards = await fetchBoards();\n        setBoards(fetchedBoards);\n      } catch (err) {\n        setError(err.message);\n      } finally {\n        setLoading(false);\n      }\n    };\n\n    loadBoards();\n  }, []);\n\n  if (loading) {\n    return <div>Loading...</div>;\n  }\n\n  if (error) {\n    return <div>Error: {error}</div>;\n  }\n\n  return (\n    <div>\n      {boards.map((board) => (\n        <div key={board.id} style={{ border: '1px solid black', padding: '10px' }}>\n          <h2>{board.title}</h2>\n          <button onClick={() => fetchCardsByBoardId(board.id)}>Load Cards</button>\n        </div>\n      ))}\n    </div>\n  );\n};\n\nexport { BoardView };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/board-view.tsx(32,31): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/board-view.tsx(33,33): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/board-view.tsx(34,29): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/board-view.tsx(36,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/board-view.tsx(42,18): error TS18046: 'err' is of type 'unknown'.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/board-view.tsx(32,31): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/board-view.tsx(33,29): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/board-view.tsx(34,29): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/board-view.tsx(36,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/board-view.tsx(82,41): error TS2339: Property 'boardId' does not exist on type 'EventTarget'.\r\nfrontend/src/pages/board-view.tsx(83,36): error TS2339: Property 'cardTitle' does not exist on type 'EventTarget'.\r\nfrontend/src/pages/board-view.tsx(84,42): error TS2339: Property 'cardDescription' does not exist on type 'EventTarget'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-003",
+      "title": "Weather App",
+      "component": "Forecast View",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/forecast-view.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Forecast {\n  temperature: number;\n  condition: string;\n}\n\nconst ForecastView: FC = () => {\n  const fetchForecast = async (location: string) => {\n    try {\n      const response = await fetch(`/api/weather-api/forecast/${location}`);\n      if (!response.ok) {\n        throw new Error('Failed to fetch weather data');\n      }\n      const data: { forecast: Forecast[] } = await response.json();\n      return data.forecast;\n    } catch (error) {\n      console.error('Error fetching forecast:', error);\n      return [];\n    }\n  };\n\n  const displayForecast = async () => {\n    const location = 'New York'; // Example location\n    const forecast = await fetchForecast(location);\n    return (\n      <div>\n        <h1>Weather Forecast</h1>\n        <ul>\n          {forecast.map((day, index) => (\n            <li key={index}>Day {index + 1}: {day.temperature}°C, {day.condition}</li>\n          ))}\n        </ul>\n      </div>\n    );\n  };\n\n  return (\n    <div>{displayForecast()}</div>\n  );\n};\n\nexport { ForecastView };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/forecast-view.tsx(39,10): error TS2322: Type 'Promise<Element>' is not assignable to type 'ReactNode'.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/forecast-view.tsx(9,35): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/forecast-view.tsx(10,29): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/forecast-view.tsx(12,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n"
+    },
+    {
+      "sessionId": "session-gold-004",
+      "title": "Client-Only Calculator",
+      "component": "Calculator Widget",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/calculator-widget.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Button {\n  label: string;\n  onClick: () => void;\n}\n\nconst buttons: Button[] = [\n  { label: '7', onClick: () => {} },\n  { label: '8', onClick: () => {} },\n  { label: '9', onClick: () => {} },\n  { label: '/', onClick: () => {} },\n  { label: '4', onClick: () => {} },\n  { label: '5', onClick: () => {} },\n  { label: '6', onClick: () => {} },\n  { label: '*', onClick: () => {} },\n  { label: '1', onClick: () => {} },\n  { label: '2', onClick: () => {} },\n  { label: '3', onClick: () => {} },\n  { label: '-', onClick: () => {} },\n  { label: '0', onClick: () => {} },\n  { label: '.', onClick: () => {} },\n  { label: '=', onClick: () => {} },\n  { label: '+', onClick: () => {} }\n];\n\nconst CalculatorWidget: FC = () => {\n  const handleButtonClick = (label: string) => {\n    // Handle button click logic here\n  };\n\n  return (\n    <div className='calculator'>\n      <input type='text' readOnly />\n      <div className='buttons'>\n        {buttons.map((button, index) => (\n          <button key={index} onClick={button.onClick}>{button.label}</button>\n        ))}\n      </div>\n    </div>\n  );\n};\n\nexport { CalculatorWidget };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "products table",
+      "domain": "database",
+      "targetPath": "backend/src/db/products-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Product {\n  id: number;\n  name: string;\n  price: number;\n  stockCount: number;\n}\n\nconst db = new DatabaseSync('products.db');\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS products (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      name TEXT NOT NULL,\n      price REAL NOT NULL,\n      stockCount INTEGER NOT NULL\n    )`\n  );\n}\n\nfunction insertProduct(name: string, price: number, stockCount: number): number {\n  const stmt = db.prepare(\n    'INSERT INTO products (name, price, stockCount) VALUES (?, ?, ?)' as const\n  );\n  return stmt.run(name, price, stockCount).lastInsertRowid as number;\n}\n\nfunction getProductById(id: number): Product | null {\n  const stmt = db.prepare(\n    'SELECT * FROM products WHERE id = ?' as const\n  );\n  return stmt.get(id) as unknown as Product | null;\n}\n\nfunction getProducts(): Product[] {\n  const stmt = db.prepare('SELECT * FROM products' as const);\n  return stmt.all() as unknown as Product[];\n}\n\nfunction updateProduct(id: number, name: string, price: number, stockCount: number): boolean {\n  const stmt = db.prepare(\n    'UPDATE products SET name = ?, price = ?, stockCount = ? WHERE id = ?' as const\n  );\n  return stmt.run(name, price, stockCount, id).changes > 0;\n}\n\nfunction deleteProduct(id: number): boolean {\n  const stmt = db.prepare('DELETE FROM products WHERE id = ?' as const);\n  return stmt.run(id).changes > 0;\n}\n\nexport { db, createTable, insertProduct, getProductById, getProducts, updateProduct, deleteProduct };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/catalog-api.ts(3,3): error TS2724: '\"../db/products-table\"' has no exported member named 'getAllProducts'. Did you mean 'getProducts'?\r\nbackend/src/routes/orders-api.ts(23,17): error TS2551: Property 'stock_count' does not exist on type 'Product'. Did you mean 'stockCount'?\r\n",
+      "repairRounds": 3,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/catalog-api.ts(49,9): error TS2365: Operator '>' cannot be applied to types 'boolean' and 'number'.\r\nbackend/src/routes/catalog-api.ts(64,9): error TS2365: Operator '>' cannot be applied to types 'boolean' and 'number'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "orders table",
+      "domain": "database",
+      "targetPath": "backend/src/db/orders-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Order {\n  id: number;\n  customerId: number;\n  lineItems: string;\n  paymentStatus: string;\n}\n\nconst db = new DatabaseSync('orders.db');\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS orders (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      customerId INTEGER,\n      lineItems TEXT,\n      paymentStatus TEXT\n    )`\n  );\n}\n\nfunction insertOrder(order: Order): void {\n  db.run(\n    'INSERT INTO orders (customerId, lineItems, paymentStatus) VALUES (?, ?, ?)',\n    [order.customerId, order.lineItems, order.paymentStatus]\n  );\n}\n\nfunction getOrderById(id: number): Order | null {\n  const stmt = db.prepare('SELECT * FROM orders WHERE id = ?');\n  const result = stmt.get(id) as unknown as Order | null;\n  return result;\n}\n\nfunction getOrdersByCustomerId(customerId: number): Order[] {\n  const stmt = db.prepare('SELECT * FROM orders WHERE customerId = ?');\n  const results = stmt.all(customerId) as unknown as Order[];\n  return results;\n}\n\nfunction updatePaymentStatus(id: number, paymentStatus: string): void {\n  db.run(\n    'UPDATE orders SET paymentStatus = ? WHERE id = ?',\n    [paymentStatus, id]\n  );\n}\n\nfunction deleteOrder(id: number): void {\n  db.run('DELETE FROM orders WHERE id = ?', [id]);\n}\n\nexport { db, createTable, insertOrder, getOrderById, getOrdersByCustomerId, updatePaymentStatus, deleteOrder };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/orders-table.ts(24,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/orders-table.ts(43,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/orders-table.ts(50,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/orders-api.ts(31,5): error TS2561: Object literal may only specify known properties, but 'customer_id' does not exist in type 'Order'. Did you mean to write 'customerId'?\r\nbackend/src/routes/orders-api.ts(60,7): error TS2367: This comparison appears to be unintentional because the types 'void' and 'number' have no overlap.\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/orders-table.ts(14,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/orders-table.ts(20,27): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue> | undefined', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue> | undefined', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/db/orders-table.ts(26,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/orders-table.ts(31,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/orders-api.ts(7,13): error TS2769: No overload matches this call.\r\n  The last overload gave the following error.\r\n    Argument of type '(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>>, next: NextFunction) => void' is not assignable to parameter of type 'PathParams'.\r\nbackend/src/routes/orders-api.ts(11,49): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/routes/orders-api.ts(18,12): error TS2769: No overload matches this call.\r\n  The last overload gave the following error.\r\n    Argument of type '(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>>, next: NextFunction) => void' is not assignable to parameter of type 'PathParams'.\r\nbackend/src/routes/orders-api.ts(20,29): error TS2339: Property 'all' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/orders-api.ts(27,12): error TS2769: No overload matches this call.\r\n  The last overload gave the following error.\r\n    Argument of type '(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>>, next: NextFunction) => void' is not assignable to parameter of type 'PathParams'.\r\nbackend/src/routes/orders-api.ts(31,53): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/routes/orders-api.ts(38,15): error TS2769: No overload matches this call.\r\n  The last overload gave the following error.\r\n    Argument of type '(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>>, next: NextFunction) => void' is not assignable to parameter of type 'PathParams'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Product Catalog",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/product-catalog.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Product {\n  id: number;\n  name: string;\n  description: string;\n  price: number;\n  imageUrl: string;\n}\n\nconst fetchProducts = async (): Promise<Product[]> => {\n  const response = await fetch('/api/catalog-api/');\n  if (!response.ok) {\n    throw new Error('Failed to fetch products');\n  }\n  return await response.json();\n};\n\nconst ProductCatalog: FC = () => {\n  const [products, setProducts] = React.useState<Product[]>([]);\n\n  React.useEffect(() => {\n    fetchProducts()\n      .then(setProducts)\n      .catch(error => console.error('Error fetching products:', error));\n  }, []);\n\n  return (\n    <div>\n      <h1>Product Catalog</h1>\n      <ul>\n        {products.map(product => (\n          <li key={product.id}>\n            <img src={product.imageUrl} alt={product.name} />\n            <h2>{product.name}</h2>\n            <p>{product.description}</p>\n            <p>${product.price.toFixed(2)}</p>\n          </li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n\nexport { ProductCatalog };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/product-catalog.tsx(20,35): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/product-catalog.tsx(22,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/product-catalog.tsx(19,35): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/product-catalog.tsx(21,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n"
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Cart & Checkout",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/cart-checkout.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\nconst CartCheckout: FC = () => {\n  // Implement cart contents display and checkout flow here\n  // Collect payment information without exposing card details\n  // Use the provided API endpoints for order creation and payment processing\n  return (\n    <div>\n      {/* Cart items and checkout form */}\n    </div>\n  );\n};\n\nexport { CartCheckout };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-006",
+      "title": "Online Store",
+      "component": "Admin Product Panel",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/admin-product-panel.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Product {\n  id: number;\n  name: string;\n  description: string;\n  price: number;\n}\n\nconst fetchProducts = async (): Promise<Product[]> => {\n  const response = await fetch('/api/catalog-api/')\n  if (!response.ok) {\n    throw new Error('Failed to fetch products')\n  }\n  return await response.json()\n}\n\nconst fetchProductById = async (id: number): Promise<Product> => {\n  const response = await fetch(`/api/catalog-api/${id}`)\n  if (!response.ok) {\n    throw new Error('Failed to fetch product')\n  }\n  return await response.json()\n}\n\nconst createProduct = async (product: Omit<Product, 'id'>): Promise<Product> => {\n  const response = await fetch('/api/catalog-api/', {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json'\n    },\n    body: JSON.stringify(product)\n  })\n  if (!response.ok) {\n    throw new Error('Failed to create product')\n  }\n  return await response.json()\n}\n\nconst updateProduct = async (id: number, product: Partial<Product>): Promise<Product> => {\n  const response = await fetch(`/api/catalog-api/${id}`, {\n    method: 'PUT',\n    headers: {\n      'Content-Type': 'application/json'\n    },\n    body: JSON.stringify(product)\n  })\n  if (!response.ok) {\n    throw new Error('Failed to update product')\n  }\n  return await response.json()\n}\n\nconst deleteProduct = async (id: number): Promise<void> => {\n  const response = await fetch(`/api/catalog-api/${id}`, {\n    method: 'DELETE'\n  })\n  if (!response.ok) {\n    throw new Error('Failed to delete product')\n  }\n}\n\nconst AdminProductPanel: FC = () => {\n  // Implement the component logic here\n  return (\n    <div>\n      {/* JSX to display the product panel */}\n    </div>\n  )\n}\n\nexport { AdminProductPanel }\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-008",
+      "title": "Support Agent Dashboard",
+      "component": "refund_log table",
+      "domain": "database",
+      "targetPath": "backend/src/db/refund-log-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface RefundLogRow {\n  id: number;\n  agent_id: number;\n  amount: number;\n  reason: string;\n}\n\nconst db = new DatabaseSync('refund_logs.db');\n\nfunction createTable(): void {\n  const sql = `CREATE TABLE IF NOT EXISTS refund_log (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    agent_id INTEGER NOT NULL,\n    amount REAL NOT NULL,\n    reason TEXT NOT NULL\n  )`;\n  db.exec(sql);\n}\n\nfunction insertRefund(agentId: number, amount: number, reason: string): void {\n  const sql = 'INSERT INTO refund_log (agent_id, amount, reason) VALUES (?, ?, ?)';\n  db.prepare(sql).run(agentId, amount, reason);\n}\n\nfunction getRefundsByAgentId(agentId: number): RefundLogRow[] {\n  const sql = 'SELECT * FROM refund_log WHERE agent_id = ?';\n  return db.prepare(sql).all(agentId) as unknown as RefundLogRow[];\n}\n\nexport { db, createTable, insertRefund, getRefundsByAgentId };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/customer-lookup-api.ts(2,29): error TS2305: Module '\"../db/refund-log-table\"' has no exported member 'getRefundLogById'.\r\nbackend/src/routes/customer-lookup-api.ts(2,47): error TS2305: Module '\"../db/refund-log-table\"' has no exported member 'getRefundLogs'.\r\nbackend/src/routes/customer-lookup-api.ts(2,62): error TS2724: '\"../db/refund-log-table\"' has no exported member named 'getRefundLogsByAgentId'. Did you mean 'getRefundsByAgentId'?\r\nbackend/src/routes/customer-lookup-api.ts(2,86): error TS2724: '\"../db/refund-log-table\"' has no exported member named 'insertRefundLog'. Did you mean 'insertRefund'?\r\nbackend/src/routes/refund-api.ts(2,10): error TS2724: '\"../db/refund-log-table\"' has no exported member named 'insertRefundLog'. Did you mean 'insertRefund'?\r\n",
+      "repairRounds": 3,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/refund-api.ts(16,13): error TS2554: Expected 3 arguments, but got 2.\r\nbackend/src/routes/refund-api.ts(17,13): error TS2552: Cannot find name 'insertRefundLog'. Did you mean 'insertRefund'?\r\n"
+    },
+    {
+      "sessionId": "session-gold-008",
+      "title": "Support Agent Dashboard",
+      "component": "Customer Lookup",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/customer-lookup.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Customer {\n  id: string;\n  email: string;\n  name: string;\n}\n\nconst CustomerLookup: FC = () => {\n  const handleSearch = async (event: React.ChangeEvent<HTMLInputElement>) => {\n    event.preventDefault();\n    const searchValue = event.target.value;\n    try {\n      const response = await fetch(`/api/customer-lookup-api/customer-lookup/${searchValue}`);\n      if (!response.ok) {\n        throw new Error('Network response was not ok');\n      }\n      const customer: Customer = await response.json();\n      console.log(customer);\n    } catch (error) {\n      console.error('There has been a problem with your fetch operation:', error);\n    }\n  };\n\n  return (\n    <div>\n      <h1>Customer Lookup</h1>\n      <form onSubmit={handleSearch}>\n        <input type=\"text\" placeholder=\"Enter email or account ID\" />\n        <button type=\"submit\">Search</button>\n      </form>\n    </div>\n  );\n};\n\nexport { CustomerLookup };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/customer-lookup.tsx(28,13): error TS2322: Type '(event: React.ChangeEvent<HTMLInputElement>) => Promise<void>' is not assignable to type 'FormEventHandler<HTMLFormElement>'.\r\n  Types of parameters 'event' and 'event' are incompatible.\r\n    Type 'FormEvent<HTMLFormElement>' is not assignable to type 'ChangeEvent<HTMLInputElement>'.\r\n      Types of property 'target' are incompatible.\r\n        Type 'EventTarget' is not assignable to type 'EventTarget & HTMLInputElement'.\r\n          Type 'EventTarget' is missing the following properties from type 'HTMLInputElement': accept, align, alt, autocomplete, and 370 more.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-008",
+      "title": "Support Agent Dashboard",
+      "component": "Refund Panel",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/refund-panel.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface RefundFormProps {\n  customerId: string;\n}\n\nconst RefundPanel: FC<RefundFormProps> = ({ customerId }) => {\n  const [refundReason, setRefundReason] = React.useState('');\n  const [refundLogs, setRefundLogs] = React.useState([]);\n  const [loading, setLoading] = React.useState(false);\n  const [error, setError] = React.useState<string | null>(null);\n\n  const fetchRefundLogs = async () => {\n    try {\n      const response = await fetch(`/api/customer-lookup-api/customer-lookup/${customerId}/refund-logs`);\n      if (!response.ok) {\n        throw new Error('Failed to fetch refund logs');\n      }\n      const data = await response.json();\n      setRefundLogs(data);\n    } catch (err) {\n      setError(err.message);\n    }\n  };\n\n  const handleRefund = async () => {\n    setLoading(true);\n    try {\n      const response = await fetch('/api/refund-api/refund', {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json',\n        },\n        body: JSON.stringify({\n          customerId,\n          reason: refundReason,\n        }),\n      });\n      if (!response.ok) {\n        throw new Error('Failed to issue refund');\n      }\n      setRefundReason('');\n      fetchRefundLogs();\n    } catch (err) {\n      setError(err.message);\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  React.useEffect(() => {\n    fetchRefundLogs();\n  }, [customerId]);\n\n  return (\n    <div>\n      <h2>Issue Refund</h2>\n      <textarea\n        value={refundReason}\n        onChange={(e) => setRefundReason(e.target.value)}\n        placeholder='Enter refund reason'\n      />\n      <button onClick={handleRefund} disabled={loading || !refundReason}>Submit Refund</button>\n      {loading && <p>Loading...</p>}\n      {error && <p>Error: {error}</p>}\n      <h3>Refund Logs</h3>\n      <ul>\n        {refundLogs.map((log, index) => (\n          <li key={index}>{log}</li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n\nexport { RefundPanel };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/main.tsx(16,8): error TS2741: Property 'customerId' is missing in type '{}' but required in type 'RefundFormProps'.\r\nfrontend/src/pages/refund-panel.tsx(8,43): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/refund-panel.tsx(9,39): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/refund-panel.tsx(10,33): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/refund-panel.tsx(11,29): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/refund-panel.tsx(22,16): error TS18046: 'err' is of type 'unknown'.\r\nfrontend/src/pages/refund-panel.tsx(45,16): error TS18046: 'err' is of type 'unknown'.\r\nfrontend/src/pages/refund-panel.tsx(51,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/refund-panel.tsx(9,39): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/refund-panel.tsx(10,39): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/refund-panel.tsx(11,29): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n"
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "transactions table",
+      "domain": "database",
+      "targetPath": "backend/src/db/transactions-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('./finance.db');\n\ninterface Transaction {\n  id: number;\n  amount: number;\n  merchant: string;\n  date: Date;\n  category: string;\n}\n\nfunction createTable(): void {\n  const sql = `\n    CREATE TABLE IF NOT EXISTS transactions (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      amount REAL NOT NULL,\n      merchant TEXT NOT NULL,\n      date DATETIME NOT NULL,\n      category TEXT NOT NULL\n    );\n  `;\n  db.exec(sql);\n}\n\nfunction insertTransaction(amount: number, merchant: string, date: Date, category: string): number {\n  const sql = 'INSERT INTO transactions (amount, merchant, date, category) VALUES (?, ?, ?, ?)';\n  const stmt = db.prepare(sql);\n  const result = stmt.run(amount, merchant, date.toISOString(), category);\n  return result.lastInsertRowid as number;\n}\n\nfunction getTransactions(): Transaction[] {\n  const sql = 'SELECT * FROM transactions';\n  const stmt = db.prepare(sql);\n  const rows = stmt.all() as unknown as Record<string, any>[];\n  return rows.map(row => ({\n    id: row.id as number,\n    amount: row.amount as number,\n    merchant: row.merchant as string,\n    date: new Date(row.date as string),\n    category: row.category as string\n  }));\n}\n\nfunction getTransactionById(id: number): Transaction | null {\n  const sql = 'SELECT * FROM transactions WHERE id = ?';\n  const stmt = db.prepare(sql);\n  const row = stmt.get(id) as unknown as Record<string, any> | undefined;\n  if (!row) return null;\n  return {\n    id: row.id as number,\n    amount: row.amount as number,\n    merchant: row.merchant as string,\n    date: new Date(row.date as string),\n    category: row.category as string\n  };\n}\n\nexport { db, createTable, insertTransaction, getTransactions, getTransactionById };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/bank-sync-service.ts(3,10): error TS2724: '\"../db/transactions-table\"' has no exported member named 'getAllTransactions'. Did you mean 'getTransactions'?\r\nbackend/src/routes/bank-sync-service.ts(33,7): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Date'.\r\nbackend/src/routes/categorisation-api.ts(2,32): error TS2724: '\"../db/transactions-table\"' has no exported member named 'getAllTransactions'. Did you mean 'getTransactions'?\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/bank-sync-service.ts(27,43): error TS2552: Cannot find name 'getTransactionById'. Did you mean 'getTransactions'?\r\nbackend/src/routes/bank-sync-service.ts(29,17): error TS2554: Expected 4 arguments, but got 1.\r\nbackend/src/routes/categorisation-api.ts(9,3): error TS2304: Cannot find name 'credentialEncryption'.\r\nbackend/src/routes/categorisation-api.ts(12,66): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/routes/categorisation-api.ts(18,77): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/routes/categorisation-api.ts(18,89): error TS2339: Property 'user_id' does not exist on type 'Transaction'.\r\nbackend/src/routes/categorisation-api.ts(24,11): error TS2554: Expected 4 arguments, but got 2.\r\n"
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "bank_credentials table",
+      "domain": "database",
+      "targetPath": "backend/src/db/bank-credentials-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('./bank_credentials.db');\n\ninterface BankCredential {\n  id: number;\n  token: string;\n}\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS bank_credentials (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      token TEXT NOT NULL\n    )`\n  );\n}\n\nfunction insertToken(token: string): number {\n  const stmt = db.prepare('INSERT INTO bank_credentials (token) VALUES (?)');\n  return stmt.run(token).lastInsertRowid as number;\n}\n\nfunction getTokenById(id: number): BankCredential | undefined {\n  const stmt = db.prepare('SELECT * FROM bank_credentials WHERE id = ?');\n  return stmt.get(id) as unknown as BankCredential | undefined;\n}\n\nfunction getAllTokens(): BankCredential[] {\n  const stmt = db.prepare('SELECT * FROM bank_credentials');\n  return stmt.all() as unknown as BankCredential[];\n}\n\nexport { db, createTable, insertToken, getTokenById, getAllTokens };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/bank-sync-service.ts(2,10): error TS2305: Module '\"../db/bank-credentials-table\"' has no exported member 'getBankCredentialsByUserId'.\r\nbackend/src/routes/bank-sync-service.ts(2,38): error TS2305: Module '\"../db/bank-credentials-table\"' has no exported member 'insertBankCredential'.\r\nbackend/src/routes/categorisation-api.ts(3,31): error TS2305: Module '\"../db/bank-credentials-table\"' has no exported member 'getBankCredentialsByUserId'.\r\nbackend/src/routes/categorisation-api.ts(3,59): error TS2305: Module '\"../db/bank-credentials-table\"' has no exported member 'insertBankCredential'.\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/bank-sync-service.ts(13,40): error TS2339: Property 'getAllTokens' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/bank-sync-service.ts(17,32): error TS2552: Cannot find name 'fetchBankTransactions'. Did you mean 'bankTransactions'?\r\nbackend/src/routes/bank-sync-service.ts(20,58): error TS2339: Property 'getTransactionById' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/bank-sync-service.ts(23,32): error TS2551: Property 'insertTransaction' does not exist on type 'DatabaseSync'. Did you mean 'isTransaction'?\r\nbackend/src/routes/categorisation-api.ts(3,10): error TS2305: Module '\"../middleware/credential-encryption\"' has no exported member 'credentialEncryptionMiddleware'.\r\nbackend/src/routes/categorisation-api.ts(12,11): error TS2554: Expected 4 arguments, but got 2.\r\n"
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "Transaction List",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/transaction-list.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Transaction {\n  id: number;\n  amount: number;\n  description: string;\n  category?: string;\n}\n\nconst fetchTransactions = async (): Promise<Transaction[]> => {\n  const response = await fetch('/api/categorisation-api/transactions');\n  if (!response.ok) {\n    throw new Error('Failed to fetch transactions');\n  }\n  return await response.json();\n};\n\nconst updateTransactionCategory = async (\n  transactionId: number,\n  newCategory: string\n): Promise<void> => {\n  const response = await fetch(`/api/categorisation-api/transactions/${transactionId}`, {\n    method: 'PUT',\n    headers: {\n      'Content-Type': 'application/json',\n    },\n    body: JSON.stringify({ category: newCategory }),\n  });\n  if (!response.ok) {\n    throw new Error('Failed to update transaction category');\n  }\n};\n\nconst TransactionList: FC = () => {\n  const [transactions, setTransactions] = React.useState<Transaction[]>([]);\n\n  React.useEffect(() => {\n    const loadTransactions = async () => {\n      try {\n        const fetchedTransactions = await fetchTransactions();\n        setTransactions(fetchedTransactions);\n      } catch (error) {\n        console.error(error);\n      }\n    };\n\n    loadTransactions();\n  }, []);\n\n  const handleCategoryChange = async (\n    event: React.ChangeEvent<HTMLSelectElement>,\n    transactionId: number\n  ) => {\n    const newCategory = event.target.value;\n    try {\n      await updateTransactionCategory(transactionId, newCategory);\n      const updatedTransactions = await fetchTransactions();\n      setTransactions(updatedTransactions);\n    } catch (error) {\n      console.error(error);\n    }\n  };\n\n  return (\n    <div>\n      <h1>Transaction List</h1>\n      <ul>\n        {transactions.map((transaction) => (\n          <li key={transaction.id}>\n            {transaction.description} - ${transaction.amount}\n            <select\n              value={transaction.category || ''}\n              onChange={(event) => handleCategoryChange(event, transaction.id)}\n            >\n              <option value=''>Uncategorized</option>\n              <option value='Food'>Food</option>\n              <option value='Transport'>Transport</option>\n              <option value='Entertainment'>Entertainment</option>\n            </select>\n          </li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n\nexport { TransactionList };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/transaction-list.tsx(35,43): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/transaction-list.tsx(37,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/transaction-list.tsx(34,43): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/transaction-list.tsx(36,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n"
+    },
+    {
+      "sessionId": "session-gold-010",
+      "title": "Personal Finance Tracker",
+      "component": "Budget Overview",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/budget-overview.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "generation-failed"
+      ],
+      "reasonsB": [
+        "generation-failed"
+      ],
+      "error": {
+        "reason": "unparseable-json",
+        "message": "response was not valid JSON (SyntaxError: Bad control character in string literal in JSON at position 784 (line 2 column 783)); first 300 chars: {\n  \"code\": \"import type { FC } from 'react';\\n\\ninterface Transaction {\\n  id: number;\\n  amount: number;\\n  category: string;\\n}\\n\\nconst fetchTransactions = async (): Promise<Transaction[]> => {\\n  const response = await fetch('/api/categorisation-api/transactions');\\n  if (!response.ok) {\\n    t"
+      }
+    },
+    {
+      "sessionId": "session-gold-011",
+      "title": "Personal Portfolio Site",
+      "component": "About/Projects Pages",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/about-projects-pages.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\nconst AboutProjectsPages: FC = () => {\n  return (\n    <div>\n      <h1>About Me</h1>\n      <p>Welcome to my personal portfolio site!</p>\n      <h2>My Projects</h2>\n      <ul>\n        <li>Project 1</li>\n        <li>Project 2</li>\n        <li>Project 3</li>\n      </ul>\n    </div>\n  );\n};\n\nexport { AboutProjectsPages };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-011",
+      "title": "Personal Portfolio Site",
+      "component": "Contact Form",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/contact-form.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\nconst ContactForm: FC = () => {\n  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {\n    event.preventDefault();\n    const formData = new FormData(event.target);\n    const message = formData.get('message') as string;\n\n    try {\n      await fetch('/api/contact-form-handler/submit', {\n        method: 'POST',\n        body: JSON.stringify({ message }),\n        headers: {\n          'Content-Type': 'application/json'\n        }\n      });\n\n      alert('Message sent successfully!');\n    } catch (error) {\n      console.error('Error sending message:', error);\n      alert('Failed to send message.');\n    }\n  };\n\n  return (\n    <form onSubmit={handleSubmit}>\n      <label htmlFor=\"message\">Your Message:</label>\n      <textarea id=\"message\" name=\"message\" required></textarea>\n      <button type=\"submit\">Send</button>\n    </form>\n  );\n};\n\nexport { ContactForm };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/contact-form.tsx(6,35): error TS2345: Argument of type 'EventTarget' is not assignable to parameter of type 'HTMLFormElement'.\r\n  Type 'EventTarget' is missing the following properties from type 'HTMLFormElement': acceptCharset, action, autocomplete, elements, and 330 more.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/contact-form.tsx(6,35): error TS2345: Argument of type 'EventTarget' is not assignable to parameter of type 'HTMLFormElement'.\r\n  Type 'EventTarget' is missing the following properties from type 'HTMLFormElement': acceptCharset, action, autocomplete, elements, and 330 more.\r\n"
+    },
+    {
+      "sessionId": "session-gold-015",
+      "title": "Job Board",
+      "component": "postings table",
+      "domain": "database",
+      "targetPath": "backend/src/db/postings-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Posting {\n  id: number;\n  title: string;\n  description: string;\n  company_id: number;\n}\n\nconst db = new DatabaseSync('postings.db');\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS postings (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      title TEXT NOT NULL,\n      description TEXT NOT NULL,\n      company_id INTEGER NOT NULL\n    )`\n  );\n}\n\nfunction insertPosting(title: string, description: string, company_id: number): number {\n  const stmt = db.prepare(\n    'INSERT INTO postings (title, description, company_id) VALUES (?, ?, ?)'\n  );\n  return stmt.run(title, description, company_id).lastInsertRowid as number;\n}\n\nfunction getPostingById(id: number): Posting | null {\n  const stmt = db.prepare(\n    'SELECT * FROM postings WHERE id = ?'\n  );\n  const result = stmt.get(id) as unknown as Posting;\n  return result || null;\n}\n\nfunction getAllPostings(): Posting[] {\n  const stmt = db.prepare('SELECT * FROM postings');\n  const results = stmt.all() as unknown as Posting[];\n  return results;\n}\n\nexport { db, createTable, insertPosting, getPostingById, getAllPostings };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/postings-api.ts(24,47): error TS1127: Invalid character.\r\nbackend/src/routes/postings-api.ts(24,48): error TS1434: Unexpected keyword or identifier.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/postings-api.ts(11,27): error TS2554: Expected 3 arguments, but got 1.\r\n"
+    },
+    {
+      "sessionId": "session-gold-015",
+      "title": "Job Board",
+      "component": "applications table",
+      "domain": "database",
+      "targetPath": "backend/src/db/applications-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Application {\n  id: number;\n  resumeFileRef: string;\n  candidateId: number;\n  postingId: number;\n}\n\nconst db = new DatabaseSync('applications.db');\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS applications (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      resumeFileRef TEXT NOT NULL,\n      candidateId INTEGER NOT NULL,\n      postingId INTEGER NOT NULL\n    )`\n  );\n}\n\nfunction insertApplication(resumeFileRef: string, candidateId: number, postingId: number): number {\n  const stmt = db.prepare(\n    'INSERT INTO applications (resumeFileRef, candidateId, postingId) VALUES (?, ?, ?)'\\n  );\n  return stmt.run(resumeFileRef, candidateId, postingId).lastInsertRowid as number;\n}\n\nfunction getApplicationsByCandidateId(candidateId: number): Application[] {\n  const stmt = db.prepare(\\n    'SELECT * FROM applications WHERE candidateId = ?'\\n  );\n  return stmt.all(candidateId) as unknown as Application[];\n}\n\nfunction getApplicationsByPostingId(postingId: number): Application[] {\n  const stmt = db.prepare(\\n    'SELECT * FROM applications WHERE postingId = ?'\\n  );\n  return stmt.all(postingId) as unknown as Application[];\n}\n\nexport { db, createTable, insertApplication, getApplicationsByCandidateId, getApplicationsByPostingId };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/applications-table.ts(25,88): error TS1127: Invalid character.\r\nbackend/src/db/applications-table.ts(30,27): error TS1127: Invalid character.\r\nbackend/src/db/applications-table.ts(30,33): error TS1005: ',' expected.\r\nbackend/src/db/applications-table.ts(30,83): error TS1127: Invalid character.\r\nbackend/src/db/applications-table.ts(35,27): error TS1127: Invalid character.\r\nbackend/src/db/applications-table.ts(35,33): error TS1005: ',' expected.\r\nbackend/src/db/applications-table.ts(35,81): error TS1127: Invalid character.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/postings-api.ts(24,47): error TS1127: Invalid character.\r\nbackend/src/routes/postings-api.ts(24,48): error TS1434: Unexpected keyword or identifier.\r\n"
+    },
+    {
+      "sessionId": "session-gold-015",
+      "title": "Job Board",
+      "component": "Job Listings Page",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/job-listings-page.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\nconst JobListingsPage: FC = () => {\n  const fetchJobPostings = async () => {\n    try {\n      const response = await fetch('/api/postings-api/');\n      if (!response.ok) {\n        throw new Error('Failed to fetch job postings');\n      }\n      const postings = await response.json(); // Assuming the API returns an array of job postings\n      console.log(postings);\n      // Render the job postings here\n    } catch (error) {\n      console.error(error);\n    }\n  };\n\n  useEffect(() => {\n    fetchJobPostings();\n  }, []);\n\n  return (\n    <div>\n      <h1>Job Listings</h1>\n      {/* Job listings will be rendered here */}\n    </div>\n  );\n};\n\nexport { JobListingsPage };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/job-listings-page.tsx(18,3): error TS2304: Cannot find name 'useEffect'.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-015",
+      "title": "Job Board",
+      "component": "Application Form",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/application-form.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\nconst ApplicationForm: FC = () => {\n  // Implement the application form component here\n  return (\n    <div>\n      <h1>Apply for a Job</h1>\n      {/* Add your form fields and logic here */}\n    </div>\n  );\n};\n\nexport { ApplicationForm };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-015",
+      "title": "Job Board",
+      "component": "Applicant Tracker",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/applicant-tracker.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\nconst ApplicantTracker: FC = () => {\n  // Placeholder implementation\n  return <div>Applicant Tracker</div>;\n};\n\nexport { ApplicantTracker };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-017",
+      "title": "Fitness Tracker With Friend Feed",
+      "component": "workouts table",
+      "domain": "database",
+      "targetPath": "backend/src/db/workouts-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Workout {\n  id: number;\n  userId: number;\n  exercise: string;\n  sets: number;\n  reps: number;\n}\n\nconst db = new DatabaseSync('workouts.db');\n\nfunction createWorkout(workout: Omit<Workout, 'id'>): void {\n  const sql = 'INSERT INTO workouts (userId, exercise, sets, reps) VALUES (?, ?, ?, ?)';\n  db.prepare(sql).run(workout.userId, workout.exercise, workout.sets, workout.reps);\n}\n\nfunction getWorkoutsByUserId(userId: number): Workout[] {\n  const sql = 'SELECT * FROM workouts WHERE userId = ?';\n  const stmt = db.prepare(sql);\n  return stmt.all(userId) as unknown as Workout[];\n}\n\nfunction updateWorkout(id: number, workout: Partial<Omit<Workout, 'id'>>): void {\n  const setClause = Object.keys(workout).map(key => `${key} = ?`).join(', ');\n  const params = [setClause, ...Object.values(workout), id];\n  const sql = `UPDATE workouts SET ${setClause} WHERE id = ?`;\n  db.prepare(sql).run(params);\n}\n\nfunction deleteWorkout(id: number): void {\n  const sql = 'DELETE FROM workouts WHERE id = ?';\n  db.prepare(sql).run(id);\n}\n\nexport { db, createWorkout, getWorkoutsByUserId, updateWorkout, deleteWorkout };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/workouts-table.ts(28,23): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type '(string | number)[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type '(string | number)[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type '(string | number)[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type '(string | number)[]'.\r\nbackend/src/routes/workouts-api.ts(2,10): error TS2305: Module '\"../db/workouts-table\"' has no exported member 'insertWorkout'.\r\nbackend/src/routes/workouts-api.ts(2,46): error TS2305: Module '\"../db/workouts-table\"' has no exported member 'getAllWorkouts'.\r\n",
+      "repairRounds": 3,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/workouts-api.ts(2,25): error TS2300: Duplicate identifier 'db'.\r\nbackend/src/routes/workouts-api.ts(3,22): error TS2300: Duplicate identifier 'db'.\r\nbackend/src/routes/workouts-api.ts(8,56): error TS2304: Cannot find name 'Workout'.\r\nbackend/src/routes/workouts-api.ts(12,44): error TS2554: Expected 0 arguments, but got 1.\r\nbackend/src/routes/workouts-api.ts(20,51): error TS2554: Expected 1 arguments, but got 4.\r\nbackend/src/routes/workouts-api.ts(47,46): error TS2554: Expected 2 arguments, but got 4.\r\n"
+    },
+    {
+      "sessionId": "session-gold-017",
+      "title": "Fitness Tracker With Friend Feed",
+      "component": "follows table",
+      "domain": "database",
+      "targetPath": "backend/src/db/follows-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Follow {\n  followerId: number;\n  followingId: number;\n}\n\nconst db = new DatabaseSync('fitness_tracker.db');\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS follows (\n      followerId INTEGER PRIMARY KEY,\n      followingId INTEGER PRIMARY KEY\n    )`\n  );\n}\n\nfunction insertFollow(followerId: number, followingId: number): void {\n  db.run(\n    'INSERT INTO follows (followerId, followingId) VALUES (?, ?)',\n    [followerId, followingId]\n  );\n}\n\nfunction deleteFollow(followerId: number, followingId: number): void {\n  db.run(\n    'DELETE FROM follows WHERE followerId = ? AND followingId = ?',\n    [followerId, followingId]\n  );\n}\n\nfunction getFollowers(userId: number): Follow[] {\n  const stmt = db.prepare('SELECT * FROM follows WHERE followingId = ?');\n  return stmt.all([userId]) as unknown as Follow[];\n}\n\nfunction getFollowing(userId: number): Follow[] {\n  const stmt = db.prepare('SELECT * FROM follows WHERE followerId = ?');\n  return stmt.all([userId]) as unknown as Follow[];\n}\n\ncreateTable();\n\nexport { db, insertFollow, deleteFollow, getFollowers, getFollowing };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/follows-table.ts(20,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/follows-table.ts(27,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/follows-table.ts(35,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/db/follows-table.ts(40,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/routes/workouts-api.ts(3,10): error TS2724: '\"../db/follows-table\"' has no exported member named 'getFollowingIds'. Did you mean 'getFollowing'?\r\n",
+      "repairRounds": 3,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/follows-table.ts(21,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/follows-table.ts(28,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/follows-table.ts(36,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/db/follows-table.ts(41,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-017",
+      "title": "Fitness Tracker With Friend Feed",
+      "component": "Workout Log",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/workout-log.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface Exercise {\n  id: number;\n  name: string;\n}\n\nconst exercises: Exercise[] = [\n  { id: 1, name: \"Squats\" },\n  { id: 2, name: \"Push-ups\" },\n  { id: 3, name: \"Bench Press\" }\n];\n\ninterface WorkoutFormProps {\n  onSubmit: (exerciseId: number, sets: number, reps: number) => void;\n}\n\nexport const WorkoutLog: FC<WorkoutFormProps> = ({ onSubmit }) => {\n  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {\n    event.preventDefault();\n    const formData = new FormData(event.target);\n    const exerciseId = Number(formData.get(\"exerciseId\"));\n    const sets = Number(formData.get(\"sets\"));\n    const reps = Number(formData.get(\"reps\"));\n    await onSubmit(exerciseId, sets, reps);\n  };\n\n  return (\n    <form onSubmit={handleSubmit}>\n      <label htmlFor=\"exerciseId\">Exercise:</label>\n      <select name=\"exerciseId\" required>\n        {exercises.map((exercise) => (\n          <option key={exercise.id} value={exercise.id}>{exercise.name}</option>\n        ))}\n      </select>\n      <br />\n      <label htmlFor=\"sets\">Sets:</label>\n      <input type=\"number\" name=\"sets\" required min=\"1\" />\n      <br />\n      <label htmlFor=\"reps\">Reps:</label>\n      <input type=\"number\" name=\"reps\" required min=\"1\" />\n      <br />\n      <button type=\"submit\">Log Workout</button>\n    </form>\n  );\n};\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/main.tsx(15,8): error TS2741: Property 'onSubmit' is missing in type '{}' but required in type 'WorkoutFormProps'.\r\nfrontend/src/pages/workout-log.tsx(21,35): error TS2345: Argument of type 'EventTarget' is not assignable to parameter of type 'HTMLFormElement'.\r\n  Type 'EventTarget' is missing the following properties from type 'HTMLFormElement': acceptCharset, action, autocomplete, elements, and 330 more.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/workout-log.tsx(6,35): error TS2345: Argument of type 'EventTarget' is not assignable to parameter of type 'HTMLFormElement'.\r\n  Type 'EventTarget' is missing the following properties from type 'HTMLFormElement': acceptCharset, action, autocomplete, elements, and 330 more.\r\n"
+    },
+    {
+      "sessionId": "session-gold-017",
+      "title": "Fitness Tracker With Friend Feed",
+      "component": "Friend Feed",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/friend-feed.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\nconst FriendFeed: FC = () => {\n  // Fetch the friend feed data from the backend\n  const fetchFriendFeed = async () => {\n    try {\n      const response = await fetch('/api/workouts-api/feed');\n      if (!response.ok) {\n        throw new Error('Failed to fetch friend feed');\n      }\n      const feedData = await response.json();\n      console.log(feedData);\n      // Render the feed data here\n    } catch (error) {\n      console.error(error);\n    }\n  };\n\n  useEffect(() => {\n    fetchFriendFeed();\n  }, []);\n\n  return (\n    <div>\n      <h1>Friend Feed</h1>\n      {/* Render the workout entries here */}\n    </div>\n  );\n};\n\nexport { FriendFeed };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/friend-feed.tsx(19,3): error TS2304: Cannot find name 'useEffect'.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-020",
+      "title": "Shipment Tracking Page",
+      "component": "shipment_events table",
+      "domain": "database",
+      "targetPath": "backend/src/db/shipment-events-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface ShipmentEvent {\n  tracking_number: string;\n  location: string;\n  timestamp: Date;\n  status: string;\n}\n\nconst db = new DatabaseSync('shipment_tracking.db');\n\nfunction createShipmentEventsTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS shipment_events (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      tracking_number TEXT NOT NULL,\n      location TEXT NOT NULL,\n      timestamp DATETIME NOT NULL,\n      status TEXT NOT NULL\n    )`\n  );\n}\n\nfunction insertShipmentEvent(event: ShipmentEvent): void {\n  db.run(\n    'INSERT INTO shipment_events (tracking_number, location, timestamp, status) VALUES (?, ?, ?, ?)',\n    [event.tracking_number, event.location, event.timestamp, event.status]\n  );\n}\n\nfunction getShipmentEventsByTrackingNumber(tracking_number: string): ShipmentEvent[] {\n  const stmt = db.prepare('SELECT * FROM shipment_events WHERE tracking_number = ?');\n  return stmt.all([tracking_number]) as unknown as ShipmentEvent[];\n}\n\nexport { db, createShipmentEventsTable, insertShipmentEvent, getShipmentEventsByTrackingNumber };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/shipment-events-table.ts(25,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/shipment-events-table.ts(33,15): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Type 'string' is not assignable to type 'number'.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'string[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'string[]'.\r\n",
+      "repairRounds": 3,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/shipment-events-table.ts(24,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'Date' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'Date' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 27 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'string' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-020",
+      "title": "Shipment Tracking Page",
+      "component": "Tracking Lookup",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/tracking-lookup.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\nconst TrackingLookup: FC = () => {\n  // Component implementation goes here\n  return null;\n};\n\nexport { TrackingLookup };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-023",
+      "title": "Smart Home Control App",
+      "component": "devices table",
+      "domain": "database",
+      "targetPath": "backend/src/db/devices-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('devices.db');\n\ninterface Device {\n  id: number;\n  type: string;\n  state: string;\n}\n\nfunction createTable(): void {\n  const sql = `CREATE TABLE IF NOT EXISTS devices (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    type TEXT NOT NULL,\n    state TEXT NOT NULL\n  )`;\n  db.exec(sql);\n}\n\nfunction insertDevice(device: Omit<Device, 'id'>): void {\n  const sql = 'INSERT INTO devices (type, state) VALUES (?, ?)';\n  db.prepare(sql).run(device.type, device.state);\n}\n\nfunction getDeviceById(id: number): Device | null {\n  const sql = 'SELECT * FROM devices WHERE id = ?';\n  const result = db.prepare(sql).get(id) as unknown as Device;\n  return result || null;\n}\n\nfunction getAllDevices(): Device[] {\n  const sql = 'SELECT * FROM devices';\n  const results = db.prepare(sql).all() as unknown as Device[];\n  return results;\n}\n\nfunction updateDeviceState(id: number, state: string): void {\n  const sql = 'UPDATE devices SET state = ? WHERE id = ?';\n  db.prepare(sql).run(state, id);\n}\n\nfunction deleteDevice(id: number): void {\n  const sql = 'DELETE FROM devices WHERE id = ?';\n  db.prepare(sql).run(id);\n}\n\nexport { db, createTable, insertDevice, getDeviceById, getAllDevices, updateDeviceState, deleteDevice };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/device-control-api.ts(2,27): error TS2305: Module '\"../db/devices-table\"' has no exported member 'DeviceRow'.\r\nbackend/src/routes/device-control-api.ts(17,32): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.\r\nbackend/src/routes/device-control-api.ts(31,32): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.\r\nbackend/src/routes/device-control-api.ts(37,21): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.\r\nbackend/src/routes/device-control-api.ts(45,32): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.\r\nbackend/src/routes/device-control-api.ts(61,16): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.\r\nbackend/src/routes/device-control-api.ts(70,20): error TS2554: Expected 1 arguments, but got 3.\r\nbackend/src/routes/scheduler-service.ts(19,36): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/device-control-api.ts(2,10): error TS2300: Duplicate identifier 'db'.\r\nbackend/src/routes/device-control-api.ts(3,20): error TS2300: Duplicate identifier 'db'.\r\nbackend/src/routes/device-control-api.ts(11,28): error TS2554: Expected 1 arguments, but got 3.\r\nbackend/src/routes/device-control-api.ts(31,47): error TS2554: Expected 2 arguments, but got 3.\r\nbackend/src/routes/scheduler-service.ts(2,10): error TS2300: Duplicate identifier 'db'.\r\nbackend/src/routes/scheduler-service.ts(3,10): error TS2300: Duplicate identifier 'db'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-023",
+      "title": "Smart Home Control App",
+      "component": "schedules table",
+      "domain": "database",
+      "targetPath": "backend/src/db/schedules-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Schedule {\n  id: number;\n  trigger_time: string;\n  target_device_action: string;\n}\n\nconst db = new DatabaseSync('schedules.db');\n\nfunction createSchedule(schedule: Schedule): void {\n  const sql = 'INSERT INTO schedules (trigger_time, target_device_action) VALUES (?, ?)';\n  db.prepare(sql).run(schedule.trigger_time, schedule.target_device_action);\n}\n\nfunction getSchedule(id: number): Schedule | null {\n  const sql = 'SELECT * FROM schedules WHERE id = ?';\n  const result = db.prepare(sql).get(id) as unknown as Schedule;\n  return result || null;\n}\n\nfunction getSchedules(): Schedule[] {\n  const sql = 'SELECT * FROM schedules';\n  const results = db.prepare(sql).all() as unknown as Schedule[];\n  return results;\n}\n\nfunction updateSchedule(id: number, schedule: Schedule): void {\n  const sql = 'UPDATE schedules SET trigger_time = ?, target_device_action = ? WHERE id = ?';\n  db.prepare(sql).run(schedule.trigger_time, schedule.target_device_action, id);\n}\n\nfunction deleteSchedule(id: number): void {\n  const sql = 'DELETE FROM schedules WHERE id = ?';\n  db.prepare(sql).run(id);\n}\n\nexport { db, createSchedule, getSchedule, getSchedules, updateSchedule, deleteSchedule };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/device-control-api.ts(3,29): error TS2459: Module '\"../db/schedules-table\"' declares 'Schedule' locally, but it is not exported.\r\nbackend/src/routes/device-control-api.ts(3,53): error TS2724: '\"../db/schedules-table\"' has no exported member named 'getScheduleById'. Did you mean 'getSchedule'?\r\nbackend/src/routes/device-control-api.ts(3,86): error TS2724: '\"../db/schedules-table\"' has no exported member named 'insertSchedule'. Did you mean 'getSchedule'?\r\nbackend/src/routes/scheduler-service.ts(2,24): error TS2724: '\"../db/schedules-table\"' has no exported member named 'getScheduleById'. Did you mean 'getSchedule'?\r\nbackend/src/routes/scheduler-service.ts(2,41): error TS2724: '\"../db/schedules-table\"' has no exported member named 'insertSchedule'. Did you mean 'getSchedule'?\r\nbackend/src/routes/scheduler-service.ts(19,45): error TS2339: Property 'device_id' does not exist on type 'Schedule'.\r\nbackend/src/routes/scheduler-service.ts(23,47): error TS2339: Property 'action' does not exist on type 'Schedule'.\r\n",
+      "repairRounds": 3,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/scheduler-service.ts(5,7): error TS2451: Cannot redeclare block-scoped variable 'router'.\r\nbackend/src/routes/scheduler-service.ts(19,64): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/routes/scheduler-service.ts(30,57): error TS2554: Expected 2 arguments, but got 3.\r\nbackend/src/routes/scheduler-service.ts(47,14): error TS2451: Cannot redeclare block-scoped variable 'router'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-023",
+      "title": "Smart Home Control App",
+      "component": "Device Control Panel",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/device-control-panel.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface Device {\n  id: number;\n  type: 'light' | 'thermostat' | 'lock';\n  state: boolean | number;\n}\n\nconst DeviceControlPanel: FC = () => {\n  const [devices, setDevices] = React.useState<Device[]>([]);\n\n  React.useEffect(() => {\n    fetch('/api/device-control-api/devices')\n      .then(response => response.json())\n      .then(data => setDevices(data));\n  }, []);\n\n  const toggleDevice = (deviceId: number) => {\n    fetch(`/api/device-control-api/devices/${deviceId}/state`, {\n      method: 'PUT',\n      headers: {\n        'Content-Type': 'application/json'\n      },\n      body: JSON.stringify({ state: !devices.find(d => d.id === deviceId)?.state })\n    });\n  };\n\n  const adjustSlider = (deviceId: number, newState: number) => {\n    fetch(`/api/device-control-api/devices/${deviceId}/state`, {\n      method: 'PUT',\n      headers: {\n        'Content-Type': 'application/json'\n      },\n      body: JSON.stringify({ state: newState })\n    });\n  };\n\n  return (\n    <div>\n      {devices.map(device => (\n        <div key={device.id}>\n          {device.type === 'light' && (\n            <button onClick={() => toggleDevice(device.id)}>{device.state ? 'Turn Off' : 'Turn On'}</button>\n          )}\n          {device.type === 'thermostat' && (\n            <input\n              type='range'\n              min='0'\n              max='100'\n              value={device.state}\n              onChange={(e) => adjustSlider(device.id, Number(e.target.value))}\n            />\n          )}\n          {device.type === 'lock' && (\n            <button onClick={() => toggleDevice(device.id)}>{device.state ? 'Unlock' : 'Lock'}</button>\n          )}\n        </div>\n      ))}\n    </div>\n  );\n};\n\nexport { DeviceControlPanel };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/device-control-panel.tsx(10,33): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/device-control-panel.tsx(12,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/device-control-panel.tsx(50,15): error TS2322: Type 'number | boolean' is not assignable to type 'string | number | readonly string[] | undefined'.\r\n  Type 'false' is not assignable to type 'string | number | readonly string[] | undefined'.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-023",
+      "title": "Smart Home Control App",
+      "component": "Schedule Builder",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/schedule-builder.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\nconst ScheduleBuilder: FC = () => {\n  // Implement the Schedule Builder component here\n  return (\n    <div>\n      {/* JSX for the Schedule Builder UI */}\n    </div>\n  );\n};\n\nexport { ScheduleBuilder };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-025",
+      "title": "Farm Management App",
+      "component": "fields table",
+      "domain": "database",
+      "targetPath": "backend/src/db/fields-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Field {\n  id: number;\n  name: string;\n  currentCrop: string | null;\n}\n\nconst db = new DatabaseSync('fields.db');\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS fields (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      name TEXT NOT NULL,\n      currentCrop TEXT\n    )`\n  );\n}\n\nfunction insertField(name: string, currentCrop: string | null): void {\n  db.run(\n    'INSERT INTO fields (name, currentCrop) VALUES (?, ?)',\n    [name, currentCrop]\n  );\n}\n\nfunction getFieldById(id: number): Field | undefined {\n  const stmt = db.prepare('SELECT * FROM fields WHERE id = ?');\n  const result = stmt.get([id]) as unknown as Field;\n  return result;\n}\n\nfunction getAllFields(): Field[] {\n  const stmt = db.prepare('SELECT * FROM fields');\n  const results = stmt.all() as unknown as Field[];\n  return results;\n}\n\nfunction updateField(id: number, name: string, currentCrop: string | null): void {\n  db.run(\n    'UPDATE fields SET name = ?, currentCrop = ? WHERE id = ?',\n    [name, currentCrop, id]\n  );\n}\n\nfunction deleteField(id: number): void {\n  db.run('DELETE FROM fields WHERE id = ?', [id]);\n}\n\nexport { db, createTable, insertField, getFieldById, getAllFields, updateField, deleteField };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/fields-table.ts(22,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/fields-table.ts(30,27): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue> | undefined', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue> | undefined', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/db/fields-table.ts(41,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/fields-table.ts(48,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/farm-api.ts(2,57): error TS2305: Module '\"../db/fields-table\"' has no exported member 'getField'.\r\n",
+      "repairRounds": 3,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/fields-table.ts(22,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/fields-table.ts(25,10): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.\r\nbackend/src/db/fields-table.ts(31,27): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue> | undefined', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue> | undefined', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/db/fields-table.ts(37,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/fields-table.ts(45,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-025",
+      "title": "Farm Management App",
+      "component": "applications table",
+      "domain": "database",
+      "targetPath": "backend/src/db/applications-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Application {\n  fieldId: number;\n  applicationType: 'irrigation' | 'fertiliser';\n  amount: number;\n  date: Date;\n}\n\nconst db = new DatabaseSync('applications.db');\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS applications (\n      fieldId INTEGER,\n      applicationType TEXT,\n      amount REAL,\n      date DATETIME\n    )`\n  );\n}\n\nfunction insertApplication(application: Application): void {\n  db.run(\n    `INSERT INTO applications (fieldId, applicationType, amount, date)\n    VALUES (?, ?, ?, ?)`,\n    [application.fieldId, application.applicationType, application.amount, application.date]\n  );\n}\n\nfunction getApplicationsByFieldId(fieldId: number): Application[] {\n  const stmt = db.prepare(`SELECT * FROM applications WHERE fieldId = ?`);\n  return stmt.all([fieldId]) as unknown as Application[];\n}\n\nfunction updateApplication(application: Application): void {\n  db.run(\n    `UPDATE applications SET applicationType = ?, amount = ?, date = ? WHERE fieldId = ?`,\n    [application.applicationType, application.amount, application.date, application.fieldId]\n  );\n}\n\nfunction deleteApplication(fieldId: number): void {\n  db.run(`DELETE FROM applications WHERE fieldId = ?`, [fieldId]);\n}\n\nexport { db, createTable, insertApplication, getApplicationsByFieldId, updateApplication, deleteApplication };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/applications-table.ts(24,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/applications-table.ts(33,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/db/applications-table.ts(37,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/applications-table.ts(44,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/farm-api.ts(2,10): error TS2300: Duplicate identifier 'db'.\r\nbackend/src/routes/farm-api.ts(3,10): error TS2300: Duplicate identifier 'db'.\r\nbackend/src/routes/farm-api.ts(70,66): error TS2554: Expected 1 arguments, but got 4.\r\nbackend/src/routes/farm-api.ts(81,72): error TS2554: Expected 1 arguments, but got 4.\r\nbackend/src/routes/farm-api.ts(82,9): error TS2367: This comparison appears to be unintentional because the types 'void' and 'number' have no overlap.\r\nbackend/src/routes/farm-api.ts(96,9): error TS2367: This comparison appears to be unintentional because the types 'void' and 'number' have no overlap.\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/applications-table.ts(24,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/applications-table.ts(32,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/db/applications-table.ts(36,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/applications-table.ts(43,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/farm-api.ts(78,22): error TS2554: Expected 4 arguments, but got 3.\r\nbackend/src/routes/farm-api.ts(102,9): error TS2367: This comparison appears to be unintentional because the types 'void' and 'number' have no overlap.\r\nbackend/src/routes/farm-api.ts(117,9): error TS2367: This comparison appears to be unintentional because the types 'void' and 'number' have no overlap.\r\n"
+    },
+    {
+      "sessionId": "session-gold-025",
+      "title": "Farm Management App",
+      "component": "Field Map View",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/field-map-view.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface Field {\n  id: number;\n  name: string;\n  crop: string | null;\n}\n\nconst FieldMapView: FC = () => {\n  const fetchFields = async (): Promise<Field[]> => {\n    const response = await fetch(\"/api/farm-api/fields\");\n    if (!response.ok) {\n      throw new Error(\"Failed to fetch fields\");\n    }\n    return await response.json();\n  };\n\n  const renderFields = (fields: Field[]): JSX.Element[] => {\n    return fields.map(field => (\n      <div key={field.id}>\n        <h3>{field.name}</h3>\n        <p>Crop: {field.crop || 'None'}</p>\n      </div>\n    ));\n  };\n\n  return (\n    <div>\n      <h1>Field Map</h1>\n      {fetchFields().then(renderFields)}\n    </div>\n  );\n};\n\nexport { FieldMapView };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/field-map-view.tsx(30,7): error TS2322: Type 'Promise<Element[]>' is not assignable to type 'ReactNode'.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-025",
+      "title": "Farm Management App",
+      "component": "Application Log",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/application-log.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "repair-failed"
+      ],
+      "error": {
+        "reason": "unparseable-json",
+        "message": "response was not valid JSON (SyntaxError: Bad control character in string literal in JSON at position 541 (line 2 column 540)); first 300 chars: {\n  \"code\": \"import type { FC } from \\\"react\\\";\\n\\ninterface Field {\\n  id: number;\\n  name: string;\\n}\\n\\ninterface Application {\\n  id: number;\\n  fieldId: number;\\n  type: string;\\n  date: Date;\\n}\\n\\nconst ApplicationLog: FC = () => {\\n  const [fields, setFields] = React.useState<Field[]>([]);\\n"
+      },
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface Field {\n  id: number;\n  name: string;\n}\n\ninterface Application {\n  id: number;\n  fieldId: number;\n  type: 'irrigation' | 'fertiliser';\n  date: Date;\n}\n\nconst ApplicationLog: FC = () => {\n  const [fields, setFields] = React.useState<Field[]>([]);\n  const [applications, setApplications] = React.useState<Application[]>([]);\n  const [selectedField, setSelectedField] = React.useState<number | null>(null);\n  const [applicationType, setApplicationType] = React.useState<'irrigation' | 'fertiliser'>('irrigation');\n  const [date, setDate] = React.useState<Date>(new Date());\n\n  React.useEffect(() => {\n    fetch('/api/farm-api/fields')\n      .then(response => response.json())\n      .then(data => setFields(data));\n  }, []);\n\n  const handleFieldChange = (event: React.ChangeEvent<HTMLSelectElement>) => {\n    setSelectedField(Number(event.target.value));\n  };\n\n  const handleSubmit = async (event: React.FormEvent) => {\n    event.preventDefault();\n    const newApplication: Application = {\n      id: applications.length + 1,\n      fieldId: selectedField || 0,\n      type: applicationType,\n      date,\n    };\n    await fetch('/api/farm-api/applications', {\n      method: 'POST',\n      headers: {\n        'Content-Type': 'application/json',\n      },\n      body: JSON.stringify(newApplication),\n    });\n    setApplications([...applications, newApplication]);\n  };\n\n  return (\n    <div>\n      <h1>Application Log</h1>\n      <form onSubmit={handleSubmit}>\n        <label htmlFor=\"field\">Field:</label>\n        <select id=\"field\" onChange={handleFieldChange} required>\n          <option value=\"\">Select a field</option>\n          {fields.map(field => (\n            <option key={field.id} value={field.id}>{field.name}</option>\n          ))}\n        </select>\n        <br />\n        <label htmlFor=\"type\">Type:</label>\n        <select id=\"type\" onChange={(e) => setApplicationType(e.target.value as 'irrigation' | 'fertiliser')} required>\n          <option value=\"irrigation\">Irrigation</option>\n          <option value=\"fertiliser\">Fertiliser</option>\n        </select>\n        <br />\n        <label htmlFor=\"date\">Date:</label>\n        <input type=\"date\" id=\"date\" value={date.toISOString().split('T')[0]} onChange={(e) => setDate(new Date(e.target.value))} required />\n        <br />\n        <button type=\"submit\">Submit</button>\n      </form>\n    </div>\n  );\n};\n\nexport { ApplicationLog };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/application-log.tsx(16,31): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/application-log.tsx(17,43): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/application-log.tsx(18,45): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/application-log.tsx(19,49): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/application-log.tsx(20,27): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/application-log.tsx(22,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n"
+    },
+    {
+      "sessionId": "session-gold-026",
+      "title": "Library Catalogue",
+      "component": "books table",
+      "domain": "database",
+      "targetPath": "backend/src/db/books-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('library.db');\n\ninterface Book {\n  id: number;\n  title: string;\n  author: string;\n  copy_count: number;\n}\n\nfunction createTable(): void {\n  const sql = `CREATE TABLE IF NOT EXISTS books (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    title TEXT NOT NULL,\n    author TEXT NOT NULL,\n    copy_count INTEGER NOT NULL\n  )`;\n  db.exec(sql);\n}\n\nfunction insertBook(title: string, author: string, copyCount: number): number {\n  const sql = 'INSERT INTO books (title, author, copy_count) VALUES (?, ?, ?)';\n  const stmt = db.prepare(sql);\n  stmt.run(title, author, copyCount);\n  return stmt.lastInsertRowid as number;\n}\n\nfunction getBooks(): Book[] {\n  const sql = 'SELECT * FROM books';\n  const stmt = db.prepare(sql);\n  return stmt.all() as unknown as Book[];\n}\n\nfunction getBookById(id: number): Book | null {\n  const sql = 'SELECT * FROM books WHERE id = ?';\n  const stmt = db.prepare(sql);\n  return stmt.get(id) as unknown as Book | null;\n}\n\nfunction updateBook(id: number, title: string, author: string, copyCount: number): boolean {\n  const sql = 'UPDATE books SET title = ?, author = ?, copy_count = ? WHERE id = ?';\n  const stmt = db.prepare(sql);\n  const result = stmt.run(title, author, copyCount, id);\n  return result.changes > 0;\n}\n\nfunction deleteBook(id: number): boolean {\n  const sql = 'DELETE FROM books WHERE id = ?';\n  const stmt = db.prepare(sql);\n  const result = stmt.run(id);\n  return result.changes > 0;\n}\n\nexport { db, createTable, insertBook, getBooks, getBookById, updateBook, deleteBook };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/books-table.ts(26,15): error TS2339: Property 'lastInsertRowid' does not exist on type 'StatementSync'.\r\nbackend/src/routes/catalogue-api.ts(12,34): error TS2554: Expected 0 arguments, but got 1.\r\nbackend/src/routes/catalogue-api.ts(23,21): error TS2304: Cannot find name 'Checkout'.\r\nbackend/src/routes/catalogue-api.ts(29,11): error TS2554: Expected 3 arguments, but got 1.\r\nbackend/src/routes/catalogue-api.ts(52,13): error TS2554: Expected 3 arguments, but got 1.\r\nbackend/src/routes/catalogue-api.ts(64,11): error TS2554: Expected 4 arguments, but got 2.\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/books-table.ts(26,15): error TS2339: Property 'lastInsertRowid' does not exist on type 'StatementSync'.\r\nbackend/src/routes/catalogue-api.ts(12,34): error TS2554: Expected 0 arguments, but got 1.\r\nbackend/src/routes/catalogue-api.ts(23,30): error TS2554: Expected 3 arguments, but got 2.\r\nbackend/src/routes/catalogue-api.ts(35,33): error TS2554: Expected 3 arguments, but got 2.\r\n"
+    },
+    {
+      "sessionId": "session-gold-026",
+      "title": "Library Catalogue",
+      "component": "checkouts table",
+      "domain": "database",
+      "targetPath": "backend/src/db/checkouts-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Checkout {\n  id: number;\n  book_id: number;\n  member_id: number;\n  due_date: Date;\n}\n\nconst db = new DatabaseSync('library_catalogue.db');\n\nfunction createCheckout(bookId: number, memberId: number, dueDate: Date): void {\n  const sql = 'INSERT INTO checkouts (book_id, member_id, due_date) VALUES (?, ?, ?)';\n  db.prepare(sql).run(bookId, memberId, dueDate);\n}\n\nfunction getCheckoutsByMember(memberId: number): Checkout[] {\n  const sql = 'SELECT * FROM checkouts WHERE member_id = ?';\n  return db.prepare(sql).all(memberId) as unknown as Checkout[];\n}\n\nfunction getCheckoutById(id: number): Checkout | null {\n  const sql = 'SELECT * FROM checkouts WHERE id = ?';\n  return db.prepare(sql).get(id) as unknown as Checkout | null;\n}\n\nfunction updateCheckoutDueDate(id: number, dueDate: Date): void {\n  const sql = 'UPDATE checkouts SET due_date = ? WHERE id = ?';\n  db.prepare(sql).run(dueDate, id);\n}\n\nfunction deleteCheckout(id: number): void {\n  const sql = 'DELETE FROM checkouts WHERE id = ?';\n  db.prepare(sql).run(id);\n}\n\nexport { db, createCheckout, getCheckoutsByMember, getCheckoutById, updateCheckoutDueDate, deleteCheckout };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/checkouts-table.ts(14,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'Date' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'Date' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 27 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'number' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\nbackend/src/db/checkouts-table.ts(29,23): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'Date' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'Date' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 27 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'Date' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'Date'.\r\n",
+      "repairRounds": 3,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/checkouts-table.ts(13,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'Date' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'Date' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 27 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'number' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\nbackend/src/db/checkouts-table.ts(28,23): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'Date' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'Date' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 27 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'Date' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'Date'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-026",
+      "title": "Library Catalogue",
+      "component": "Catalogue Search",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/catalogue-search.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Book {\n  id: number;\n  title: string;\n  author: string;\n  copiesAvailable: number;\n}\n\nconst CatalogueSearch: FC = () => {\n  const [searchTerm, setSearchTerm] = React.useState('');\n  const [books, setBooks] = React.useState<Book[]>([]);\n\n  const fetchBooks = async () => {\n    try {\n      const response = await fetch(`/api/catalogue-api/books?query=${searchTerm}`);\n      const data = await response.json();\n      setBooks(data);\n    } catch (error) {\n      console.error('Error fetching books:', error);\n    }\n  };\n\n  React.useEffect(() => {\n    fetchBooks();\n  }, [searchTerm]);\n\n  return (\n    <div>\n      <h1>Catalogue Search</h1>\n      <input\n        type='text'\n        placeholder='Search by title or author'\n        value={searchTerm}\n        onChange={(e) => setSearchTerm(e.target.value)}\n      />\n      <ul>\n        {books.map((book) => (\n          <li key={book.id}>{`${book.title} by ${book.author} - Copies Available: ${book.copiesAvailable}`}</li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n\nexport { CatalogueSearch };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/catalogue-search.tsx(11,39): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/catalogue-search.tsx(12,29): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/catalogue-search.tsx(24,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-026",
+      "title": "Library Catalogue",
+      "component": "Staff Inventory Panel",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/staff-inventory-panel.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Book {\n  id: number;\n  title: string;\n  author: string;\n  copies: number;\n}\n\nconst StaffInventoryPanel: FC = () => {\n  const [books, setBooks] = React.useState<Book[]>([]);\n\n  React.useEffect(() => {\n    fetch('/api/catalogue-api/books')\n      .then(response => response.json())\n      .then(data => setBooks(data));\n  }, []);\n\n  const handleAddBook = async (title: string, author: string, copies: number) => {\n    const newBook = { title, author, copies };\n    await fetch('/api/catalogue-api/books', {\n      method: 'POST',\n      headers: {\n        'Content-Type': 'application/json'\n      },\n      body: JSON.stringify(newBook)\n    });\n    setBooks([...books, newBook]);\n  };\n\n  const handleUpdateBook = async (id: number, copies: number) => {\n    await fetch(`/api/catalogue-api/books/${id}`, {\n      method: 'PUT',\n      headers: {\n        'Content-Type': 'application/json'\n      },\n      body: JSON.stringify({ copies })\n    });\n    setBooks(books.map(book => book.id === id ? { ...book, copies } : book));\n  };\n\n  const handleDeleteBook = async (id: number) => {\n    await fetch(`/api/catalogue-api/books/${id}`, {\n      method: 'DELETE'\n    });\n    setBooks(books.filter(book => book.id !== id));\n  };\n\n  return (\n    <div>\n      <h1>Staff Inventory Panel</h1>\n      <ul>\n        {books.map(book => (\n          <li key={book.id}>{book.title} by {book.author} ({book.copies} copies)\n            <button onClick={() => handleUpdateBook(book.id, book.copies + 1)}>Add Copy</button>\n            <button onClick={() => handleUpdateBook(book.id, book.copies - 1)}>Remove Copy</button>\n            <button onClick={() => handleDeleteBook(book.id)}>Delete</button>\n          </li>\n        ))}\n      </ul>\n      <form onSubmit={(e) => {\n        e.preventDefault();\n        const formData = new FormData(e.target);\n        const title = formData.get('title') as string;\n        const author = formData.get('author') as string;\n        const copies = Number(formData.get('copies')) as number;\n        handleAddBook(title, author, copies);\n      }}>\n        <input type='text' name='title' placeholder='Title' required />\n        <input type='text' name='author' placeholder='Author' required />\n        <input type='number' name='copies' placeholder='Copies' required />\n        <button type='submit'>Add Book</button>\n      </form>\n    </div>\n  );\n};\n\nexport { StaffInventoryPanel };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/staff-inventory-panel.tsx(11,29): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/staff-inventory-panel.tsx(13,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/staff-inventory-panel.tsx(28,15): error TS2322: Type 'Book | { title: string; author: string; copies: number; }' is not assignable to type 'Book'.\r\n  Property 'id' is missing in type '{ title: string; author: string; copies: number; }' but required in type 'Book'.\r\nfrontend/src/pages/staff-inventory-panel.tsx(28,25): error TS2741: Property 'id' is missing in type '{ title: string; author: string; copies: number; }' but required in type 'Book'.\r\nfrontend/src/pages/staff-inventory-panel.tsx(63,39): error TS2345: Argument of type 'EventTarget' is not assignable to parameter of type 'HTMLFormElement'.\r\n  Type 'EventTarget' is missing the following properties from type 'HTMLFormElement': acceptCharset, action, autocomplete, elements, and 330 more.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-029",
+      "title": "Simple Survey Tool",
+      "component": "polls table",
+      "domain": "database",
+      "targetPath": "backend/src/db/polls-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('polls.db');\n\ninterface Poll {\n  id: number;\n  question: string;\n}\n\ninterface Option {\n  id: number;\n  pollId: number;\n  text: string;\n  votes: number;\n}\n\nfunction createPoll(question: string): void {\n  const sql = 'INSERT INTO polls (question) VALUES (?)';\n  db.run(sql, [question]);\n}\n\nfunction getPoll(id: number): Poll | undefined {\n  const sql = 'SELECT * FROM polls WHERE id = ?';\n  const stmt = db.prepare(sql);\n  return stmt.get(id) as unknown as Poll | undefined;\n}\n\nfunction createOption(pollId: number, text: string): void {\n  const sql = 'INSERT INTO options (pollId, text, votes) VALUES (?, ?, 0)';\n  db.run(sql, [pollId, text]);\n}\n\nfunction getOptionsByPollId(pollId: number): Option[] {\n  const sql = 'SELECT * FROM options WHERE pollId = ?';\n  const stmt = db.prepare(sql);\n  return stmt.all(pollId) as unknown as Option[];\n}\n\nfunction voteForOption(optionId: number): void {\n  const sql = 'UPDATE options SET votes = votes + 1 WHERE id = ?';\n  db.run(sql, [optionId]);\n}\n\nexport { db, createPoll, getPoll, createOption, getOptionsByPollId, voteForOption };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/polls-table.ts(19,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/polls-table.ts(30,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/polls-table.ts(41,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/polls-api.ts(2,45): error TS2305: Module '\"../db/polls-table\"' has no exported member 'getOptions'.\r\nbackend/src/routes/polls-api.ts(12,26): error TS2345: Argument of type 'void' is not assignable to parameter of type 'number'.\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/polls-table.ts(19,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/polls-table.ts(30,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/polls-table.ts(41,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/polls-api.ts(4,7): error TS2451: Cannot redeclare block-scoped variable 'router'.\r\nbackend/src/routes/polls-api.ts(11,26): error TS2345: Argument of type 'void' is not assignable to parameter of type 'number'.\r\nbackend/src/routes/polls-api.ts(36,33): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/routes/polls-api.ts(43,14): error TS2451: Cannot redeclare block-scoped variable 'router'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-029",
+      "title": "Simple Survey Tool",
+      "component": "Poll Builder",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/poll-builder.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface PollBuilderProps {\n  onSubmit: (question: string, options: string[]) => void;\n}\n\nconst PollBuilder: FC<PollBuilderProps> = ({ onSubmit }) => {\n  const [question, setQuestion] = React.useState<string>(\"\");\n  const [options, setOptions] = React.useState<string[]>([]);\n\n  const handleSubmit = async () => {\n    try {\n      await fetch(\"/api/polls-api/\", {\n        method: \"POST\",\n        headers: {\n          \"Content-Type\": \"application/json\",\n        },\n        body: JSON.stringify({ question, options }),\n      });\n      onSubmit(question, options);\n    } catch (error) {\n      console.error(\"Error creating poll:\", error);\n    }\n  };\n\n  return (\n    <div>\n      <h1>Create a New Poll</h1>\n      <input\n        type=\"text\"\n        placeholder=\"Enter your question\"\n        value={question}\n        onChange={(e) => setQuestion(e.target.value)}\n      />\n      <ul>\n        {options.map((option, index) => (\n          <li key={index}>\n            <input\n              type=\"text\"\n              placeholder={`Option ${index + 1}`}\n              value={option}\n              onChange={(e) => {\n                const newOptions = [...options];\n                newOptions[index] = e.target.value;\n                setOptions(newOptions);\n              }}\n            />\n          </li>\n        ))}\n      </ul>\n      <button onClick={() => setOptions([...options, \"\"])}>Add Option</button>\n      <button onClick={handleSubmit}>Create Poll</button>\n    </div>\n  );\n};\n\nexport { PollBuilder };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/main.tsx(15,8): error TS2741: Property 'onSubmit' is missing in type '{}' but required in type 'PollBuilderProps'.\r\nfrontend/src/pages/poll-builder.tsx(8,35): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/poll-builder.tsx(9,33): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-029",
+      "title": "Simple Survey Tool",
+      "component": "Results View",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/results-view.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface Poll {\n  id: number;\n  question: string;\n  options: Option[];\n}\n\ninterface Option {\n  id: number;\n  text: string;\n  votes: number;\n}\n\nconst ResultsView: FC = () => {\n  const [poll, setPoll] = React.useState<Poll | null>(null);\n\n  React.useEffect(() => {\n    fetch('/api/polls-api/')\n      .then(response => response.json())\n      .then(data => {\n        if (data.length > 0) {\n          setPoll(data[0]);\n        }\n      });\n  }, []);\n\n  if (!poll) {\n    return <div>Loading...</div>;\n  }\n\n  return (\n    <div>\n      <h1>{poll.question}</h1>\n      <ul>\n        {poll.options.map(option => (\n          <li key={option.id}>{option.text}: {option.votes} votes</li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n\nexport { ResultsView };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/results-view.tsx(16,27): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/results-view.tsx(18,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/main.tsx(16,8): error TS2741: Property 'pollId' is missing in type '{}' but required in type '{ pollId: number; }'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-030",
+      "title": "CI/CD Status Dashboard",
+      "component": "builds table",
+      "domain": "database",
+      "targetPath": "backend/src/db/builds-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Build {\n  id: number;\n  repo: string;\n  branch: string;\n  status: string;\n  timestamp: Date;\n}\n\nconst db = new DatabaseSync('builds.db');\n\nfunction createBuildTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS builds (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      repo TEXT NOT NULL,\n      branch TEXT NOT NULL,\n      status TEXT NOT NULL,\n      timestamp DATETIME NOT NULL\n    )`\n  );\n}\n\nfunction insertBuild(build: Build): void {\n  db.run(\n    'INSERT INTO builds (repo, branch, status, timestamp) VALUES (?, ?, ?, ?)',\n    [build.repo, build.branch, build.status, build.timestamp]\n  );\n}\n\nfunction getBuildById(id: number): Build | null {\n  const stmt = db.prepare('SELECT * FROM builds WHERE id = ?');\n  const result = stmt.get(id) as unknown as Build | null;\n  return result;\n}\n\nfunction getAllBuilds(): Build[] {\n  const stmt = db.prepare('SELECT * FROM builds');\n  const results = stmt.all() as unknown as Build[];\n  return results;\n}\n\nexport { db, createBuildTable, insertBuild, getBuildById, getAllBuilds };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/builds-table.ts(26,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/build-status-api.ts(2,28): error TS2305: Module '\"../db/builds-table\"' has no exported member 'getBuildsByBranch'.\r\nbackend/src/routes/build-status-api.ts(2,47): error TS2305: Module '\"../db/builds-table\"' has no exported member 'getBuildsByRepository'.\r\nbackend/src/routes/build-status-api.ts(2,70): error TS2305: Module '\"../db/builds-table\"' has no exported member 'getLatestBuild'.\r\nbackend/src/routes/build-status-api.ts(39,27): error TS2554: Expected 1 arguments, but got 4.\r\nbackend/src/routes/slack-notifier.ts(2,10): error TS2305: Module '\"../db/builds-table\"' has no exported member 'getBuildsByBranch'.\r\nbackend/src/routes/slack-notifier.ts(15,35): error TS7006: Parameter 'build' implicitly has an 'any' type.\r\n",
+      "repairRounds": 6,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/builds-table.ts(26,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/build-status-api.ts(9,39): error TS2554: Expected 0 arguments, but got 1.\r\nbackend/src/routes/build-status-api.ts(19,54): error TS2554: Expected 1 arguments, but got 4.\r\nbackend/src/routes/slack-notifier.ts(23,51): error TS2339: Property 'commitHash' does not exist on type 'Build'.\r\nbackend/src/routes/slack-notifier.ts(23,83): error TS2339: Property 'url' does not exist on type 'Build'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-030",
+      "title": "CI/CD Status Dashboard",
+      "component": "Pipeline Status Grid",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/pipeline-status-grid.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface BuildStatus {\n  repository: string;\n  branch: string;\n  status: 'passing' | 'failing' | 'running';\n}\n\nconst fetchBuildStatus = async (): Promise<BuildStatus[]> => {\n  const response = await fetch('/api/build-status-api/builds');\n  if (!response.ok) {\n    throw new Error('Failed to fetch build statuses');\n  }\n  return await response.json();\n};\n\nconst PipelineStatusGrid: FC = () => {\n  const [buildStatuses, setBuildStatuses] = React.useState<BuildStatus[]>([]);\n\n  React.useEffect(() => {\n    fetchBuildStatus()\n      .then(setBuildStatuses)\n      .catch(error => console.error('Error fetching build statuses:', error));\n  }, []);\n\n  return (\n    <div>\n      <h1>Pipeline Status Grid</h1>\n      <table>\n        <thead>\n          <tr>\n            <th>Repository</th>\n            <th>Branch</th>\n            <th>Status</th>\n          </tr>\n        </thead>\n        <tbody>\n          {buildStatuses.map(status => (\n            <tr key={`${status.repository}-${status.branch}`}>`\n              <td>{status.repository}</td>\n              <td>{status.branch}</td>\n              <td>{status.status}</td>\n            </tr>\n          ))}\n        </tbody>\n      </table>\n    </div>\n  );\n};\n\nexport { PipelineStatusGrid };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/pipeline-status-grid.tsx(18,45): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/pipeline-status-grid.tsx(20,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-032",
+      "title": "Restaurant Reservations",
+      "component": "reservations table",
+      "domain": "database",
+      "targetPath": "backend/src/db/reservations-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('reservations.db');\n\ninterface Reservation {\n  id: number;\n  partySize: number;\n  timeSlot: string;\n  tableAssignment: number | null;\n  guestContactInfo: string;\n}\n\nfunction createReservation(reservation: Reservation): void {\n  const sql = 'INSERT INTO reservations (partySize, timeSlot, tableAssignment, guestContactInfo) VALUES (?, ?, ?, ?)';\n  db.prepare(sql).run(\n    reservation.partySize,\n    reservation.timeSlot,\n    reservation.tableAssignment,\n    reservation.guestContactInfo\n  );\n}\n\nfunction getReservations(): Reservation[] {\n  const sql = 'SELECT * FROM reservations';\n  return db.prepare(sql).all() as unknown as Reservation[];\n}\n\nfunction getReservationById(id: number): Reservation | undefined {\n  const sql = 'SELECT * FROM reservations WHERE id = ?';\n  return db.prepare(sql).get(id) as unknown as Reservation | undefined;\n}\n\nfunction updateReservation(reservation: Reservation): void {\n  const sql = 'UPDATE reservations SET partySize = ?, timeSlot = ?, tableAssignment = ?, guestContactInfo = ? WHERE id = ?';\n  db.prepare(sql).run(\n    reservation.partySize,\n    reservation.timeSlot,\n    reservation.tableAssignment,\n    reservation.guestContactInfo,\n    reservation.id\n  );\n}\n\nfunction deleteReservation(id: number): void {\n  const sql = 'DELETE FROM reservations WHERE id = ?';\n  db.prepare(sql).run(id);\n}\n\nexport { db, createReservation, getReservations, getReservationById, updateReservation, deleteReservation };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/reservations-api.ts(9,48): error TS2554: Expected 0 arguments, but got 1.\r\nbackend/src/routes/reservations-api.ts(19,62): error TS2554: Expected 1 arguments, but got 3.\r\nbackend/src/routes/reservations-api.ts(30,57): error TS2554: Expected 1 arguments, but got 5.\r\nbackend/src/routes/reservations-api.ts(31,9): error TS1345: An expression of type 'void' cannot be tested for truthiness.\r\nbackend/src/routes/reservations-api.ts(45,9): error TS1345: An expression of type 'void' cannot be tested for truthiness.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/reservations-api.ts(8,48): error TS2554: Expected 0 arguments, but got 2.\r\nbackend/src/routes/reservations-api.ts(17,53): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/routes/reservations-api.ts(26,60): error TS2554: Expected 1 arguments, but got 3.\r\nbackend/src/routes/reservations-api.ts(35,33): error TS2554: Expected 1 arguments, but got 2.\r\n"
+    },
+    {
+      "sessionId": "session-gold-032",
+      "title": "Restaurant Reservations",
+      "component": "Booking Widget",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/booking-widget.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface ReservationSlot {\n  id: number;\n  time: string;\n  available: boolean;\n}\n\nconst BookingWidget: FC = () => {\n  const [partySize, setPartySize] = React.useState<number>(1);\n  const [selectedTimeSlot, setSelectedTimeSlot] = React.useState<ReservationSlot | null>(null);\n\n  const fetchTimeSlots = async () => {\n    try {\n      const response = await fetch('/api/reservations-api/');\n      const data: ReservationSlot[] = await response.json();\n      console.log(data);\n    } catch (error) {\n      console.error('Error fetching time slots:', error);\n    }\n  };\n\n  const handlePartySizeChange = (event: React.ChangeEvent<HTMLInputElement>) => {\n    setPartySize(Number(event.target.value));\n  };\n\n  const handleTimeSlotSelect = (timeSlot: ReservationSlot) => {\n    setSelectedTimeSlot(timeSlot);\n  };\n\n  const handleSubmit = async () => {\n    if (!selectedTimeSlot) {\n      alert('Please select a time slot.');\n      return;\n    }\n\n    try {\n      const response = await fetch(`/api/reservations-api/`, {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json'\n        },\n        body: JSON.stringify({\n          partySize,\n          time: selectedTimeSlot.time\n        })\n      });\n\n      if (response.ok) {\n        alert('Reservation successful!');\n      } else {\n        alert('Failed to make reservation.');\n      }\n    } catch (error) {\n      console.error('Error making reservation:', error);\n    }\n  };\n\n  React.useEffect(() => {\n    fetchTimeSlots();\n  }, []);\n\n  return (\n    <div>\n      <h2>Book Your Table</h2>\n      <label>\n        Party Size:\n        <input type=\"number\" value={partySize} onChange={handlePartySizeChange} />\n      </label>\n      <button onClick={handleSubmit}>Submit</button>\n    </div>\n  );\n};\n\nexport { BookingWidget };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/booking-widget.tsx(10,37): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/booking-widget.tsx(11,51): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/booking-widget.tsx(59,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-032",
+      "title": "Restaurant Reservations",
+      "component": "Host Stand View",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/host-stand-view.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface Reservation {\n  id: number;\n  name: string;\n  tableNumber: number;\n  time: string;\n}\n\nconst fetchReservations = async (): Promise<Reservation[]> => {\n  const response = await fetch(\"/api/reservations-api/\");\n  if (!response.ok) {\n    throw new Error(\"Failed to fetch reservations\");\n  }\n  return await response.json();\n};\n\nconst addWalkIn = async (name: string, tableNumber: number, time: string): Promise<void> => {\n  const response = await fetch(\"/api/reservations-api/\", {\n    method: \"POST\",\n    headers: {\n      \"Content-Type\": \"application/json\",\n    },\n    body: JSON.stringify({ name, tableNumber, time }),\n  });\n  if (!response.ok) {\n    throw new Error(\"Failed to add walk-in reservation\");\n  }\n};\n\nconst HostStandView: FC = () => {\n  const [reservations, setReservations] = React.useState<Reservation[]>([]);\n  const [walkInName, setWalkInName] = React.useState<string>(\"\");\n  const [walkInTableNumber, setWalkInTableNumber] = React.useState<number>(0);\n  const [walkInTime, setWalkInTime] = React.useState<string>(\"\");\n\n  React.useEffect(() => {\n    const loadReservations = async () => {\n      try {\n        const data = await fetchReservations();\n        setReservations(data);\n      } catch (error) {\n        console.error(error);\n      }\n    };\n\n    loadReservations();\n  }, []);\n\n  const handleAddWalkIn = async () => {\n    try {\n      await addWalkIn(walkInName, walkInTableNumber, walkInTime);\n      setWalkInName(\"\");\n      setWalkInTableNumber(0);\n      setWalkInTime(\"\");\n      // Reload reservations after adding walk-in\n      const data = await fetchReservations();\n      setReservations(data);\n    } catch (error) {\n      console.error(error);\n    }\n  };\n\n  return (\n    <div>\n      <h1>Host Stand</h1>\n      <ul>\n        {reservations.map((reservation) => (\n          <li key={reservation.id}>{`${reservation.name} - Table ${reservation.tableNumber} - ${reservation.time}`}</li>\n        ))}\n      </ul>\n      <h2>Add Walk-In</h2>\n      <input\n        type=\"text\"\n        placeholder=\"Name\"\n        value={walkInName}\n        onChange={(e) => setWalkInName(e.target.value)}\n      />\n      <input\n        type=\"number\"\n        placeholder=\"Table Number\"\n        value={walkInTableNumber}\n        onChange={(e) => setWalkInTableNumber(Number(e.target.value))}\n      />\n      <input\n        type=\"time\"\n        placeholder=\"Time\"\n        value={walkInTime}\n        onChange={(e) => setWalkInTime(e.target.value)}\n      />\n      <button onClick={handleAddWalkIn}>Add Walk-In</button>\n    </div>\n  );\n};\n\nexport { HostStandView };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/host-stand-view.tsx(32,43): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/host-stand-view.tsx(33,39): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/host-stand-view.tsx(34,53): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/host-stand-view.tsx(35,39): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/host-stand-view.tsx(37,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-033",
+      "title": "Veterinary Appointment Booking",
+      "component": "pets table",
+      "domain": "database",
+      "targetPath": "backend/src/db/pets-table.ts",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('pets.db');\n\ninterface Pet {\n  id: number;\n  name: string;\n  species: string;\n  ownerId: number;\n}\n\nfunction createTable(): void {\n  const sql = `CREATE TABLE IF NOT EXISTS pets (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    name TEXT NOT NULL,\n    species TEXT NOT NULL,\n    ownerId INTEGER NOT NULL\n  )`;\n  db.exec(sql);\n}\n\nfunction insertPet(name: string, species: string, ownerId: number): number {\n  const sql = 'INSERT INTO pets (name, species, ownerId) VALUES (?, ?, ?)';\n  const stmt = db.prepare(sql);\n  return stmt.run(name, species, ownerId).lastInsertRowid as number;\n}\n\nfunction getPetById(id: number): Pet | null {\n  const sql = 'SELECT * FROM pets WHERE id = ?';\n  const stmt = db.prepare(sql);\n  return stmt.get(id) as unknown as Pet | null;\n}\n\nfunction getAllPets(): Pet[] {\n  const sql = 'SELECT * FROM pets';\n  const stmt = db.prepare(sql);\n  return stmt.all() as unknown as Pet[];\n}\n\nfunction updatePet(id: number, name: string, species: string, ownerId: number): boolean {\n  const sql = 'UPDATE pets SET name = ?, species = ?, ownerId = ? WHERE id = ?';\n  const stmt = db.prepare(sql);\n  return stmt.run(name, species, ownerId, id).changes > 0;\n}\n\nfunction deletePet(id: number): boolean {\n  const sql = 'DELETE FROM pets WHERE id = ?';\n  const stmt = db.prepare(sql);\n  return stmt.run(id).changes > 0;\n}\n\nexport { db, createTable, insertPet, getPetById, getAllPets, updatePet, deletePet };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/appointments-api.ts(15,24): error TS2304: Cannot find name 'VisitRecord'.\r\nbackend/src/routes/appointments-api.ts(29,25): error TS2304: Cannot find name 'VisitRecord'.\r\nbackend/src/routes/pet-records-api.ts(47,28): error TS2554: Expected 3 arguments, but got 1.\r\nbackend/src/routes/pet-records-api.ts(59,30): error TS2554: Expected 4 arguments, but got 2.\r\n",
+      "repairRounds": 3,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-033",
+      "title": "Veterinary Appointment Booking",
+      "component": "visit_records table",
+      "domain": "database",
+      "targetPath": "backend/src/db/visit-records-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('vet_appointments.db');\n\ninterface VisitRecord {\n  id: number;\n  pet_id: number;\n  vet_id: number;\n  date: string;\n  notes: string;\n  diagnosis: string;\n}\n\nfunction createVisitRecord(visitRecord: VisitRecord): void {\n  const sql = 'INSERT INTO visit_records (pet_id, vet_id, date, notes, diagnosis) VALUES (?, ?, ?, ?, ?)';\n  db.prepare(sql).run(\n    visitRecord.pet_id,\n    visitRecord.vet_id,\n    visitRecord.date,\n    visitRecord.notes,\n    visitRecord.diagnosis\n  );\n}\n\nfunction getVisitRecords(): VisitRecord[] {\n  const sql = 'SELECT * FROM visit_records';\n  const stmt = db.prepare(sql);\n  return stmt.all() as unknown as VisitRecord[];\n}\n\nfunction getVisitRecordById(id: number): VisitRecord | null {\n  const sql = 'SELECT * FROM visit_records WHERE id = ?';\n  const stmt = db.prepare(sql);\n  return stmt.get(id) as unknown as VisitRecord | null;\n}\n\nfunction updateVisitRecord(visitRecord: VisitRecord): void {\n  const sql = 'UPDATE visit_records SET pet_id = ?, vet_id = ?, date = ?, notes = ?, diagnosis = ? WHERE id = ?';\n  db.prepare(sql).run(\n    visitRecord.pet_id,\n    visitRecord.vet_id,\n    visitRecord.date,\n    visitRecord.notes,\n    visitRecord.diagnosis,\n    visitRecord.id\n  );\n}\n\nfunction deleteVisitRecord(id: number): void {\n  const sql = 'DELETE FROM visit_records WHERE id = ?';\n  db.prepare(sql).run(id);\n}\n\nexport { db, createVisitRecord, getVisitRecords, getVisitRecordById, updateVisitRecord, deleteVisitRecord };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/appointments-api.ts(5,3): error TS2724: '\"../db/visit-records-table\"' has no exported member named 'getVisitRecordsByPetId'. Did you mean 'getVisitRecordById'?\r\nbackend/src/routes/appointments-api.ts(25,45): error TS2554: Expected 1 arguments, but got 4.\r\nbackend/src/routes/appointments-api.ts(61,46): error TS2554: Expected 1 arguments, but got 4.\r\nbackend/src/routes/appointments-api.ts(63,8): error TS1345: An expression of type 'void' cannot be tested for truthiness.\r\nbackend/src/routes/appointments-api.ts(76,8): error TS1345: An expression of type 'void' cannot be tested for truthiness.\r\nbackend/src/routes/pet-records-api.ts(5,3): error TS2724: '\"../db/visit-records-table\"' has no exported member named 'getVisitRecordsByPetId'. Did you mean 'getVisitRecordById'?\r\nbackend/src/routes/pet-records-api.ts(76,45): error TS2554: Expected 1 arguments, but got 4.\r\nbackend/src/routes/pet-records-api.ts(89,51): error TS2554: Expected 1 arguments, but got 4.\r\nbackend/src/routes/pet-records-api.ts(91,8): error TS1345: An expression of type 'void' cannot be tested for truthiness.\r\nbackend/src/routes/pet-records-api.ts(104,8): error TS1345: An expression of type 'void' cannot be tested for truthiness.\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/appointments-api.ts(11,61): error TS2554: Expected 1 arguments, but got 4.\r\nbackend/src/routes/appointments-api.ts(21,42): error TS2554: Expected 0 arguments, but got 1.\r\nbackend/src/routes/appointments-api.ts(32,62): error TS2554: Expected 1 arguments, but got 4.\r\nbackend/src/routes/appointments-api.ts(33,10): error TS1345: An expression of type 'void' cannot be tested for truthiness.\r\nbackend/src/routes/appointments-api.ts(47,10): error TS1345: An expression of type 'void' cannot be tested for truthiness.\r\nbackend/src/routes/pet-records-api.ts(11,40): error TS2554: Expected 0 arguments, but got 1.\r\nbackend/src/routes/pet-records-api.ts(19,46): error TS2561: Object literal may only specify known properties, but 'petId' does not exist in type 'VisitRecord'. Did you mean to write 'pet_id'?\r\nbackend/src/routes/pet-records-api.ts(27,50): error TS2353: Object literal may only specify known properties, and 'visitId' does not exist in type 'VisitRecord'.\r\nbackend/src/routes/pet-records-api.ts(28,7): error TS1345: An expression of type 'void' cannot be tested for truthiness.\r\nbackend/src/routes/pet-records-api.ts(39,7): error TS1345: An expression of type 'void' cannot be tested for truthiness.\r\n"
+    },
+    {
+      "sessionId": "session-gold-033",
+      "title": "Veterinary Appointment Booking",
+      "component": "Booking Calendar",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/booking-calendar.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Pet {\n  id: number;\n  name: string;\n}\n\ninterface VisitSlot {\n  start: Date;\n  end: Date;\n  isAvailable: boolean;\n}\n\nconst BookingCalendar: FC = () => {\n  // State to hold the selected pet and available slots\n  const [selectedPet, setSelectedPet] = useState<Pet | null>(null);\n  const [availableSlots, setAvailableSlots] = useState<VisitSlot[]>([]);\n\n  // Function to fetch available slots for a specific pet\n  const fetchAvailableSlots = async (petId: number) => {\n    try {\n      const response = await fetch(`/api/appointments-api/pets/${petId}/visits`);\n      const data = await response.json();\n      setAvailableSlots(data);\n    } catch (error) {\n      console.error('Failed to fetch available slots:', error);\n    }\n  };\n\n  // Function to handle pet selection\n  const handlePetSelect = (pet: Pet) => {\n    setSelectedPet(pet);\n    fetchAvailableSlots(pet.id);\n  };\n\n  // Render the booking calendar UI\n  return (\n    <div>\n      <h1>Booking Calendar</h1>\n      <select onChange={(e) => handlePetSelect({ id: Number(e.target.value), name: e.target.options[e.target.selectedIndex].text })}>\n        <option value=\"\">Select a pet</option>\n        {/* Populate options based on fetched pets */}\n      </select>\n      <ul>\n        {availableSlots.map((slot, index) => (\n          <li key={index}>{slot.start.toLocaleString()} - {slot.end.toLocaleString()} {slot.isAvailable ? 'Available' : 'Not Available'}</li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n\nexport { BookingCalendar };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/booking-calendar.tsx(16,41): error TS2304: Cannot find name 'useState'.\r\nfrontend/src/pages/booking-calendar.tsx(17,47): error TS2304: Cannot find name 'useState'.\r\nfrontend/src/pages/booking-calendar.tsx(45,30): error TS7006: Parameter 'slot' implicitly has an 'any' type.\r\nfrontend/src/pages/booking-calendar.tsx(45,36): error TS7006: Parameter 'index' implicitly has an 'any' type.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/booking-calendar.tsx(15,41): error TS2304: Cannot find name 'useState'.\r\nfrontend/src/pages/booking-calendar.tsx(16,47): error TS2304: Cannot find name 'useState'.\r\nfrontend/src/pages/booking-calendar.tsx(41,30): error TS7006: Parameter 'slot' implicitly has an 'any' type.\r\nfrontend/src/pages/booking-calendar.tsx(41,36): error TS7006: Parameter 'index' implicitly has an 'any' type.\r\n"
+    },
+    {
+      "sessionId": "session-gold-033",
+      "title": "Veterinary Appointment Booking",
+      "component": "Vet Appointment Queue",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/vet-appointment-queue.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\ninterface Pet {\n  id: number;\n  name: string;\n}\n\ninterface Visit {\n  id: number;\n  date: Date;\n  description: string;\n}\n\nconst VetAppointmentQueue: FC = () => {\n  // Fetch the list of pets for the owner\n  const fetchPets = async (ownerId: number): Promise<Pet[]> => {\n    const response = await fetch(`/api/pet-records-api/owners/${ownerId}/pets`);\n    if (!response.ok) {\n      throw new Error('Failed to fetch pets');\n    }\n    return await response.json();\n  };\n\n  // Fetch the visits for a specific pet\n  const fetchVisits = async (petId: number): Promise<Visit[]> => {\n    const response = await fetch(`/api/pet-records-api/pets/${petId}/visits`);\n    if (!response.ok) {\n      throw new Error('Failed to fetch visits');\n    }\n    return await response.json();\n  };\n\n  // Render the appointment queue UI\n  return (\n    <div>\n      <h1>Vet Appointment Queue</h1>\n      {/* Display the list of pets and their visit history */}\n    </div>\n  );\n};\n\nexport { VetAppointmentQueue };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-036",
+      "title": "Gym Membership System",
+      "component": "members table",
+      "domain": "database",
+      "targetPath": "backend/src/db/members-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('./gym-membership.db');\n\ninterface Member {\n  id: number;\n  plan: string;\n  expiry_date: Date;\n}\n\nfunction createTable(): void {\n  const sql = `CREATE TABLE IF NOT EXISTS members (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    plan TEXT NOT NULL,\n    expiry_date DATETIME NOT NULL\n  )`;\n  db.exec(sql);\n}\n\nfunction insertMember(member: Member): void {\n  const sql = 'INSERT INTO members (plan, expiry_date) VALUES (?, ?)';\n  db.prepare(sql).run(member.plan, member.expiry_date.toISOString());\n}\n\nfunction getMemberById(id: number): Member | null {\n  const sql = 'SELECT * FROM members WHERE id = ?';\n  const result = db.prepare(sql).get(id) as unknown as Member;\n  return result || null;\n}\n\nfunction getAllMembers(): Member[] {\n  const sql = 'SELECT * FROM members';\n  const results = db.prepare(sql).all() as unknown as Member[];\n  return results;\n}\n\nexport { db, createTable, insertMember, getMemberById, getAllMembers };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/billing-service.ts(10,21): error TS2554: Expected 0 arguments, but got 1.\r\nbackend/src/routes/billing-service.ts(11,29): error TS2554: Expected 0 arguments, but got 1.\r\nbackend/src/routes/billing-service.ts(23,46): error TS2554: Expected 1 arguments, but got 2.\r\nbackend/src/routes/billing-service.ts(42,61): error TS2554: Expected 1 arguments, but got 2.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/billing-service.ts(11,45): error TS2554: Expected 1 arguments, but got 3.\r\n"
+    },
+    {
+      "sessionId": "session-gold-036",
+      "title": "Gym Membership System",
+      "component": "check_ins table",
+      "domain": "database",
+      "targetPath": "backend/src/db/check-ins-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface CheckIn {\n  id: number;\n  member_id: number;\n  check_in_time: Date;\n  success: boolean;\n}\n\nconst db = new DatabaseSync('gym-membership.db');\n\nfunction createCheckInsTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS check_ins (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      member_id INTEGER NOT NULL,\n      check_in_time DATETIME NOT NULL,\n      success BOOLEAN NOT NULL\n    )`\n  );\n}\n\nfunction insertCheckIn(memberId: number, success: boolean): void {\n  const stmt = db.prepare(\n    'INSERT INTO check_ins (member_id, check_in_time, success) VALUES (?, ?, ?)'\n  );\n  stmt.run(memberId, new Date(), success);\n}\n\nfunction getCheckInsByMemberId(memberId: number): CheckIn[] {\n  const stmt = db.prepare(\n    'SELECT * FROM check_ins WHERE member_id = ?'\n  );\n  return stmt.all(memberId) as unknown as CheckIn[];\n}\n\nexport { db, createCheckInsTable, insertCheckIn, getCheckInsByMemberId };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/check-ins-table.ts(27,8): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'Date' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'Date' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 27 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'number' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\nbackend/src/routes/check-in-api.ts(33,46): error TS2554: Expected 2 arguments, but got 3.\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/check-ins-table.ts(24,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'Date' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'Date' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 27 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type 'number' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\nbackend/src/routes/check-in-api.ts(16,31): error TS2554: Expected 2 arguments, but got 1.\r\nbackend/src/routes/check-in-api.ts(18,7): error TS1345: An expression of type 'void' cannot be tested for truthiness.\r\n"
+    },
+    {
+      "sessionId": "session-gold-036",
+      "title": "Gym Membership System",
+      "component": "Check-In Scanner",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/check-in-scanner.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\nconst CheckInScanner: FC = () => {\n  const handleScan = async (memberCode: string) => {\n    try {\n      // Fetch member details based on the scanned code\n      const memberResponse = await fetch(`/api/billing-service/members/${memberCode}`);\n      if (!memberResponse.ok) {\n        throw new Error('Member not found');\n      }\n      const member = await memberResponse.json();\n\n      // Confirm check-in with the backend\n      const checkInResponse = await fetch('/api/check-in-api/check-in', {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json'\n        },\n        body: JSON.stringify({ memberId: member.id })\n      });\n\n      if (!checkInResponse.ok) {\n        throw new Error('Failed to check in');\n      }\n\n      alert('Check-in successful!');\n    } catch (error) {\n      alert(`Error: ${error.message}`);\n    }\n  };\n\n  return (\n    <div>\n      <h1>Check-In Scanner</h1>\n      <input type=\"text\" placeholder=\"Enter member code\" />\n      <button onClick={() => handleScan('12345')}>Scan</button> {/* Example hardcoded code */}\n    </div>\n  );\n};\n\nexport { CheckInScanner };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/check-in-scanner.tsx(28,23): error TS18046: 'error' is of type 'unknown'.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-036",
+      "title": "Gym Membership System",
+      "component": "Membership Admin Panel",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/membership-admin-panel.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\nconst MembershipAdminPanel: FC = () => {\n  // Implement the membership admin panel functionality here\n  // This could include fetching member data, editing plans, and managing billing statuses\n  return (\n    <div>\n      {/* JSX to display the membership admin panel */}\n    </div>\n  );\n};\n\nexport { MembershipAdminPanel };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-038",
+      "title": "Warehouse Inventory System",
+      "component": "stock_levels table",
+      "domain": "database",
+      "targetPath": "backend/src/db/stock-levels-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\nconst db = new DatabaseSync('warehouse.db');\n\ninterface StockLevel {\n  sku: string;\n  location_id: number;\n  current_quantity: number;\n  reorder_threshold: number;\n}\n\nfunction createTable(): void {\n  const sql = `\n    CREATE TABLE IF NOT EXISTS stock_levels (\n      sku TEXT PRIMARY KEY,\n      location_id INTEGER,\n      current_quantity INTEGER,\n      reorder_threshold INTEGER\n    )\n  `;\n  db.exec(sql);\n}\n\nfunction insertStockLevel(stockLevel: StockLevel): void {\n  const sql = 'INSERT INTO stock_levels (sku, location_id, current_quantity, reorder_threshold) VALUES (?, ?, ?, ?)';\n  db.prepare(sql).run(\n    stockLevel.sku,\n    stockLevel.location_id,\n    stockLevel.current_quantity,\n    stockLevel.reorder_threshold\n  );\n}\n\nfunction updateStockLevel(sku: string, stockLevel: Partial<StockLevel>): void {\n  const setClause = Object.keys(stockLevel)\n    .map(key => `${key} = ?`) // Assuming all properties are optional\n    .join(', ');\n  const params = [setClause, ...Object.values(stockLevel), sku];\n  const sql = `UPDATE stock_levels SET ${setClause} WHERE sku = ?`;\n  db.prepare(sql).run(params);\n}\n\nfunction getStockLevel(sku: string): StockLevel | null {\n  const sql = 'SELECT * FROM stock_levels WHERE sku = ?';\n  const result = db.prepare(sql).get(sku) as unknown as StockLevel | null;\n  return result;\n}\n\nfunction getAllStockLevels(): StockLevel[] {\n  const sql = 'SELECT * FROM stock_levels';\n  const results = db.prepare(sql).all() as unknown as StockLevel[];\n  return results;\n}\n\nexport { db, createTable, insertStockLevel, updateStockLevel, getStockLevel, getAllStockLevels };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/stock-levels-table.ts(40,23): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type '(string | number)[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type '(string | number)[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type '(string | number)[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type '(string | number)[]'.\r\nbackend/src/routes/inventory-api.ts(3,3): error TS2724: '\"../db/stock-levels-table\"' has no exported member named 'getStockLevelBySku'. Did you mean 'getStockLevel'?\r\nbackend/src/routes/inventory-api.ts(4,3): error TS2724: '\"../db/stock-levels-table\"' has no exported member named 'upsertStockLevel'. Did you mean 'insertStockLevel'?\r\nbackend/src/routes/inventory-api.ts(6,3): error TS2724: '\"../db/stock-levels-table\"' has no exported member named 'deleteStockLevel'. Did you mean 'getStockLevel'?\r\n",
+      "repairRounds": 4,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/stock-levels-table.ts(31,23): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type '(string | number)[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type '(string | number)[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): StatementResultingChanges', gave the following error.\r\n    Argument of type '(string | number)[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type '(string | number)[]'.\r\nbackend/src/routes/inventory-api.ts(27,40): error TS2554: Expected 1 arguments, but got 3.\r\nbackend/src/routes/inventory-api.ts(29,40): error TS2559: Type 'number' has no properties in common with type 'Partial<StockLevel>'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-038",
+      "title": "Warehouse Inventory System",
+      "component": "stock_movements table",
+      "domain": "database",
+      "targetPath": "backend/src/db/stock-movements-table.ts",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface StockMovement {\n  id: number;\n  product_id: number;\n  quantity: number;\n  movement_type: 'in' | 'out';\n  timestamp: Date;\n}\n\nconst db = new DatabaseSync('warehouse.db');\n\nfunction createStockMovementTable(): void {\n  const sql = `\n    CREATE TABLE IF NOT EXISTS stock_movements (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      product_id INTEGER NOT NULL,\n      quantity INTEGER NOT NULL,\n      movement_type TEXT CHECK (movement_type IN ('in', 'out')) NOT NULL,\n      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP\n    );\n  `;\n  db.exec(sql);\n}\n\nfunction insertStockMovement(product_id: number, quantity: number, movement_type: 'in' | 'out'): void {\n  const sql = 'INSERT INTO stock_movements (product_id, quantity, movement_type) VALUES (?, ?, ?)';\n  db.prepare(sql).run(product_id, quantity, movement_type);\n}\n\nfunction getStockMovementsByProductId(product_id: number): StockMovement[] {\n  const sql = 'SELECT * FROM stock_movements WHERE product_id = ?';\n  const stmt = db.prepare(sql);\n  return stmt.all(product_id) as unknown as StockMovement[];\n}\n\nexport { db, createStockMovementTable, insertStockMovement, getStockMovementsByProductId };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-038",
+      "title": "Warehouse Inventory System",
+      "component": "Inventory Grid",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/inventory-grid.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface StockLevel {\n  sku: string;\n  location: string;\n  quantity: number;\n}\n\nconst LOW_STOCK_THRESHOLD = 10;\n\nconst InventoryGrid: FC = () => {\n  const [stockLevels, setStockLevels] = React.useState<StockLevel[]>([]);\n\n  React.useEffect(() => {\n    fetch('/api/inventory-api/levels')\n      .then(response => response.json())\n      .then(data => setStockLevels(data))\n      .catch(error => console.error('Error fetching inventory levels:', error));\n  }, []);\n\n  const highlightLowStock = (quantity: number) => {\n    return quantity < LOW_STOCK_THRESHOLD ? 'bg-red-200' : '';\n  };\n\n  return (\n    <div className=\"grid grid-cols-3 gap-4\">\n      {stockLevels.map(level => (\n        <div key={`${level.sku}-${level.location}`} className={`p-4 border ${highlightLowStock(level.quantity)}`}>\n          <h3>{level.sku}</h3>\n          <p>Location: {level.location}</p>\n          <p>Quantity: {level.quantity}</p>\n        </div>\n      ))}\n    </div>\n  );\n};\n\nexport { InventoryGrid };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/inventory-grid.tsx(12,41): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/inventory-grid.tsx(14,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-038",
+      "title": "Warehouse Inventory System",
+      "component": "Reorder Queue",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/reorder-queue.tsx",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface SkuLevel {\n  sku: string;\n  level: number;\n  reorderThreshold: number;\n}\n\nconst ReorderQueue: FC = () => {\n  const [skusBelowThreshold, setSkusBelowThreshold] = React.useState<SkuLevel[]>([]);\n\n  React.useEffect(() => {\n    fetch('/api/inventory-api/levels')\n      .then(response => response.json())\n      .then(data => {\n        const skusBelowThresholdData = data.filter(item => item.level < item.reorderThreshold);\n        setSkusBelowThreshold(skusBelowThresholdData);\n      });\n  }, []);\n\n  return (\n    <div>\n      <h1>Reorder Queue</h1>\n      <ul>\n        {skusBelowThreshold.map(sku => (\n          <li key={sku.sku}>{sku.sku}</li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n\nexport { ReorderQueue };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/reorder-queue.tsx(10,55): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/reorder-queue.tsx(12,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/reorder-queue.tsx(16,52): error TS7006: Parameter 'item' implicitly has an 'any' type.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/reorder-queue.tsx(18,55): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\nfrontend/src/pages/reorder-queue.tsx(20,3): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.\r\n"
+    },
+    {
+      "sessionId": "session-gold-040",
+      "title": "Expense Reimbursement Tool",
+      "component": "expenses table",
+      "domain": "database",
+      "targetPath": "backend/src/db/expenses-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Expense {\n  employeeId: number;\n  managerId: number;\n  amount: number;\n  receiptReference: string;\n  approvalStatus: string;\n}\n\nconst db = new DatabaseSync('expenses.db');\n\nfunction createTable(): void {\n  const sql = `CREATE TABLE IF NOT EXISTS expenses (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    employeeId INTEGER NOT NULL,\n    managerId INTEGER NOT NULL,\n    amount REAL NOT NULL,\n    receiptReference TEXT NOT NULL,\n    approvalStatus TEXT NOT NULL\n  )`;\n  db.exec(sql);\n}\n\nfunction insertExpense(expense: Expense): void {\n  const sql = 'INSERT INTO expenses (employeeId, managerId, amount, receiptReference, approvalStatus) VALUES (?, ?, ?, ?, ?)';\n  db.prepare(sql).run(\n    expense.employeeId,\n    expense.managerId,\n    expense.amount,\n    expense.receiptReference,\n    expense.approvalStatus\n  );\n}\n\nfunction getExpensesByEmployeeId(employeeId: number): Expense[] {\n  const sql = 'SELECT * FROM expenses WHERE employeeId = ?';\n  const stmt = db.prepare(sql);\n  return stmt.all(employeeId) as unknown as Expense[];\n}\n\nfunction updateApprovalStatus(id: number, approvalStatus: string): void {\n  const sql = 'UPDATE expenses SET approvalStatus = ? WHERE id = ?';\n  db.prepare(sql).run(approvalStatus, id);\n}\n\nexport { db, createTable, insertExpense, getExpensesByEmployeeId, updateApprovalStatus };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/expenses-api.ts(4,3): error TS2305: Module '\"../db/expenses-table\"' has no exported member 'getExpenseById'.\r\nbackend/src/routes/expenses-api.ts(5,3): error TS2305: Module '\"../db/expenses-table\"' has no exported member 'getAllExpenses'.\r\nbackend/src/routes/expenses-api.ts(6,3): error TS2724: '\"../db/expenses-table\"' has no exported member named 'updateExpenseApprovalStatus'. Did you mean 'updateApprovalStatus'?\r\nbackend/src/routes/expenses-api.ts(7,3): error TS2305: Module '\"../db/expenses-table\"' has no exported member 'deleteExpense'.\r\nbackend/src/routes/expenses-api.ts(31,48): error TS2554: Expected 1 arguments, but got 5.\r\nbackend/src/routes/payout-queue-service.ts(2,10): error TS2305: Module '\"../db/expenses-table\"' has no exported member 'getAllExpenses'.\r\nbackend/src/routes/payout-queue-service.ts(2,26): error TS2724: '\"../db/expenses-table\"' has no exported member named 'updateExpenseApprovalStatus'. Did you mean 'updateApprovalStatus'?\r\nbackend/src/routes/payout-queue-service.ts(13,6): error TS7006: Parameter 'expense' implicitly has an 'any' type.\r\n",
+      "repairRounds": 3,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/expenses-api.ts(10,64): error TS2554: Expected 1 arguments, but got 5.\r\n"
+    },
+    {
+      "sessionId": "session-gold-040",
+      "title": "Expense Reimbursement Tool",
+      "component": "Expense Submission Form",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/expense-submission-form.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\nconst ExpenseSubmissionForm: FC = () => {\n  // Component implementation goes here\n  return (\n    <div>\n      <h1>Submit an Expense</h1>\n      {/* Form elements for uploading receipts, entering amount, and selecting category */}\n    </div>\n  );\n};\n\nexport { ExpenseSubmissionForm };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-040",
+      "title": "Expense Reimbursement Tool",
+      "component": "Manager Approval Queue",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/manager-approval-queue.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\nconst ManagerApprovalQueue: FC = () => {\n  // Fetch pending expenses from the backend API\n  const fetchPendingExpenses = async () => {\n    try {\n      const response = await fetch('/api/expenses-api/?status=pending');\n      if (!response.ok) {\n        throw new Error('Failed to fetch pending expenses');\n      }\n      const data = await response.json();\n      console.log(data);\n      // Render the list of pending expenses here\n    } catch (error) {\n      console.error(error);\n    }\n  };\n\n  // Handle expense approval\n  const handleApproveExpense = async (expenseId: number) => {\n    try {\n      const response = await fetch(`/api/expenses-api/${expenseId}/approval`, {\n        method: 'PUT',\n        headers: {\n          'Content-Type': 'application/json'\n        },\n        body: JSON.stringify({ approved: true })\n      });\n      if (!response.ok) {\n        throw new Error('Failed to approve expense');\n      }\n      console.log('Expense approved successfully');\n    } catch (error) {\n      console.error(error);\n    }\n  };\n\n  // Handle expense rejection\n  const handleRejectExpense = async (expenseId: number) => {\n    try {\n      const response = await fetch(`/api/expenses-api/${expenseId}/approval`, {\n        method: 'PUT',\n        headers: {\n          'Content-Type': 'application/json'\n        },\n        body: JSON.stringify({ approved: false })\n      });\n      if (!response.ok) {\n        throw new Error('Failed to reject expense');\n      }\n      console.log('Expense rejected successfully');\n    } catch (error) {\n      console.error(error);\n    }\n  };\n\n  // Component JSX\n  return (\n    <div>\n      <h1>Manager Approval Queue</h1>\n      {/* Render the list of pending expenses */}\n      {/* Example expense item */}\n      <div key={1} style={{ border: '1px solid #ccc', padding: '10px' }}>\n        <p>Employee: John Doe</p>\n        <p>Amount: $50</p>\n        <button onClick={() => handleApproveExpense(1)}>Approve</button>\n        <button onClick={() => handleRejectExpense(1)}>Reject</button>\n      </div>\n    </div>\n  );\n};\n\nexport { ManagerApprovalQueue };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-045",
+      "title": "Volunteer Coordination Tool",
+      "component": "shifts table",
+      "domain": "database",
+      "targetPath": "backend/src/db/shifts-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Shift {\n  id: number;\n  description: string;\n  time: string;\n  capacity: number;\n}\n\nconst db = new DatabaseSync('volunteer-coordination-tool.db');\n\nfunction createShift(description: string, time: string, capacity: number): void {\n  const sql = 'INSERT INTO shifts (description, time, capacity) VALUES (?, ?, ?)';\n  db.prepare(sql).run(description, time, capacity);\n}\n\nfunction getShiftById(id: number): Shift | null {\n  const sql = 'SELECT * FROM shifts WHERE id = ?';\n  const result = db.prepare(sql).get(id) as unknown as Shift;\n  return result || null;\n}\n\nfunction getAllShifts(): Shift[] {\n  const sql = 'SELECT * FROM shifts';\n  const results = db.prepare(sql).all() as unknown as Shift[];\n  return results;\n}\n\nfunction updateShift(id: number, description: string, time: string, capacity: number): void {\n  const sql = 'UPDATE shifts SET description = ?, time = ?, capacity = ? WHERE id = ?';\n  db.prepare(sql).run(description, time, capacity, id);\n}\n\nfunction deleteShift(id: number): void {\n  const sql = 'DELETE FROM shifts WHERE id = ?';\n  db.prepare(sql).run(id);\n}\n\nexport { db, createShift, getShiftById, getAllShifts, updateShift, deleteShift };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/shifts-api.ts(12,2): error TS1005: ';' expected.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/shifts-api.ts(10,63): error TS2554: Expected 3 arguments, but got 4.\r\nbackend/src/routes/shifts-api.ts(47,56): error TS2554: Expected 4 arguments, but got 5.\r\n"
+    },
+    {
+      "sessionId": "session-gold-045",
+      "title": "Volunteer Coordination Tool",
+      "component": "signups table",
+      "domain": "database",
+      "targetPath": "backend/src/db/signups-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Signup {\n  volunteer_id: number;\n  shift_id: number;\n}\n\nconst db = new DatabaseSync('volunteer-coordination-tool.db');\n\nfunction createTable(): void {\n  db.exec(\n    `CREATE TABLE IF NOT EXISTS signups (\n      volunteer_id INTEGER,\n      shift_id INTEGER\n    )`\n  );\n}\n\nfunction insertSignup(volunteerId: number, shiftId: number): void {\n  db.run(\n    'INSERT INTO signups (volunteer_id, shift_id) VALUES (?, ?)',\n    [volunteerId, shiftId]\n  );\n}\n\nfunction getSignupsByShift(shiftId: number): Signup[] {\n  const stmt = db.prepare('SELECT * FROM signups WHERE shift_id = ?');\n  return stmt.all([shiftId]) as unknown as Signup[];\n}\n\nfunction deleteSignupById(id: number): void {\n  db.run('DELETE FROM signups WHERE id = ?', [id]);\n}\n\nexport { db, createTable, insertSignup, getSignupsByShift, deleteSignupById };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/signups-table.ts(20,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/signups-table.ts(28,19): error TS2769: No overload matches this call.\r\n  Overload 1 of 2, '(...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'SQLInputValue'.\r\n      Type 'number[]' is missing the following properties from type 'Float64Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 3 more.\r\n  Overload 2 of 2, '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): Record<string, SQLOutputValue>[]', gave the following error.\r\n    Argument of type 'number[]' is not assignable to parameter of type 'Record<string, SQLInputValue>'.\r\n      Index signature for type 'string' is missing in type 'number[]'.\r\nbackend/src/db/signups-table.ts(32,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/routes/shifts-api.ts(13,3): error TS2724: '\"../db/signups-table\"' has no exported member named 'getSignupsByShiftId'. Did you mean 'getSignupsByShift'?\r\nbackend/src/routes/shifts-api.ts(14,3): error TS2305: Module '\"../db/signups-table\"' has no exported member 'getSignupsByVolunteerId'.\r\n",
+      "repairRounds": 3,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/db/signups-table.ts(20,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/signups-table.ts(39,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\nbackend/src/db/signups-table.ts(46,6): error TS2339: Property 'run' does not exist on type 'DatabaseSync'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-045",
+      "title": "Volunteer Coordination Tool",
+      "component": "Shift Board",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/shift-board.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface Shift {\n  id: number;\n  title: string;\n  date: string;\n  time: string;\n  location: string;\n  capacity: number;\n  signUpCount: number;\n}\n\nconst ShiftBoard: FC = () => {\n  const fetchShifts = async (): Promise<Shift[]> => {\n    const response = await fetch('/api/shifts-api/');\n    if (!response.ok) {\n      throw new Error('Failed to fetch shifts');\n    }\n    return await response.json();\n  };\n\n  const handleSignUp = async (shiftId: number) => {\n    try {\n      await fetch(`/api/shifts-api/${shiftId}/signups`, {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json'\n        },\n        body: JSON.stringify({})\n      });\n      alert('Sign up successful!');\n    } catch (error) {\n      alert('Failed to sign up.');\n    }\n  };\n\n  return (\n    <div>\n      <h1>Volunteer Shift Board</h1>\n      <ul>\n        {fetchShifts().then(shifts => \n          shifts.map(shift => (\n            <li key={shift.id}>\n              <strong>{shift.title}</strong> - {shift.date} {shift.time} at {shift.location}\n              <p>Capacity: {shift.capacity}, Sign-ups: {shift.signUpCount}</p>\n              {shift.signUpCount < shift.capacity && (\n                <button onClick={() => handleSignUp(shift.id)}>Sign Up</button>\n              )}\n            </li>\n          ))\n        )}\n      </ul>\n    </div>\n  );\n};\n\nexport { ShiftBoard };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/shift-board.tsx(41,9): error TS2322: Type 'Promise<Element[]>' is not assignable to type 'ReactNode'.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-045",
+      "title": "Volunteer Coordination Tool",
+      "component": "Coordinator Shift Panel",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/coordinator-shift-panel.tsx",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface Shift {\n  id: number;\n  title: string;\n  date: string;\n  time: string;\n}\n\ninterface Signup {\n  id: number;\n  volunteerName: string;\n}\n\nconst CoordinatorShiftPanel: FC = () => {\n  const fetchShifts = async (): Promise<Shift[]> => {\n    const response = await fetch('/api/shifts-api/');\n    if (!response.ok) {\n      throw new Error('Failed to fetch shifts');\n    }\n    return await response.json();\n  };\n\n  const fetchSignupsForShift = async (shiftId: number): Promise<Signup[]> => {\n    const response = await fetch(`/api/shifts-api/${shiftId}/signups`);\n    if (!response.ok) {\n      throw new Error('Failed to fetch signups');\n    }\n    return await response.json();\n  };\n\n  const renderShifts = async () => {\n    try {\n      const shifts = await fetchShifts();\n      return shifts.map(shift => (\n        <div key={shift.id}>\n          <h2>{shift.title}</h2>\n          <p>Date: {shift.date}</p>\n          <p>Time: {shift.time}</p>\n          <h3>Signups:</h3>\n          <ul>\n            {shift.signups ? shift.signups.map(signup => (\n              <li key={signup.id}>{signup.volunteerName}</li>\n            )) : null}\n          </ul>\n        </div>\n      ));\n    } catch (error) {\n      console.error('Error fetching shifts:', error);\n      return null;\n    }\n  };\n\n  return (\n    <div>\n      <h1>Coordinator Shift Panel</h1>\n      {renderShifts()}\n    </div>\n  );\n};\n\nexport { CoordinatorShiftPanel };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nfrontend/src/pages/coordinator-shift-panel.tsx(42,20): error TS2339: Property 'signups' does not exist on type 'Shift'.\r\nfrontend/src/pages/coordinator-shift-panel.tsx(42,36): error TS2339: Property 'signups' does not exist on type 'Shift'.\r\nfrontend/src/pages/coordinator-shift-panel.tsx(42,48): error TS7006: Parameter 'signup' implicitly has an 'any' type.\r\nfrontend/src/pages/coordinator-shift-panel.tsx(57,7): error TS2322: Type 'Promise<Element[] | null>' is not assignable to type 'ReactNode'.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-046",
+      "title": "Timesheet and Payroll Tracker",
+      "component": "clock_events table",
+      "domain": "database",
+      "targetPath": "backend/src/db/clock-events-table.ts",
+      "A": false,
+      "B": true,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface ClockEvent {\n  employee_id: number;\n  event_type: 'in' | 'out';\n  timestamp: Date;\n}\n\nconst db = new DatabaseSync('timesheet.db');\n\nfunction createTable(): void {\n  const sql = `CREATE TABLE IF NOT EXISTS clock_events (\n    employee_id INTEGER,\n    event_type TEXT CHECK (event_type IN ('in', 'out')),\n    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP\n  )`;\n  db.exec(sql);\n}\n\nfunction insertClockEvent(employeeId: number, eventType: 'in' | 'out'): void {\n  const sql = 'INSERT INTO clock_events (employee_id, event_type) VALUES (?, ?)';\n  db.prepare(sql).run(employeeId, eventType);\n}\n\nfunction getClockEventsByEmployeeId(employeeId: number): ClockEvent[] {\n  const sql = 'SELECT * FROM clock_events WHERE employee_id = ?';\n  const stmt = db.prepare(sql);\n  return stmt.all(employeeId) as unknown as ClockEvent[];\n}\n\nexport { db, createTable, insertClockEvent, getClockEventsByEmployeeId };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/timesheets-api.ts(10,59): error TS2554: Expected 2 arguments, but got 3.\r\n",
+      "repairRounds": 1,
+      "buildOutputB": null
+    },
+    {
+      "sessionId": "session-gold-046",
+      "title": "Timesheet and Payroll Tracker",
+      "component": "Clock In/Out Widget",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/clock-in-out-widget.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\ninterface ShiftEvent {\n  employeeId: number;\n  eventType: 'clockIn' | 'clockOut';\n  timestamp: Date;\n}\n\nconst ClockInOutWidget: FC = () => {\n  const handleClockIn = async () => {\n    const event: ShiftEvent = {\n      employeeId: Number(window.localStorage.getItem('employeeId')), // Assuming employeeId is stored in localStorage\n      eventType: 'clockIn',\n      timestamp: new Date()\n    };\n    await fetch('/api/timesheets-api/events', {\n      method: 'POST',\n      headers: {\n        'Content-Type': 'application/json'\n      },\n      body: JSON.stringify(event)\n    });\n  };\n\n  const handleClockOut = async () => {\n    const event: ShiftEvent = {\n      employeeId: Number(window.localStorage.getItem('employeeId')), // Assuming employeeId is stored in localStorage\n      eventType: 'clockOut',\n      timestamp: new Date()\n    };\n    await fetch('/api/timesheets-api/events', {\n      method: 'POST',\n      headers: {\n        'Content-Type': 'application/json'\n      },\n      body: JSON.stringify(event)\n    });\n  };\n\n  return (\n    <div>\n      <button onClick={handleClockIn}>Clock In</button>\n      <button onClick={handleClockOut}>Clock Out</button>\n    </div>\n  );\n};\n\nexport { ClockInOutWidget };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-046",
+      "title": "Timesheet and Payroll Tracker",
+      "component": "Manager Approval View",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/manager-approval-view.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from 'react';\n\nconst ManagerApprovalView: FC = () => {\n  // Placeholder implementation\n  return (\n    <div>\n      <h1>Manager Approval View</h1>\n      {/* Add your implementation here */}\n    </div>\n  );\n};\n\nexport { ManagerApprovalView };\n",
+      "buildOutputA": null
+    },
+    {
+      "sessionId": "session-gold-047",
+      "title": "Office Parking Reservations",
+      "component": "reservations table",
+      "domain": "database",
+      "targetPath": "backend/src/db/reservations-table.ts",
+      "A": false,
+      "B": false,
+      "D_A": false,
+      "D_B": false,
+      "reasonsA": [
+        "build-failed"
+      ],
+      "reasonsB": [
+        "build-failed"
+      ],
+      "error": null,
+      "candidateCode": "import { DatabaseSync } from \"node:sqlite\";\n\ninterface Reservation {\n  employeeId: number;\n  date: string;\n  spotNumber: number;\n}\n\nconst db = new DatabaseSync('reservations.db');\n\nfunction createTable(): void {\n  const sql = `CREATE TABLE IF NOT EXISTS reservations (\n    employeeId INTEGER,\n    date TEXT,\n    spotNumber INTEGER\n  )`;\n  db.exec(sql);\n}\n\nfunction insertReservation(reservation: Reservation): void {\n  const sql = 'INSERT INTO reservations (employeeId, date, spotNumber) VALUES (?, ?, ?)';\n  db.prepare(sql).run(reservation.employeeId, reservation.date, reservation.spotNumber);\n}\n\nfunction getReservationsByDate(date: string): Reservation[] {\n  const sql = 'SELECT * FROM reservations WHERE date = ?';\n  const stmt = db.prepare(sql);\n  return stmt.all(date) as unknown as Reservation[];\n}\n\nfunction deleteReservation(employeeId: number, date: string): void {\n  const sql = 'DELETE FROM reservations WHERE employeeId = ? AND date = ?';\n  db.prepare(sql).run(employeeId, date);\n}\n\nexport { db, createTable, insertReservation, getReservationsByDate, deleteReservation };\n",
+      "buildOutputA": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/parking-api.ts(2,33): error TS2305: Module '\"../db/reservations-table\"' has no exported member 'getAllReservations'.\r\nbackend/src/routes/parking-api.ts(2,53): error TS2724: '\"../db/reservations-table\"' has no exported member named 'getReservation'. Did you mean 'insertReservation'?\r\nbackend/src/routes/parking-api.ts(31,33): error TS2554: Expected 1 arguments, but got 3.\r\n",
+      "repairRounds": 2,
+      "buildOutputB": "\n> generated-backend@0.0.0 build\n> tsc\n\nbackend/src/routes/parking-api.ts(9,49): error TS2554: Expected 1 arguments, but got 3.\r\nbackend/src/routes/parking-api.ts(19,65): error TS2554: Expected 2 arguments, but got 3.\r\nbackend/src/routes/parking-api.ts(29,54): error TS2345: Argument of type 'Date' is not assignable to parameter of type 'string'.\r\n"
+    },
+    {
+      "sessionId": "session-gold-047",
+      "title": "Office Parking Reservations",
+      "component": "Spot Reservation View",
+      "domain": "frontend",
+      "targetPath": "frontend/src/pages/spot-reservation-view.tsx",
+      "A": true,
+      "B": true,
+      "D_A": false,
+      "D_B": true,
+      "reasonsA": [],
+      "reasonsB": [],
+      "error": null,
+      "candidateCode": "import type { FC } from \"react\";\n\nconst SpotReservationView: FC = () => {\n  // Fetch today's reservations for the logged-in employee\n  const fetchReservations = async () => {\n    try {\n      const response = await fetch(\"/api/parking-api/reservations\", {\n        method: \"GET\",\n        headers: {\n          \"Content-Type\": \"application/json\"\n        }\n      });\n      if (!response.ok) {\n        throw new Error(\"Failed to fetch reservations\");\n      }\n      const data = await response.json();\n      console.log(data);\n    } catch (error) {\n      console.error(error);\n    }\n  };\n\n  // Handle spot reservation\n  const handleSpotReservation = async () => {\n    try {\n      const response = await fetch(\"/api/parking-api/reservations\", {\n        method: \"POST\",\n        headers: {\n          \"Content-Type\": \"application/json\"\n        },\n        body: JSON.stringify({\n          employeeId: \"123\", // Example employee ID\n          date: new Date().toISOString().split('T')[0] // Today's date\n        })\n      });\n      if (!response.ok) {\n        throw new Error(\"Failed to reserve spot\");\n      }\n      const data = await response.json();\n      console.log(data);\n    } catch (error) {\n      console.error(error);\n    }\n  };\n\n  return (\n    <div>\n      <h1>Today's Remaining Parking Spots</h1>\n      <button onClick={handleSpotReservation}>Reserve Spot</button>\n    </div>\n  );\n};\n\nexport { SpotReservationView };\n",
+      "buildOutputA": null
+    }
+  ],
+  "projects": []
+}

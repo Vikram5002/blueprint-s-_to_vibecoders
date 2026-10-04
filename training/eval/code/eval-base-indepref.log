@@ -69,3 +69,23 @@ A  session-gold-040 backend/src/routes/expenses-api.ts
 A  session-gold-040 backend/src/routes/payout-queue-service.ts
 !! session-gold-040 backend/src/middleware/manager-scoped-approval.ts  A:build-failed  B:build-failed
 !! session-gold-040 whole project  build-failed
+candidate: local:base; reference projects: 23; scratch: capture\code\work\eval-qwen-coder-7b-base-indepref
+resuming: 39 component(s), 20 project(s) already done
+(node:4532) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+!! session-gold-046 backend/src/routes/timesheets-api.ts  A:build-failed  B:build-failed
+A  session-gold-046 backend/src/routes/payroll-export-service.ts
+A  session-gold-046 backend/src/middleware/approved-only-payroll-guard.ts
+!! session-gold-046 whole project  build-failed
+!! session-gold-047 backend/src/routes/parking-api.ts  A:build-failed  B:build-failed
+!! session-gold-047 whole project  build-failed
+
+--- results ---
+candidate: local:base
+scope           n        A       B    D(A)    D(B)
+all            43   48.8%  62.8%  48.8%  62.8%
+backend        33   45.5%  63.6%  45.5%  63.6%
+security       10   60.0%  60.0%  60.0%  60.0%
+C (projects)   22   22.7%
+
+written to training/eval/code/qwen-coder-7b-base-indepref.json
