@@ -79,6 +79,8 @@ src/
   export/       AGENTS.md and self-contained blueprint.html export
   types/        Shared type definitions
 ui/             React app (separate package, built into src/server/static)
+vscode-extension/  VS Code extension: drop a file, review a rework as a diff, keep or undo (own package)
+desktop/        Installable desktop app wrapping the same server and UI (own package)
 docs/           ARCHITECTURE.md, PHASE-1-SPEC.md, and topic-specific docs per stage — see the index above
 ```
 
@@ -166,7 +168,12 @@ node dist/cli.js .   # Run against current directory
 - **Do not send file contents to the LLM in bulk.** Send the *graph*. A 100k-file repo has
   ~200 modules; send 200 labelled nodes. Code snippets go only for the single cluster being
   labelled.
-- **Do not add authentication, cloud sync, or multi-user features.** This is local-first.
+- **Do not add accounts, cloud sync, or multi-user features beyond hosted mode.** Local-first stays
+  the default. **Approved exception (2026-10-04):** an opt-in hosted mode (`--hosted`) for invited
+  users only - one shared access code, each user's own API keys kept in their browser and never
+  stored on the server, and daily limits on the team's own models. No accounts, no per-user data.
+  The VS Code extension, the desktop app and the installable web app (PWA) are clients of the same
+  server; none of them adds business logic of its own.
 - **Do not install heavy dependencies** without asking. Startup time matters for a CLI.
 - **Do not let the LLM infer structure** when static analysis can determine it. Always prefer
   the deterministic path.
