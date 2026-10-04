@@ -46,3 +46,7 @@ presentations/
 # VS Code extension: test copy of VS Code and packaged installers
 vscode-extension/.vscode-test/
 *.vsix
+
+# Desktop app: installers and the packed server they bundle (npm run vendor / dist)
+desktop/release/
+desktop/vendor/*.tgz
