@@ -422,7 +422,7 @@ export function repairInvalidJsonEscapes(text: string): string {
   return out;
 }
 
-function extractCode(text: string): Result<string, ComponentCodeFailure> {
+export function extractCode(text: string): Result<string, ComponentCodeFailure> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);

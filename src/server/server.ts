@@ -36,6 +36,7 @@ import { createWorkflowRoutes, type WorkflowRouteDeps } from './workflow-api.js'
 import { createGenerationRoutes, type ApplicationRouteDeps } from './generation-api.js';
 import { createPageBuilderRoutes } from './page-builder-api.js';
 import { createProviderRoutes, type ProviderRouteDeps } from './providers-api.js';
+import { createReworkRoutes } from './rework-api.js';
 import { ROOT_DIRECTORY, type ViewLevel } from '../graph/aggregate.js';
 import { loadLabelCache } from '../llm/cache.js';
 import { createProjectSchemaGenerator } from '../workflow/generate-project-schema.js';
@@ -248,6 +249,9 @@ export function createApp(
   // routes above - layoutToComponentFile makes no LLM call, so this needs
   // no provider dependency to exist at all.
   app.route('/api/page-builder', createPageBuilderRoutes({ designer: application?.llm?.provider ?? null }));
+  // One file of the analysed project, reworked by the code model and returned
+  // (never written) for the VS Code extension's keep/undo diff.
+  app.route('/api/rework', createReworkRoutes({ context, provider: application?.llm?.provider ?? null }));
 
   // Which model answers generation requests. Mounted only when a registry was
   // supplied, same optional-deps pattern the two route sets above already
