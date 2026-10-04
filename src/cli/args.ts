@@ -60,6 +60,10 @@ export interface CliOptions {
    * needs the same port every time.
    */
   readonly port: number | null;
+  /** Hosted mode for invited users (src/server/hosted.ts); reads VIBE_ACCESS_CODE and the run limits from the environment. */
+  readonly hosted: boolean;
+  /** Address to listen on; hosted mode only. Null = this machine only. */
+  readonly host: string | null;
 }
 
 export interface ArgError {
@@ -84,6 +88,8 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
         export: { type: 'boolean', default: false },
         blueprint: { type: 'string' },
         port: { type: 'string' },
+        hosted: { type: 'boolean', default: false },
+        host: { type: 'string' },
         help: { type: 'boolean', short: 'h', default: false },
         version: { type: 'boolean', default: false },
       },
@@ -112,6 +118,12 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
   if (port === 'invalid') {
     return err({ kind: 'invalid-value', message: `--port expects a number from 1 to 65535, got "${String(parsed.values['port'])}"` });
   }
+  const hosted = parsed.values.hosted === true;
+  const host = typeof parsed.values.host === 'string' ? parsed.values.host.trim() : null;
+  if (host !== null && !hosted) {
+    return err({ kind: 'invalid-value', message: '--host is only for --hosted: a local server listens on this machine only' });
+  }
+  if (host === '') return err({ kind: 'invalid-value', message: '--host expects an address, for example --host=0.0.0.0' });
   if (parsed.values.blueprint === '') {
     return err({ kind: 'invalid-value', message: '--blueprint expects a file path, for example --blueprint=rules.txt' });
   }
@@ -120,7 +132,7 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
     targetPath: parsed.positionals[0] ?? '.',
     json,
     verbose: parsed.values.verbose === true,
-    open: parsed.values['no-open'] !== true && parsed.values['no-serve'] !== true && !json && !mcp,
+    open: parsed.values['no-open'] !== true && parsed.values['no-serve'] !== true && !json && !mcp && !hosted,
     // --json is for piping; holding the terminal open with a server would
     // defeat that, so it implies --no-serve. --mcp owns stdout for the same
     // reason and additionally must not open a port.
@@ -132,6 +144,8 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
     version: parsed.values.version === true,
     blueprintFile: typeof parsed.values.blueprint === 'string' ? parsed.values.blueprint : null,
     port,
+    hosted,
+    host,
   });
 }
 

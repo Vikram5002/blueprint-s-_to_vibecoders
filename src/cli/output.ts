@@ -50,6 +50,9 @@ export function formatHelp(binaryName: string): string {
     '                   until authored again',
     '      --port=N     Serve on this port instead of any free one (an',
     '                   installed app needs the same address every time)',
+    '      --hosted     Serve invited users: needs VIBE_ACCESS_CODE; optional',
+    '                   VIBE_DAILY_RUNS, VIBE_MONTHLY_RUNS, VIBE_TRUST_PROXY=1',
+    '      --host=ADDR  Listen on ADDR (hosted only, e.g. 0.0.0.0 in a container)',
     '',
     'Phase 1: ingest and parse. This tool measures. It never generates code.',
   ].join('\n');

@@ -15,7 +15,7 @@ import { posix } from 'node:path';
 
 export type BlueprintDatabase = Database.Database;
 
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export function databasePathFor(root: string): string {
   return posix.join(root.replace(/\\/g, '/'), '.vibe', 'blueprint.db');
@@ -180,6 +180,16 @@ function migrate(db: BlueprintDatabase): void {
       PRIMARY KEY (run_id, path)
     );
   `);
+
+  // v6 -> v7: which browser a workflow session belongs to, in hosted mode
+  // (src/server/hosted.ts) - a random id the browser keeps, so one person's
+  // projects are not listed to another. NULL on a local install, where every
+  // session is the one person's. ALTER is not idempotent, hence the check.
+  const sessionColumns = db.prepare('PRAGMA table_info(workflow_sessions)').all() as readonly { name: string }[];
+  if (!sessionColumns.some((column) => column.name === 'owner')) {
+    db.exec('ALTER TABLE workflow_sessions ADD COLUMN owner TEXT');
+  }
+  db.exec('CREATE INDEX IF NOT EXISTS workflow_sessions_by_owner ON workflow_sessions (owner, created_at)');
 
   db.pragma(`user_version = ${SCHEMA_VERSION}`);
 }

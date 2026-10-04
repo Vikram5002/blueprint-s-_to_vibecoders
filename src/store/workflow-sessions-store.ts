@@ -19,6 +19,7 @@ interface WorkflowSessionRow {
   readonly prompt: string;
   readonly body: string;
   readonly created_at: string;
+  readonly owner: string | null;
 }
 
 export interface WorkflowSessionSummary {
@@ -61,12 +62,30 @@ export interface WorkflowSessionsStore {
   remove(id: string): boolean;
 }
 
-export function createWorkflowSessionsStore(db: BlueprintDatabase): WorkflowSessionsStore {
+export interface WorkflowSessionsStoreOptions {
+  /**
+   * Who is asking, in hosted mode: the requesting browser's id, or null on a
+   * local install (one person, every session theirs - the default). With an
+   * owner, sessions are saved under it and every other owner's sessions are
+   * invisible: not listed, not readable, not changeable, not deletable.
+   */
+  readonly owner?: () => string | null;
+}
+
+export function createWorkflowSessionsStore(db: BlueprintDatabase, options: WorkflowSessionsStoreOptions = {}): WorkflowSessionsStore {
+  const owner = options.owner ?? ((): null => null);
+  /** The row, if it exists and the current owner may see it. */
+  const visible = (id: string): WorkflowSessionRow | undefined => {
+    const row = db.prepare('SELECT * FROM workflow_sessions WHERE id = ?').get(id) as WorkflowSessionRow | undefined;
+    const who = owner();
+    return row === undefined || (who !== null && row.owner !== who) ? undefined : row;
+  };
+
   return {
     save: (session) => {
       db.prepare(
-        `INSERT INTO workflow_sessions (id, title, prompt, body, created_at)
-         VALUES (@id, @title, @prompt, @body, @createdAt)
+        `INSERT INTO workflow_sessions (id, title, prompt, body, created_at, owner)
+         VALUES (@id, @title, @prompt, @body, @createdAt, @owner)
          ON CONFLICT(id) DO NOTHING`,
       ).run({
         id: session.id,
@@ -78,14 +97,17 @@ export function createWorkflowSessionsStore(db: BlueprintDatabase): WorkflowSess
           permissions: session.permissions,
         } satisfies StoredBody),
         createdAt: session.createdAt,
+        owner: owner(),
       });
     },
 
     updatePlan: (id, plan) => {
+      if (visible(id) === undefined) return;
       db.prepare('UPDATE workflow_sessions SET body = @body WHERE id = @id').run({ id, body: JSON.stringify(plan) });
     },
 
     revise: (id, { title, prompt, schema, prohibitions, permissions }) => {
+      if (visible(id) === undefined) return;
       db.prepare('UPDATE workflow_sessions SET title = @title, prompt = @prompt, body = @body WHERE id = @id').run({
         id,
         title,
@@ -94,19 +116,20 @@ export function createWorkflowSessionsStore(db: BlueprintDatabase): WorkflowSess
       });
     },
 
-    remove: (id) => db.prepare('DELETE FROM workflow_sessions WHERE id = ?').run(id).changes > 0,
+    remove: (id) => visible(id) !== undefined && db.prepare('DELETE FROM workflow_sessions WHERE id = ?').run(id).changes > 0,
 
-    list: () =>
-      (
-        db
-          .prepare('SELECT id, title, prompt, created_at FROM workflow_sessions ORDER BY created_at DESC')
-          .all() as readonly Pick<WorkflowSessionRow, 'id' | 'title' | 'prompt' | 'created_at'>[]
-      ).map((row) => ({ id: row.id, title: row.title, prompt: row.prompt, createdAt: row.created_at })),
+    list: () => {
+      const who = owner();
+      const rows = (
+        who === null
+          ? db.prepare('SELECT id, title, prompt, created_at FROM workflow_sessions ORDER BY created_at DESC').all()
+          : db.prepare('SELECT id, title, prompt, created_at FROM workflow_sessions WHERE owner = ? ORDER BY created_at DESC').all(who)
+      ) as readonly Pick<WorkflowSessionRow, 'id' | 'title' | 'prompt' | 'created_at'>[];
+      return rows.map((row) => ({ id: row.id, title: row.title, prompt: row.prompt, createdAt: row.created_at }));
+    },
 
     get: (id) => {
-      const row = db.prepare('SELECT * FROM workflow_sessions WHERE id = ?').get(id) as
-        | WorkflowSessionRow
-        | undefined;
+      const row = visible(id);
       if (row === undefined) return undefined;
       const stored = safeParse(row.body);
       if (stored === null) return undefined;

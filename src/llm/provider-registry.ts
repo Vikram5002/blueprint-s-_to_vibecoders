@@ -26,6 +26,7 @@
  * deliberate, user-initiated choice, recorded and reported as such. Nothing
  * in this file ever switches on its own.
  */
+import { requestProvider } from './request-provider.js';
 import { chooseProvider, createProvider, isLocalProvider, type ProviderName } from './select-provider.js';
 import {
   DEFAULT_LOCAL_BASE_URL,
@@ -433,12 +434,15 @@ export function createSwitchableProvider(
 
   return {
     get name(): string {
-      return lastKnown?.name ?? `${currentName()}:${fallbackModel}`;
+      return requestProvider()?.name ?? lastKnown?.name ?? `${currentName()}:${fallbackModel}`;
     },
     get model(): string {
-      return lastKnown?.model ?? fallbackModel;
+      return requestProvider()?.model ?? lastKnown?.model ?? fallbackModel;
     },
     complete: async (request: CompletionRequest): Promise<CompletionResult> => {
+      // The person's own key, when their request brought one (request-provider.ts).
+      const own = requestProvider();
+      if (own !== undefined) return own.complete(request);
       const target = role === 'code' ? await registry.resolveCode() : await registry.resolve();
       if (target === null) {
         return {

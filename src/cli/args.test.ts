@@ -27,6 +27,20 @@ describe('parseArguments', () => {
       version: false,
       blueprintFile: null,
       port: null,
+      hosted: false,
+      host: null,
+    });
+  });
+
+  describe('--hosted and --host', () => {
+    it('hosted mode never opens a browser, and may listen on another address', () => {
+      const parsed = parseArguments(['/srv/empty', '--hosted', '--host=0.0.0.0', '--port=8080']);
+      expect(parsed.ok && parsed.value).toMatchObject({ hosted: true, host: '0.0.0.0', port: 8080, open: false, serve: true });
+    });
+
+    it('refuses --host without --hosted: a local server must stay on this machine', () => {
+      const parsed = parseArguments(['--host=0.0.0.0']);
+      expect(!parsed.ok && parsed.error.kind).toBe('invalid-value');
     });
   });
 

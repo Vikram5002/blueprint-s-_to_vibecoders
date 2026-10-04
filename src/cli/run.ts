@@ -28,6 +28,7 @@ import { snapshotHistory } from '../pipeline/history.js';
 import { buildDriftHistory } from '../pipeline/drift-history.js';
 import { createSnapshotStore } from '../store/snapshots.js';
 import { startServer, type RunningServer } from '../server/server.js';
+import { readHostedConfig } from '../server/hosted.js';
 import { serveMcp } from '../mcp/server.js';
 import { writeExports, currentCommit } from '../export/write.js';
 import { writeFile } from 'node:fs/promises';
@@ -61,6 +62,13 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
   if (options.version) {
     io.writeOut(version);
     return EXIT_OK;
+  }
+
+  // Hosted mode is refused before any analysis work if its settings are missing.
+  const hosted = options.hosted ? readHostedConfig(process.env) : null;
+  if (hosted !== null && !hosted.ok) {
+    io.writeErr(formatError(hosted.error));
+    return EXIT_USAGE;
   }
 
   const showProgress = options.verbose && !options.json;
@@ -193,7 +201,17 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     return EXIT_OK;
   }
 
-  const server = await startServer(analysisContext, options.port === null ? {} : { port: options.port });
+  const server = await startServer(analysisContext, {
+    ...(options.port === null ? {} : { port: options.port }),
+    ...(hosted === null ? {} : { hosted: hosted.value }),
+    ...(options.host === null ? {} : { host: options.host }),
+  });
+  if (hosted !== null) {
+    io.writeOut(
+      `  Hosted mode: access code required; ${hosted.value.dailyRuns} run(s) per visitor per day and ` +
+        `${hosted.value.monthlyRuns} per month on this server's models; visitors' own keys are not limited.`,
+    );
+  }
 
   io.writeOut(formatServing(server.url, options.open));
   if (options.open) {

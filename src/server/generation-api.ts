@@ -36,6 +36,7 @@
  * - `POST /application-jobs/:id/pages/restore` - puts the model's original
  *   file back.
  */
+import { requestOwner, visibleToRequester } from './request-owner.js';
 import { randomUUID } from 'node:crypto';
 import { readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -125,6 +126,8 @@ export interface ApplicationJob {
    * reuses them instead of starting over.
    */
   readonly partialFiles?: readonly FileSummary[];
+  /** Hosted mode: the browser that started it (request-owner.ts); nobody else can read it or its saved run. */
+  readonly owner?: string;
 }
 
 export interface ApplicationJobStore {
@@ -162,11 +165,15 @@ export function createApplicationJobStore(): ApplicationJobStore {
         kind: init.kind ?? 'generate',
         ...(init.parentId === undefined ? {} : { parentId: init.parentId }),
         status: 'pending',
+        ...(requestOwner() === null ? {} : { owner: requestOwner() ?? '' }),
       };
       jobs.set(job.id, job);
       return job;
     },
-    get: (id) => jobs.get(id),
+    get: (id) => {
+      const job = jobs.get(id);
+      return job !== undefined && visibleToRequester(job.owner) ? job : undefined;
+    },
     set: (job) => jobs.set(job.id, job),
     forSession: (sessionId) => [...jobs.values()].filter((job) => job.sessionId === sessionId),
     remove: (id) => {
@@ -206,7 +213,8 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
 
   /** A live job, or a saved one - the same shape either way, so every read route works after a restart. */
   function findJob(id: string): ApplicationJob | undefined {
-    return jobs.get(id) ?? runs?.get(id)?.job.job;
+    const saved = runs?.get(id)?.job.job;
+    return jobs.get(id) ?? (saved !== undefined && visibleToRequester(saved.owner) ? saved : undefined);
   }
 
   function persist(job: ApplicationJob, schema: ValidatedProjectSchema): void {
@@ -521,13 +529,16 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
 
   app.get('/sessions/:id/application-runs', (c) => {
     const sessionId = c.req.param('id');
+    const newest = runs?.latestForSession(sessionId)?.job.job;
+    // Another browser's session, in hosted mode: as if it had no runs.
+    if (newest !== undefined && !visibleToRequester(newest.owner)) return c.json({ runs: [], latest: null });
     const list = runs?.listForSession(sessionId) ?? [];
-    const latest = runs?.latestForSession(sessionId)?.job.job;
+    const latest = newest;
     return c.json({ runs: list, latest: latest ?? null });
   });
 
   app.get('/application-runs/latest', (c) => {
-    const latest = runs?.latestRuns() ?? [];
+    const latest = (runs?.latestRuns() ?? []).filter((record) => visibleToRequester(record.job.job.owner));
     return c.json({
       runs: latest.map((record) => ({
         sessionId: record.sessionId,

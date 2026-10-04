@@ -19,6 +19,7 @@
  * those two things, then mounted into the main app with `.route()` — see
  * `server.ts`.
  */
+import { requestOwner, visibleToRequester } from './request-owner.js';
 import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import { compileDomainConstraints, type WorkflowPermission } from '../workflow/compile-constraints.js';
@@ -67,6 +68,8 @@ export interface WorkflowJob {
   readonly status: WorkflowJobStatus;
   readonly result?: WorkflowJobResult;
   readonly error?: WorkflowJobError;
+  /** Hosted mode: the browser that started it (request-owner.ts); nobody else can read it. */
+  readonly owner?: string;
 }
 
 /**
@@ -90,12 +93,20 @@ export function createWorkflowJobStore(): WorkflowJobStore {
   const jobs = new Map<string, WorkflowJob>();
   return {
     create(prompt) {
-      const job: WorkflowJob = { id: randomUUID(), prompt, createdAt: new Date().toISOString(), status: 'pending' };
+      const owner = requestOwner();
+      const job: WorkflowJob = {
+        id: randomUUID(),
+        prompt,
+        createdAt: new Date().toISOString(),
+        status: 'pending',
+        ...(owner === null ? {} : { owner }),
+      };
       jobs.set(job.id, job);
       return job;
     },
     get(id) {
-      return jobs.get(id);
+      const job = jobs.get(id);
+      return job !== undefined && visibleToRequester(job.owner) ? job : undefined;
     },
     set(job) {
       jobs.set(job.id, job);

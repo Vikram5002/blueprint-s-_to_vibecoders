@@ -8,6 +8,8 @@
  * Port 0 asks the OS for a free port, so nothing is hard-coded and two runs can
  * coexist.
  */
+import { createUsage, hostedGuard, ownKeyMiddleware, type HostedConfig, type Usage } from './hosted.js';
+import { requestOwner } from './request-owner.js';
 import { readFile } from 'node:fs/promises';
 import { serve, type ServerType } from '@hono/node-server';
 import { join } from 'node:path';
@@ -101,9 +103,14 @@ export function createApp(
   application?: ApplicationRouteDeps,
   providers?: ProviderRouteDeps,
   projects?: Omit<ProjectRouteDeps, 'holder'>,
+  hosted?: { readonly config: HostedConfig; readonly usage: Usage },
 ): Hono {
   const app = new Hono();
-  app.use('*', localOriginOnly());
+  // Local: only this machine's own pages. Hosted: access code, same-site,
+  // per-browser owners and run limits instead (hosted.ts).
+  app.use('*', hosted === undefined ? localOriginOnly() : hostedGuard(hosted.config, hosted.usage));
+  // "Use my own key", in both modes.
+  app.use('*', ownKeyMiddleware());
   // Every analysis route reads the project on each request, so the UI can
   // switch projects without restarting the server (see context-holder.ts).
   const holder = 'current' in project ? project : createContextHolder(project);
@@ -338,6 +345,10 @@ function generationRootFor(context: AnalysisContext): string {
 export interface StartOptions {
   /** A fixed port; omitted = any free port. Busy = a clear error, never a silent move to another port. */
   readonly port?: number;
+  /** Hosted mode (hosted.ts). Omitted = local, loopback-only. */
+  readonly hosted?: HostedConfig;
+  /** Address to listen on; only allowed in hosted mode (a container needs 0.0.0.0). */
+  readonly host?: string;
 }
 
 export async function startServer(context: AnalysisContext, options: StartOptions = {}): Promise<RunningServer> {
@@ -353,7 +364,8 @@ export async function startServer(context: AnalysisContext, options: StartOption
     onSelectCode: (provider) => settings.set(CODE_PROVIDER_SETTING_KEY, provider ?? CODE_PROVIDER_SAME),
   });
   const llm = await resolveLlm(context, registry);
-  const sessions = createWorkflowSessionsStore(context.db);
+  // Owner-scoped: in hosted mode each browser sees only its own sessions (request-owner.ts).
+  const sessions = createWorkflowSessionsStore(context.db, { owner: requestOwner });
   const workflowDeps: WorkflowRouteDeps =
     llm === null
       ? { llm: null, sessions }
@@ -369,15 +381,26 @@ export async function startServer(context: AnalysisContext, options: StartOption
     cloneRoot: join(context.root, '.vibe', 'repos'),
   };
 
-  const app = createApp(createContextHolder(context), workflowDeps, applicationDeps, { registry }, {
-    // Clones live inside this tool's own .vibe folder, which ingest never
-    // walks, so analysing this repository never analyses the clones too.
-    cloneRoot: join(context.root, '.vibe', 'repos'),
-    settings,
-  });
+  const app = createApp(
+    createContextHolder(context),
+    workflowDeps,
+    applicationDeps,
+    { registry },
+    {
+      // Clones live inside this tool's own .vibe folder, which ingest never
+      // walks, so analysing this repository never analyses the clones too.
+      cloneRoot: join(context.root, '.vibe', 'repos'),
+      settings,
+    },
+    options.hosted === undefined ? undefined : { config: options.hosted, usage: createUsage(options.hosted) },
+  );
+  if (options.host !== undefined && options.hosted === undefined) {
+    throw new Error('--host is only for hosted mode: a local server listens on this machine only');
+  }
+  const hostname = options.host ?? LOOPBACK_HOST;
 
   const server: ServerType = await new Promise((resolve, reject) => {
-    const created = serve({ fetch: app.fetch, hostname: LOOPBACK_HOST, port: options.port ?? 0 }, () => resolve(created));
+    const created = serve({ fetch: app.fetch, hostname, port: options.port ?? 0 }, () => resolve(created));
     created.once('error', (error: NodeJS.ErrnoException) => {
       reject(
         error.code === 'EADDRINUSE'

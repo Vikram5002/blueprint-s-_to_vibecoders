@@ -88,3 +88,44 @@ describe('createWorkflowSessionsStore', () => {
     expect(store.get('a')?.title).toBe('Original');
   });
 });
+
+describe('owners (hosted mode)', () => {
+  function storeFor(db: ReturnType<typeof openDatabase>, who: { current: string | null }) {
+    return createWorkflowSessionsStore(db, { owner: () => who.current });
+  }
+
+  it('lists, reads, changes and deletes only the asking owner\'s sessions', () => {
+    const db = openDatabase(':memory:');
+    const who = { current: 'alice' as string | null };
+    const store = storeFor(db, who);
+    store.save(session({ id: 's-alice', title: 'Alice app' }));
+    who.current = 'bob';
+    store.save(session({ id: 's-bob', title: 'Bob app' }));
+
+    expect(store.list().map((s) => s.id)).toEqual(['s-bob']);
+    expect(store.get('s-alice')).toBeUndefined();
+    expect(store.remove('s-alice')).toBe(false);
+    store.revise('s-alice', { title: 'hijacked', prompt: 'x', schema: session().schema, prohibitions: [], permissions: [] });
+
+    who.current = 'alice';
+    expect(store.list().map((s) => s.id)).toEqual(['s-alice']);
+    expect(store.get('s-alice')?.title).toBe('Alice app');
+    expect(store.remove('s-alice')).toBe(true);
+    db.close();
+  });
+
+  it('a local install (no owner) sees every session, including ones saved before owners existed', () => {
+    const db = openDatabase(':memory:');
+    const who = { current: null as string | null };
+    const store = storeFor(db, who);
+    store.save(session({ id: 's-old' }));
+    who.current = 'carol';
+    store.save(session({ id: 's-carol' }));
+    who.current = null;
+    expect(store.list().map((s) => s.id).sort()).toEqual(['s-carol', 's-old']);
+    // An ownerless (local) session is not visible to a hosted owner.
+    who.current = 'carol';
+    expect(store.get('s-old')).toBeUndefined();
+    db.close();
+  });
+});
