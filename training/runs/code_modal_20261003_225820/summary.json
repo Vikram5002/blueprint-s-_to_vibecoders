@@ -1,0 +1,63 @@
+{
+  "run": "code_modal_20261003_225820",
+  "task": "component code generation (backend + security, round 1)",
+  "base": "unsloth/qwen2.5-coder-7b-instruct-bnb-4bit",
+  "data": "training/code/formatted/dataset.jsonl",
+  "rows": 515,
+  "hparams": {
+    "r": 16,
+    "lora_alpha": 16,
+    "lora_dropout": 0.0,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ],
+    "bias": "none",
+    "learning_rate": 0.0002,
+    "epochs": 3,
+    "per_device_train_batch_size": 2,
+    "gradient_accumulation_steps": 1,
+    "effective_batch_size": 2,
+    "max_seq_length": 6144,
+    "warmup_steps": 0,
+    "weight_decay": 0.0,
+    "lr_scheduler_type": "linear",
+    "optim": "adamw_torch",
+    "seed": 42,
+    "bf16": true,
+    "load_in_4bit": true,
+    "gradient_checkpointing": "unsloth",
+    "loss_masked_on_prompt": false,
+    "resume": false
+  },
+  "tokens": {
+    "min": 881,
+    "max": 2656,
+    "mean": 1335.3,
+    "assistant_mean": 1335.3
+  },
+  "steps": 774,
+  "elapsed_seconds": 719.6,
+  "final_loss": 0.0104,
+  "train_loss_mean": 0.06929731825956213,
+  "peak_vram_gb": 9.68,
+  "gpu": "NVIDIA L40S",
+  "versions": {
+    "python": "3.11.12",
+    "torch": "2.14.0+cu130",
+    "transformers": "4.57.2",
+    "peft": "0.21.0",
+    "unsloth": "2025.11.1"
+  },
+  "git_commit": null,
+  "artifacts": {
+    "adapter_dir": "adapter/",
+    "adapter_zip": "adapter.zip"
+  },
+  "note": "defaults mirror training/train_full.py (the plan adapters' script); only max_seq_length differs, forced by row length"
+}
