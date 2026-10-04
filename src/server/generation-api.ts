@@ -36,6 +36,7 @@
  * - `POST /application-jobs/:id/pages/restore` - puts the model's original
  *   file back.
  */
+import { modelReady } from './model-ready.js';
 import { requestOwner, visibleToRequester } from './request-owner.js';
 import { randomUUID } from 'node:crypto';
 import { readFile, rm } from 'node:fs/promises';
@@ -191,6 +192,8 @@ export function createApplicationJobStore(): ApplicationJobStore {
 
 export interface ApplicationRouteDeps {
   readonly llm: { readonly provider: CompletionProvider; readonly cache: LabelCache } | null;
+  /** Whether the server's own code model can answer now; absent = assume yes. A request's own key counts too. */
+  readonly available?: () => Promise<boolean>;
   /** Directory each job writes its generated project under, one subfolder per job id - see resolveGenerationRoot in server.ts. */
   readonly generationRoot: string;
   readonly jobs?: ApplicationJobStore;
@@ -236,7 +239,7 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
   }
 
   app.post('/application-jobs', async (c) => {
-    if (deps.llm === null) {
+    if (deps.llm === null || !(await modelReady(deps.available))) {
       return c.json({ error: 'no LLM provider configured (missing API key)' }, 503);
     }
     const llm = deps.llm;
@@ -322,7 +325,7 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
   // ones are generated with the existing files as context, and every other
   // file - generated or hand-written - is kept as it is.
   app.post('/application-jobs/:id/components', async (c) => {
-    if (deps.llm === null) return c.json({ error: 'no LLM provider configured (missing API key)' }, 503);
+    if (deps.llm === null || !(await modelReady(deps.available))) return c.json({ error: 'no LLM provider configured (missing API key)' }, 503);
     const llm = deps.llm;
     const id = c.req.param('id');
     const parent = findJob(id);
@@ -364,7 +367,7 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
   // the component files it had written (partialFiles); this starts a new run
   // that reuses them and generates only the rest.
   app.post('/application-jobs/:id/continue', async (c) => {
-    if (deps.llm === null) {
+    if (deps.llm === null || !(await modelReady(deps.available))) {
       return c.json({ error: 'no LLM provider configured (missing API key)' }, 503);
     }
     const llm = deps.llm;
@@ -406,7 +409,7 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
   });
 
   app.post('/application-jobs/:id/repair', async (c) => {
-    if (deps.llm === null) {
+    if (deps.llm === null || !(await modelReady(deps.available))) {
       return c.json({ error: 'no LLM provider configured (missing API key)' }, 503);
     }
     const llm = deps.llm;
@@ -608,7 +611,7 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
   // backend API and database store that receive it (page-sync.ts), then build,
   // repair and verify - saved as a new run, the parent left untouched.
   app.post('/application-jobs/:id/pages/sync', async (c) => {
-    if (deps.llm === null) {
+    if (deps.llm === null || !(await modelReady(deps.available))) {
       return c.json({ error: 'no LLM provider configured (missing API key)' }, 503);
     }
     const llm = deps.llm;

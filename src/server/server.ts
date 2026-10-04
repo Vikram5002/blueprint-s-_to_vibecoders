@@ -322,19 +322,20 @@ interface ResolvedLlm {
  * `loadLabelCache()` calls would each own an independent in-memory map, and
  * flushing one would never persist what the other wrote.
  */
-async function resolveLlm(context: AnalysisContext, registry: ProviderRegistry): Promise<ResolvedLlm | null> {
+async function resolveLlm(context: AnalysisContext, registry: ProviderRegistry): Promise<ResolvedLlm> {
   // Availability is decided by whether the CURRENTLY selected provider can be
   // constructed, but the object handed downstream is the switchable proxy -
   // so a later switch retargets every route without rebuilding any of them
   // (see provider-registry.ts). `local` needs no credentials at all, so it is
   // always constructible; that is why a machine with no API key whatsoever
   // still gets working routes once the local server is running.
+  //
+  // Built even when nothing is configured: a request may bring its own key
+  // (request-provider.ts), so whether a model is there is asked per request
+  // (`available` below), not decided once at startup.
   const concrete = await registry.resolve();
-  if (concrete === null) {
-    return null;
-  }
   const cache = await loadLabelCache(context.root);
-  return { provider: createSwitchableProvider(registry, concrete.model), cache };
+  return { provider: createSwitchableProvider(registry, concrete?.model ?? registry.current()), cache };
 }
 
 /** Where Layer 3 writes each application-generation job's real project - same `generated/` convention the CLI scripts and ingest's own exclusion (src/ingest/ignore-rules.ts) already use. */
@@ -366,15 +367,17 @@ export async function startServer(context: AnalysisContext, options: StartOption
   const llm = await resolveLlm(context, registry);
   // Owner-scoped: in hosted mode each browser sees only its own sessions (request-owner.ts).
   const sessions = createWorkflowSessionsStore(context.db, { owner: requestOwner });
-  const workflowDeps: WorkflowRouteDeps =
-    llm === null
-      ? { llm: null, sessions }
-      : { llm: { generator: createProjectSchemaGenerator(llm), cache: llm.cache }, sessions };
+  const workflowDeps: WorkflowRouteDeps = {
+    llm: { generator: createProjectSchemaGenerator(llm), cache: llm.cache },
+    sessions,
+    available: async () => (await registry.resolve()) !== null,
+  };
   // Same shared cache, but a proxy that follows the code-generation choice
   // rather than the plan one - see CODE_PROVIDER_SETTING_KEY.
-  const codeLlm = llm === null ? null : { provider: createSwitchableProvider(registry, llm.provider.model, 'code'), cache: llm.cache };
+  const codeLlm = { provider: createSwitchableProvider(registry, llm.provider.model, 'code'), cache: llm.cache };
   const applicationDeps: ApplicationRouteDeps = {
     llm: codeLlm,
+    available: async () => (await registry.resolveCode()) !== null,
     generationRoot: generationRootFor(context),
     runs: createApplicationRunsStore(context.db),
     sessions,

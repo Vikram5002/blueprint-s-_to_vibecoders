@@ -19,6 +19,7 @@
  * those two things, then mounted into the main app with `.route()` — see
  * `server.ts`.
  */
+import { modelReady } from './model-ready.js';
 import { requestOwner, visibleToRequester } from './request-owner.js';
 import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
@@ -130,6 +131,8 @@ export interface WorkflowLlmDeps {
 export interface WorkflowRouteDeps {
   /** Null when no provider is configured — `createProvider`'s own "no key" signal, propagated up rather than crashing. */
   readonly llm: WorkflowLlmDeps | null;
+  /** Whether the server's own model can answer now; absent = assume yes. A request's own key counts too. */
+  readonly available?: () => Promise<boolean>;
   /** Defaults to a fresh in-memory store; overridable so tests can inspect or pre-seed job state. */
   readonly jobs?: WorkflowJobStore;
   /**
@@ -153,7 +156,7 @@ export function createWorkflowRoutes(deps: WorkflowRouteDeps): Hono {
   const app = new Hono();
 
   app.post('/jobs', async (c) => {
-    if (deps.llm === null) {
+    if (deps.llm === null || !(await modelReady(deps.available))) {
       return c.json({ error: 'no LLM provider configured (missing API key)' }, 503);
     }
     const llm = deps.llm;
