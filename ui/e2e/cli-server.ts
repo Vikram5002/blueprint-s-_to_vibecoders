@@ -36,21 +36,50 @@ export interface RunningCli {
   stop(): Promise<void>;
 }
 
-export async function startCli(): Promise<RunningCli> {
-  const root = mkdtempSync(join(tmpdir(), 'vibe-e2e-'));
-  cpSync(FIXTURE_PATH, root, { recursive: true, filter: (source) => !NOT_FIXTURE.has(basename(source)) });
-  const removeRoot = (): void => rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+export interface StartCliOptions {
+  /** Extra CLI arguments, e.g. ['--hosted']. */
+  readonly args?: readonly string[];
+  /** Extra environment variables for the server. */
+  readonly env?: Readonly<Record<string, string>>;
+  /**
+   * Run with no model keys at all: started from the temporary folder (so the
+   * repository's .env is not read) and with every *_API_KEY / token variable
+   * removed - the server then has no model of its own.
+   */
+  readonly withoutOwnKeys?: boolean;
+}
 
-  const child: ChildProcessWithoutNullStreams = spawn(process.execPath, [CLI_PATH, root, '--no-open'], {
-    cwd: REPO_ROOT,
-    stdio: 'pipe',
+export async function startCli(options: StartCliOptions = {}): Promise<RunningCli> {
+  const root = mkdtempSync(join(tmpdir(), 'vibe-e2e-'));
+  cpSync(FIXTURE_PATH, root, {
+    recursive: true,
+    filter: (source) => !NOT_FIXTURE.has(basename(source)),
   });
+  const removeRoot = (): void =>
+    rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+
+  const env: NodeJS.ProcessEnv = { ...process.env, ...options.env };
+  if (options.withoutOwnKeys === true) {
+    for (const name of Object.keys(env)) {
+      if (/(_API_KEY(_\d+)?|_TOKEN)$/.test(name) && options.env?.[name] === undefined)
+        delete env[name];
+    }
+  }
+  const child: ChildProcessWithoutNullStreams = spawn(
+    process.execPath,
+    [CLI_PATH, root, '--no-open', ...(options.args ?? [])],
+    { cwd: options.withoutOwnKeys === true ? root : REPO_ROOT, stdio: 'pipe', env },
+  );
 
   const baseUrl = await new Promise<string>((resolveUrl, rejectUrl) => {
     let stdout = '';
     let stderr = '';
     const timeout = setTimeout(() => {
-      rejectUrl(new Error(`CLI did not print a server URL within ${STARTUP_TIMEOUT_MS / 1000}s.\nstdout: ${stdout}\nstderr: ${stderr}`));
+      rejectUrl(
+        new Error(
+          `CLI did not print a server URL within ${STARTUP_TIMEOUT_MS / 1000}s.\nstdout: ${stdout}\nstderr: ${stderr}`,
+        ),
+      );
     }, STARTUP_TIMEOUT_MS);
 
     child.stdout.on('data', (chunk: Buffer) => {
@@ -67,7 +96,11 @@ export async function startCli(): Promise<RunningCli> {
     child.on('exit', (code) => {
       clearTimeout(timeout);
       removeRoot();
-      rejectUrl(new Error(`CLI exited early with code ${code} before printing a server URL.\nstderr: ${stderr}`));
+      rejectUrl(
+        new Error(
+          `CLI exited early with code ${code} before printing a server URL.\nstderr: ${stderr}`,
+        ),
+      );
     });
   });
 

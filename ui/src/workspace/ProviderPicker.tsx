@@ -3,6 +3,8 @@ import { fetchProviders, updateProviders } from './provider-api-client';
 import { Icon } from '../design/Icon';
 import { useWorkspaceStore } from './store';
 import type { ProviderName, ProviderStatus } from './provider-types';
+import { OwnKeySection } from './OwnKeySection';
+import { OWN_KEY_CHANGED, OWN_KEY_PROVIDERS, fetchHostedInfo, ownKey } from '../hosted-client';
 
 type State =
   | { readonly kind: 'loading' }
@@ -54,6 +56,15 @@ export function ProviderPicker(): JSX.Element {
   const [urlError, setUrlError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const providersVersion = useWorkspaceStore((store) => store.providersVersion);
+  const [hosted, setHosted] = useState(false);
+  const [mine, setMine] = useState(ownKey());
+
+  useEffect(() => {
+    void fetchHostedInfo().then((info) => setHosted(info !== null));
+    const changed = (): void => setMine(ownKey());
+    window.addEventListener(OWN_KEY_CHANGED, changed);
+    return () => window.removeEventListener(OWN_KEY_CHANGED, changed);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -142,9 +153,21 @@ export function ProviderPicker(): JSX.Element {
         />
         <Icon name="cpu" size={14} className="flex-shrink-0 text-slate-400" />
         <span className="min-w-0 truncate">
-          {shortLabel(plan?.label ?? state.current)}
-          {code !== undefined && (
-            <span className="text-slate-400"> · code: {shortLabel(code.label)}</span>
+          {mine !== null ? (
+            <>
+              Your key:{' '}
+              {shortLabel(
+                OWN_KEY_PROVIDERS.find((entry) => entry.id === mine.provider)?.label ??
+                  mine.provider,
+              )}
+            </>
+          ) : (
+            <>
+              {shortLabel(plan?.label ?? state.current)}
+              {code !== undefined && (
+                <span className="text-slate-400"> · code: {shortLabel(code.label)}</span>
+              )}
+            </>
           )}
         </span>
         <Icon
@@ -157,6 +180,7 @@ export function ProviderPicker(): JSX.Element {
       {open && (
         <ModelMenu
           state={state}
+          hosted={hosted}
           busy={busy}
           urlDraft={urlDraft ?? state.localBaseUrl}
           codeUrlDraft={codeUrlDraft ?? state.localCodeBaseUrl}
@@ -183,6 +207,8 @@ function readyFrom(response: Awaited<ReturnType<typeof fetchProviders>>): Ready 
 
 interface ModelMenuProps {
   readonly state: Ready;
+  /** A hosted server's own model is chosen by whoever runs it, not by visitors. */
+  readonly hosted: boolean;
   readonly busy: boolean;
   readonly urlDraft: string;
   readonly codeUrlDraft: string;
@@ -197,6 +223,7 @@ const SELECT_CLASS =
 
 function ModelMenu({
   state,
+  hosted,
   busy,
   urlDraft,
   codeUrlDraft,
@@ -238,7 +265,7 @@ function ModelMenu({
         id="provider-select"
         data-testid="provider-select"
         value={state.current}
-        disabled={busy}
+        disabled={busy || hosted}
         onChange={(event) => apply({ provider: event.target.value as ProviderName })}
         className={SELECT_CLASS}
       >
@@ -266,7 +293,7 @@ function ModelMenu({
         id="code-provider-select"
         data-testid="code-provider-select"
         value={state.codeProvider ?? 'same'}
-        disabled={busy}
+        disabled={busy || hosted}
         onChange={(event) => apply({ codeProvider: event.target.value as ProviderName | 'same' })}
         title="Which model writes the application's code on Generate Application. The plan is still made by the model above."
         className={SELECT_CLASS}
@@ -294,6 +321,12 @@ function ModelMenu({
           {urlError}
         </p>
       )}
+      {hosted && (
+        <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
+          These are this server&apos;s models, set by whoever runs it.
+        </p>
+      )}
+      <OwnKeySection hosted={hosted} />
       <p className="mt-4 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-slate-500">
         Seven ways to run it free - Gemini, Groq, OpenRouter, GitHub Models, Ollama, and our own
         models on a free GPU. Setup steps: docs/FREE-SETUP.md.

@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { WorkspaceShell } from './workspace/WorkspaceShell';
 import { registerServiceWorker } from './pwa';
+import { installApiHeaders } from './hosted-client';
+import { HostedGate } from './HostedGate';
 // Required, not cosmetic: sets pointer-events/position on React Flow's
 // internal panes (.react-flow__background, __pane, __viewport). Without it
 // the background layer can intercept clicks meant for a node or edge
@@ -13,6 +15,7 @@ import './workspace/workspace.css';
 import './design/theme.css';
 
 registerServiceWorker();
+installApiHeaders();
 
 const container = document.getElementById('root');
 if (container === null) {
@@ -21,6 +24,8 @@ if (container === null) {
 
 createRoot(container).render(
   <StrictMode>
-    <WorkspaceShell />
+    <HostedGate>
+      <WorkspaceShell />
+    </HostedGate>
   </StrictMode>,
 );
