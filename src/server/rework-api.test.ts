@@ -16,12 +16,15 @@ vi.mock('./violations-api.js', () => ({
         edges: [
           {
             fromFile: 'routes/users.ts',
+            toFile: 'db/users.ts',
+            fromModule: 'routes',
+            toModule: 'db',
             evidence: [
               { file: 'routes/users.ts', line: 1, snippet: "import { findUser } from '../db/users';" },
               { file: 'routes/other.ts', line: 9, snippet: 'not this file' },
             ],
           },
-          { fromFile: 'routes/other.ts', evidence: [{ file: 'routes/other.ts', line: 2, snippet: "import '../db/x';" }] },
+          { fromFile: 'routes/other.ts', toFile: 'db/x.ts', fromModule: 'routes', toModule: 'db', evidence: [{ file: 'routes/other.ts', line: 2, snippet: "import '../db/x';" }] },
         ],
       },
     ],
@@ -44,8 +47,13 @@ const provider: CompletionProvider = {
   },
 };
 
+// Who imports db/users.ts: a route (same module - not a helper), another db
+// file (forbidden module - not a helper), and a service (the helper).
+const importers: Record<string, string[]> = { 'db/users.ts': ['routes/users.ts', 'routes/admin.ts', 'db/cache.ts', 'services/users.ts'] };
+const graph = { hasNode: (id: string) => id in importers, inNeighbors: (id: string) => importers[id] ?? [] };
+
 function app(withProvider: CompletionProvider | null) {
-  const context = { root, intent: { constraints: [{ rawText: 'services may import db' }] } } as unknown as AnalysisContext;
+  const context = { root, graph: { graph }, intent: { constraints: [{ rawText: 'services may import db' }] } } as unknown as AnalysisContext;
   return createReworkRoutes({ context: () => context, provider: withProvider });
 }
 
@@ -56,7 +64,9 @@ function post(withProvider: CompletionProvider | null, body: unknown) {
 beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), 'vibe-rework-'));
   await mkdir(join(root, 'routes'));
+  await mkdir(join(root, 'services'));
   await writeFile(join(root, 'routes', 'users.ts'), SOURCE);
+  await writeFile(join(root, 'services', 'users.ts'), 'export function getUser(id: string) { return id; }');
 });
 
 afterAll(async () => {
@@ -71,11 +81,20 @@ describe('POST /api/rework', () => {
     expect(body).toMatchObject({ path: 'routes/users.ts', proposed: FIXED, unchanged: false });
     expect(body['checks']).toEqual([expect.objectContaining({ line: 1, lookedFor: '../db/users', stillPresent: false })]);
     expect(body['violations']).toEqual([
-      { ruleText: 'routes must not import db', explanation: 'routes/users.ts imports db/users.ts', evidence: [{ line: 1, snippet: "import { findUser } from '../db/users';" }] },
+      {
+        ruleText: 'routes must not import db',
+        explanation: 'routes/users.ts imports db/users.ts',
+        evidence: [{ line: 1, snippet: "import { findUser } from '../db/users';" }],
+        forbidden: ['db'],
+      },
     ]);
     const user = calls.at(-1)?.user ?? '';
     expect(user).not.toContain('not this file');
     expect(user).toContain('- services may import db');
+    // Only the service is offered as a way round, with its real exports.
+    expect(user).toContain('- ../services/users exports: getUser');
+    expect(user).not.toContain('routes/admin');
+    expect(user).not.toContain('db/cache');
   });
 
   it('uses the unsaved text the editor sends instead of the file on disk', async () => {

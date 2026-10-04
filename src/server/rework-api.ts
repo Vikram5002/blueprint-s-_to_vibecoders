@@ -11,7 +11,8 @@ import { readFile } from 'node:fs/promises';
 import { isAbsolute, relative, resolve } from 'node:path';
 import { Hono } from 'hono';
 import type { CompletionProvider } from '../llm/provider.js';
-import { reworkFile, type ReworkViolation } from '../generate/rework-file.js';
+import { reworkFile, type ReworkHelper, type ReworkViolation } from '../generate/rework-file.js';
+import { extractNamedExports } from '../generate/component-codegen.js';
 import { buildViolationsResponse } from './violations-api.js';
 import type { AnalysisContext } from './context.js';
 
@@ -44,14 +45,50 @@ export function normaliseRepoPath(root: string, path: string): string | null {
   return rel.split('\\').join('/');
 }
 
-/** The violations whose evidence starts in `path`, with only that file's lines. */
+/** The violations whose evidence starts in `path`, with only that file's lines and the modules it must not reach. */
 export function violationsForFile(context: AnalysisContext, path: string): ReworkViolation[] {
   return buildViolationsResponse(context).violations.flatMap((violation) => {
-    const evidence = violation.edges
-      .filter((edge) => edge.fromFile === path)
-      .flatMap((edge) => edge.evidence.filter((e) => e.file === path).map((e) => ({ line: e.line, snippet: e.snippet })));
-    return evidence.length === 0 ? [] : [{ ruleText: violation.constraint.rawText, explanation: violation.explanation, evidence }];
+    const edges = violation.edges.filter((edge) => edge.fromFile === path);
+    const evidence = edges.flatMap((edge) => edge.evidence.filter((e) => e.file === path).map((e) => ({ line: e.line, snippet: e.snippet })));
+    if (evidence.length === 0) return [];
+    const forbidden = [...new Set(edges.map((edge) => edge.toModule))];
+    return [{ ruleText: violation.constraint.rawText, explanation: violation.explanation, evidence, forbidden }];
   });
+}
+
+const MAX_HELPERS = 5;
+
+function inside(file: string, module: string): boolean {
+  const m = module.replace(/\/+$/, '');
+  return m === '.' || file === m || file.startsWith(`${m}/`);
+}
+
+/**
+ * Files that already import what `path` is forbidden to import, from
+ * outside both its own module and the forbidden one, and that break no rule
+ * themselves - likely the layer the rules want `path` to go through.
+ */
+export async function helpersForFile(context: AnalysisContext, path: string): Promise<ReworkHelper[]> {
+  const all = buildViolationsResponse(context).violations;
+  const violators = new Set(all.flatMap((v) => v.edges.map((edge) => edge.fromFile)));
+  const mine = all.flatMap((v) => v.edges.filter((edge) => edge.fromFile === path));
+  const graph = context.graph.graph;
+  const candidates = new Set<string>();
+  for (const edge of mine) {
+    if (!graph.hasNode(edge.toFile)) continue;
+    for (const importer of graph.inNeighbors(edge.toFile)) {
+      if (importer === path || violators.has(importer)) continue;
+      if (inside(importer, edge.fromModule) || inside(importer, edge.toModule)) continue;
+      candidates.add(importer);
+    }
+  }
+  const picked = [...candidates].sort().slice(0, MAX_HELPERS);
+  return Promise.all(
+    picked.map(async (file) => {
+      const text = await readFile(resolve(context.root, file), 'utf8').catch(() => '');
+      return { path: file, exports: [...extractNamedExports(text)] };
+    }),
+  );
 }
 
 function statedRules(context: AnalysisContext): string[] {
@@ -87,6 +124,7 @@ export function createReworkRoutes(deps: ReworkRouteDeps): Hono {
       path,
       source,
       violations,
+      helpers: await helpersForFile(context, path),
       rules: statedRules(context),
       ...(parsed.instruction === undefined ? {} : { instruction: parsed.instruction }),
     });

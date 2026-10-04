@@ -9,6 +9,7 @@
  * trusting the model's word. That is a quick check on one file; the full
  * Blueprint re-check happens the next time the project is analysed.
  */
+import { posix } from 'node:path';
 import type { CompletionProvider } from '../llm/provider.js';
 import { type Result, ok, err } from '../types/result.js';
 import { extractCode } from './component-codegen.js';
@@ -18,6 +19,19 @@ export interface ReworkViolation {
   readonly ruleText: string;
   readonly explanation: string;
   readonly evidence: readonly { readonly line: number; readonly snippet: string }[];
+  /**
+   * Repo-relative modules (directories or files) this file must not reach.
+   * Any import in the proposal that resolves into one of them still breaks
+   * the rule - the same dependency under another spelling (a `require`, a
+   * different file of the same folder) is not a fix.
+   */
+  readonly forbidden?: readonly string[];
+}
+
+/** A file the rules let this one use, that already wraps a forbidden module - a fix the model may reach for. */
+export interface ReworkHelper {
+  readonly path: string;
+  readonly exports: readonly string[];
 }
 
 export interface ReworkRequest {
@@ -29,6 +43,7 @@ export interface ReworkRequest {
   readonly rules: readonly string[];
   /** What the person asked for, if anything beyond fixing the violations. */
   readonly instruction?: string;
+  readonly helpers?: readonly ReworkHelper[];
 }
 
 export interface ReworkCheck {
@@ -108,7 +123,7 @@ export async function reworkFile(
   const proposed = extracted.value;
   return ok({
     proposed,
-    checks: checkProposal(request.violations, proposed),
+    checks: checkProposal(request.violations, proposed, request.path),
     unchanged: proposed.trimEnd() === request.source.trimEnd(),
   });
 }
@@ -124,6 +139,14 @@ export function buildReworkPrompt(request: ReworkRequest): string {
   } else {
     lines.push('Architecture rules this file breaks: none found.');
   }
+  const helpers = request.helpers ?? [];
+  if (helpers.length > 0) {
+    lines.push('', 'Files in this project that already provide what the forbidden imports gave (you may import these):');
+    for (const helper of helpers) {
+      const shown = helper.exports.length > 0 ? helper.exports.join(', ') : '(no named exports found)';
+      lines.push(`- ${relativeSpecifier(request.path, helper.path)} exports: ${shown}`);
+    }
+  }
   const rules = request.rules.slice(0, MAX_RULES_IN_PROMPT);
   lines.push('', rules.length > 0 ? 'All stated rules of this project (do not break any of them):' : 'Stated rules of this project: none.');
   for (const rule of rules) lines.push(`- ${rule}`);
@@ -133,23 +156,48 @@ export function buildReworkPrompt(request: ReworkRequest): string {
   return lines.join('\n');
 }
 
-/** Each violating import, looked for again in the proposal. */
-export function checkProposal(violations: readonly ReworkViolation[], proposed: string): ReworkCheck[] {
-  const proposedImports = new Set(importSpecifiers(proposed));
+/**
+ * Each violating import, looked for again in the proposal: the same
+ * specifier, the same line, or any relative import that lands in a
+ * forbidden module.
+ */
+export function checkProposal(violations: readonly ReworkViolation[], proposed: string, path = ''): ReworkCheck[] {
+  const proposedSpecifiers = importSpecifiers(proposed);
+  const proposedImports = new Set(proposedSpecifiers);
   const proposedLines = new Set(proposed.split(/\r?\n/).map((line) => line.trim()));
-  return violations.flatMap((violation) =>
-    violation.evidence.map((e) => {
+  return violations.flatMap((violation) => {
+    const reaching = proposedSpecifiers.find((spec) => reachesForbidden(path, spec, violation.forbidden ?? []));
+    return violation.evidence.map((e) => {
       const specifier = importSpecifiers(e.snippet)[0];
       const lookedFor = specifier ?? e.snippet.trim();
+      const same = specifier !== undefined ? proposedImports.has(specifier) : proposedLines.has(lookedFor);
       return {
         ruleText: violation.ruleText,
         line: e.line,
         snippet: e.snippet,
-        lookedFor,
-        stillPresent: specifier !== undefined ? proposedImports.has(specifier) : proposedLines.has(lookedFor),
+        lookedFor: !same && reaching !== undefined ? reaching : lookedFor,
+        stillPresent: same || reaching !== undefined,
       };
-    }),
-  );
+    });
+  });
+}
+
+const SOURCE_EXTENSION = /\.(?:[cm]?[jt]sx?|py|php)$/;
+
+/** Whether a relative specifier written in `fromPath` resolves into one of the forbidden modules. */
+export function reachesForbidden(fromPath: string, specifier: string, forbidden: readonly string[]): boolean {
+  if (!specifier.startsWith('.') || fromPath === '') return false;
+  const target = posix.normalize(posix.join(posix.dirname(fromPath), specifier)).replace(SOURCE_EXTENSION, '');
+  return forbidden.some((module) => {
+    const m = module.replace(/\/+$/, '').replace(SOURCE_EXTENSION, '');
+    return target === m || target.startsWith(`${m}/`);
+  });
+}
+
+/** How `fromPath` would import `toPath`: './x' or '../y/z', without the extension. */
+export function relativeSpecifier(fromPath: string, toPath: string): string {
+  const rel = posix.relative(posix.dirname(fromPath), toPath).replace(SOURCE_EXTENSION, '');
+  return rel.startsWith('.') ? rel : `./${rel}`;
 }
 
 const JS_IMPORT = /(?:\bimport\s[^'"]*?\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*|\bexport\s[^'"]*?\bfrom\s*)['"]([^'"]+)['"]/g;

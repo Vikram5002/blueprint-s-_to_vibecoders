@@ -1,6 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { CompletionProvider, CompletionRequest } from '../llm/provider.js';
-import { buildReworkPrompt, checkProposal, importSpecifiers, MAX_REWORK_SOURCE_CHARS, reworkFile, type ReworkRequest } from './rework-file.js';
+import {
+  buildReworkPrompt,
+  checkProposal,
+  importSpecifiers,
+  MAX_REWORK_SOURCE_CHARS,
+  reachesForbidden,
+  relativeSpecifier,
+  reworkFile,
+  type ReworkRequest,
+} from './rework-file.js';
 
 const ORIGINAL = [
   "import { Router } from 'express';",
@@ -28,6 +37,7 @@ const REQUEST: ReworkRequest = {
       ruleText: 'routes must not import db',
       explanation: 'src/routes/users.ts imports src/db/users-table.ts',
       evidence: [{ line: 2, snippet: "import { findUser } from '../db/users-table';" }],
+      forbidden: ['src/db'],
     },
   ],
   rules: ['routes must not import db', 'services may import db'],
@@ -133,5 +143,35 @@ describe('checkProposal', () => {
     expect(buildReworkPrompt({ ...REQUEST, violations: [], rules: [], instruction: 'rename x' })).toContain(
       'Architecture rules this file breaks: none found.',
     );
+  });
+});
+
+describe('the forbidden module under another spelling', () => {
+  it('a require of the same file is not a fix (found live with a real model)', () => {
+    const cheat = ['export function f(id: string) {', "  const { findUser } = require('../db/users-table');", '  return findUser(id);', '}', ''].join('\n');
+    const [check] = checkProposal(REQUEST.violations, cheat, REQUEST.path);
+    expect(check).toMatchObject({ stillPresent: true, lookedFor: '../db/users-table' });
+  });
+
+  it('another file of the forbidden folder is not a fix either', () => {
+    const other = ["import { q } from '../db/connection';", 'export const f = q;', ''].join('\n');
+    expect(checkProposal(REQUEST.violations, other, REQUEST.path)[0]).toMatchObject({ stillPresent: true, lookedFor: '../db/connection' });
+  });
+
+  it('reachesForbidden resolves relative paths and ignores packages', () => {
+    expect(reachesForbidden('src/routes/a.ts', '../db', ['src/db'])).toBe(true);
+    expect(reachesForbidden('src/routes/a.ts', '../db/x.js', ['src/db/x.ts'])).toBe(true);
+    expect(reachesForbidden('src/routes/a.ts', '../dbx/y', ['src/db'])).toBe(false);
+    expect(reachesForbidden('src/routes/a.ts', 'db', ['src/db'])).toBe(false);
+  });
+
+  it('relativeSpecifier writes the import a file would use', () => {
+    expect(relativeSpecifier('src/routes/a.ts', 'src/services/user-service.ts')).toBe('../services/user-service');
+    expect(relativeSpecifier('src/a.ts', 'src/b.tsx')).toBe('./b');
+  });
+
+  it('puts helper files and their exports in the prompt', () => {
+    const prompt = buildReworkPrompt({ ...REQUEST, helpers: [{ path: 'src/services/user-service.ts', exports: ['getUser'] }] });
+    expect(prompt).toContain('- ../services/user-service exports: getUser');
   });
 });
