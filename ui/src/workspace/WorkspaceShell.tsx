@@ -9,6 +9,7 @@ import { DesignerChat } from './DesignerChat';
 import { useWorkspaceStore, type Tab } from './store';
 import { SegmentedControl } from '../design/SegmentedControl';
 import { Icon, type IconName } from '../design/Icon';
+import { useInstallPrompt } from '../pwa';
 
 const TABS: readonly { readonly id: Tab; readonly label: string; readonly icon: IconName }[] = [
   { id: 'conversation', label: 'Agent', icon: 'sparkles' },
@@ -32,6 +33,7 @@ export function WorkspaceShell(): JSX.Element {
   const activeTab = useWorkspaceStore((state) => state.activeTab);
   const setActiveTab = useWorkspaceStore((state) => state.setActiveTab);
   const setCommandOpen = useWorkspaceStore((state) => state.setCommandOpen);
+  const install = useInstallPrompt();
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#0c0c0e] text-slate-100">
@@ -52,6 +54,18 @@ export function WorkspaceShell(): JSX.Element {
           />
 
           <div className="ml-auto flex min-w-0 items-center gap-1.5">
+            {install !== null && (
+              <button
+                type="button"
+                data-testid="install-app"
+                onClick={() => void install()}
+                title="Install VibeCoder as an app on this computer"
+                className="btn btn-ghost btn-sm !gap-2"
+              >
+                <Icon name="download" size={14} />
+                <span className="hidden lg:inline">Install app</span>
+              </button>
+            )}
             <button
               type="button"
               data-testid="open-command"

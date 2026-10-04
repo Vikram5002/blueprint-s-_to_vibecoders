@@ -48,6 +48,8 @@ export function formatHelp(binaryName: string): string {
     '                   Compile a blueprint DSL file (Type-1 authoring) and',
     '                   persist it; merged into every run, including --mcp,',
     '                   until authored again',
+    '      --port=N     Serve on this port instead of any free one (an',
+    '                   installed app needs the same address every time)',
     '',
     'Phase 1: ingest and parse. This tool measures. It never generates code.',
   ].join('\n');

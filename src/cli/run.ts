@@ -193,7 +193,7 @@ export async function runCli(argv: readonly string[], io: CliIo, version: string
     return EXIT_OK;
   }
 
-  const server = await startServer(analysisContext);
+  const server = await startServer(analysisContext, options.port === null ? {} : { port: options.port });
 
   io.writeOut(formatServing(server.url, options.open));
   if (options.open) {

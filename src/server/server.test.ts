@@ -148,6 +148,13 @@ describe('binding', () => {
     await expect(fetch(second.url).then(() => 'up')).rejects.toBeDefined();
   }, 60_000);
 
+  it('serves on a fixed port when asked, and says so plainly when that port is taken', async () => {
+    const fixed = await startServer(await analyse(FIXTURE), { port: server.port + 1 });
+    expect(fixed.port).toBe(server.port + 1);
+    await expect(startServer(await analyse(FIXTURE), { port: fixed.port })).rejects.toThrow(/already in use/);
+    await fixed.close();
+  }, 60_000);
+
   it('refuses a request sent by another website', async () => {
     const response = await fetch(`${server.url}/api/summary`, { headers: { origin: 'https://evil.example' } });
     expect(response.status).toBe(403);

@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { WorkspaceShell } from './workspace/WorkspaceShell';
+import { registerServiceWorker } from './pwa';
 // Required, not cosmetic: sets pointer-events/position on React Flow's
 // internal panes (.react-flow__background, __pane, __viewport). Without it
 // the background layer can intercept clicks meant for a node or edge
@@ -10,6 +11,8 @@ import '@xyflow/react/dist/base.css';
 import './workspace/workspace.css';
 // After Tailwind, so its preflight reset does not undo the shared base styles.
 import './design/theme.css';
+
+registerServiceWorker();
 
 const container = document.getElementById('root');
 if (container === null) {

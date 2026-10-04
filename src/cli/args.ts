@@ -54,6 +54,12 @@ export interface CliOptions {
    * until authored again or the store is cleared. Null when omitted.
    */
   readonly blueprintFile: string | null;
+  /**
+   * Fixed port for the server. Null = any free port (the default, so two runs
+   * never collide). An installed app (PWA) remembers its exact address, so it
+   * needs the same port every time.
+   */
+  readonly port: number | null;
 }
 
 export interface ArgError {
@@ -77,6 +83,7 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
         mcp: { type: 'boolean', default: false },
         export: { type: 'boolean', default: false },
         blueprint: { type: 'string' },
+        port: { type: 'string' },
         help: { type: 'boolean', short: 'h', default: false },
         version: { type: 'boolean', default: false },
       },
@@ -101,6 +108,10 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
       message: `--history expects a whole number of commits from ${MIN_HISTORY} to ${MAX_HISTORY}, got "${String(parsed.values['history'])}"`,
     });
   }
+  const port = parsePort(parsed.values['port']);
+  if (port === 'invalid') {
+    return err({ kind: 'invalid-value', message: `--port expects a number from 1 to 65535, got "${String(parsed.values['port'])}"` });
+  }
   if (parsed.values.blueprint === '') {
     return err({ kind: 'invalid-value', message: '--blueprint expects a file path, for example --blueprint=rules.txt' });
   }
@@ -120,11 +131,19 @@ export function parseArguments(argv: readonly string[]): Result<CliOptions, ArgE
     help: parsed.values.help === true,
     version: parsed.values.version === true,
     blueprintFile: typeof parsed.values.blueprint === 'string' ? parsed.values.blueprint : null,
+    port,
   });
 }
 
 function describeParseFailure(cause: unknown): string {
   return cause instanceof Error ? cause.message : 'could not parse arguments';
+}
+
+function parsePort(value: unknown): number | null | 'invalid' {
+  if (typeof value !== 'string') return null;
+  if (!/^\d+$/.test(value)) return 'invalid';
+  const port = Number(value);
+  return port >= 1 && port <= 65535 ? port : 'invalid';
 }
 
 const MIN_HISTORY = 2;

@@ -1,0 +1,22 @@
+{
+  "name": "VibeCoder",
+  "short_name": "VibeCoder",
+  "description": "Plan, generate and verify applications against an architecture you can see.",
+  "id": "/workspace.html",
+  "start_url": "/workspace.html",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "background_color": "#0c0c0e",
+  "theme_color": "#0c0c0e",
+  "categories": ["developer", "productivity", "education"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Workspace", "url": "/workspace.html", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Analysis", "url": "/", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

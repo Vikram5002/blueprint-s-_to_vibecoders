@@ -26,6 +26,20 @@ describe('parseArguments', () => {
       help: false,
       version: false,
       blueprintFile: null,
+      port: null,
+    });
+  });
+
+  describe('--port', () => {
+    it('accepts a port number', () => {
+      const parsed = parseArguments(['.', '--port=4317']);
+      expect(parsed.ok && parsed.value.port).toBe(4317);
+    });
+
+    it.each(['0', '70000', 'abc', '43x', ''])('refuses %j with a usage error', (value) => {
+      const parsed = parseArguments([`--port=${value}`]);
+      expect(parsed.ok).toBe(false);
+      if (!parsed.ok) expect(parsed.error.kind).toBe('invalid-value');
     });
   });
 

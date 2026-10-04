@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VibeCoder is not running</title>
+    <link rel="icon" href="/icons/icon-192.png" />
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0c0c0e; color: #e5e5ea;
+             font: 15px/1.6 system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      main { max-width: 34rem; padding: 2rem 1.25rem; text-align: center; }
+      img { width: 64px; height: 64px; border-radius: 16px; }
+      h1 { font-size: 1.35rem; margin: 1rem 0 0.5rem; }
+      p { color: #a1a1aa; margin: 0.5rem 0; }
+      code { display: inline-block; margin: 0.75rem 0; padding: 0.6rem 0.9rem; border-radius: 10px; background: #18181b;
+             border: 1px solid #27272a; color: #f4f4f5; font: 13px ui-monospace, Consolas, monospace; word-break: break-all; }
+      button { margin-top: 1rem; padding: 0.55rem 1.1rem; border: 0; border-radius: 9px; background: #6d6af8; color: #fff;
+               font: inherit; cursor: pointer; }
+      button:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/icon-192.png" alt="" />
+      <h1>VibeCoder is not running</h1>
+      <p>This app talks to the VibeCoder server on this computer, and it is not answering.</p>
+      <p>Start it in a terminal, in your project folder:</p>
+      <code id="command">npx vibe-blueprint . --port=<span id="port">4317</span></code>
+      <p>Or open the VibeCoder desktop app. Then:</p>
+      <button type="button" onclick="location.href = '/workspace.html'">Try again</button>
+    </main>
+    <script>
+      // The installed app keeps the port it was installed from; show that one.
+      if (location.port) document.getElementById('port').textContent = location.port;
+    </script>
+  </body>
+</html>

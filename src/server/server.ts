@@ -82,6 +82,8 @@ const CONTENT_TYPES: ReadonlyMap<string, string> = new Map([
   ['.svg', 'image/svg+xml'],
   ['.json', 'application/json; charset=utf-8'],
   ['.ico', 'image/x-icon'],
+  ['.png', 'image/png'],
+  ['.webmanifest', 'application/manifest+json; charset=utf-8'],
 ]);
 
 /**
@@ -333,7 +335,12 @@ function generationRootFor(context: AnalysisContext): string {
   return `${context.root.replace(/[\\/]+$/, '')}/generated`;
 }
 
-export async function startServer(context: AnalysisContext): Promise<RunningServer> {
+export interface StartOptions {
+  /** A fixed port; omitted = any free port. Busy = a clear error, never a silent move to another port. */
+  readonly port?: number;
+}
+
+export async function startServer(context: AnalysisContext, options: StartOptions = {}): Promise<RunningServer> {
   const settings = createSettingsStore(context.db);
   const registry = createProviderRegistry({
     initial: settings.get(PROVIDER_SETTING_KEY),
@@ -369,8 +376,15 @@ export async function startServer(context: AnalysisContext): Promise<RunningServ
     settings,
   });
 
-  const server: ServerType = await new Promise((resolve) => {
-    const created = serve({ fetch: app.fetch, hostname: LOOPBACK_HOST, port: 0 }, () => resolve(created));
+  const server: ServerType = await new Promise((resolve, reject) => {
+    const created = serve({ fetch: app.fetch, hostname: LOOPBACK_HOST, port: options.port ?? 0 }, () => resolve(created));
+    created.once('error', (error: NodeJS.ErrnoException) => {
+      reject(
+        error.code === 'EADDRINUSE'
+          ? new Error(`port ${options.port ?? 0} is already in use - is VibeCoder already running? Choose another with --port`)
+          : error,
+      );
+    });
   });
 
   const address = server.address();
@@ -437,7 +451,7 @@ async function serveStatic(requestPath: string): Promise<StaticFile | null> {
 }
 
 function isAssetRequest(relativePath: string): boolean {
-  return relativePath.startsWith('assets/') || /\.(js|css|map|svg|png|ico|woff2?)$/.test(relativePath);
+  return relativePath.startsWith('assets/') || relativePath.startsWith('icons/') || /\.(js|css|map|svg|png|ico|woff2?|webmanifest)$/.test(relativePath);
 }
 
 async function readStaticFile(relativePath: string): Promise<StaticFile | null> {
