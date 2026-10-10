@@ -19,6 +19,7 @@
     "build:server": "tsc",
     "build:ui": "npm --prefix ui run build",
     "test": "vitest run",
+    "test:code-eval-stats": "node scripts/code-evaluation-statistics.test.mjs",
     "test:watch": "vitest",
     "lint": "eslint . && tsc --noEmit"
   },

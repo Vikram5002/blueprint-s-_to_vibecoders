@@ -96,28 +96,30 @@ export function CorrectionControls({
 
       {mode === 'merge' && (
         <div className="form">
-          <label>Merge this module with</label>
-          <div className="checklist">
-            {allModules
-              .filter((candidate) => candidate.id !== module.id)
-              .map((candidate) => (
-                <label key={candidate.id} className="check">
-                  <input
-                    type="checkbox"
-                    checked={mergeWith.includes(candidate.id)}
-                    onChange={(event) =>
-                      setMergeWith((current) =>
-                        event.target.checked
-                          ? [...current, candidate.id]
-                          : current.filter((id) => id !== candidate.id),
-                      )
-                    }
-                  />
-                  <span className="mono">{candidate.label}</span>
-                  <span className="hint"> ({candidate.fileCount})</span>
-                </label>
-              ))}
-          </div>
+          <fieldset className="checklist-group">
+            <legend>Merge this module with</legend>
+            <div className="checklist">
+              {allModules
+                .filter((candidate) => candidate.id !== module.id)
+                .map((candidate) => (
+                  <label key={candidate.id} className="check">
+                    <input
+                      type="checkbox"
+                      checked={mergeWith.includes(candidate.id)}
+                      onChange={(event) =>
+                        setMergeWith((current) =>
+                          event.target.checked
+                            ? [...current, candidate.id]
+                            : current.filter((id) => id !== candidate.id),
+                        )
+                      }
+                    />
+                    <span className="mono">{candidate.label}</span>
+                    <span className="hint"> ({candidate.fileCount})</span>
+                  </label>
+                ))}
+            </div>
+          </fieldset>
           <label htmlFor="merge-name">Name for the merged module</label>
           <input
             id="merge-name"
@@ -148,13 +150,17 @@ export function CorrectionControls({
           </div>
 
           <div className="two-up">
+            <label htmlFor="split-left-name">First side name</label>
+            <label htmlFor="split-right-name">Second side name</label>
             <input
+              id="split-left-name"
               value={leftName}
               onChange={(event) => setLeftName(event.target.value)}
               placeholder="first side"
               maxLength={48}
             />
             <input
+              id="split-right-name"
               value={rightName}
               onChange={(event) => setRightName(event.target.value)}
               placeholder="second side"
@@ -162,24 +168,27 @@ export function CorrectionControls({
             />
           </div>
 
-          <div className="checklist">
-            {module.files.map((file) => (
-              <label key={file.path} className="check">
-                <input
-                  type="checkbox"
-                  checked={leftFiles.includes(file.path)}
-                  onChange={(event) =>
-                    setLeftFiles((current) =>
-                      event.target.checked
-                        ? [...current, file.path]
-                        : current.filter((path) => path !== file.path),
-                    )
-                  }
-                />
-                <span className="mono">{file.path}</span>
-              </label>
-            ))}
-          </div>
+          <fieldset className="checklist-group">
+            <legend>Files in the first side</legend>
+            <div className="checklist">
+              {module.files.map((file) => (
+                <label key={file.path} className="check">
+                  <input
+                    type="checkbox"
+                    checked={leftFiles.includes(file.path)}
+                    onChange={(event) =>
+                      setLeftFiles((current) =>
+                        event.target.checked
+                          ? [...current, file.path]
+                          : current.filter((path) => path !== file.path),
+                      )
+                    }
+                  />
+                  <span className="mono">{file.path}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
           <div className="hint">
             {leftName || 'first'}: {leftFiles.length} · {rightName || 'second'}: {rightFiles.length}

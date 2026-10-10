@@ -48,6 +48,8 @@ export function DirectoryNode({ data, selected }: NodeProps): JSX.Element {
           <button
             type="button"
             className="expand"
+            aria-label={`${node.expanded ? 'Collapse' : 'Expand'} ${node.kind} ${node.path}`}
+            aria-expanded={node.expanded}
             onClick={(event) => {
               event.stopPropagation();
               node.onToggle(node.path);

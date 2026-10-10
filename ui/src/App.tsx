@@ -176,6 +176,9 @@ export function App(): JSX.Element {
 
   return (
     <div className="app">
+      <a className="skip-link" href="#main-content">
+        Skip to architecture graph
+      </a>
       <header className="topbar">
         <h1>Vibe-Code Blueprint</h1>
         <span className="root" title={summary?.root ?? ''}>
@@ -201,10 +204,11 @@ export function App(): JSX.Element {
           </span>
         )}
 
-        <div className="toggle" title="Group by folder, or by import coupling">
+        <div className="toggle" role="group" aria-label="Graph grouping">
           <button
             type="button"
             data-active={grouping === 'directory'}
+            aria-pressed={grouping === 'directory'}
             onClick={() => {
               setGrouping('directory');
               clearSelection();
@@ -215,6 +219,7 @@ export function App(): JSX.Element {
           <button
             type="button"
             data-active={grouping === 'module'}
+            aria-pressed={grouping === 'module'}
             onClick={() => {
               setGrouping('module');
               clearSelection();
@@ -225,11 +230,21 @@ export function App(): JSX.Element {
         </div>
 
         {grouping === 'directory' && (
-          <div className="toggle">
-            <button type="button" data-active={level === 'directory'} onClick={() => setLevel('directory')}>
+          <div className="toggle" role="group" aria-label="Directory graph detail">
+            <button
+              type="button"
+              data-active={level === 'directory'}
+              aria-pressed={level === 'directory'}
+              onClick={() => setLevel('directory')}
+            >
               Grouped
             </button>
-            <button type="button" data-active={level === 'file'} onClick={() => setLevel('file')}>
+            <button
+              type="button"
+              data-active={level === 'file'}
+              aria-pressed={level === 'file'}
+              onClick={() => setLevel('file')}
+            >
               Files
             </button>
           </div>
@@ -241,7 +256,7 @@ export function App(): JSX.Element {
         )}
       </header>
 
-      <div className="canvas">
+      <main id="main-content" className="canvas" aria-label="Architecture graph" tabIndex={-1}>
         {grouping === 'module' ? (
           modules === null ? (
             <div className="loading">{error ?? 'Clustering…'}</div>
@@ -267,12 +282,16 @@ export function App(): JSX.Element {
             implicatedFiles={implicated}
           />
         )}
-      </div>
+      </main>
 
-      <aside className="side">
-        {error && <div className="banner">{error}</div>}
+      <aside className="side" aria-label="Architecture details">
+        {error && (
+          <div className="banner" role="alert">
+            {error}
+          </div>
+        )}
         {notice !== null && (
-          <div className="banner" data-tone="info">
+          <div className="banner" data-tone="info" role="status" aria-live="polite">
             {notice}{' '}
             <button type="button" className="link" onClick={() => setNotice(null)}>
               dismiss

@@ -18,6 +18,27 @@
   box-sizing: border-box;
 }
 
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 1000;
+  top: 8px;
+  left: 8px;
+  transform: translateY(-160%);
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 html,
 body,
 #root {
@@ -279,8 +300,23 @@ body {
 }
 
 .form input:focus {
-  outline: none;
   border-color: var(--accent);
+}
+
+.checklist-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.checklist-group legend {
+  padding: 0;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .two-up {
