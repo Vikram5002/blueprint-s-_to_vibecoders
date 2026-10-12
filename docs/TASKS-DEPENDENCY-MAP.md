@@ -25,9 +25,12 @@ therefore a scoped application subsystem across `src/workflow`, `src/generate`,
 Several of those groups may overlap with other assigned work; Task 6's contents
 are not present in this checkout, so that overlap cannot currently be checked.
 
-No external packages were installed. Root and UI `node_modules` are absent. The
-UI packages that must be added for the Page Builder and browser checks are
-`@dnd-kit/core`, `zustand`, `tailwindcss`, `postcss`, `autoprefixer`,
-`@playwright/test`, and `@axe-core/playwright`. Playwright browser binaries also
-need downloading. Local training dependencies are listed above; no cloud
-training dependency should be invoked without separate approval.
+The locked root and UI dependencies are installed in this checkout. The root
+install used `--ignore-scripts` because `better-sqlite3` could not compile
+without a Windows SDK; the native addon is therefore not available for running
+the CLI server. `@playwright/test` 1.62.1 and `@axe-core/playwright` 4.13.0
+are pinned in the UI lockfile, and the graph accessibility E2E suite runs with
+the installed Chromium channel. Page Builder still needs `@dnd-kit/core`,
+Zustand, and the remaining compatible workspace dependencies. Local training
+dependencies are listed above; no cloud training dependency should be invoked
+without separate approval.

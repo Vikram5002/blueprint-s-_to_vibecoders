@@ -42,3 +42,23 @@ test('skip link and graph grouping controls work from the keyboard', async ({ pa
   await expect(modules).toHaveAttribute('aria-pressed', 'true');
   await expect(folders).toHaveAttribute('aria-pressed', 'false');
 });
+
+test('graph layout remains usable without horizontal overflow on a phone viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  const main = page.getByRole('main', { name: 'Architecture graph' });
+  const details = page.getByRole('complementary', { name: 'Architecture details' });
+  await expect(main).toBeVisible();
+  await expect(details).toBeVisible();
+
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze();
+  expect(violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
+});
