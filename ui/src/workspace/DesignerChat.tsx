@@ -39,11 +39,26 @@ export function DesignerChat(): JSX.Element {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, busy]);
 
-  useEffect(() => () => abortRef.current?.abort(), []);
+  useEffect(() => {
+    // Observe every load synchronously, including an A -> B -> A switch before React renders.
+    const unsubscribe = useWorkspaceStore.subscribe((state, previous) => {
+      if (state.pageBuilderVersion === previous.pageBuilderVersion) return;
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setBusy(false);
+      setMessages([]);
+      setDraft('');
+    });
+    return () => {
+      unsubscribe();
+      abortRef.current?.abort();
+      abortRef.current = null;
+    };
+  }, []);
 
   async function send(text: string): Promise<void> {
     const instruction = text.trim();
-    if (instruction === '' || busy) return;
+    if (instruction === '' || busy || abortRef.current !== null) return;
     setDraft('');
     const history = messages
       .filter((message) => message.failed !== true)
@@ -53,7 +68,12 @@ export function DesignerChat(): JSX.Element {
     const controller = new AbortController();
     abortRef.current = controller;
     // The page as it is now goes with the request; the reply is applied to the page as it is THEN.
-    const { pageName, elements, theme } = useWorkspaceStore.getState().pageBuilder;
+    const { pageBuilder, pageBuilderVersion } = useWorkspaceStore.getState();
+    const { pageName, elements, theme } = pageBuilder;
+    const stillCurrent = (): boolean =>
+      !controller.signal.aborted &&
+      abortRef.current === controller &&
+      useWorkspaceStore.getState().pageBuilderVersion === pageBuilderVersion;
     try {
       const reply = await designViaApi(
         instruction,
@@ -61,6 +81,7 @@ export function DesignerChat(): JSX.Element {
         history,
         controller.signal,
       );
+      if (!stillCurrent()) return;
       let changed = 0;
       if (reply.operations.length > 0) {
         setElements((current) => {
@@ -74,6 +95,7 @@ export function DesignerChat(): JSX.Element {
         { role: 'designer', text: reply.reply, changed, refused: reply.refused },
       ]);
     } catch (cause) {
+      if (!stillCurrent()) return;
       if (cause instanceof DOMException && cause.name === 'AbortError') return;
       setMessages((current) => [
         ...current,
@@ -84,7 +106,10 @@ export function DesignerChat(): JSX.Element {
         },
       ]);
     } finally {
-      setBusy(false);
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setBusy(false);
+      }
     }
   }
 

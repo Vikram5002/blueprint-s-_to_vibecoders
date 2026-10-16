@@ -34,8 +34,8 @@ export interface PageBuilderState {
  * session currently shown in the Workflow graph tab, and the Page Builder
  * canvas.
  *
- * Tab panels unmount when another tab is shown (WorkspaceShell renders one
- * at a time), so anything that must survive a tab switch lives here rather
+ * Other tab panels unmount while the Agent stays mounted, so anything else
+ * that must survive a tab switch lives here rather
  * than in a panel's own useState: the opened session (so coming back to the
  * Workflow tab shows the same session, and its saved run, instead of the
  * empty view), and the canvas (so a half-edited page is not wiped by a
@@ -75,6 +75,8 @@ export interface WorkspaceState {
   readonly notifyProvidersChanged: () => void;
 
   readonly pageBuilder: PageBuilderState;
+  /** Changes whenever another canvas is loaded, even when returning to the same page. */
+  readonly pageBuilderVersion: number;
   readonly setPageName: (pageName: string) => void;
   /**
    * `coalesce` merges this change into the previous undo step when it follows
@@ -137,6 +139,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   notifyProvidersChanged: () => set((state) => ({ providersVersion: state.providersVersion + 1 })),
 
   pageBuilder: EMPTY_CANVAS,
+  pageBuilderVersion: 0,
   setPageName: (pageName) => set((state) => ({ pageBuilder: { ...state.pageBuilder, pageName } })),
   setElements: (update, options) =>
     set((state) => {
@@ -163,8 +166,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   setSelectedId: (selectedId) =>
     set((state) => ({ pageBuilder: { ...state.pageBuilder, selectedId } })),
   openPageInBuilder: (origin, layout) =>
-    set({
+    set((state) => ({
       activeTab: 'page-builder',
+      pageBuilderVersion: state.pageBuilderVersion + 1,
       pageBuilder: {
         pageName: layout.pageName,
         elements: layout.elements,
@@ -173,8 +177,16 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         ...(layout.theme === undefined ? {} : { theme: layout.theme }),
       },
       pageHistory: { past: [], future: [] },
-    }),
-  setPageOrigin: (origin) => set((state) => ({ pageBuilder: { ...state.pageBuilder, origin } })),
+    })),
+  setPageOrigin: (origin) =>
+    set((state) => ({
+      pageBuilder: { ...state.pageBuilder, origin },
+      pageBuilderVersion:
+        state.pageBuilder.origin?.runId === origin?.runId &&
+        state.pageBuilder.origin?.path === origin?.path
+          ? state.pageBuilderVersion
+          : state.pageBuilderVersion + 1,
+    })),
   setPageTheme: (theme) =>
     set((state) => {
       const { theme: _previous, ...rest } = state.pageBuilder;

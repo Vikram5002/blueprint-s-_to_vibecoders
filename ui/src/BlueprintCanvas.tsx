@@ -70,6 +70,7 @@ export function BlueprintCanvas(): JSX.Element {
   const [edges, setEdges] = useState<BlueprintGraphEdge[]>([]);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [preview, setPreview] = useState<CompileBlueprintResponse | null>(null);
+  const [previewGraph, setPreviewGraph] = useState<BlueprintGraph | null>(null);
   const [previewPending, setPreviewPending] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -105,19 +106,31 @@ export function BlueprintCanvas(): JSX.Element {
   // DSL text locally.
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    let active = true;
     if (debounceRef.current !== null) clearTimeout(debounceRef.current);
     if (graph.nodes.length === 0 && graph.edges.length === 0) {
       setPreview(null);
+      setPreviewGraph(null);
+      setPreviewPending(false);
       return;
     }
     setPreviewPending(true);
     debounceRef.current = setTimeout(() => {
       compileBlueprintGraph(graph)
-        .then(setPreview)
-        .catch((cause: unknown) => setError(String(cause)))
-        .finally(() => setPreviewPending(false));
+        .then((result) => {
+          if (!active) return;
+          setPreview(result);
+          setPreviewGraph(graph);
+        })
+        .catch((cause: unknown) => {
+          if (active) setError(String(cause));
+        })
+        .finally(() => {
+          if (active) setPreviewPending(false);
+        });
     }, 350);
     return () => {
+      active = false;
       if (debounceRef.current !== null) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -212,7 +225,17 @@ export function BlueprintCanvas(): JSX.Element {
     }
   }, []);
 
+  // A node-only cycle rule is saveable; stale or empty previews are not.
+  const canSave =
+    !saving &&
+    !previewPending &&
+    previewGraph === graph &&
+    preview !== null &&
+    preview.constraints.length > 0 &&
+    preview.rejected.length === 0;
+
   const save = useCallback(() => {
+    if (!canSave) return;
     setSaving(true);
     setNotice(null);
     saveBlueprintGraph(graph)
@@ -226,19 +249,17 @@ export function BlueprintCanvas(): JSX.Element {
       })
       .catch((cause: unknown) => setError(String(cause)))
       .finally(() => setSaving(false));
-  }, [graph]);
+  }, [canSave, graph]);
 
   const flowNodes = useMemo<Node[]>(() => {
-    const derived: Node[] = (modules?.nodes ?? [])
-      .filter((module) => touchedDerivedIds.has(module.id))
-      .map((module) => ({
-        id: module.id,
-        type: 'blueprint',
-        position: modules?.positions[module.id] ?? { x: 0, y: 0 },
-        draggable: false,
-        connectable: true,
-        data: { phrase: module.label, kind: 'derived' } satisfies BlueprintNodeData,
-      }));
+    const derived: Node[] = (modules?.nodes ?? []).map((module) => ({
+      id: module.id,
+      type: 'blueprint',
+      position: modules?.positions[module.id] ?? { x: 0, y: 0 },
+      draggable: false,
+      connectable: true,
+      data: { phrase: module.label, kind: 'derived' } satisfies BlueprintNodeData,
+    }));
 
     const authored: Node[] = authoredNodes.map((node, index) => ({
       id: node.id,
@@ -259,7 +280,6 @@ export function BlueprintCanvas(): JSX.Element {
     return [...derived, ...authored];
   }, [
     modules,
-    touchedDerivedIds,
     authoredNodes,
     authoredPositions,
     renameNode,
@@ -285,9 +305,7 @@ export function BlueprintCanvas(): JSX.Element {
   const selectedEdge = edges.find((edge) => edge.id === selectedEdgeId) ?? null;
   const allNodeChoices = [
     ...authoredNodes.map((n) => ({ id: n.id, phrase: n.phrase })),
-    ...(modules?.nodes ?? [])
-      .filter((m) => touchedDerivedIds.has(m.id))
-      .map((m) => ({ id: m.id, phrase: m.label })),
+    ...(modules?.nodes ?? []).map((m) => ({ id: m.id, phrase: m.label })),
   ];
 
   return (
@@ -436,7 +454,7 @@ export function BlueprintCanvas(): JSX.Element {
           type="button"
           className="control primary"
           onClick={save}
-          disabled={saving || graph.edges.length === 0}
+          disabled={!canSave}
           style={{ marginTop: 14, marginBottom: 18 }}
         >
           {saving ? 'saving…' : 'save blueprint'}

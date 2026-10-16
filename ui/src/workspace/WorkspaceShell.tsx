@@ -82,20 +82,28 @@ export function WorkspaceShell(): JSX.Element {
           </div>
         </header>
 
-        {/* Keyed on the tab so each view fades in when it is switched to. Opacity only: a moving parent would shift the page builder's drop maths and React Flow's fit-to-view while it settles (caught by the page-builder e2e tests). */}
-        <main key={activeTab} className="anim-fade flex min-h-0 min-w-0 flex-1 flex-col">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col">
           <h1 className="sr-only">
             VibeCoder workspace - {TABS.find((tab) => tab.id === activeTab)?.label}
           </h1>
-          {activeTab === 'conversation' && <ConversationPane />}
-          {activeTab === 'page-builder' && (
-            <>
-              <PageBuilderCanvas />
-              <DesignerChat />
-            </>
+          {/* Keep the Agent mounted so its running jobs and plan review survive tab switches. */}
+          <div
+            className={`anim-fade min-h-0 min-w-0 flex-1 flex-col ${activeTab === 'conversation' ? 'flex' : 'hidden'}`}
+          >
+            <ConversationPane />
+          </div>
+          {activeTab !== 'conversation' && (
+            <div key={activeTab} className="anim-fade flex min-h-0 min-w-0 flex-1 flex-col">
+              {activeTab === 'page-builder' && (
+                <>
+                  <PageBuilderCanvas />
+                  <DesignerChat />
+                </>
+              )}
+              {activeTab === 'verification' && <VerificationDemo />}
+              {activeTab === 'workflow' && <WorkflowDemo />}
+            </div>
           )}
-          {activeTab === 'verification' && <VerificationDemo />}
-          {activeTab === 'workflow' && <WorkflowDemo />}
         </main>
       </div>
       <CommandPalette />

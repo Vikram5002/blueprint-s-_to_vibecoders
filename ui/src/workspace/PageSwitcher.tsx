@@ -17,11 +17,15 @@ interface PageSwitcherProps {
 export function PageSwitcher({ origin, elements }: PageSwitcherProps): JSX.Element {
   const openPageInBuilder = useWorkspaceStore((state) => state.openPageInBuilder);
   const runsVersion = useWorkspaceStore((state) => state.runsVersion);
+  const pageName = useWorkspaceStore((state) => state.pageBuilder.pageName);
+  const theme = useWorkspaceStore((state) => state.pageBuilder.theme);
   const [pages, setPages] = useState<readonly RunPage[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    setPages(null);
+    setError(null);
     fetchRunPages(origin.runId)
       .then((list) => {
         if (!cancelled) setPages(list);
@@ -36,7 +40,10 @@ export function PageSwitcher({ origin, elements }: PageSwitcherProps): JSX.Eleme
 
   const current = pages?.find((page) => page.path === origin.path);
   const unsaved =
-    current !== undefined && JSON.stringify(current.layout.elements) !== JSON.stringify(elements);
+    current !== undefined &&
+    (current.layout.pageName !== pageName ||
+      JSON.stringify(current.layout.elements) !== JSON.stringify(elements) ||
+      JSON.stringify(current.layout.theme) !== JSON.stringify(theme));
 
   function switchTo(path: string): void {
     const next = pages?.find((page) => page.path === path);
