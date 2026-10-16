@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { createLocalProvider } from './local.js';
+import { createLocalProvider, reportedLocalLabel } from './local.js';
 
 const REQUEST = { system: 's', user: 'u', maxOutputTokens: 8 };
+
+it('uses a reported desktop model label, preserving quantization and adapter identity', async () => {
+  const label = 'local:qwen+run_20260822_130636+gguf-q4_k_m-f16';
+  const probe = (async () => new Response(JSON.stringify({ models: [{ name: 'local', base: 'qwen', adapter: 'a', label }], default: 'local' }))) as typeof fetch;
+  expect(await reportedLocalLabel('http://127.0.0.1:8712', 'local:fallback', probe)).toBe(label);
+  expect(await reportedLocalLabel('http://127.0.0.1:8712', 'local-code:fallback', probe)).toBe('local-code:fallback');
+  const offline = (async () => { throw new Error('offline'); }) as typeof fetch;
+  expect(await reportedLocalLabel('http://127.0.0.1:8712', 'local:fallback', offline)).toBe('local:fallback');
+});
 
 function answering(response: () => Response): { fetchImpl: typeof fetch; bodies: unknown[]; urls: string[] } {
   const bodies: unknown[] = [];

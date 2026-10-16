@@ -51,6 +51,7 @@ import {
   DEFAULT_LOCAL_MODEL,
   readLocalBaseUrl,
   readLocalCodeBaseUrl,
+  reportedLocalLabel,
 } from './local.js';
 import {
   createOpenAiServiceProvider,
@@ -214,7 +215,7 @@ export function chooseProvider(env: NodeJS.ProcessEnv = process.env): ProviderCh
 export async function createProvider(choice: ProviderChoice): Promise<CompletionProvider | null> {
   if (isLocalProvider(choice.provider)) {
     return createLocalProvider({
-      model: choice.model,
+      model: await reportedLocalLabel(choice.baseUrl, choice.model),
       ...(choice.baseUrl === undefined ? {} : { baseUrl: choice.baseUrl }),
     });
   }

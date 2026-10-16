@@ -22,24 +22,19 @@
  *
  * ## No SDK, same as bluesminds.ts and gemini.ts
  *
- * Plain `fetch` against a local server. The model itself only runs in Python
- * (torch/transformers/peft) — there is no way to load this checkpoint inside
- * Node — so `local_inference_server.py` (project root, not part of this repo's
- * source; see the desktop session that produced this file) loads the model
- * once and stays warm, and this adapter is the thin HTTP client for it. The
- * server already speaks the exact `CompletionResult` JSON shape, so this file
- * does not reshape the response the way bluesminds.ts has to for an
- * OpenAI-shaped body — it validates and passes it through.
+ * Plain `fetch` against a local server. The Python service can load the
+ * original torch/transformers checkpoint; desktop 0.2.0 can instead manage
+ * llama.cpp with Q4_K_M base models and converted F16 LoRA adapters. Both
+ * expose the same `CompletionResult` protocol. This client validates and
+ * passes that response through. The desktop bridge reports a distinct model
+ * label so the quantized conversion is not mistaken for the Python service.
  *
- * ## schemaDowngraded, always true when a schema is requested
+ * ## Schema enforcement belongs to the serving runtime
  *
- * Unlike Anthropic's `output_config.format` or Gemini's `responseSchema`,
- * there is no constrained/structured decoding wired up in the local server —
- * plain greedy or sampled generation only. Every request that supplies
- * `schema` is reported as downgraded, per provider.ts's own contract: this is
- * not less safe (`validate.ts` still checks the shape on the way back
- * regardless of provider) but it is less constrained, and that has to be
- * visible rather than silently assumed equivalent to the vendor providers.
+ * The original Python server reports schemaDowngraded when it uses ordinary
+ * text generation. The desktop bridge forwards JSON schemas to llama.cpp's
+ * constrained decoder and fails explicitly when the schema is unsupported.
+ * Both paths still validate the returned data at the application boundary.
  */
 import type { CompletionProvider, CompletionRequest, CompletionResult } from './provider.js';
 
@@ -136,7 +131,7 @@ function isCompletionResult(value: unknown): value is CompletionResult {
 
 /** What `GET /models` on the inference server reports: every served checkpoint, and which one a request without `model` gets. */
 export interface ServedModels {
-  readonly models: readonly { readonly name: string; readonly base: string; readonly adapter: string }[];
+  readonly models: readonly { readonly name: string; readonly base: string; readonly adapter: string; readonly label?: string }[];
   readonly default: string;
 }
 
@@ -172,6 +167,13 @@ export async function probeModels(
 
 /** Short, like the registry's reachability probe: this renders a picker, it does not serve a request. */
 const MODELS_PROBE_TIMEOUT_MS = 4_000;
+
+/** A managed desktop runtime identifies its exact quantization and adapter for cache keys. */
+export async function reportedLocalLabel(baseUrl: string | undefined, fallback: string, fetchImpl: typeof fetch = fetch): Promise<string> {
+  const models = await probeModels(baseUrl, fetchImpl);
+  const served = models?.models.find((entry) => entry.name === servedModelName(fallback));
+  return typeof served?.label === 'string' && served.label.startsWith(`${servedModelName(fallback)}:`) ? served.label : fallback;
+}
 
 export function createLocalProvider(options: LocalOptions = {}): CompletionProvider {
   const baseUrl = options.baseUrl ?? DEFAULT_LOCAL_BASE_URL;
