@@ -50,3 +50,5 @@ vscode-extension/.vscode-test/
 # Desktop app: installers and the packed server they bundle (npm run vendor / dist)
 desktop/release/
 desktop/vendor/*.tgz
+desktop/vendor/local-ai/
+desktop/vendor/local-ai-build/

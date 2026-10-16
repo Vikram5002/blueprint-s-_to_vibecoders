@@ -12,6 +12,7 @@ export const config = tseslint.config(
       // server, the extension's compiled code and its test copy of VS Code.
       'desktop/release/**',
       'desktop/vendor/**',
+      'backup/**',
       'vscode-extension/dist/**',
       'vscode-extension/.vscode-test/**',
       // Working directory: the database, caches, and — during a corpus run —
@@ -160,6 +161,8 @@ export const config = tseslint.config(
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         fetch: 'readonly',
+        AbortSignal: 'readonly',
+        AbortController: 'readonly',
       },
     },
     rules: {

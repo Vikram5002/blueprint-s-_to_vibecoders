@@ -1,17 +1,18 @@
 {
   "name": "vibecoder-desktop",
   "productName": "VibeCoder",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "VibeCoder as a desktop app: plan, generate and verify applications against an architecture you can see.",
   "author": "G. Vikram, C. Anil, Sreshta Reddy",
   "license": "UNLICENSED",
   "private": true,
   "main": "main.cjs",
   "scripts": {
-    "vendor": "npm --prefix .. run build && npm --prefix .. pack --pack-destination vendor",
+    "vendor": "npm --prefix .. run build && npm pack .. --pack-destination vendor --quiet",
     "start": "electron .",
-    "dist": "electron-builder --win nsis",
-    "test": "node --test test/server-runner.test.cjs"
+    "dist": "node check-bundle.cjs && electron-builder --win nsis",
+    "test": "node --test test/*.test.cjs",
+    "prepare:local": "python -B prepare-local-ai.py"
   },
   "devDependencies": {
     "electron": "44.5.1",
@@ -22,12 +23,13 @@
     "productName": "VibeCoder",
     "asar": false,
     "directories": {
-      "output": "release",
+      "output": "release/0.2.0",
       "buildResources": "build"
     },
     "files": [
       "main.cjs",
       "server-runner.cjs",
+      "local-ai/**",
       "build/icon.ico"
     ],
     "win": {
@@ -43,6 +45,10 @@
       "shortcutName": "VibeCoder"
     },
     "extraResources": [
+      {
+        "from": "vendor/local-ai",
+        "to": "local-ai"
+      },
       {
         "from": "vendor/vibe-blueprint-0.1.0.tgz",
         "to": "vibe-blueprint.tgz"

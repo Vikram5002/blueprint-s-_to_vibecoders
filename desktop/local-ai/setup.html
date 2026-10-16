@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>VibeCoder · Local AI</title><link rel="stylesheet" href="setup.css"></head>
+<body><main>
+<div class="eyebrow">VIBECODER / LOCAL AI</div>
+<h1>Your projects. Your computer.</h1>
+<p class="intro">Run planning and code generation on this PC. Setup is optional: you can keep using an online provider and return here from the File menu.</p>
+<section aria-labelledby="hardware-title"><div class="row"><h2 id="hardware-title">This computer</h2><button id="check" class="quiet">Recheck hardware</button></div><div id="hardware">Checking CPU, memory and graphics drivers…</div><p id="recommendation" class="accent"></p></section>
+<section aria-labelledby="models-title"><h2 id="models-title">Two models, one at a time</h2><div id="models"></div><p id="size"></p><p class="muted">Initial downloads need internet. After setup, model inference stays on this PC. Building generated apps can still require npm downloads. Qwen models use the Apache 2.0 license; copies are included with the app.</p>
+<label for="mode">Compute mode</label><select id="mode"><option value="auto">Automatic recommendation</option><option value="cpu">CPU · slower, uses system RAM</option><option value="hybrid">GPU + CPU · shared workload</option><option value="gpu">GPU · requires enough VRAM</option></select>
+<label>Model folder</label><div class="row"><code id="folder"></code><button id="choose" class="quiet">Choose folder</button></div><p class="muted">Already have the official Q4_K_M files? Choose their folder and verify existing files. ZIP training adapters alone do not contain the base models.</p></section>
+<div id="status" role="status" aria-live="polite">Ready to check.</div>
+<p id="progress-label" hidden></p><progress id="progress" aria-labelledby="progress-label" max="100" hidden></progress>
+<div class="actions"><button id="download" class="primary">Download / resume and enable</button><button id="import">Verify existing files and enable</button><button id="cancel" hidden>Cancel setup</button><button id="stop" hidden>Stop local AI</button></div>
+<div class="footer"><span>Planner: current 91-example version. The 288-example update comes later.</span><button id="continue" class="quiet">Continue without local AI</button></div>
+</main><script src="setup.js"></script></body></html>
