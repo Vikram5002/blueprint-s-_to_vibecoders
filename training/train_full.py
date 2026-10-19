@@ -5,7 +5,9 @@ from unsloth import FastLanguageModel
 from trl import SFTTrainer, SFTConfig
 from datasets import Dataset
 
-ROOT = Path(r"D:\70572300022")
+import os
+# VIBE_TRAIN_ROOT: the repository copy to read the dataset from and save runs under (default: the training desktop).
+ROOT = Path(os.environ.get("VIBE_TRAIN_ROOT", r"D:\70572300022"))
 DATASET_PATH = ROOT / "training" / "formatted" / "dataset.jsonl"
 OUTPUT_DIR = ROOT / "training" / "runs" / datetime.now().strftime("run_%Y%m%d_%H%M%S")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
