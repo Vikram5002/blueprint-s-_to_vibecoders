@@ -32,6 +32,7 @@
 import { appendFileSync, closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, dirname, join, resolve, sep } from 'node:path';
 import { createLocalProvider } from '../dist/llm/local.js';
+import { withTeacherGuidance } from './teacher-guidance.mjs';
 import { loadEnvFile } from '../dist/llm/env-file.js';
 import { validateProjectSchema } from '../dist/workflow/validate-project-schema.js';
 import { generateAndVerifyProject, verifyGeneratedProject } from '../dist/generate/verify-and-regenerate.js';
@@ -58,7 +59,7 @@ const outPath = argValue('out');
 if (!outPath) {
   console.error(
     'Usage: node scripts/capture-code-batch.mjs [--local=<url>] [--model=<served name>] --out=<path.jsonl> ' +
-      '[--sources=dir1,dir2] [--limit=N] [--domains=backend,security] [--work=capture/code/work] [--teacher-host=modal-L40S]',
+      '[--sources=dir1,dir2] [--limit=N] [--domains=backend,security] [--work=capture/code/work] [--teacher-host=modal-L40S] [--rich]',
   );
   process.exit(1);
 }
@@ -95,7 +96,10 @@ if (localUrl === undefined) {
 }
 // `model` is what the server matches against its --model list; it is sent
 // in every request body by the local adapter.
-const provider = createLocalProvider({ ...(localUrl ? { baseUrl: localUrl.replace(/\/+$/, '') } : {}), ...(modelName ? { model: modelName } : {}) });
+const teacher = createLocalProvider({ ...(localUrl ? { baseUrl: localUrl.replace(/\/+$/, '') } : {}), ...(modelName ? { model: modelName } : {}) });
+// --rich: the teacher's requests carry teacher-guidance.mjs; the saved records keep the plain request.
+const rich = args.includes('--rich');
+const provider = rich ? withTeacherGuidance(teacher) : teacher;
 
 /**
  * A provider-error from the teacher means the Colab server or its tunnel is
@@ -173,6 +177,24 @@ for (const source of sources) {
 }
 
 // ---- helpers ---------------------------------------------------------------
+
+/**
+ * --rich only: what a file the guidance asked for must visibly contain to be
+ * worth teaching. A teacher that ignored the guidance produced a file the
+ * small model already writes - no new behaviour to learn from it.
+ */
+function richnessReasons(domain, code) {
+  if (domain === 'frontend') {
+    const reasons = [];
+    if (!code.includes('<button')) reasons.push('not-rich:no-buttons');
+    if (!code.includes('style={')) reasons.push('not-rich:unstyled');
+    if (!code.includes('Loading')) reasons.push('not-rich:no-loading-state');
+    return reasons;
+  }
+  if (domain === 'database') return code.includes('.length === 0') ? [] : ['not-rich:no-sample-rows'];
+  if (domain === 'backend') return code.includes('.post(') ? [] : ['not-rich:no-create-route'];
+  return [];
+}
 
 /** A cache that never hits and never stores - the cold cache as an invariant, not a step. */
 const nullCache = { get: () => undefined, set: () => {}, flush: async () => true, size: 0 };
@@ -328,7 +350,7 @@ for (const { sourceFile, pair } of plans) {
     const owner = findComponentByTargetPath(schema, file.path);
     if (owner === null) continue;
     if (domainFilter !== null && !domainFilter.has(owner.domain)) continue;
-    const reasons = [...reasonsFor(file.path)];
+    const reasons = [...reasonsFor(file.path), ...(rich ? richnessReasons(owner.domain, file.contents) : [])];
     const request = await rebuildRequest(schema, owner.component, owner.domain, undefined, finalFiles, file.contents);
     const record = {
       recordId: `${sessionId}:first:${owner.component.id}`,
@@ -345,6 +367,7 @@ for (const { sourceFile, pair } of plans) {
       teacher: teacherLabel,
       acceptance: 'per-file',
       teacherHost,
+      ...(rich ? { guidance: 'teacher-guidance.mjs' } : {}),
       capturedAt: new Date().toISOString(),
     };
     writeLine(outPath, record);
