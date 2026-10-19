@@ -72,6 +72,9 @@ async function stub(
   await page.route('**/api/workflow/application-jobs/*/pages', (route) =>
     route.fulfill({ json: { pages: [] } }),
   );
+  await page.route('**/api/workflow/application-jobs/*/preview', (route) =>
+    route.fulfill({ json: { runId: 'run-new', state: 'stopped' } }),
+  );
   await page.route('**/api/workflow/sessions', (route) =>
     route.fulfill({ json: { sessions: [] } }),
   );

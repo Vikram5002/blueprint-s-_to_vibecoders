@@ -13,6 +13,7 @@ import {
 } from './workflow-api-client';
 import { useWorkspaceStore } from './store';
 import { ComponentEditor } from './ComponentEditor';
+import { RunAppPanel } from './RunAppPanel';
 import type { ApplicationJob, ApplicationJobError, GenerationPhase } from './application-job-types';
 import type { ProjectSchema } from './project-schema-types';
 import { Icon } from '../design/Icon';
@@ -496,6 +497,8 @@ function ApplicationJobReport({
         </a>
         <span className="basis-full text-right text-[11px] text-slate-500">{PACK_NOTE}</span>
       </div>
+
+      {result.build.buildOk && <RunAppPanel jobId={job.id} />}
 
       {result.build.failureOutput !== undefined && (
         <details className="rounded-lg border border-red-700/50 bg-red-950/20 p-2">

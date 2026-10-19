@@ -485,3 +485,25 @@ export async function editComponentsViaApi(
   const submitted = (await response.json()) as SubmittedApplicationJob;
   return pollJob(submitted.id, options);
 }
+
+// ---- Running a finished app inside the workspace (src/server/app-preview.ts) ----
+
+export interface AppPreviewStatus {
+  readonly runId: string;
+  readonly state: 'starting' | 'running' | 'failed' | 'stopped';
+  readonly step?: 'install' | 'build' | 'start';
+  readonly url?: string;
+  readonly error?: string;
+}
+
+async function previewRequest(jobId: string, method: 'GET' | 'POST' | 'DELETE'): Promise<AppPreviewStatus> {
+  const response = await fetch(`/api/workflow/application-jobs/${encodeURIComponent(jobId)}/preview`, { method });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `running the app failed: ${response.status}`));
+  }
+  return (await response.json()) as AppPreviewStatus;
+}
+
+export const startAppPreview = (jobId: string): Promise<AppPreviewStatus> => previewRequest(jobId, 'POST');
+export const fetchAppPreview = (jobId: string): Promise<AppPreviewStatus> => previewRequest(jobId, 'GET');
+export const stopAppPreview = (jobId: string): Promise<AppPreviewStatus> => previewRequest(jobId, 'DELETE');
