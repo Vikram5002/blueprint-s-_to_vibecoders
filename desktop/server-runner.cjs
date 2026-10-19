@@ -70,10 +70,14 @@ async function ensureRuntime({ tarball, runtimeDir, onOutput = () => {} }) {
     return cli;
   }
 
-  const hadInstalledPackages = fs.existsSync(path.join(runtimeDir, 'node_modules'));
   fs.mkdirSync(runtimeDir, { recursive: true });
   // A failed reinstall must not leave a marker that can approve a partial tree.
   fs.rmSync(marker, { force: true });
+  // An update starts from an empty folder, exactly like a first install: npm then
+  // downloads better-sqlite3's prebuilt binary for this Node. Rebuilding it in
+  // place compiles from source, which needs Visual Studio (found live, 2026-10-19).
+  fs.rmSync(path.join(runtimeDir, 'node_modules'), { recursive: true, force: true, maxRetries: 3 });
+  fs.rmSync(path.join(runtimeDir, 'package-lock.json'), { force: true });
   fs.writeFileSync(path.join(runtimeDir, 'package.json'), JSON.stringify({ name: 'vibecoder-runtime', private: true }));
   onOutput('Setting up VibeCoder for the first time (about a minute)...\n');
   const installOptions = {
@@ -87,13 +91,6 @@ async function ensureRuntime({ tarball, runtimeDir, onOutput = () => {} }) {
   );
   onOutput(output);
   if (code !== 0 || !fs.existsSync(cli)) throw new Error(`setting up VibeCoder failed (npm exit code ${code}):\n${output.slice(-1500)}`);
-  if (hadInstalledPackages) {
-    // npm install can keep an unchanged package's binary from the previous ABI.
-    onOutput('Updating the database driver for this computer\'s Node.js...\n');
-    const rebuilt = await run('npm', ['rebuild', 'better-sqlite3', '--no-audit', '--no-fund'], installOptions);
-    onOutput(rebuilt.output);
-    if (rebuilt.code !== 0) throw new Error(`updating the database driver failed (npm exit code ${rebuilt.code}):\n${rebuilt.output.slice(-1500)}`);
-  }
   fs.writeFileSync(marker, stamp);
   nodeExecutablesByCli.set(cli, node.execPath);
   return cli;
