@@ -82,6 +82,23 @@ as `(no message)` because the error-display code assumed the wrong wire
 shape for a component-generation failure — `GenerateProjectFailure` carries
 `{component, domain, failure}`, not a flat `{message}`).
 
+## Running a finished app in the workspace ("Run app")
+
+A run that built shows **Run app** under its checks. The server
+(`src/server/app-preview.ts`, routes `POST/GET/DELETE
+/api/workflow/application-jobs/:id/preview`) writes the run's zip contents
+(`withRunScaffold`: the verified files plus `index.html` and Vite) into
+`.vibe/previews/<run id>/`, runs `npm install` and `npm run build`, then
+starts the backend and Vite on two free loopback ports, with Vite forwarding
+`/api` to the backend. The workspace shows the app in a frame, with "Open in
+browser" and "Stop app".
+
+- The verified run folder is never changed, so what was checked stays exactly what was checked.
+- One app runs at a time. Starting another app, deleting the run or session, or closing the server stops it.
+- Each app server runs inside a small watchdog process that stops it once VibeCoder's process is gone, even when the desktop app ends the server outright, so nothing keeps running in the background.
+- **Local mode only.** In hosted mode the routes answer 403, because a preview runs model-written code on the machine that serves it.
+- Measured on the Library Lending run (2026-10-19): about 10-20 s to running, with a warm npm cache. The page, the API through Vite, and the generated page modules all answered.
+
 ---
 
 ## Locked stack

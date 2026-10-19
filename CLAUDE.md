@@ -174,6 +174,8 @@ node dist/cli.js .   # Run against current directory
   stored on the server, and daily limits on the team's own models. No accounts, no per-user data.
   The VS Code extension, the desktop app and the installable web app (PWA) are clients of the same
   server; none of them adds business logic of its own.
+  **Approved (2026-10-19):** "Run app" may run a generated app that built on the user's own machine
+  (local mode only, loopback ports, stopped with VibeCoder - `docs/GENERATION.md`).
 - **Do not install heavy dependencies** without asking. Startup time matters for a CLI.
 - **Do not let the LLM infer structure** when static analysis can determine it. Always prefer
   the deterministic path.
