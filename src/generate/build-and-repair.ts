@@ -107,7 +107,8 @@ export function runCommand(
 }
 
 /** Stops a command and everything it started: `taskkill /T` on Windows, the process group elsewhere. */
-function stopTree(child: ChildProcess): void {
+/** Stops a process and everything it started (taskkill /T on Windows, the process group elsewhere). */
+export function stopTree(child: ChildProcess): void {
   if (child.pid === undefined) return;
   if (WINDOWS) {
     spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true }).on('error', () => child.kill());

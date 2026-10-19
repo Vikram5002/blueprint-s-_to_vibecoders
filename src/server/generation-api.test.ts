@@ -11,6 +11,7 @@ import {
   type ApplicationRunPayload,
 } from './generation-api.js';
 import { createApplicationRunsStore } from '../store/application-runs-store.js';
+import type { PreviewManager } from './app-preview.js';
 import { openDatabase } from '../store/database.js';
 import type { PageLayout } from '../generate/canvas-layout.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
@@ -263,5 +264,77 @@ describe('createGenerationRoutes', () => {
     });
     expect(rejected.status).toBe(503);
     expect(rejected.headers.get('Retry-After')).toBeTruthy();
+  });
+});
+
+describe('running a finished app (preview routes)', () => {
+  let previewRoot = '';
+  beforeEach(async () => {
+    previewRoot = await mkdtemp(join(tmpdir(), 'gen-preview-'));
+  });
+  afterEach(async () => {
+    await rm(previewRoot, { recursive: true, force: true });
+  });
+
+  function finishedJob(store: ApplicationJobStore, buildOk: boolean): ApplicationJob {
+    const job: ApplicationJob = {
+      ...store.create(),
+      status: 'succeeded',
+      result: { files: [{ path: 'package.json', bytes: 2 }], regenerationLog: [], unresolvedViolations: [], unresolvedServiceLocatorFindings: [], build: { installOk: true, buildOk } },
+    };
+    store.set(job);
+    return job;
+  }
+
+  function recordingPreview(): { started: { runId: string; paths: string[] }[]; preview: PreviewManager } {
+    const started: { runId: string; paths: string[] }[] = [];
+    const preview: PreviewManager = {
+      start: (runId, entries) => {
+        started.push({ runId, paths: entries.map((entry) => entry.path) });
+        return { runId, state: 'starting', step: 'install' };
+      },
+      status: (runId) => ({ runId, state: 'stopped' }),
+      stop: () => undefined,
+      stopAll: () => undefined,
+    };
+    return { started, preview };
+  }
+
+  it('refuses every preview route when previews are off (hosted mode)', async () => {
+    const store = createApplicationJobStore();
+    const job = finishedJob(store, true);
+    const app = createGenerationRoutes({ llm: null, generationRoot: previewRoot, jobs: store });
+    for (const method of ['POST', 'GET', 'DELETE']) {
+      expect((await app.request(`/application-jobs/${job.id}/preview`, { method })).status).toBe(403);
+    }
+  });
+
+  it('refuses to start a run whose build failed', async () => {
+    const store = createApplicationJobStore();
+    const job = finishedJob(store, false);
+    const { started, preview } = recordingPreview();
+    const app = createGenerationRoutes({ llm: null, generationRoot: previewRoot, jobs: store, preview });
+    expect((await app.request(`/application-jobs/${job.id}/preview`, { method: 'POST' })).status).toBe(409);
+    expect(started).toEqual([]);
+  });
+
+  it('starts a built run from the same files the zip has', async () => {
+    const store = createApplicationJobStore();
+    const job = finishedJob(store, true);
+    await mkdir(join(previewRoot, job.id), { recursive: true });
+    await writeFile(join(previewRoot, job.id, 'package.json'), '{}');
+    const { started, preview } = recordingPreview();
+    const app = createGenerationRoutes({ llm: null, generationRoot: previewRoot, jobs: store, preview });
+
+    const response = await app.request(`/application-jobs/${job.id}/preview`, { method: 'POST' });
+    expect(response.status).toBe(202);
+    expect(await response.json()).toMatchObject({ runId: job.id, state: 'starting' });
+    expect(started).toEqual([{ runId: job.id, paths: ['package.json', 'README.md', '.gitignore'] }]);
+  });
+
+  it('404s an unknown run', async () => {
+    const { preview } = recordingPreview();
+    const app = createGenerationRoutes({ llm: null, generationRoot: previewRoot, preview });
+    expect((await app.request('/application-jobs/nope/preview', { method: 'POST' })).status).toBe(404);
   });
 });

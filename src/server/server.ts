@@ -59,6 +59,7 @@ import type { AnalysisContext } from './context.js';
 import { createContextHolder, type ContextHolder } from './context-holder.js';
 import { createProjectRoutes, type ProjectRouteDeps } from './projects-api.js';
 import { localOriginOnly } from './local-origin.js';
+import { createPreviewManager } from './app-preview.js';
 import type { CompletionProvider } from '../llm/provider.js';
 import type { LabelCache } from '../llm/cache.js';
 
@@ -382,6 +383,8 @@ export async function startServer(context: AnalysisContext, options: StartOption
     runs: createApplicationRunsStore(context.db),
     sessions,
     cloneRoot: join(context.root, '.vibe', 'repos'),
+    // Never in hosted mode: a preview runs model-written code on this machine.
+    ...(options.hosted === undefined ? { preview: createPreviewManager({ previewRoot: join(context.root, '.vibe', 'previews') }) } : {}),
   };
 
   const app = createApp(
@@ -421,6 +424,7 @@ export async function startServer(context: AnalysisContext, options: StartOption
     port,
     close: () =>
       new Promise<void>((resolve) => {
+        applicationDeps.preview?.stopAll();
         server.close(() => resolve());
       }),
   };

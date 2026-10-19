@@ -58,7 +58,8 @@ import { extractLayoutFromComponent } from '../generate/extract-layout.js';
 import { layoutToComponentFile, pageLayoutTargetPath, validatePageLayout, type PageLayout } from '../generate/canvas-layout.js';
 import { parsePageLayout } from './page-builder-api.js';
 import { buildZipArchive } from '../export/zip.js';
-import { withRunScaffold } from '../export/runnable-project.js';
+import { withRunScaffold, type ZipEntry } from '../export/runnable-project.js';
+import type { PreviewManager } from './app-preview.js';
 import { withProjectPack, type PackVerification } from '../export/project-pack.js';
 import { componentTargetPath, type GeneratedFile } from '../generate/assemble.js';
 import { readProjectFiles, schemaFromProjectFiles } from '../generate/import-project.js';
@@ -203,6 +204,8 @@ export interface ApplicationRouteDeps {
   readonly sessions?: WorkflowSessionsStore;
   /** Where an imported Git repository is cloned (inside this tool's .vibe folder). */
   readonly cloneRoot?: string;
+  /** Runs a finished app for the workspace to open (app-preview.ts). Absent = refused, as in hosted mode. */
+  readonly preview?: PreviewManager;
 }
 
 type Llm = { readonly provider: CompletionProvider; readonly cache: LabelCache };
@@ -470,17 +473,10 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
       return c.json({ error: `application job ${id} has no generated files yet (status: ${job.status})` }, 409);
     }
 
-    const root = join(deps.generationRoot, id);
-    const entries = await Promise.all(
-      job.result.files.map(async (file) => ({
-        path: file.path,
-        contents: await readGeneratedFile(root, file.path),
-      })),
-    );
     // The verified project plus what a person needs to open its UI (index.html,
     // Vite, README) and, when the plan is on record, the Student Project Pack.
     const saved = runs?.get(id)?.job;
-    const scaffolded = withRunScaffold(entries, saved?.schema.title);
+    const scaffolded = await runnableEntries(id, job.result);
     const zip = buildZipArchive(
       saved === undefined ? scaffolded : withProjectPack(scaffolded, { schema: saved.schema, verification: packVerification(job.result) }),
     );
@@ -488,6 +484,39 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
     c.header('content-type', 'application/zip');
     c.header('content-disposition', `attachment; filename="generated-${id}.zip"`);
     return c.body(new Uint8Array(zip).buffer as ArrayBuffer);
+  });
+
+  /** A run's files as the zip has them: the verified project plus index.html, Vite and README. */
+  async function runnableEntries(id: string, result: ApplicationJobResult): Promise<readonly ZipEntry[]> {
+    const root = join(deps.generationRoot, id);
+    const entries = await Promise.all(
+      result.files.map(async (file) => ({ path: file.path, contents: await readGeneratedFile(root, file.path) })),
+    );
+    return withRunScaffold(entries, runs?.get(id)?.job.schema.title);
+  }
+
+  // ---- Running a run's app inside the workspace (app-preview.ts) ----------
+
+  app.post('/application-jobs/:id/preview', async (c) => {
+    if (deps.preview === undefined) return c.json({ error: 'running generated apps is only available when VibeCoder runs on your own computer' }, 403);
+    const id = c.req.param('id');
+    const job = findJob(id);
+    if (job === undefined) return c.json({ error: `unknown application job: ${id}` }, 404);
+    if (job.result === undefined || !job.result.build.buildOk) {
+      return c.json({ error: 'only a run that built can be started - fix its build errors first' }, 409);
+    }
+    return c.json(deps.preview.start(id, await runnableEntries(id, job.result)), 202);
+  });
+
+  app.get('/application-jobs/:id/preview', (c) => {
+    if (deps.preview === undefined) return c.json({ error: 'running generated apps is only available when VibeCoder runs on your own computer' }, 403);
+    return c.json(deps.preview.status(c.req.param('id')));
+  });
+
+  app.delete('/application-jobs/:id/preview', (c) => {
+    if (deps.preview === undefined) return c.json({ error: 'running generated apps is only available when VibeCoder runs on your own computer' }, 403);
+    deps.preview.stop(c.req.param('id'));
+    return c.json(deps.preview.status(c.req.param('id')));
   });
 
   // ---- Saved runs per session -------------------------------------------
@@ -506,7 +535,10 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
     }
     const runIds = new Set([...(runs?.deleteForSession(sessionId) ?? []), ...own.map((job) => job.id)]);
     deps.sessions.remove(sessionId);
-    for (const id of runIds) jobs.remove(id);
+    for (const id of runIds) {
+      jobs.remove(id);
+      deps.preview?.stop(id);
+    }
     await Promise.all(
       [...runIds].map((id) => rm(join(deps.generationRoot, id), { recursive: true, force: true, maxRetries: 3 }).catch(() => undefined)),
     );
@@ -526,6 +558,7 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
     }
     runs?.delete(id);
     jobs.remove(id);
+    deps.preview?.stop(id);
     await rm(join(deps.generationRoot, id), { recursive: true, force: true, maxRetries: 3 }).catch(() => undefined);
     return c.json({ deleted: id });
   });
