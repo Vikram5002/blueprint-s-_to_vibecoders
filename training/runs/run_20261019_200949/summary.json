@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-10-19T20:20:23.810488",
+  "rows": 288,
+  "epochs": 3,
+  "elapsed_seconds": 576.9245162010193,
+  "final_loss": 0.7278922658275675,
+  "peak_vram_gb": 9.032973312,
+  "output_dir": "/home/ubuntu/repo/training/runs/run_20261019_200949"
+}

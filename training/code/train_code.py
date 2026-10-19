@@ -37,6 +37,7 @@ What it does:
      <out>/summary.json with EVERY hparam (the gap RESULTS-CONFIG-C.md hit).
 """
 import argparse
+import inspect
 import json
 import os
 import platform
@@ -208,8 +209,9 @@ def main(argv=None):
         fp16=not bf16,
         seed=args.seed,
         report_to="none",
-        group_by_length=True,
         remove_unused_columns=False,
+        # transformers 5 removed group_by_length; older versions still batch similar lengths with it.
+        **({"group_by_length": True} if "group_by_length" in inspect.signature(TrainingArguments.__init__).parameters else {}),
     )
     trainer = Trainer(
         model=model,
