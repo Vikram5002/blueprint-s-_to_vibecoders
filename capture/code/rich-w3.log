@@ -1,0 +1,158 @@
+capturing code from 60 plan(s) -> capture/code/rich-w3.jsonl
+teacher: local:teacher (teacher); raw text -> capture\code\rich-w3.raw.jsonl; per-project log -> capture\code\rich-w3.projects.jsonl
+work directory: capture/code/rich-work-w3; already done: 0
+
+-- session-real-003 (Headless Publishing Platform) [1]
+(node:10184) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ok  build=true violations=0 locator=0 runtime=true records=4
+-- session-real-007 (Self-Hosted Note Timeline) [2]
+!!  build=false violations=0 locator=0 runtime=false records=7 build-failed
+-- session-real-011 (Network-Wide Ad-Blocking DNS) [3]
+ok  build=true violations=0 locator=0 runtime=true records=4
+-- session-real-015 (Self-Hosted Media Streaming Server) [4]
+ok  build=true violations=0 locator=0 runtime=true records=3
+-- session-real-019 (Privacy-Respecting Metasearch Engine) [5]
+!!  build=false violations=0 locator=0 runtime=false records=5 build-failed
+-- session-real-023 (Freelancer Invoicing Tool) [6]
+ok  build=true violations=0 locator=0 runtime=true records=7
+-- session-real-027 (Time Tracking and Invoicing Tool) [7]
+ok  build=true violations=0 locator=0 runtime=true records=5
+-- session-real-031 (Self-Hosted Bookmark Manager) [8]
+ok  build=true violations=0 locator=0 runtime=true records=6
+-- session-real-035 (Personal Ebook Library Web UI) [9]
+!!  build=false violations=0 locator=0 runtime=false records=9 build-failed
+-- session-real-039 (Self-Hosted Newsletter Tool) [10]
+ok  build=true violations=0 locator=0 runtime=true records=4
+-- session-real-043 (Self-Hosted Git Service) [11]
+ok  build=true violations=0 locator=0 runtime=true records=3
+-- d290736e-e426-4999-8935-d489ee611c35 (Local Weather Dashboard) [12]
+ok  build=true violations=0 locator=0 runtime=true records=2
+-- 60f5748c-1e85-412e-acd7-69bb352da246 (Freelancer Invoicing Tool) [13]
+!!  build=false violations=0 locator=0 runtime=false records=7 build-failed
+-- 6da76ab7-02bf-4f8d-8f77-030f449ffebf (Whistleblower Complaint Intake) [14]
+ok  build=true violations=0 locator=0 runtime=true records=4
+-- b6259e23-b17e-4f03-8665-4a85c56c98a1 (Food Truck Route Planner) [15]
+!!  build=false violations=0 locator=0 runtime=false records=12 build-failed
+-- 62d16411-bc89-4143-9094-b4bb1d6c0f8e (Library Book Checkout System) [16]
+!!  build=false violations=0 locator=0 runtime=false records=12 build-failed
+-- fbc80f6f-1bed-4fd6-a065-f8a1ac33f310 (Museum Tour Scheduler) [17]
+!!  build=false violations=0 locator=0 runtime=false records=12 build-failed
+-- b5499753-1efc-4ccd-8463-988f978f2d17 (Community Theater Audition Tracker) [18]
+ok  build=true violations=0 locator=0 runtime=true records=6
+-- 1be2e875-4c2a-4812-bc0f-2c244a012c33 (Bakery Custom Order Tracker) [19]
+ok  build=true violations=0 locator=0 runtime=true records=4
+-- f17bd1f3-b48c-4178-ac9b-bd36420b1ebc (Community Pool Lifeguard Scheduling) [20]
+!!  build=false violations=0 locator=0 runtime=false records=10 build-failed
+-- 7e550dee-7247-4d9e-99eb-229f5398416f (Brewery Keg Inventory Tracker) [21]
+!!  build=true violations=0 locator=0 runtime=false records=9 runtime-not-started
+-- ba8df046-d06b-485f-9571-1e0b27c0abf4 (Laundromat Machine Tracker) [22]
+ok  build=true violations=0 locator=0 runtime=true records=7
+-- 027b690e-3e45-4c47-8c74-3651207e558a (Choir Attendance Tracker) [23]
+ok  build=true violations=0 locator=0 runtime=true records=5
+-- 6c5a1ae8-3904-4026-861b-22734746bf54 (Co-op Cheese Aging Tracker) [24]
+!!  build=false violations=0 locator=0 runtime=false records=9 build-failed
+-- dad86e5d-2492-4535-8ada-4f65e4f6fe2f (Hostel Bed Booking System) [25]
+!!  build=false violations=0 locator=0 runtime=false records=8 build-failed
+-- 98349ba6-2145-46aa-961a-5fca314d9d21 (Home Inventory App) [26]
+!!  build=true violations=0 locator=0 runtime=false records=9 runtime-not-started
+-- 0eb737fd-ff70-4224-add7-12ffb5752f24 (Houseplant Watering Reminder) [27]
+!!  build=false violations=0 locator=0 runtime=false records=8 build-failed
+-- 1432f5f8-fb83-4c82-805a-dc35acbb3ba4 (Freelance Mileage Log) [28]
+!!  build=false violations=0 locator=0 runtime=false records=8 build-failed
+-- 078a3328-01a8-4d25-9927-e7c57cf5e095 (Food Truck Route Planner) [29]
+!!  build=false violations=0 locator=0 runtime=false records=11 build-failed
+-- 399d1922-a158-40db-8c18-aa389bb10023 (School Library Checkout System) [30]
+!!  build=false violations=0 locator=0 runtime=false records=7 build-failed
+-- fe227c50-d5a0-482f-a9d1-426597c32f88 (Museum Tour Scheduler) [31]
+!!  build=false violations=0 locator=0 runtime=false records=7 build-failed
+-- 4e4a131b-5096-4601-ab6e-4d5245c62c7a (Food Bank Inventory Tracker) [32]
+!!  build=false violations=0 locator=0 runtime=false records=10 build-failed
+-- ecd68f3b-c4e3-4154-8537-11dab9a81230 (Custom Cake Order Tracker) [33]
+ok  build=true violations=0 locator=0 runtime=true records=5
+-- 0af97ef5-efbc-4155-83f4-d557c795fff0 (Community Pool Lifeguard Scheduling) [34]
+!!  build=false violations=0 locator=0 runtime=false records=11 build-failed
+-- 6f51ef01-ae09-4747-bafd-15f1fa9a10a2 (Dog Park Membership Check-In) [35]
+!!  build=false violations=0 locator=0 runtime=false records=12 build-failed
+-- b77f9819-d20d-4903-9958-01fa7b823344 (Winery Harvest Log) [36]
+!!  build=false violations=0 locator=0 runtime=false records=7 build-failed
+-- e7f99256-dd91-42da-ba78-48d7ef7dc31a (Choir Attendance Tracker) [37]
+ok  build=true violations=0 locator=0 runtime=true records=6
+-- 82aaf1b2-7fe6-42d7-8afa-2e8b713e5cd6 (Studio Equipment Checkout Tool) [38]
+!!  build=false violations=0 locator=0 runtime=false records=7 build-failed
+-- 600ae944-3ef4-446a-b94f-7361c3eaeed2 (Archery Range Lane Booking Tool) [39]
+!!  build=false violations=0 locator=0 runtime=false records=10 build-failed
+-- 87328c2e-0549-493f-9631-95cbdbec6256 (Community Garden Plot Scheduler) [40]
+ok  build=true violations=0 locator=0 runtime=true records=8
+-- c39b9873-6a8e-481a-b35e-c614e54f7770 (Hotel Housekeeping Task Board) [41]
+ok  build=true violations=0 locator=0 runtime=true records=4
+-- f82c8257-d605-4e59-8ca4-fca85c104879 (Law Firm Timesheet App) [42]
+ok  build=true violations=0 locator=0 runtime=true records=5
+-- 6ed2a6f1-d49d-4681-b5c3-951f2de39288 (Parking Garage Reservation System) [43]
+ok  build=true violations=0 locator=0 runtime=true records=8
+-- cb708c01-46ee-43c1-bac1-1bc1905ce91b (Co-Working Room Booking) [44]
+ok  build=true violations=0 locator=0 runtime=true records=7
+-- 649c3af6-24b9-4520-9dd6-d87d2316ec4a (Student Club Budget Tracker) [45]
+!!  build=false violations=0 locator=0 runtime=false records=8 build-failed
+-- f37ffa33-5c06-4004-b7c0-aeb56cb46331 (Consignment Bookstore Tracker) [46]
+ok  build=true violations=0 locator=0 runtime=true records=5
+-- a3d5b7bb-3e80-4912-b354-85ab2b8e2f8f (Community Solar Co-Op Usage Tracker) [47]
+ok  build=true violations=0 locator=0 runtime=true records=8
+-- c00c7b07-cf3a-4038-bbdf-52710624a070 (Route Setting Tracker) [48]
+ok  build=true violations=0 locator=0 runtime=true records=5
+-- a6b895a5-e5c6-470a-9574-b47e9c5fbd12 (Community Darkroom Booking) [49]
+!!  build=true violations=0 locator=0 runtime=false records=6
+-- 9b6514d4-d12e-46dc-b6d6-8135793d59d3 (Radio Station DJ Scheduling) [50]
+ok  build=true violations=0 locator=0 runtime=true records=4
+-- e1b1311a-d373-44e8-9bb3-eb651a78bc20 (Hostel Bed Booking System) [51]
+ok  build=true violations=0 locator=0 runtime=true records=7
+-- 1aa47cab-a253-410c-aa50-08dc7571bffe (Community Garden Plot Scheduler) [52]
+ok  build=true violations=0 locator=0 runtime=true records=3
+-- 50f95872-46ed-43de-9cbc-c60e9e76305a (Farmers Market Stall Tracker) [53]
+ok  build=true violations=0 locator=0 runtime=true records=4
+-- 6b97970a-1b84-49a5-a6d1-32af769392fe (Personal Trainer Client Tracker) [54]
+!!  build=false violations=0 locator=0 runtime=false records=9 build-failed
+-- 017d8561-3048-4dea-9be5-ff2b541c7ab2 (Pet Boarding Check-In App) [55]
+!!  build=false violations=0 locator=0 runtime=false records=8 build-failed
+-- 9a85b3b5-23c4-446e-86a3-fa32a58a7d9b (Clinic Appointment Scheduler) [56]
+ok  build=true violations=0 locator=0 runtime=true records=6
+-- 1b658032-5349-480f-aa76-c5cde8a93746 (Bike Share Fleet Maintenance Tracker) [57]
+ok  build=true violations=0 locator=0 runtime=true records=8
+-- d981f0bf-a7e6-4077-97e6-140b0c6299a3 (Childcare Rotation Tracker) [58]
+ok  build=true violations=0 locator=0 runtime=true records=5
+-- c3d8d278-32ab-4c47-ae98-ae910c17accb (Tutor Session Scheduler) [59]
+!!  build=false violations=0 locator=0 runtime=false records=7 build-failed
+-- cd34a3ed-40a2-4c6f-8f18-7a7991f50951 (Manuscript Submission Tracker) [60]
+!!  build=false violations=0 locator=0 runtime=false records=13 build-failed
+
+--- summary ---
+projects: {"total":60,"skipped":0,"generated":60,"generationFailed":0,"buildOk":34,"runtimeOk":31}
+records per domain:
+  backend/accepted: 31
+  backend/correction/accepted: 5
+  backend/correction/rejected: 24
+  backend/rejected: 50
+  database/accepted: 51
+  database/correction/accepted: 2
+  database/correction/rejected: 29
+  database/rejected: 22
+  frontend/accepted: 88
+  frontend/correction/accepted: 10
+  frontend/correction/rejected: 12
+  frontend/rejected: 30
+  security/accepted: 26
+  security/correction/accepted: 6
+  security/correction/rejected: 5
+  security/rejected: 29
+rejection reasons:
+  build-failed: 33
+  not-rich:no-buttons: 18
+  not-rich:no-create-route: 16
+  not-rich:no-loading-state: 4
+  not-rich:no-sample-rows: 5
+  not-rich:unstyled: 1
+  runtime-not-checked: 65
+  runtime-not-started: 15
+  runtime-route-failed: 2
+
+records written to capture/code/rich-w3.jsonl
