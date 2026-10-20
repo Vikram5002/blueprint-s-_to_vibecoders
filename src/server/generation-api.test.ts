@@ -329,7 +329,7 @@ describe('running a finished app (preview routes)', () => {
     const response = await app.request(`/application-jobs/${job.id}/preview`, { method: 'POST' });
     expect(response.status).toBe(202);
     expect(await response.json()).toMatchObject({ runId: job.id, state: 'starting' });
-    expect(started).toEqual([{ runId: job.id, paths: ['package.json', 'README.md', '.gitignore'] }]);
+    expect(started).toEqual([{ runId: job.id, paths: ['package.json', 'dev.mjs', 'README.md', '.gitignore'] }]);
   });
 
   it('404s an unknown run', async () => {

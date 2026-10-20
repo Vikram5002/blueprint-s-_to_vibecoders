@@ -25,24 +25,42 @@ describe('withRunScaffold', () => {
       scripts: Record<string, string>;
       devDependencies: Record<string, string>;
     };
-    expect(pkg.scripts).toMatchObject({ build: 'tsc', start: 'node dist/backend/src/index.js', web: 'vite', 'web:build': 'vite build' });
+    expect(pkg.scripts).toMatchObject({
+      build: 'tsc',
+      start: 'node dist/backend/src/index.js',
+      web: 'vite',
+      'web:build': 'vite build',
+      dev: 'node dev.mjs',
+      serve: 'npm run build && npm run web:build && npm start',
+    });
     expect(pkg.devDependencies).toHaveProperty('vite');
     expect(pkg.devDependencies).toHaveProperty('@vitejs/plugin-react');
     expect(pkg.devDependencies['typescript']).toBe('^5.5.4');
   });
 
-  it('writes a README with both run steps', () => {
+  it('writes a README a person can follow: install, one command, and the one-port host option', () => {
     const readme = byPath(withRunScaffold(fullStack)).get('README.md') ?? '';
-    expect(readme).toContain('npm start');
-    expect(readme).toContain('npm run web');
+    expect(readme).toContain('npm install\nnpm run dev');
+    expect(readme).toContain('opens it in your browser (http://localhost:5173)');
+    expect(readme).toContain('npm run serve');
+  });
+
+  it('adds dev.mjs: build once, then the API and the site together, the browser opened', () => {
+    const dev = byPath(withRunScaffold(fullStack)).get('dev.mjs') ?? '';
+    expect(dev).toContain("spawnSync(node, ['node_modules/typescript/bin/tsc']");
+    expect(dev).toContain("spawn(node, ['dist/backend/src/index.js']");
+    expect(dev).toContain("spawn(node, ['node_modules/vite/bin/vite.js', '--open']");
   });
 
   it('adds no frontend scaffolding to a backend-only project', () => {
     const files = byPath(withRunScaffold(fullStack.filter((e) => e.path !== 'frontend/src/main.tsx')));
     expect(files.has('frontend/index.html')).toBe(false);
     expect(files.has('vite.config.mjs')).toBe(false);
-    expect(files.get('package.json')).toBe(manifest);
-    expect(files.get('README.md')).not.toContain('npm run web');
+    const pkg = JSON.parse(files.get('package.json') ?? '{}') as { scripts: Record<string, string>; devDependencies: Record<string, string> };
+    expect(pkg.scripts).toEqual({ build: 'tsc', start: 'node dist/backend/src/index.js', dev: 'node dev.mjs' });
+    expect(pkg.devDependencies).not.toHaveProperty('vite');
+    expect(files.get('README.md')).toContain('starts the API on http://localhost:3000');
+    expect(files.get('README.md')).not.toContain('npm run serve');
   });
 
   it('never overwrites a file the project already has', () => {
