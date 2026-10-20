@@ -6,7 +6,7 @@ stays that way.
 
 The model does exactly one thing: it gives a cluster a better name than
 `packages/zod/src/v4/`. It never creates a node, never creates an edge, never
-moves a file between modules. Rule 1 in CLAUDE.md is the reason: a single
+moves a file between modules. Rule 1 in PROJECT-RULES.md is the reason: a single
 hallucinated dependency edge destroys trust in every edge the tool ever draws,
 and there is no way to earn that back.
 

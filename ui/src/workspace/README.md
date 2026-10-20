@@ -72,7 +72,7 @@ WorkspaceShell
 
 ## 5. Running this part of the app standalone
 
-From `ui/` (a separate package from the repo root - see the root `CLAUDE.md`
+From `ui/` (a separate package from the repo root - see the root `docs/PROJECT-RULES.md`
 for why `npm install` has to be run in both places):
 
 ```bash

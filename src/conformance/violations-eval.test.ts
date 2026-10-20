@@ -67,7 +67,7 @@ function resolve(phrase: string): ResolvedSubject {
   return resolveSubject(phrase, { candidates: modules, directories });
 }
 
-/** The three constraints Week 7 extracted from this project's own CLAUDE.md. */
+/** The three constraints Week 7 extracted from this project's own PROJECT-RULES.md. */
 function extractedConstraints(): Constraint[] {
   const make = (subject: string, object: string, rawText: string): Constraint => ({
     id: `claude-${subject}-${object}`,

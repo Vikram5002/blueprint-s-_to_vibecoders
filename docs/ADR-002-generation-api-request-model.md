@@ -49,7 +49,7 @@ invented for this ADR.
 
 **One thing this ADR will not lean on:** the classic "a synchronous call
 might get killed by a reverse proxy's 30-second timeout" argument for
-async APIs does not automatically apply here. Per CLAUDE.md's tech-stack
+async APIs does not automatically apply here. Per PROJECT-RULES.md's tech-stack
 table, the server binds to `127.0.0.1` only — there is no proxy, gateway,
 or CDN in the path for this tool, on either machine. If that were the only
 argument available, it would not be enough on its own, and this document
@@ -148,7 +148,7 @@ next with no bound this codebase enforces today — that makes a
 synchronous contract unsafe for a case this system must actually support,
 since both providers are live, interchangeable options behind one
 interface. Designing the API around the fast case and hoping the slow one
-doesn't get hit is exactly the kind of thing CLAUDE.md's measure-first
+doesn't get hit is exactly the kind of thing PROJECT-RULES.md's measure-first
 discipline, and ADR-001's own decide-before-building framing, exist to
 prevent.
 

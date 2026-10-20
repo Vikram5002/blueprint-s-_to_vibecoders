@@ -2,7 +2,7 @@
 
 The clustering is an opinion. It is a defensible opinion drawn from real import
 edges, but it is still an opinion, and on any real repository some of it will be
-wrong. The design bet stated in CLAUDE.md is that a wrong-but-close diagram the
+wrong. The design bet stated in PROJECT-RULES.md is that a wrong-but-close diagram the
 user can argue with beats a blank canvas — which only pays off if arguing with it
 is cheap and if the argument survives to the next run.
 

@@ -1,7 +1,7 @@
 /**
  * Minimal `.env` reader.
  *
- * Fifteen lines instead of a dependency. CLAUDE.md says not to install heavy
+ * Fifteen lines instead of a dependency. PROJECT-RULES.md says not to install heavy
  * dependencies without asking, and startup time matters for a CLI — dotenv is
  * not large, but it is a package, a version and a supply-chain edge for
  * something this project needs one function of.

@@ -8,7 +8,7 @@ import { basename, join, resolve } from 'node:path';
  * Starts the real, built CLI as a subprocess and returns the URL it serves.
  *
  * Specs that need the real server spawn dist/cli.js rather than importing
- * anything from src/server/ - ui/ must not import src/ (CLAUDE.md rule 4),
+ * anything from src/server/ - ui/ must not import src/ (PROJECT-RULES.md rule 4),
  * and that applies to test code too - so the browser talks to it over real
  * HTTP, exactly as a real user's browser would.
  *

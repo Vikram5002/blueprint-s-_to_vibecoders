@@ -1,7 +1,7 @@
 /**
  * Result union used by every pipeline stage.
  *
- * CLAUDE.md conventions: pipeline stages return `Result<T, E>`. Exceptions are
+ * PROJECT-RULES.md conventions: pipeline stages return `Result<T, E>`. Exceptions are
  * only thrown at the CLI boundary.
  */
 export type Result<T, E> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: E };

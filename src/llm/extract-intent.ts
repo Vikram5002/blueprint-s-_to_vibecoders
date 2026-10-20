@@ -28,7 +28,7 @@ export const MAX_STATEMENTS_PER_DOCUMENT = 25;
  * Room for up to MAX_STATEMENTS_PER_DOCUMENT statements, each carrying rawText,
  * relation, subject, object and sometimes a reason.
  *
- * Raised from 2,048 after a live run on this project's own CLAUDE.md came back
+ * Raised from 2,048 after a live run on this project's own PROJECT-RULES.md came back
  * MAX_TOKENS and reported zero constraints from a document that had previously
  * yielded seven statements. Week 7 made every field required — which was the
  * right call, since optional fields let answers go missing — and that made each

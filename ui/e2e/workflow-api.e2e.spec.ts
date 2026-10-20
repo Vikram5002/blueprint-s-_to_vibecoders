@@ -10,7 +10,7 @@ import { LIVE_RESULT_TIMEOUT_MS, LIVE_TEST_TIMEOUT_MS } from './live-timeouts';
  *
  * Deliberately does NOT import anything from src/server/ into ui/e2e/ —
  * that would itself be the exact ui/-must-not-import-src/ violation
- * CLAUDE.md rule 4 exists to prevent, even in test code. Instead this
+ * PROJECT-RULES.md rule 4 exists to prevent, even in test code. Instead this
  * spawns the real built CLI (dist/cli.js) as a subprocess and talks to it
  * over real HTTP, the same way an actual user's browser would — arguably a
  * more genuine end-to-end path than an in-process import.

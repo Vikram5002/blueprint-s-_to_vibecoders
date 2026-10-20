@@ -2,7 +2,7 @@
  * Drives the parser across a walked repository.
  *
  * Reads each file, parses it, and accumulates failures instead of aborting —
- * "prefer partial results over failure" (CLAUDE.md). Files whose language has
+ * "prefer partial results over failure" (PROJECT-RULES.md). Files whose language has
  * no extractor yet are reported as skipped, which is a different thing from a
  * failure and must not be counted as one.
  *

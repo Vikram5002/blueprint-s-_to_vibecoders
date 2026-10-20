@@ -6,7 +6,7 @@ These `.wasm` files are prebuilt tree-sitter grammars, checked in deliberately.
 
 The published grammar bundles ship every language they support. Taking a
 dependency on one would have pulled dozens of MB of grammars for languages this
-project does not support (see CLAUDE.md, "What NOT to do"). Only these five are
+project does not support (see docs/PROJECT-RULES.md, "What NOT to do"). Only these five are
 needed.
 
 The `tree-sitter-wasms` package (the direct one, not the `@repomix` fork below)

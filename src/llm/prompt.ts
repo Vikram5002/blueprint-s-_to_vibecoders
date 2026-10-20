@@ -3,7 +3,7 @@
  *
  * ## Never send whole files
  *
- * CLAUDE.md is explicit: send the graph, not the code. A cluster is described
+ * PROJECT-RULES.md is explicit: send the graph, not the code. A cluster is described
  * by its file paths, its most-used exported symbols, and two or three short
  * snippets — never file contents. A 1,274-file module costs the same to
  * describe as a 4-file one, because both are truncated to the budget below.

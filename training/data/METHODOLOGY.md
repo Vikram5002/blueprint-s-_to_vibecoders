@@ -166,7 +166,7 @@ library, CLI tool, or dev-tooling package with no domain-mappable structure.
    Both fields live on `DatasetPair`, not on `ProjectSchema` — dataset
    curation confidence has nothing to do with the app-builder pipeline
    `ProjectSchema` actually feeds, and blurring the two would be exactly the
-   kind of provenance-mixing rule 2 in the main `CLAUDE.md` forbids in the
+   kind of provenance-mixing rule 2 in the main `docs/PROJECT-RULES.md` forbids in the
    core data model. The pair-level design deliberately mirrors that same
    DERIVED/STATED discipline: a domain claim nobody checked against real code
    is a weaker claim, and the weakness should be queryable later, not lost.

@@ -1,7 +1,7 @@
 # Hosting VibeCoder for invited users
 
 VibeCoder is local-first: `npx vibe-blueprint` on a person's own computer is still the normal way
-to use it. **Hosted mode** (`--hosted`, approved 2026-10-04, see CLAUDE.md) is the one exception: one
+to use it. **Hosted mode** (`--hosted`, approved 2026-10-04, see PROJECT-RULES.md) is the one exception: one
 server that a group of invited people (a class, a team, reviewers) open in their browser.
 
 ## What hosted mode does

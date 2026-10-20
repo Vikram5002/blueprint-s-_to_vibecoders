@@ -129,7 +129,7 @@ export interface CheckImportResult {
  *
  * Found in Week 11 acceptance: with the Gemini daily quota exhausted, asking
  * whether `parser/` may import `llm/` returned "allowed, no stated rule applies"
- * on a repository whose CLAUDE.md forbids exactly that in capital letters.
+ * on a repository whose PROJECT-RULES.md forbids exactly that in capital letters.
  */
 export interface ExtractionHealth {
   /** No model was consulted at all. */

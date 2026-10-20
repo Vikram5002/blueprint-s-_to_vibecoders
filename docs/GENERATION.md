@@ -7,7 +7,7 @@ buildable source files, then runs the existing, unmodified Blueprint CLI
 against the result — the same measurement this whole project is built
 around, now pointed at code the project itself generated.
 
-**This is still not code generation in the open-ended sense CLAUDE.md rules
+**This is still not code generation in the open-ended sense PROJECT-RULES.md rules
 out.** The target stack is fixed and small, every file's shape is templated
 or schema-constrained, and the payoff is always the same verification loop:
 generate, assemble, then measure with the tool that already exists.

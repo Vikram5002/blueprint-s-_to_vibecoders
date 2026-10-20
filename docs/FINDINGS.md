@@ -69,7 +69,7 @@ is there, unless something insists on telling them apart.**
 |---|---|---|---|
 | 1 | Intent extraction (Week 10) | A document that states 3 constraints reported 0, because it silently truncated at the token limit. | Explicit truncation detection; a truncated document is now excluded from scoring rather than counted as stating nothing. |
 | 2 | Drift history (Week 9→10) | Every historical snapshot showed drift score 0.0 — indistinguishable from "this repository never breaks its own rules" — because `snapshotHistory` passed `constraints: []` to every historical conformance check. The chart was **structurally incapable of moving, on any repository, forever.** | `snapshotHistory` now checks the current run's real constraints against every historical graph. |
-| 3 | `check_import` (Week 11) | With the Gemini daily quota exhausted, `CLAUDE.md` was never read, and `check_import('parser/', 'llm/')` answered **allowed** — "no stated rule applies to it" — against a document that forbids exactly that import in capital letters as rule one. | `check_import` now takes the extraction's health and downgrades to `cannot-determine`; `buildIntentResponse` gained an `extraction-failed` reason instead of reporting "read, and nothing was stated" about a document it had failed to read. |
+| 3 | `check_import` (Week 11) | With the Gemini daily quota exhausted, `PROJECT-RULES.md` was never read, and `check_import('parser/', 'llm/')` answered **allowed** — "no stated rule applies to it" — against a document that forbids exactly that import in capital letters as rule one. | `check_import` now takes the extraction's health and downgrades to `cannot-determine`; `buildIntentResponse` gained an `extraction-failed` reason instead of reporting "read, and nothing was stated" about a document it had failed to read. |
 
 **#3 is the most severe of the three, and deliberately ranked first in
 practice** (see `check_import`'s verdict precedence in `docs/MCP.md`): #1 and
@@ -591,7 +591,7 @@ two paths: a phrase can match a module by *name* (`MODULE`) or by *path*
 
 | Source | Roles resolved | via `MODULE` | via `PATH_PATTERN` |
 |---|---:|---:|---:|
-| blueprint's own `CLAUDE.md` | 3 | 0 | 3 |
+| blueprint's own `PROJECT-RULES.md` | 3 | 0 | 3 |
 | constructed breach repository | 6 | 0 | 6 |
 | **total** | **9** | **0** | **9** |
 

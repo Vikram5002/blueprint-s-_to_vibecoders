@@ -109,7 +109,7 @@ describe('path patterns', () => {
   });
 
   it('resolves the shorthand documents actually use', () => {
-    // CLAUDE.md writes `parser/` for a directory that lives at src/parser.
+    // PROJECT-RULES.md writes `parser/` for a directory that lives at src/parser.
     const result = resolveSubject('parser/', { candidates, directories: ['src/parser', 'src/graph'] });
     expect(result.status).toBe('PATH_PATTERN');
     expect(result.target).toBe('src/parser/**');

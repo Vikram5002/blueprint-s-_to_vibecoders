@@ -1,7 +1,7 @@
 /**
  * Hosted mode (`--hosted`): one server for a group of invited people, instead
  * of one per computer. Approved 2026-10-04 as the one exception to
- * "local-first" (CLAUDE.md). It replaces the loopback-only guard with:
+ * "local-first" (PROJECT-RULES.md). It replaces the loopback-only guard with:
  *
  * - an access code (VIBE_ACCESS_CODE) on every API request;
  * - a same-site check, so another website cannot drive a visitor's browser;

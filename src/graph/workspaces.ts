@@ -121,7 +121,7 @@ export function matchWorkspacePackage(
  *
  * Deliberately not a YAML parser: the file has one field this tool cares about
  * and a fixed shape in practice. Pulling in a YAML dependency for it would cost
- * startup time (CLAUDE.md) for no gain. Anything more exotic than a flat list
+ * startup time (PROJECT-RULES.md) for no gain. Anything more exotic than a flat list
  * of quoted or bare globs simply yields no globs, and packages fall back to
  * being treated as external.
  */

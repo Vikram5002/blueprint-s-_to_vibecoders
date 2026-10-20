@@ -412,13 +412,13 @@ training/       fine-tuning data, format, evaluation results
 generated/      generated applications (gitignored)
 ```
 
-Topic docs: `docs/ARCHITECTURE.md`, `docs/PROVIDERS.md`, `docs/GENERATION.md`, `docs/BLUEPRINT.md`, `docs/MCP.md`, plus the `CLAUDE.md` project rules.
+Topic docs: `docs/ARCHITECTURE.md`, `docs/PROVIDERS.md`, `docs/GENERATION.md`, `docs/BLUEPRINT.md`, `docs/MCP.md`, plus the `docs/PROJECT-RULES.md` project rules.
 
 ---
 
 ## 10. Rules we don't break
 
-These come from `CLAUDE.md`, and some are enforced by `src/architecture.test.ts`.
+These come from `PROJECT-RULES.md`, and some are enforced by `src/architecture.test.ts`.
 
 1. `parser/` and `graph/` **never import from `llm/`**. That boundary keeps analysis deterministic.
 2. Every graph Node and Edge carries `provenance`: `DERIVED` (traced to a real import) or `STATED` (claimed in prose). The two are never mixed.

@@ -1,7 +1,7 @@
 /**
  * Language detection by file extension.
  *
- * CLAUDE.md: do not add languages beyond TypeScript, JavaScript, Python and PHP.
+ * PROJECT-RULES.md: do not add languages beyond TypeScript, JavaScript, Python and PHP.
  * PHP was added after Week 1; the extension list otherwise follows
  * docs/PHASE-1-SPEC.md, Week 1.
  */

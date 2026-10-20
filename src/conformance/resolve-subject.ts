@@ -10,7 +10,7 @@
  * this module is built to refuse rather than to guess.
  *
  * Deterministic and offline. It does not import from `llm/` and must not: this
- * is exactly the case CLAUDE.md means by "do not let the LLM infer structure
+ * is exactly the case PROJECT-RULES.md means by "do not let the LLM infer structure
  * when static analysis can determine it". The model's job is to read the
  * sentence; deciding which module a name refers to is a matching problem over
  * data we already hold, and doing it here keeps it reproducible and inspectable.
@@ -246,7 +246,7 @@ type PathResolution =
  *
  * Tried from the repository root first, then as a trailing segment. The second
  * pass exists because documents overwhelmingly write shorthand: this project's
- * own CLAUDE.md says `parser/` and `llm/` for directories that live at
+ * own PROJECT-RULES.md says `parser/` and `llm/` for directories that live at
  * `src/parser` and `src/llm`. Rejecting those is not strictness, it is failing
  * to read the document the way its author wrote it.
  *

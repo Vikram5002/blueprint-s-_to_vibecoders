@@ -77,7 +77,7 @@ describe('why the constraint list is empty', () => {
   it('says extraction-failed when a document could not be read', () => {
     /**
      * The Week 11 acceptance case. With the daily model quota exhausted this
-     * repository's own CLAUDE.md went unread, and the panel reported "the
+     * repository's own PROJECT-RULES.md went unread, and the panel reported "the
      * documents were read and stated no dependency rules" about a file that
      * states six numbered ones.
      */

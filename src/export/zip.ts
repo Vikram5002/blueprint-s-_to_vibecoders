@@ -4,7 +4,7 @@
  * Task 2 of the "generate an application" final milestone: the simplest
  * real way for a browser to receive a generated project is a single
  * downloadable file. A zip needs no new runtime dependency beyond Node's
- * own `Buffer` - CLAUDE.md's "do not install heavy dependencies without
+ * own `Buffer` - PROJECT-RULES.md's "do not install heavy dependencies without
  * asking" - and every generated project so far (Milestones 1-3) is a
  * handful of small text files, so the space a real DEFLATE implementation
  * would save is not worth the extra surface: this writes valid,

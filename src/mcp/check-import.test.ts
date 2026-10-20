@@ -175,7 +175,7 @@ describe('the answer an agent gets before writing the line', () => {
 describe('an unread document is not an absent rule', () => {
   /**
    * Found in Week 11 acceptance, on this repository. The Gemini daily quota
-   * was exhausted, CLAUDE.md was never read, and asking whether `parser/` may
+   * was exhausted, PROJECT-RULES.md was never read, and asking whether `parser/` may
    * import `llm/` came back "allowed — no stated rule applies" against a
    * document that forbids exactly that in capital letters.
    *

@@ -3,7 +3,7 @@
  *
  * ## Why this is hand-rolled
  *
- * CLAUDE.md says not to install heavy dependencies without asking, and this
+ * PROJECT-RULES.md says not to install heavy dependencies without asking, and this
  * project has taken that seriously before: there is no `@google/genai`, and
  * `.env` is read by fifteen lines rather than dotenv. The MCP surface a
  * read-only server needs is four methods and one framing rule, and the

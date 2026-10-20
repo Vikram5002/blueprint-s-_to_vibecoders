@@ -306,13 +306,13 @@ Both sets of snapshots are in the same database, so the contrast is direct:
 | Constraints per snapshot | **0** | **3** |
 | Drift explanation | *"No constraints were stated, so there is nothing to drift from."* | *"0 weighted violation point(s) (0x3 + 0x2 + 0x1) over 3 stated constraint(s)."* |
 
-The three rules from `CLAUDE.md` now travel through history and are checked at
+The three rules from `PROJECT-RULES.md` now travel through history and are checked at
 every commit:
 
 ```
-  must-not-import(`parser/` -> `llm/`)   CLAUDE.md:68
-  must-not-import(`graph/`  -> `llm/`)   CLAUDE.md:68
-  must-not-import(`ui/`     -> `src/`)   CLAUDE.md:79
+  must-not-import(`parser/` -> `llm/`)   PROJECT-RULES.md:68
+  must-not-import(`graph/`  -> `llm/`)   PROJECT-RULES.md:68
+  must-not-import(`ui/`     -> `src/`)   PROJECT-RULES.md:79
 ```
 
 **The chart is still flat at 0.0 across all 20 commits — and now that is a

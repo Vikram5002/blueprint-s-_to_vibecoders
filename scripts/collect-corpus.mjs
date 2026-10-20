@@ -405,7 +405,7 @@ for (const [index, entry] of pending.entries()) {
        * No documents, no possible constraint.
        *
        * Extraction reads prose; a repository with no README, AGENTS.md,
-       * CLAUDE.md or ADR has nothing for it to read, so the run is
+       * PROJECT-RULES.md or ADR has nothing for it to read, so the run is
        * structurally incapable of producing a constraint however much quota
        * it is given. rollup/rollup is the case that made this obvious: 1,219
        * modules and zero documents, which under the old design would have

@@ -1,6 +1,6 @@
 /**
  * Command orchestration: parse arguments, call the pipeline, format output.
- * Nothing else lives here (CLAUDE.md rule 5).
+ * Nothing else lives here (PROJECT-RULES.md rule 5).
  */
 import { parseArguments } from './args.js';
 import {

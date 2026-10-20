@@ -12,6 +12,6 @@ export const config = defineConfig({
 });
 
 // Vitest requires a default export from its config file. This is the only
-// default export permitted in the repository (see CLAUDE.md conventions).
+// default export permitted in the repository (see PROJECT-RULES.md conventions).
 // eslint-disable-next-line no-restricted-syntax
 export default config;

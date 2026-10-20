@@ -54,7 +54,7 @@ guides, an architecture reference, a 52 kB configuration reference, READMEs and
 docs from pyright, requests, zod and this project. Every one was read and
 hand-labelled.
 
-The one document with checkable constraints is this project's own `CLAUDE.md`.
+The one document with checkable constraints is this project's own `PROJECT-RULES.md`.
 
 This is a result about the world, not about the extractor. Real documentation
 overwhelmingly **describes** structure instead of **constraining** it:
@@ -80,7 +80,7 @@ Three honest options for Week 8 onward, in the order I would try them:
 
 1. **Widen the source of truth.** Agent instruction files are where checkable
    rules actually live — zod ships `AGENTS.md`, `CLAUDE.md` and `.cursorrules`;
-   this project's CLAUDE.md is the corpus's only positive. As agent-authored
+   this project's PROJECT-RULES.md is the corpus's only positive. As agent-authored
    repositories become the study population, this may resolve itself, and that
    population is the one the project is really about.
 2. **Widen the relation set** to cover what documentation does say — "all X
@@ -109,7 +109,7 @@ failure from one that was never read, and it needs a different fix: the first
 means renaming a module or rewriting a sentence, the second means the extractor
 is wrong.
 
-Resolution is **deterministic and lives outside `llm/`**. CLAUDE.md says not to
+Resolution is **deterministic and lives outside `llm/`**. PROJECT-RULES.md says not to
 let the model infer structure when static analysis can determine it, and
 deciding which module a name refers to is a matching problem over data already
 held. It scores Dice overlap on content tokens, drops filler words so "the
@@ -129,7 +129,7 @@ End-to-end precision and recall need a model. The **oracle** measurement does
 not: feed the hand-labelled constraints in as though extraction were perfect
 and see what the resolver does with them. No extraction quality can exceed it.
 
-The first run scored **44%**, and the cause was worth finding. CLAUDE.md writes
+The first run scored **44%**, and the cause was worth finding. PROJECT-RULES.md writes
 `parser/` and `llm/` for directories that live at `src/parser` and `src/llm`;
 only the two paths that happened to sit at the repository root resolved at all.
 Documents write root-relative shorthand constantly, and rejecting it is not
@@ -374,7 +374,7 @@ and it correctly split one sentence naming two subjects — "`parser/` and
 may-only-import-via(ui/ -> src/ via server/)
 ```
 
-CLAUDE.md's rule 4 is two sentences: the prohibition, then the permitted route
+PROJECT-RULES.md's rule 4 is two sentences: the prohibition, then the permitted route
 ("All access goes through the JSON API in `server/`"). The extractor took the
 prohibition and not the exception. That is the more conservative half — it
 under-permits rather than over-permits — but it is still a miss, and a
@@ -415,7 +415,7 @@ the strongest quantitative support for the headline finding, and it is the
 number to carry into Week 14 — a violation rate computed over 3 constraints
 describes almost nothing about a repository that made 64 architectural claims.
 
-On CLAUDE.md the model's classification agreed with the hand labelling almost
+On PROJECT-RULES.md the model's classification agreed with the hand labelling almost
 exactly: rules 2, 3 and 5 as unsupported or runtime, rule 6 ("no network calls
 outside `llm/`") as runtime behaviour. Those labels were written before the run,
 so independent agreement is mild evidence the four-relation boundary is legible
@@ -477,7 +477,7 @@ the accidental version as seriously as the hostile one.
 
 ### Re-run after the truncation fix: what held and what did not
 
-Week 10 found that extraction on this project's own `CLAUDE.md` was silently
+Week 10 found that extraction on this project's own `PROJECT-RULES.md` was silently
 truncated — a run reported zero constraints from a document that states three.
 That raised a fair question about everything above: if one document truncated
 without saying so, the 31-document numbers might be built on others that did
@@ -492,7 +492,7 @@ and explicit truncation detection.
 checkpoint records no errors, and the re-run — now able to name truncation
 specifically — flagged none.
 
-So the truncation bug did not corrupt the eval set. It was caught on `CLAUDE.md`
+So the truncation bug did not corrupt the eval set. It was caught on `PROJECT-RULES.md`
 in live use because that document is unusually dense in rules, not because the
 eval set was quietly broken.
 

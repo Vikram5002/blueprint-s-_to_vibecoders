@@ -10,7 +10,7 @@
  *
  * Plain `fetch`. The REST surface needed here is one POST, and `@google/genai`
  * is a dependency, a version and a supply-chain edge for something a 40-line
- * mapper covers. CLAUDE.md is explicit about not adding heavy dependencies to a
+ * mapper covers. PROJECT-RULES.md is explicit about not adding heavy dependencies to a
  * CLI where startup time matters, and this keeps the no-key path at zero cost.
  *
  * ## The key never gets logged

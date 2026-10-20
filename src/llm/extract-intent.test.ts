@@ -221,7 +221,7 @@ describe('extraction', () => {
 describe('truncation is never a silent zero', () => {
   /**
    * The bug this guards against happened for real, on this project's own
-   * CLAUDE.md: a run reported zero constraints from a document that states
+   * PROJECT-RULES.md: a run reported zero constraints from a document that states
    * three. A truncated answer parses to an empty statement list, which is
    * byte-identical to a document that stated nothing.
    */

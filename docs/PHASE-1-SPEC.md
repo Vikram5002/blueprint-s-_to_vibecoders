@@ -325,7 +325,7 @@ See the Week 10 section of `docs/VIOLATIONS.md`.
 See `docs/MCP.md`.
 
 - [x] **MCP server, read-only, over stdio.** Hand-rolled JSON-RPC 2.0 rather than
-      `@modelcontextprotocol/sdk`, per CLAUDE.md's dependency rule and the
+      `@modelcontextprotocol/sdk`, per PROJECT-RULES.md's dependency rule and the
       precedent of the hand-rolled Gemini adapter and `.env` reader.
 - [x] **`check_import(from, to)`** — the tool the week hangs on. Re-expresses the
       four detectors against a *hypothetical* edge, because `detectViolations`

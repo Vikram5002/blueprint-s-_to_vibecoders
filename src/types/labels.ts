@@ -59,7 +59,7 @@ export interface LabellingSummary {
   readonly provider: string | null;
   /**
    * True when no API key was configured. Not an error: the tool runs fully and
-   * shows mechanical names, which CLAUDE.md requires the deterministic half to
+   * shows mechanical names, which PROJECT-RULES.md requires the deterministic half to
    * be independently useful.
    */
   readonly degraded: boolean;

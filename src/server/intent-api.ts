@@ -143,7 +143,7 @@ function emptyReason(context: AnalysisContext): IntentResponse['emptyReason'] {
    * both arrive here as an empty constraint list.
    *
    * Found in Week 11 acceptance: with the daily model quota exhausted this
-   * repository's own CLAUDE.md went unread, and the panel reported "nothing
+   * repository's own PROJECT-RULES.md went unread, and the panel reported "nothing
    * stated" for a document that states six numbered rules. Same family as the
    * truncation bug and the drift bug — an unmeasured zero rendering as a
    * measured one.

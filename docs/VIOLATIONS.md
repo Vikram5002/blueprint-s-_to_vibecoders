@@ -160,7 +160,7 @@ disagreement are visible together:
   [high] parser/ imports llm/ in 1 file(s), across 1 import statement(s).
          The documentation says it must not.
          rule: "`parser/` and `graph/` must NEVER import from `llm/`."
-         from: CLAUDE.md:68
+         from: PROJECT-RULES.md:68
          src/parser/parse-repository.ts:1  import { DEFAULT_GEMINI_MODEL } from '../llm/gemini.js';
 ```
 
@@ -381,7 +381,7 @@ described the intended behaviour, so this was a gap between the documented
 design and the code. Found only by trying to satisfy the acceptance item that
 asks for a real drift-moving commit.
 
-**Extraction silently truncated.** A live run on this project's own `CLAUDE.md`
+**Extraction silently truncated.** A live run on this project's own `PROJECT-RULES.md`
 came back `MAX_TOKENS` and reported zero constraints from a document that had
 previously yielded seven statements. Week 7 made every schema field required —
 correct, since optional fields let answers go missing — and that made each

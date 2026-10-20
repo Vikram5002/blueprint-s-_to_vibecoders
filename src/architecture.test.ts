@@ -1,5 +1,5 @@
 /**
- * The architectural rules from CLAUDE.md, enforced against the source rather
+ * The architectural rules from PROJECT-RULES.md, enforced against the source rather
  * than trusted to discipline.
  *
  * Rules 1 and 4 are stated as non-negotiable, and until now both were held up
@@ -58,7 +58,7 @@ describe('rule 1 — the determinism boundary', () => {
    * `llm/`; that is the whole point of it existing. Everything else that
    * produces or shapes graph structure is on the deterministic side.
    *
-   * `conformance/` is on this list although CLAUDE.md predates it. Subject
+   * `conformance/` is on this list although PROJECT-RULES.md predates it. Subject
    * resolution decides which module a sentence is about, and that is structure
    * — exactly the case the rule covers.
    */

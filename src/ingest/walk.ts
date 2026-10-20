@@ -4,7 +4,7 @@
  * Deterministic. Reads the filesystem, honours .gitignore, detects languages,
  * and never follows symlinks (see classifyEntry).
  *
- * CLAUDE.md: prefer partial results over failure. A directory that cannot be
+ * PROJECT-RULES.md: prefer partial results over failure. A directory that cannot be
  * read is recorded in `stats.errors` and the walk continues.
  */
 import { readdir, readFile, realpath, stat } from 'node:fs/promises';

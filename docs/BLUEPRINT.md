@@ -326,7 +326,7 @@ demonstrated mechanism, not a validated intervention.
   two authored nodes, renamed them by typing, drag-connected an edge, watched
   the live DSL panel update to the exact typed-equivalent text, saved, saw
   the confirmation notice, reloaded the page, and confirmed the saved
-  constraint was still listed — zero console errors throughout. CLAUDE.md's
+  constraint was still listed — zero console errors throughout. PROJECT-RULES.md's
   "start the dev server and use the feature in a browser" bar, met before
   this was called done.
 - **The MCP payoff, pinned.** `src/blueprint/check-import-demo.test.ts` — the

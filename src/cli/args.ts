@@ -1,5 +1,5 @@
 /**
- * Argument parsing. No business logic (CLAUDE.md rule 5) — this module turns
+ * Argument parsing. No business logic (PROJECT-RULES.md rule 5) — this module turns
  * argv into a typed options object and nothing else.
  */
 import { parseArgs } from 'node:util';

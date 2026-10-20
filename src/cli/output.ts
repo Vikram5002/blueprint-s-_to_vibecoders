@@ -1,6 +1,6 @@
 /**
  * Terminal formatting. Pure string production — callers do the writing.
- * No business logic (CLAUDE.md rule 5).
+ * No business logic (PROJECT-RULES.md rule 5).
  */
 import { isPricedModel } from '../llm/pricing.js';
 import type { DiscoveredFile, WalkError } from '../ingest/walk.js';
@@ -303,7 +303,7 @@ export function formatIntentSummary(intent: IntentRunResult): string {
    * A truncated document contributes zero constraints, so the headline number
    * is a floor rather than a result — and printing it plainly would invite the
    * reader to treat it as final. This happened for real on this project's own
-   * CLAUDE.md: the run reported zero constraints from a document that states
+   * PROJECT-RULES.md: the run reported zero constraints from a document that states
    * three, and the only clue was a "documents not read" line further down.
    */
   if (summary.incompleteDocuments > 0) {

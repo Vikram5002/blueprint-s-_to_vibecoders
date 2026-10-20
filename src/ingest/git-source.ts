@@ -1,7 +1,7 @@
 /**
  * Fetching a repository to analyse from a Git URL.
  *
- * The one exception to CLAUDE.md rule 6 ("no network calls outside llm/"),
+ * The one exception to PROJECT-RULES.md rule 6 ("no network calls outside llm/"),
  * approved 2026-09-25 and named in the rule itself. It is deliberately narrow:
  *
  * - It only ever runs because a person pasted a URL and asked for it; nothing

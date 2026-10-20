@@ -21,7 +21,7 @@ answers a question about a line that has not been written yet.
 ```
 check_import(from: "src/parser/parse.ts", to: "src/llm/gemini.ts")
   -> forbidden
-     "parser/ and graph/ must NEVER import from llm/." (CLAUDE.md:7)
+     "parser/ and graph/ must NEVER import from llm/." (PROJECT-RULES.md:7)
 ```
 
 That is the whole thesis in one call. An agent about to write an import can ask
@@ -95,7 +95,7 @@ merely the same.
 
 ### Why the protocol is hand-rolled
 
-`@modelcontextprotocol/sdk` is not installed. CLAUDE.md says not to add heavy
+`@modelcontextprotocol/sdk` is not installed. PROJECT-RULES.md says not to add heavy
 dependencies without asking, and the project has honoured that before: no
 `@google/genai` for Gemini, a fifteen-line `.env` reader instead of dotenv. The
 surface a read-only server needs is four methods (`initialize`, `ping`,
@@ -203,7 +203,7 @@ Both of these were found by running the thing for real, not by testing it.
 ### An unread document is not an absent rule
 
 Driving a client against this repository with the Gemini daily free-tier quota
-exhausted, `CLAUDE.md` was never read. Asking whether `parser/` may import `llm/`
+exhausted, `PROJECT-RULES.md` was never read. Asking whether `parser/` may import `llm/`
 returned:
 
 > **allowed** — "no stated rule applies to it"

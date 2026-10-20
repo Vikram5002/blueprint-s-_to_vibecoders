@@ -1,7 +1,7 @@
 /**
  * Evidence about a module, for the labelling prompt.
  *
- * CLAUDE.md: "Do not send file contents to the LLM in bulk. Send the graph."
+ * PROJECT-RULES.md: "Do not send file contents to the LLM in bulk. Send the graph."
  * So nothing here reads a file. Everything comes from the symbol table the
  * parser already produced — export names, and the export statements the
  * extractor kept as evidence in Week 2.
