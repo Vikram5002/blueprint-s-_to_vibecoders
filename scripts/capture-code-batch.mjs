@@ -187,7 +187,7 @@ function richnessReasons(domain, code, user = '') {
   if (domain === 'frontend') {
     const reasons = [];
     // A page that can create records (a POST endpoint is listed for it) must let a person type them in.
-    if (/POST \/api\//.test(user) && !/<(input|select|textarea)/.test(code)) reasons.push('not-rich:no-form-fields');
+    if (/POST \/api\//.test(user) && !/<(input|select|textarea)/.test(code)) reasons.push('not-rich:no-form-fields');
     if (!code.includes('<button')) reasons.push('not-rich:no-buttons');
     if (!code.includes('style={')) reasons.push('not-rich:unstyled');
     if (!code.includes('Loading')) reasons.push('not-rich:no-loading-state');

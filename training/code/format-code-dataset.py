@@ -32,6 +32,7 @@ import hashlib
 import json
 import os
 import random
+import re
 import statistics
 import sys
 import time
@@ -203,6 +204,20 @@ def cap_corrections(kept, share, rng):
     return [k for k in kept if id(k) in keep_ids], dropped
 
 
+FORM_FIELD = re.compile(r"<(input|select|textarea)[\s/>]")
+
+
+def is_formless_create_page(record):
+    """A frontend page whose request lists a POST endpoint but whose code has no field to type into.
+
+    Training on such pages taught the round-3 coder to leave forms out (75 of
+    139 accepted pages); the capture-time check meant to catch them never
+    matched, so it is applied here, where every dataset passes through.
+    """
+    return (record["domain"] == "frontend" and "POST /api/" in record["request"]["user"]
+            and FORM_FIELD.search(record["code"]) is None)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("inputs", nargs="+", help="capture JSONL file(s) or globs")
@@ -213,6 +228,8 @@ def main():
                         help="max fraction of output rows with kind=correction")
     parser.add_argument("--seed", type=int, default=20260918)
     parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
+    parser.add_argument("--allow-formless", dest="require_form_fields", action="store_false",
+                        help="keep frontend pages that list a POST endpoint but have no input, select or textarea")
     parser.add_argument("--dry-run", action="store_true",
                         help="skip tokenization (no length drops); for machines without the tokenizer")
     args = parser.parse_args()
@@ -240,6 +257,9 @@ def main():
         seen_ids.add(record["recordId"])
         if not record["accepted"]:
             dropped.append(_entry(record, {"reason": "not accepted", "reasons": record["reasons"]}))
+            continue
+        if args.require_form_fields and is_formless_create_page(record):
+            dropped.append(_entry(record, {"reason": "page can create records but has no form fields"}))
             continue
         if not record["code"].strip():
             dropped.append(_entry(record, {"reason": "empty code"}))
