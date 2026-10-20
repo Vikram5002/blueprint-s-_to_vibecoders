@@ -52,3 +52,8 @@ desktop/release/
 desktop/vendor/*.tgz
 desktop/vendor/local-ai/
 desktop/vendor/local-ai-build/
+awskeys
+# Teacher capture scratch: per-plan build folders and split plan lists (the records themselves are committed).
+capture/code/rich-work-*/
+capture/code/rich-plans/
+capture/code/rich-smoke*
