@@ -1,0 +1,114 @@
+capturing code from 69 plan(s) -> capture/code/rich2-w1.jsonl
+teacher: local:teacher (teacher); raw text -> capture/code/rich2-w1.raw.jsonl; per-project log -> capture/code/rich2-w1.projects.jsonl
+work directory: /opt/dlami/nvme/rich2-work-w1; already done: 27
+
+-- 2e5192eb-b18e-4622-8f34-decb7492c8cf (Movie Theatre Show and Seat Booking System) [1]
+ok  build=true violations=0 locator=0 runtime=true records=11
+-- 57a92edb-289e-4fa5-86ef-990a55e364b8 (Church or Temple Donation and Event App) [2]
+!!  build=false violations=0 locator=0 runtime=false records=14 build-failed
+-- 061e08bf-02d8-4207-b5f1-8596c6d4cb13 (vehicle insurance renewal reminder) [3]
+ok  build=true violations=0 locator=0 runtime=true records=13
+-- 951ad0b8-0b46-4daf-9987-32e9cb513bcb (a court case hearing tracker for lawyers) [4]
+!!  build=false violations=0 locator=0 runtime=false records=15 build-failed
+-- 93616fe5-c868-49d8-a0ff-df4a4da4c510 (a cake order website with customisation) [5]
+ok  build=true violations=0 locator=0 runtime=true records=13
+-- 9664e814-592f-4648-b03d-f9cd7e10ac85 (campus maintenance complaint app) [6]
+   generation failed: {"component":{"id":"0f9d9c083c08580e","name":"Data Validation","purpose":"Validates all input data to prevent injection attacks and ensures compliance with business rules"},"domain":"security","failur
+-- 2ce29ff1-b3f1-4f2c-9799-cb9d677dfa51 (a fitness challenge leaderboard for an office) [7]
+!!  build=false violations=0 locator=0 runtime=false records=16 build-failed
+-- 53785fc4-215c-44de-95c8-a97d08245177 (Delivery Driver Route Log) [8]
+ok  build=true violations=0 locator=0 runtime=true records=10
+-- 0cee37d7-0b7e-4618-8b03-115e8a6bc1da (restaurant menu and online ordering) [9]
+   build repair failed: {"component":{"id":"d7b784c18a609fec","name":"Data Validation","purpose":"Validate all input data from forms to prevent injection attacks and ensure data integrity"},"domain":"security","failure":{"re
+-- db95f332-3e0c-4fed-b904-021c3f517dc5 (Taxi Ride Booking App) [10]
+ok  build=true violations=0 locator=0 runtime=true records=12
+-- 46be880d-c94e-4f26-88a0-0d654f090240 (Wedding Planner Checklist and Vendors App) [11]
+ok  build=true violations=0 locator=0 runtime=true records=13
+-- 3c33e07d-c7c6-4960-ad61-95975b6630cd (College Placement Cell Portal) [12]
+ok  build=true violations=0 locator=0 runtime=true records=15
+-- 1660fe93-dd27-456f-b369-2d3026d26ad2 (Employee Attendance System) [13]
+ok  build=true violations=0 locator=0 runtime=true records=10
+-- 78dfc95f-4587-4fd1-b3eb-e67851a5c126 (a blogging platform) [14]
+!!  build=false violations=0 locator=0 runtime=false records=12 build-failed
+-- 497c8954-75f0-4d87-9c39-eef41aa57c13 (Neighbourhood Help Exchange App) [15]
+!!  build=false violations=0 locator=0 runtime=false records=26 build-failed
+-- 395ee042-bfd4-4f6b-9c10-c785fd7a5508 (Fuel Expense Log for Vehicles) [16]
+ok  build=true violations=0 locator=0 runtime=true records=9
+-- 4d62b305-dbe4-4b33-a930-e4095293fffd (Doctor Prescription History App for Patients) [17]
+ok  build=true violations=0 locator=0 runtime=true records=12
+-- 60ebcc0f-192d-4f30-afe7-d712403418ad (an art gallery exhibition catalogue) [18]
+   generation failed: {"component":{"id":"78807b1fb9b64994","name":"Data Validation","purpose":"Validate all input data to prevent injection attacks and ensure data integrity"},"domain":"security","failure":{"reason":"unpa
+-- bb8bf6a1-df35-465f-bc57-8e4f84efe252 (Internship Application Tracker for Students) [19]
+!!  build=false violations=0 locator=0 runtime=false records=17 build-failed
+-- 42073071-1e9b-40bc-9730-63334a8d46e6 (trekking group trip booking) [20]
+!!  build=false violations=0 locator=0 runtime=false records=12 build-failed
+-- 6bf2e860-e8b8-4795-bd99-2f86cee88831 (EV Charging Station Finder and Booking) [21]
+!!  build=false violations=0 locator=0 runtime=false records=15 build-failed
+-- 1cd8ac50-570b-4fb4-a335-0e9dc5f593a1 (a textile shop stock and billing app) [22]
+ok  build=true violations=0 locator=0 runtime=true records=9
+-- e5a8f790-cc3e-4115-ba5e-acd37ce41631 (a playschool parent communication app) [23]
+!!  build=false violations=0 locator=0 runtime=false records=14 build-failed
+-- a5af79c2-f11d-4676-b258-c61e206aa00d (school transport fee and route manager) [24]
+!!  build=false violations=0 locator=0 runtime=false records=14 build-failed
+-- 76e75267-0238-47d5-9f68-164292fc81b6 (Product Feedback Board) [25]
+!!  build=false violations=0 locator=0 runtime=false records=11 build-failed
+-- 11b19b98-c8ec-4745-86ac-7abeacc8f2d8 (Blood Bank Donor Management System) [26]
+!!  build=false violations=0 locator=0 runtime=false records=18 build-failed
+-- 2bb677d9-fca2-4e30-9598-56f4c87df6be (delivery tracking dashboard) [27]
+!!  build=false violations=0 locator=0 runtime=false records=15 build-failed
+-- d1130c2f-6a42-40b7-a0bf-f8c3fdfb53f9 (Event Ticket Booking Website) [28]
+!!  build=false violations=0 locator=0 runtime=false records=19 build-failed
+-- 70b19d90-11dd-4d8c-91d8-f3b08fafb87b (alumni network directory) [29]
+!!  build=false violations=0 locator=0 runtime=false records=8 build-failed
+-- 22d6c1dc-36ee-4bff-8870-07b714e527c6 (Company Asset Tracking System) [30]
+!!  build=false violations=0 locator=0 runtime=false records=12 build-failed
+-- 364824fc-50ae-4af4-9bcb-a5dba77a5f77 (Photo Gallery with Albums) [31]
+!!  build=false violations=0 locator=0 runtime=false records=9 build-failed
+-- f0a7b0ef-1441-4161-95e0-a60a66fcb989 (a poultry farm stock tracker) [32]
+!!  build=false violations=0 locator=0 runtime=false records=13 build-failed
+-- c4ea4a15-4b4c-45e7-afe7-e4ce4638871d (Sleep Tracker Journal) [33]
+ok  build=true violations=0 locator=0 runtime=true records=11
+-- 4de47a1b-e6e7-4e36-9f5a-e6dbe3bde397 (a mess menu and feedback app for hostels) [34]
+!!  build=false violations=0 locator=0 runtime=false records=11 build-failed
+-- 541ff956-5ae9-4336-8ea4-dbdd00521bc9 (esports team tournament registration site) [35]
+   generation failed: {"component":{"id":"78807b1fb9b64994","name":"Data Validation","purpose":"Validate all input data to prevent injection attacks and ensure data integrity"},"domain":"security","failure":{"reason":"unpa
+-- 77395fd9-0ffc-4614-b650-414cae5097cc (Skill Exchange Platform) [36]
+   generation failed: {"component":{"id":"78807b1fb9b64994","name":"Data Validation","purpose":"Validate all input data to prevent injection attacks and ensure data integrity"},"domain":"security","failure":{"reason":"unpa
+-- c0d8f519-5100-47ba-872c-890b2f35d43f (hotel housekeeping task tracker) [37]
+ok  build=true violations=0 locator=0 runtime=true records=10
+-- 47c42e26-99d2-45be-9a0f-a651baa39c01 (recycling centre drop-off tracker) [38]
+ok  build=true violations=0 locator=0 runtime=true records=9
+-- 8568390a-a094-493c-8477-870d841a1090 (jewellery shop inventory and orders) [39]
+ok  build=true violations=0 locator=0 runtime=true records=9
+-- 946d1cef-3619-4083-8fd2-b9bec8ca395c (Daycare Attendance and Pickup App) [40]
+!!  build=false violations=0 locator=0 runtime=false records=17 build-failed
+-- 6d0a8a59-8e7f-4f07-9b53-571d4421ccec (a canteen inventory for a school) [41]
+ok  build=true violations=0 locator=0 runtime=true records=14
+-- 4a140f6b-7770-452d-a77e-730036269146 (Feature Request Voting Tool) [42]
+!!  build=false violations=0 locator=0 runtime=false records=14 build-failed
+
+--- summary ---
+projects: {"total":69,"skipped":27,"generated":38,"generationFailed":5,"buildOk":16,"runtimeOk":16}
+records per domain:
+  backend/accepted: 52
+  backend/correction/accepted: 4
+  backend/correction/rejected: 18
+  backend/rejected: 78
+  database/accepted: 12
+  database/correction/accepted: 1
+  frontend/accepted: 80
+  frontend/correction/accepted: 22
+  frontend/correction/rejected: 8
+  frontend/rejected: 74
+  security/accepted: 42
+  security/correction/accepted: 1
+  security/correction/rejected: 34
+  security/rejected: 56
+rejection reasons:
+  build-failed: 26
+  not-rich:no-buttons: 35
+  not-rich:no-create-route: 8
+  not-rich:no-loading-state: 37
+  runtime-not-checked: 130
+
+records written to capture/code/rich2-w1.jsonl

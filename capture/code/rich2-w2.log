@@ -1,0 +1,119 @@
+capturing code from 69 plan(s) -> capture/code/rich2-w2.jsonl
+teacher: local:teacher (teacher); raw text -> capture/code/rich2-w2.raw.jsonl; per-project log -> capture/code/rich2-w2.projects.jsonl
+work directory: /opt/dlami/nvme/rich2-work-w2; already done: 24
+
+-- aa1c4567-26bf-44c6-a58a-7d199412c1a3 (Garden Planner) [1]
+!!  build=false violations=0 locator=0 runtime=false records=22 build-failed
+-- 53d84f1a-50cb-45e8-88b8-a789c4c111e6 (mood journal) [2]
+ok  build=true violations=0 locator=0 runtime=true records=7
+-- 61e42163-8b23-4cf0-bd9e-4c4ba7172daa (a recipe cost calculator for restaurants) [3]
+!!  build=false violations=0 locator=0 runtime=false records=10 build-failed
+-- f00792a2-79f5-4bd7-a655-8e65e55b6d2c (a toy library lending system) [4]
+!!  build=false violations=0 locator=0 runtime=false records=18 build-failed
+-- 9d761f28-8762-48a1-80fb-cdf89e84c847 (swimming pool membership and slot booking) [5]
+ok  build=true violations=0 locator=0 runtime=true records=11
+-- da03f708-9c39-4648-a7f0-f8ddd7db3b3b (Bike Service Booking App) [6]
+ok  build=true violations=0 locator=0 runtime=true records=11
+-- 30b00902-2e00-4867-87ac-4add8a3d15c7 (a shop credit book for customers) [7]
+ok  build=true violations=0 locator=0 runtime=true records=9
+-- 7d441322-c1cb-452f-8b2c-ab95fb50e5cf (Hardware Store Inventory App) [8]
+ok  build=true violations=0 locator=0 runtime=true records=7
+-- c53e57d2-3d07-46a0-9d6c-fa643bc0a102 (a coding contest leaderboard) [9]
+ok  build=true violations=0 locator=0 runtime=true records=9
+-- 0645d93a-e722-4c12-8823-78c589ae5fea (Short Story Writing Platform) [10]
+!!  build=false violations=0 locator=0 runtime=false records=21 build-failed
+-- 67625b3b-913f-43a7-9507-2596c5982dc7 (Digital Newspaper Archive) [11]
+!!  build=false violations=0 locator=0 runtime=false records=11 build-failed
+-- cf1d2442-0f10-4550-ad81-bff1c2f18775 (grocery store inventory system) [12]
+ok  build=true violations=0 locator=0 runtime=true records=7
+-- baa9e413-0832-47c9-adf6-41428d84b941 (Online Clothing Store) [13]
+!!  build=false violations=0 locator=0 runtime=false records=17 build-failed
+-- 37e52fab-61eb-45b1-9ead-11ef8c729f12 (sports tournament fixture manager) [14]
+!!  build=false violations=0 locator=0 runtime=false records=17 build-failed
+-- 10a7102d-007e-43ab-bcc3-2045470dba90 (a learning management system with courses and lessons) [15]
+!!  build=false violations=0 locator=0 runtime=false records=14 build-failed
+-- ae0002f5-53f1-47fe-97f1-e0ff22c7ecbd (Property Listing Website for Rentals) [16]
+!!  build=false violations=0 locator=0 runtime=false records=13 build-failed
+-- f2bbcc55-188b-473f-b905-7923fedf5a62 (book reviews community) [17]
+!!  build=false violations=0 locator=0 runtime=false records=14 build-failed
+-- cb2df741-b95b-4654-b561-b004ca8fd170 (a dairy farm milk collection app) [18]
+ok  build=true violations=0 locator=0 runtime=true records=9
+-- 0dd6a23c-4e4f-4fd6-9dcd-6e68143e6584 (Water Intake Reminder App) [19]
+   build repair failed: {"component":{"id":"7647b5accf3e6933","name":"Data Validation","purpose":"Validates all input data to prevent injection attacks and ensure data integrity"},"domain":"security","failure":{"reason":"unp
+-- 152b95e5-23af-4728-abf7-ea508ddd2f7d (Canteen Token System for College) [20]
+ok  build=true violations=0 locator=0 runtime=true records=11
+-- 52bef41c-2cf4-4e9f-8a40-99bea84d9699 (game library tracker) [21]
+!!  build=false violations=0 locator=0 runtime=false records=9 build-failed
+-- 17991981-f64f-4569-a4b2-8a5da9835c96 (Mock Interview Scheduler) [22]
+ok  build=true violations=0 locator=0 runtime=true records=12
+-- 7e6e8af0-3d24-42a9-ab3a-55b7bd3b11d2 (a city tourist places guide) [23]
+!!  build=false violations=0 locator=0 runtime=false records=13 build-failed
+-- 3521521e-8e10-4d79-9fb3-1ba18519a3d7 (Waste Collection Schedule App) [24]
+ok  build=true violations=0 locator=0 runtime=true records=11
+-- af1e3025-efa1-43e4-9905-dcd5b7788224 (pet shop inventory and grooming bookings) [25]
+ok  build=true violations=0 locator=0 runtime=true records=12
+-- 31d2bd33-1329-4ea3-93c2-7fcfb4c79a21 (College ID Card Request Portal) [26]
+!!  build=false violations=0 locator=0 runtime=false records=15 build-failed
+-- 1416ef36-a5e5-492c-9249-a7570a45ffbe (Blood Donation Camp Registration Site) [27]
+ok  build=true violations=0 locator=0 runtime=true records=13
+-- 57dba46f-777a-4939-a806-12653627df02 (hotel guest feedback system) [28]
+ok  build=true violations=0 locator=0 runtime=true records=9
+-- b19a4411-ced9-4494-8d15-e73a6deb29b3 (Food Truck Order and Pickup App) [29]
+ok  build=true violations=0 locator=0 runtime=true records=13
+-- 39a846b9-4aa2-4f90-bc12-22e7f6a4b30e (a bookstore with online orders) [30]
+!!  build=false violations=0 locator=0 runtime=false records=16 build-failed
+-- 09a06e5e-6ebe-4aeb-b677-07e540aca86c (Cricket Club Team and Match Scorer) [31]
+ok  build=true violations=0 locator=0 runtime=true records=11
+-- 150b74a8-0f38-448f-a65e-06d7db2eae43 (Family Expense Manager) [32]
+ok  build=true violations=0 locator=0 runtime=true records=12
+-- 6e501aab-f2d6-45dc-8603-c2e423e79bcd (Coworking Space Desk Booking App) [33]
+   generation failed: {"component":{"id":"78807b1fb9b64994","name":"Data Validation","purpose":"Validate all input data to prevent injection attacks and ensure data integrity"},"domain":"security","failure":{"reason":"unpa
+-- 5358270b-0328-4ebe-a2d3-9a8ea81624f7 (Polling and Voting App) [34]
+!!  build=false violations=0 locator=0 runtime=false records=12 build-failed
+-- 5ecd9f63-3e91-4808-82d1-8134bd947f10 (Dog Walking Booking Service) [35]
+!!  build=false violations=0 locator=0 runtime=false records=11 build-failed
+-- 5f3a4b89-bd71-4db3-98ca-1b74ab989454 (a to-do list with priorities and due dates) [36]
+!!  build=false violations=0 locator=0 runtime=false records=7 build-failed
+-- 4a8c361a-a708-4b2f-af25-ee5cd9f90f13 (Cloud Kitchen Order Dashboard) [37]
+ok  build=true violations=0 locator=0 runtime=true records=8
+-- fc4ba18c-8059-4de5-a224-af16be9adeeb (Equipment Lending System for College Lab) [38]
+ok  build=true violations=0 locator=0 runtime=true records=9
+-- 236b874b-e548-4ae4-b7aa-3f5f244d9d37 (Community Hall Booking System) [39]
+ok  build=true violations=0 locator=0 runtime=true records=11
+-- 2dc8386c-7d05-4a54-befd-2e118f82adc3 (Ambulance Booking App) [40]
+ok  build=true violations=0 locator=0 runtime=true records=10
+-- 02d5cf64-e5cc-4611-9c3c-656b7eefbcae (Village Panchayat Records App) [41]
+ok  build=true violations=0 locator=0 runtime=true records=9
+-- 93d58639-3366-40ce-b369-a408eaa871c5 (Florist Order and Delivery App) [42]
+!!  build=false violations=0 locator=0 runtime=false records=14 build-failed
+-- 3ce9e70b-73a2-4abb-b766-da2f8531ebe6 (University Certificate Request and Approval System) [43]
+ok  build=true violations=0 locator=0 runtime=true records=11
+-- e6a9d7bf-1fdc-4149-8914-813f8cc24c02 (Vaccination Appointment Booking App) [44]
+ok  build=true violations=0 locator=0 runtime=true records=11
+-- 788e143e-ce5b-4ef2-8f28-154f4c75050c (Mystery Shopper Report App) [45]
+!!  build=false violations=0 locator=0 runtime=false records=10 build-failed
+
+--- summary ---
+projects: {"total":69,"skipped":24,"generated":44,"generationFailed":2,"buildOk":24,"runtimeOk":24}
+records per domain:
+  backend/accepted: 77
+  backend/correction/accepted: 2
+  backend/correction/rejected: 10
+  backend/rejected: 68
+  database/accepted: 7
+  frontend/accepted: 83
+  frontend/correction/accepted: 19
+  frontend/correction/rejected: 8
+  frontend/rejected: 88
+  security/accepted: 61
+  security/correction/accepted: 6
+  security/correction/rejected: 25
+  security/rejected: 53
+rejection reasons:
+  build-failed: 22
+  not-rich:no-buttons: 40
+  not-rich:no-create-route: 6
+  not-rich:no-loading-state: 45
+  runtime-not-checked: 118
+
+records written to capture/code/rich2-w2.jsonl
