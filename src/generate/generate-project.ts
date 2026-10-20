@@ -594,7 +594,7 @@ export async function generateProject(
 
   files.push(backendEntryPointFile([...schema.domains.backend.components], [...schema.domains.security.components], publicRoutesFor(schema)));
   if (hasFrontend) {
-    files.push(frontendEntryPointFile([...schema.domains.frontend.components]));
+    files.push(frontendEntryPointFile([...schema.domains.frontend.components], schema.title));
   }
 
   return { ok: true, value: { files: withCarriedFiles(files, options.carriedFiles ?? []) } };

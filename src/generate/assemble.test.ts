@@ -92,7 +92,27 @@ describe('frontendEntryPointFile', () => {
     expect(file.path).toBe('frontend/src/main.tsx');
     expect(file.contents).toContain("import { RecipeListPage } from './pages/recipe-list-page';");
     expect(file.contents).toContain('createRoot(container).render(');
-    expect(file.contents).toContain('<RecipeListPage />');
+    expect(file.contents).toContain('Page: RecipeListPage }');
+  });
+
+  it('builds a real site: a home page with a card per page, a navigation bar, one page at a time', () => {
+    const second: Component = { id: '9', name: 'Add Recipe', purpose: 'A form to add a recipe with its title and steps.' };
+    const file = frontendEntryPointFile([RECIPE_LIST_PAGE, second], 'Recipe Box');
+
+    expect(file.contents).toContain('const SITE_TITLE = "Recipe Box";');
+    expect(file.contents).toContain('{ path: "add-recipe", title: "Add Recipe", purpose: "A form to add a recipe with its title and steps.", Page: AddRecipe },');
+    expect(file.contents).toContain('function Home(): JSX.Element {');
+    expect(file.contents).toContain("<nav style={{ display: 'flex', flexWrap: 'wrap'");
+    expect(file.contents).toContain('{current === undefined ? <Home /> : <current.Page />}');
+    expect(file.contents).toContain("window.addEventListener('hashchange', onChange);");
+  });
+
+  it('writes the title and purposes as string literals, so quotes in them cannot break the file', () => {
+    const quoted: Component = { id: '8', name: 'Orders', purpose: `Shows "today's" orders` };
+    const file = frontendEntryPointFile([quoted], `Joe's "Diner"`);
+
+    expect(file.contents).toContain(`const SITE_TITLE = "Joe's \\"Diner\\"";`);
+    expect(file.contents).toContain(`purpose: "Shows \\"today's\\" orders"`);
   });
 
   // Regression: a live run of the real Layer 2 schema generator produced a
@@ -106,8 +126,9 @@ describe('frontendEntryPointFile', () => {
     const file = frontendEntryPointFile([RECIPE_DASHBOARD]);
 
     expect(file.contents).toContain("import { RecipeDashboard } from './pages/recipe-dashboard';");
-    expect(file.contents).not.toContain('Recipe Dashboard');
-    expect(file.contents).toContain('<RecipeDashboard />');
+    expect(file.contents).not.toContain('import { Recipe Dashboard');
+    // The display title keeps the planned name; only the identifier is sanitized.
+    expect(file.contents).toContain('title: "Recipe Dashboard", purpose: "v", Page: RecipeDashboard }');
   });
 });
 

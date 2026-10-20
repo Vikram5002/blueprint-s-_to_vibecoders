@@ -144,6 +144,6 @@ export async function generatePageSyncFiles(
   current = replace(current, packageJsonFile({ database: schemaImpliesDatabase(schema), frontend: hasFrontend }));
   current = replace(current, tsconfigFile({ frontend: hasFrontend }));
   current = replace(current, backendEntryPointFile([...schema.domains.backend.components], [...schema.domains.security.components], publicRoutesFor(schema)));
-  if (hasFrontend) current = replace(current, frontendEntryPointFile([...schema.domains.frontend.components]));
+  if (hasFrontend) current = replace(current, frontendEntryPointFile([...schema.domains.frontend.components], schema.title));
   return { ok: true, value: current };
 }

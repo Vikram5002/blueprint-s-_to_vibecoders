@@ -153,6 +153,8 @@ export function backendEntryPointFile(
 ): GeneratedFile {
   const lines: string[] = [
     "import express from 'express';",
+    "import { existsSync } from 'fs';",
+    "import { join } from 'path';",
     '',
   ];
 
@@ -193,6 +195,12 @@ export function backendEntryPointFile(
 
   lines.push(
     '',
+    // `npm run serve` builds the site into dist/web; this file runs from dist/backend/src.
+    "const site = join(__dirname, '..', '..', 'web');",
+    'if (existsSync(site)) {',
+    '  app.use(express.static(site));',
+    '}',
+    '',
     'const port = process.env.PORT ? Number(process.env.PORT) : 3000;',
     'app.listen(port, () => {',
     '  // eslint-disable-next-line no-console',
@@ -230,15 +238,20 @@ export function pascalIdentifier(slug: string): string {
 /**
  * Templated, not LLM-generated, same reasoning as backendEntryPointFile:
  * mounting is the one place most likely to have cross-file wiring bugs, kept
- * out of the model's hands. Milestone 2 scope only - every frontend
- * component's named-exported React component (named exactly after the
- * component itself, per `exportContractFor` in generate-project.ts) is
- * stacked in one root, no router. Real multi-page routing (react-router,
- * per-page URLs) is "frontend-database wiring correctness at scale",
- * explicitly deferred to Milestone 3 alongside the auto-regeneration loop.
+ * out of the model's hands.
+ *
+ * A real site rather than every page stacked on one screen: a home page with
+ * a card per page, a navigation bar, and one page shown at a time, chosen by
+ * the address hash (`#/book-list`). Hash links need no router package and work
+ * the same from Vite, from `npm start` serving the built site, and from any
+ * static host. The bar wraps on a narrow screen.
  */
-export function frontendEntryPointFile(frontendComponents: readonly Component[]): GeneratedFile {
-  const lines: string[] = ["import { StrictMode } from 'react';", "import { createRoot } from 'react-dom/client';", ''];
+export function frontendEntryPointFile(frontendComponents: readonly Component[], title = 'App'): GeneratedFile {
+  const lines: string[] = [
+    "import { StrictMode, useEffect, useState, type ComponentType } from 'react';",
+    "import { createRoot } from 'react-dom/client';",
+    '',
+  ];
 
   for (const component of frontendComponents) {
     const slug = componentSlug(component.name);
@@ -248,6 +261,77 @@ export function frontendEntryPointFile(frontendComponents: readonly Component[])
 
   lines.push(
     '',
+    'interface PageEntry {',
+    '  readonly path: string;',
+    '  readonly title: string;',
+    '  readonly purpose: string;',
+    '  readonly Page: ComponentType;',
+    '}',
+    '',
+    `const SITE_TITLE = ${JSON.stringify(title)};`,
+    'const PAGES: readonly PageEntry[] = [',
+    ...frontendComponents.map((component) => {
+      const slug = componentSlug(component.name);
+      return `  { path: ${JSON.stringify(slug)}, title: ${JSON.stringify(component.name)}, purpose: ${JSON.stringify(component.purpose)}, Page: ${pascalIdentifier(slug)} },`;
+    }),
+    '];',
+    '',
+    '/** The page in the address hash: "#/book-list" -> "book-list"; "" is the home page. */',
+    'function currentPath(): string {',
+    '  const hash = window.location.hash;',
+    "  return hash.startsWith('#/') ? hash.slice(2) : hash.slice(1);",
+    '}',
+    '',
+    'function Home(): JSX.Element {',
+    '  return (',
+    '    <section>',
+    "      <h1 style={{ fontSize: '28px', margin: '8px 0 4px' }}>{SITE_TITLE}</h1>",
+    "      <p style={{ color: '#555', marginTop: 0 }}>Choose a page to get started.</p>",
+    "      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px', marginTop: '20px' }}>",
+    '        {PAGES.map((entry) => (',
+    '          <a',
+    '            key={entry.path}',
+    '            href={`#/${entry.path}`}',
+    "            style={{ display: 'block', padding: '18px', border: '1px solid #ddd', borderRadius: '12px', color: 'inherit', textDecoration: 'none', background: '#fff' }}",
+    '          >',
+    "            <strong style={{ display: 'block', fontSize: '17px', marginBottom: '6px' }}>{entry.title}</strong>",
+    "            <span style={{ color: '#555', fontSize: '14px' }}>{entry.purpose}</span>",
+    '          </a>',
+    '        ))}',
+    '      </div>',
+    '    </section>',
+    '  );',
+    '}',
+    '',
+    'function App(): JSX.Element {',
+    '  const [path, setPath] = useState<string>(currentPath());',
+    '  useEffect(() => {',
+    '    const onChange = (): void => setPath(currentPath());',
+    "    window.addEventListener('hashchange', onChange);",
+    "    return () => window.removeEventListener('hashchange', onChange);",
+    '  }, []);',
+    '  const current = PAGES.find((entry) => entry.path === path);',
+    '  return (',
+    "    <div style={{ minHeight: '100vh', background: '#f6f7f9', color: '#1a1a1a' }}>",
+    "      <nav style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 18px', padding: '12px 20px', background: '#1f2937' }}>",
+    "        <a href=\"#/\" style={{ color: '#fff', fontWeight: 700, textDecoration: 'none', marginRight: '8px' }}>{SITE_TITLE}</a>",
+    '        {PAGES.map((entry) => (',
+    '          <a',
+    '            key={entry.path}',
+    '            href={`#/${entry.path}`}',
+    "            style={{ color: entry.path === path ? '#fff' : '#cbd5e1', textDecoration: entry.path === path ? 'underline' : 'none' }}",
+    '          >',
+    '            {entry.title}',
+    '          </a>',
+    '        ))}',
+    '      </nav>',
+    "      <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '20px 16px' }}>",
+    '        {current === undefined ? <Home /> : <current.Page />}',
+    '      </main>',
+    '    </div>',
+    '  );',
+    '}',
+    '',
     "const container = document.getElementById('root');",
     'if (container === null) {',
     "  throw new Error('#root element not found');",
@@ -255,13 +339,7 @@ export function frontendEntryPointFile(frontendComponents: readonly Component[])
     '',
     'createRoot(container).render(',
     '  <StrictMode>',
-    '    <>',
-    // JSX treats a lowercase-first tag as a DOM element, not the imported
-    // component - the identifier here must be PascalCase, unlike
-    // backendEntryPointFile's camelCase router/middleware variables, which
-    // are never used as a JSX tag.
-    ...frontendComponents.map((component) => `      <${pascalIdentifier(componentSlug(component.name))} />`),
-    '    </>',
+    '    <App />',
     '  </StrictMode>,',
     ');',
     '',
