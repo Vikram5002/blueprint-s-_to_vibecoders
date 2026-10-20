@@ -72,6 +72,7 @@ import { stat } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { generatePageSyncFiles, planPageSync, type PageSyncPlan } from '../generate/page-sync.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
+import { completeDomainDependencies } from '../workflow/complete-dependencies.js';
 import type { ApplicationRunsStore, ApplicationRunKind } from '../store/application-runs-store.js';
 import type { CompletionProvider } from '../llm/provider.js';
 import type { LabelCache } from '../llm/cache.js';
@@ -260,19 +261,21 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
     const capacity = atCapacity(jobs, c);
     if (capacity !== null) return capacity;
 
-    const job = jobs.create({ sessionId: validated.value.sessionId, kind: 'generate' });
+    // A plan saved before the link fix, or written by hand, gets it here too.
+    const schema = completeDomainDependencies(validated.value);
+    const job = jobs.create({ sessionId: schema.sessionId, kind: 'generate' });
     const root = join(deps.generationRoot, job.id);
-    runApplicationJob(jobs, job.id, validated.value, llm, root)
+    runApplicationJob(jobs, job.id, schema, llm, root)
       .then(() => {
         const finished = jobs.get(job.id);
-        if (finished !== undefined) persist(finished, validated.value);
+        if (finished !== undefined) persist(finished, schema);
       })
       .catch((cause) => {
         // From the job's latest state, not its starting one: that keeps the
         // partialFiles a crash would otherwise throw away.
         const failed: ApplicationJob = { ...(jobs.get(job.id) ?? job), status: 'failed', error: { phase: 'unexpected', message: `unexpected: ${String(cause)}` } };
         jobs.set(failed);
-        persist(failed, validated.value);
+        persist(failed, schema);
       });
 
     return c.json({ id: job.id, status: job.status }, 202);

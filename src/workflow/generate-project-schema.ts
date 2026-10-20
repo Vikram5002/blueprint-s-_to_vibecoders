@@ -60,6 +60,7 @@ import { cacheKey, type LabelCache } from '../llm/cache.js';
 import { type Result, ok, err } from '../types/result.js';
 import { DOMAIN_NAMES, type DomainName, type ValidatedProjectSchema, componentId } from '../types/project-schema.js';
 import { CONSTRAINT_RELATIONS } from '../types/constraints.js';
+import { completeDomainDependencies } from './complete-dependencies.js';
 import { validateProjectSchema, type ProjectSchemaRejection } from './validate-project-schema.js';
 
 // ---------------------------------------------------------------------------
@@ -573,7 +574,7 @@ function finalize(
       rejections: validated.error,
     });
   }
-  return ok(validated.value);
+  return ok(completeDomainDependencies(validated.value));
 }
 
 /**
