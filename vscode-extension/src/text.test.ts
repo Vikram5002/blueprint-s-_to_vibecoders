@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkDetails, parseServerUrl, parseUriList, relativeTo, summariseChecks } from './text';
+import { checkDetails, parseServerUrl, parseUriList, relativeTo, summariseChecks, workspaceHtml } from './text';
 
 const check = (stillPresent: boolean, line = 2) => ({
   ruleText: 'routes must not import db',
@@ -43,5 +43,21 @@ describe('summariseChecks', () => {
 
   it('lists each violation with its outcome', () => {
     expect(checkDetails([check(true)])).toBe("STILL THERE - line 2: import { q } from '../db';  (routes must not import db)");
+  });
+});
+
+describe('workspaceHtml', () => {
+  it('frames the server workspace and allows framing only that server', () => {
+    const html = workspaceHtml({ origin: 'http://127.0.0.1:5123', page: 'http://127.0.0.1:5123/workspace.html' });
+    expect(html).toContain('<iframe src="http://127.0.0.1:5123/workspace.html"');
+    expect(html).toContain("default-src 'none'; frame-src http://127.0.0.1:5123;");
+    expect(html).not.toContain('<script');
+  });
+
+  it('shows a status line while starting, and the reason when the server failed, escaped', () => {
+    expect(workspaceHtml({ loading: 'Starting VibeCoder for app...' })).toContain('Starting VibeCoder for app...');
+    const failed = workspaceHtml({ error: 'npx <not found>' });
+    expect(failed).toContain('VibeCoder could not start: npx &lt;not found&gt;');
+    expect(failed).toContain("frame-src 'none'");
   });
 });

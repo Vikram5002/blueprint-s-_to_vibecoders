@@ -20,6 +20,18 @@ The model's word is never taken for it.
 
 If a file breaks no rule, VibeCoder asks what you want changed instead.
 
+## The whole workspace in VS Code
+
+**VibeCoder: Open Workspace** (the layout button on the VibeCoder panel, or the Command Palette)
+opens the full VibeCoder workspace in a VS Code tab - the same one the browser and the desktop
+app show. Describe an app and review its plan, edit its pages in the **Page Builder**, use
+**Update backend & database** to generate the API and tables a page's form needs, and **Run app**
+to see it working. Generated files are written into the folder you have open, so the Explorer
+shows them as they appear.
+
+Rule of thumb for blueprint rules: name folders by path (`src/routes must not import src/db`).
+A bare word ("routes") only works when VibeCoder's own module grouping happens to use it.
+
 ## Server
 
 The extension talks to a VibeCoder server; it has no logic of its own.

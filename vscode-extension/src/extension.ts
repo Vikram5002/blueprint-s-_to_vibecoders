@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { HistoryView, type HistoryEntry } from './history';
 import { PROPOSAL_SCHEME, ProposalDocuments, reworkFiles, undoEntry, type FlowDeps } from './rework-flow';
 import { ServerManager } from './server-process';
+import { WorkspacePanels } from './workspace-panel';
 
 export function activate(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel('VibeCoder');
@@ -10,9 +11,11 @@ export function activate(context: vscode.ExtensionContext): void {
   // A drop only happens after activation returns, so `deps` exists by then.
   const history = new HistoryView((uris) => void reworkFiles(deps, uris));
   const deps: FlowDeps = { servers, history, proposals };
+  const workspaces = new WorkspacePanels(servers);
 
   context.subscriptions.push(
     output,
+    workspaces,
     servers,
     vscode.workspace.registerTextDocumentContentProvider(PROPOSAL_SCHEME, proposals),
     vscode.window.createTreeView('vibecoder.files', {
@@ -41,6 +44,15 @@ export function activate(context: vscode.ExtensionContext): void {
       }
       await undoEntry(deps, entry);
       return true;
+    }),
+    vscode.commands.registerCommand('vibecoder.openWorkspace', async () => {
+      const folders = vscode.workspace.workspaceFolders ?? [];
+      const folder = folders.length <= 1 ? folders[0] : await vscode.window.showWorkspaceFolderPick({ placeHolder: 'Open VibeCoder for which folder?' });
+      if (folder === undefined) {
+        void vscode.window.showInformationMessage('VibeCoder: open a folder first.');
+        return undefined;
+      }
+      return workspaces.open(folder);
     }),
     vscode.commands.registerCommand('vibecoder.clearHistory', () => history.clear()),
     vscode.commands.registerCommand('vibecoder.restartServer', () => {

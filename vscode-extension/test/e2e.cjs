@@ -54,6 +54,17 @@ async function run() {
   const undone = Buffer.from(await vscode.workspace.fs.readFile(uri)).toString('utf8');
   assert.equal(undone, original, 'Undo restored the original text');
   console.log('[e2e] PASS: rework -> diff -> Keep -> file changed -> Undo -> original restored');
+
+  // The full workspace in a panel: the command answers with the address it framed,
+  // and that address serves the same workspace page the browser and desktop app load.
+  const shown = await vscode.commands.executeCommand('vibecoder.openWorkspace');
+  assert.ok(typeof shown === 'string' && shown.startsWith('http'), `the workspace panel framed a server address (got ${shown})`);
+  const page = await fetch(`${shown}/workspace.html`);
+  assert.equal(page.status, 200, 'the framed address serves the workspace');
+  assert.match(await page.text(), /<div id="root">/, 'it is the VibeCoder workspace page');
+  const tabs = vscode.window.tabGroups.all.flatMap((group) => group.tabs).map((tab) => tab.label);
+  assert.ok(tabs.some((label) => label.startsWith('VibeCoder - ')), `a "VibeCoder - <folder>" tab is open (tabs: ${tabs.join(', ')})`);
+  console.log(`[e2e] PASS: Open Workspace -> panel framing ${shown}/workspace.html`);
 }
 
 module.exports = { run };

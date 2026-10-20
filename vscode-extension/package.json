@@ -43,10 +43,15 @@
     "viewsWelcome": [
       {
         "view": "vibecoder.files",
-        "contents": "Drag files from the Explorer and drop them here.\nVibeCoder shows which architecture rules each file breaks, proposes a fixed version as a diff, and lets you keep or undo it.\n[Rework the open file](command:vibecoder.reworkActiveFile)\n[Settings](command:workbench.action.openSettings?%5B%22vibecoder%22%5D)"
+        "contents": "Drag files from the Explorer and drop them here.\nVibeCoder shows which architecture rules each file breaks, proposes a fixed version as a diff, and lets you keep or undo it.\n[Open the VibeCoder workspace](command:vibecoder.openWorkspace)\nPlan an app, edit its pages in the Page Builder and generate the backend - inside VS Code.\n[Rework the open file](command:vibecoder.reworkActiveFile)\n[Settings](command:workbench.action.openSettings?%5B%22vibecoder%22%5D)"
       }
     ],
     "commands": [
+      {
+        "command": "vibecoder.openWorkspace",
+        "title": "VibeCoder: Open Workspace (plan, pages, Page Builder)",
+        "icon": "$(layout)"
+      },
       {
         "command": "vibecoder.reworkFile",
         "title": "VibeCoder: Rework this file",
@@ -91,6 +96,11 @@
         }
       ],
       "view/title": [
+        {
+          "command": "vibecoder.openWorkspace",
+          "when": "view == vibecoder.files",
+          "group": "navigation@0"
+        },
         {
           "command": "vibecoder.clearHistory",
           "when": "view == vibecoder.files",

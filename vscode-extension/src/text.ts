@@ -41,3 +41,33 @@ export function checkDetails(checks: readonly ReworkCheck[]): string {
     .map((check) => `${check.stillPresent ? 'STILL THERE' : 'fixed'} - line ${check.line}: ${check.snippet.trim()}  (${check.ruleText})`)
     .join('\n');
 }
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/**
+ * The workspace panel's page: the local server's workspace in a full-size
+ * frame, or a one-line status while it starts or after it failed. The policy
+ * lets the panel frame only that one server and run no script of its own.
+ */
+export function workspaceHtml(state: { readonly origin?: string; readonly page?: string; readonly loading?: string; readonly error?: string }): string {
+  const frameSrc = state.origin === undefined ? "'none'" : escapeHtml(state.origin);
+  const policy = `default-src 'none'; frame-src ${frameSrc}; style-src 'unsafe-inline'`;
+  const body =
+    state.page !== undefined
+      ? `<iframe src="${escapeHtml(state.page)}" title="VibeCoder workspace" allow="clipboard-read; clipboard-write"></iframe>`
+      : `<p class="${state.error === undefined ? 'status' : 'status error'}">${escapeHtml(state.error === undefined ? state.loading ?? '' : `VibeCoder could not start: ${state.error}`)}</p>`;
+  return [
+    '<!doctype html>',
+    '<html lang="en">',
+    '<head>',
+    '<meta charset="utf-8">',
+    `<meta http-equiv="Content-Security-Policy" content="${policy}">`,
+    '<style>html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#0c0c0e}iframe{border:0;width:100%;height:100%;display:block}' +
+      '.status{color:#a1a1aa;font:14px system-ui,sans-serif;padding:24px}.error{color:#f87171}</style>',
+    '</head>',
+    `<body>${body}</body>`,
+    '</html>',
+  ].join('\n');
+}
