@@ -33,8 +33,9 @@ def complete(args, body):
     except urllib.error.HTTPError as error:
         return {"ok": False, "error": {"kind": "provider-error", "message": f"vLLM HTTP {error.code}: {error.read()[:300]!r}"}}
     choice = reply["choices"][0]
-    if choice.get("finish_reason") == "length":
-        return {"ok": False, "error": {"kind": "incomplete", "message": "the teacher reached its output limit"}}
+    # A cut-off answer is returned as text: it fails to parse like any bad file and
+    # that one file is retried or dropped. Reported as an error, the capture
+    # pipeline would take it for an unreachable teacher and stop the whole worker.
     usage = reply.get("usage") or {}
     return {"ok": True, "value": {"text": choice["message"]["content"], "model": args.model,
                                   "usage": {"promptTokens": usage.get("prompt_tokens", 0),
