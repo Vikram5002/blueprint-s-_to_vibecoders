@@ -7,6 +7,8 @@ export const config = tseslint.config(
     // on purpose. They are inputs to tests, never compiled or linted.
     ignores: [
       'dist/**',
+      // Teacher-capture data and its scratch build folders (generated apps, not this project's code).
+      'capture/**',
       '**/node_modules/**',
       // Client packages' build output: the unpacked desktop app, its packed
       // server, the extension's compiled code and its test copy of VS Code.
@@ -46,14 +48,14 @@ export const config = tseslint.config(
   {
     files: ['**/*.ts'],
     rules: {
-      // CLAUDE.md: no `any` — use `unknown` and narrow.
+      // PROJECT-RULES.md: no `any` — use `unknown` and narrow.
       '@typescript-eslint/no-explicit-any': 'error',
-      // CLAUDE.md: named exports only.
+      // PROJECT-RULES.md: named exports only.
       'no-restricted-syntax': [
         'error',
         {
           selector: 'ExportDefaultDeclaration',
-          message: 'Named exports only (CLAUDE.md conventions).',
+          message: 'Named exports only (PROJECT-RULES.md conventions).',
         },
       ],
       '@typescript-eslint/consistent-type-imports': 'error',
@@ -74,7 +76,7 @@ export const config = tseslint.config(
             {
               group: ['**/llm/**', '**/llm'],
               message:
-                'parser/ and graph/ must never import from llm/. This is the determinism boundary (CLAUDE.md rule 1).',
+                'parser/ and graph/ must never import from llm/. This is the determinism boundary (PROJECT-RULES.md rule 1).',
             },
           ],
         },
@@ -88,14 +90,14 @@ export const config = tseslint.config(
     rules: {
       'no-restricted-globals': [
         'error',
-        { name: 'fetch', message: 'No network calls outside llm/ (CLAUDE.md rule 6).' },
+        { name: 'fetch', message: 'No network calls outside llm/ (PROJECT-RULES.md rule 6).' },
       ],
       'no-restricted-imports': [
         'error',
         {
           paths: [
-            { name: 'node:http', message: 'No outbound network calls outside llm/ (CLAUDE.md rule 6). The local server is the only exception and lives in src/server/.' },
-            { name: 'node:https', message: 'No network calls outside llm/ (CLAUDE.md rule 6).' },
+            { name: 'node:http', message: 'No outbound network calls outside llm/ (PROJECT-RULES.md rule 6). The local server is the only exception and lives in src/server/.' },
+            { name: 'node:https', message: 'No network calls outside llm/ (PROJECT-RULES.md rule 6).' },
           ],
         },
       ],
