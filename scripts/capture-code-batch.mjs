@@ -183,9 +183,11 @@ for (const source of sources) {
  * worth teaching. A teacher that ignored the guidance produced a file the
  * small model already writes - no new behaviour to learn from it.
  */
-function richnessReasons(domain, code) {
+function richnessReasons(domain, code, user = '') {
   if (domain === 'frontend') {
     const reasons = [];
+    // A page that can create records (a POST endpoint is listed for it) must let a person type them in.
+    if (/POST \/api\//.test(user) && !/<(input|select|textarea)/.test(code)) reasons.push('not-rich:no-form-fields');
     if (!code.includes('<button')) reasons.push('not-rich:no-buttons');
     if (!code.includes('style={')) reasons.push('not-rich:unstyled');
     if (!code.includes('Loading')) reasons.push('not-rich:no-loading-state');
@@ -350,8 +352,8 @@ for (const { sourceFile, pair } of plans) {
     const owner = findComponentByTargetPath(schema, file.path);
     if (owner === null) continue;
     if (domainFilter !== null && !domainFilter.has(owner.domain)) continue;
-    const reasons = [...reasonsFor(file.path), ...(rich ? richnessReasons(owner.domain, file.contents) : [])];
     const request = await rebuildRequest(schema, owner.component, owner.domain, undefined, finalFiles, file.contents);
+    const reasons = [...reasonsFor(file.path), ...(rich ? richnessReasons(owner.domain, file.contents, request.user) : [])];
     const record = {
       recordId: `${sessionId}:first:${owner.component.id}`,
       sourceFile,

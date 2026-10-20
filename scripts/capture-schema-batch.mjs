@@ -36,6 +36,7 @@
 import { appendFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { createLocalProvider } from '../dist/llm/local.js';
+import { withPlannerGuidance } from './teacher-guidance.mjs';
 import { chooseProvider, createProvider } from '../dist/llm/select-provider.js';
 import { loadEnvFile } from '../dist/llm/env-file.js';
 import { createProjectSchemaGenerator } from '../dist/workflow/generate-project-schema.js';
@@ -83,9 +84,12 @@ const args = process.argv.slice(2);
 const localArg = args.find((a) => a === '--local' || a.startsWith('--local='));
 const outArg = args.find((a) => a.startsWith('--out='));
 const promptsArg = args.find((a) => a.startsWith('--prompts='));
+// --rich: the teacher sees teacher-guidance.mjs's PLANNER_GUIDANCE; the saved prompt stays the person's own.
+const rich = args.includes('--rich');
+const modelArg = args.find((a) => a.startsWith('--model='));
 
 if (!outArg) {
-  console.error('Usage: node scripts/capture-schema-batch.mjs [--local[=baseUrl]] --out=<path.jsonl> [--prompts=<path.jsonl>]');
+  console.error('Usage: node scripts/capture-schema-batch.mjs [--local[=baseUrl]] [--model=<served name>] [--rich] --out=<path.jsonl> [--prompts=<path.jsonl>]');
   process.exit(1);
 }
 
@@ -114,7 +118,7 @@ function loadPrompts(path) {
 let provider;
 if (localArg) {
   const baseUrl = localArg.includes('=') ? localArg.slice('--local='.length) : undefined;
-  provider = createLocalProvider(baseUrl ? { baseUrl } : {});
+  provider = createLocalProvider({ ...(baseUrl ? { baseUrl } : {}), ...(modelArg ? { model: modelArg.slice('--model='.length) } : {}) });
 } else {
   const choice = chooseProvider(process.env);
   provider = await createProvider(choice);
@@ -130,6 +134,7 @@ if (localArg) {
  * talking to the provider directly.
  */
 let lastCompletion = null;
+if (rich) provider = withPlannerGuidance(provider);
 const capturingProvider = {
   name: provider.name,
   model: provider.model,

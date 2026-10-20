@@ -15,8 +15,10 @@
 export const TEACHER_GUIDANCE = {
   frontend:
     'a page a person can actually use, that looks finished on a phone and on a laptop. For each listed endpoint the purpose of this ' +
-    'page covers, give the user a way to use it: show GET results as a list or table (cards on narrow screens), a form with ' +
-    'labelled inputs and a submit button for each POST or PUT, and a button for each action on a row (for example Return or ' +
+    'page covers, give the user a way to use it: show GET results as a list or table (cards on narrow screens). A page with a ' +
+    'POST endpoint MUST contain a form: one labelled input, select or textarea for every field the POST body takes (for a book: ' +
+    'title, author, ISBN, copies), with a submit button; editing a row uses the same fields for the PUT. Add a button for each ' +
+    'action on a row (for example Return or ' +
     'Delete). After a change succeeds, load the data again. Check response.ok; show "Loading..." while loading, a short friendly ' +
     'message when there is nothing to show, and the error text when a request fails. Style it with inline style objects only - a ' +
     'centred column with max-width, spacing, a readable system font, rounded cards or a bordered table, clear primary buttons, ' +
@@ -47,6 +49,32 @@ export function withTeacherGuidance(provider) {
       const guidance = TEACHER_GUIDANCE[requestDomain(request.user) ?? ''];
       if (guidance === undefined) return provider.complete(request);
       return provider.complete({ ...request, user: `${request.user}\nWhat a finished file of this domain looks like: ${guidance}` });
+    },
+  };
+}
+
+/**
+ * Planner side of the same idea: the teacher is asked to work out what a real
+ * app of the requested kind contains before planning it, so a one-line prompt
+ * ("a gym membership app") gets every record, form and action such an app
+ * needs. The saved pair keeps the person's prompt alone, so the small planner
+ * learns to plan the whole app from the short prompt it will really see.
+ */
+export const PLANNER_GUIDANCE =
+  'Before planning, work out what a real, complete first version of this kind of app has, the way people who run one ' +
+  'would expect it to work: the kinds of records it keeps and their fields, the pages people use, and the everyday ' +
+  'actions on each record. Plan all of it. For every kind of record: a page with a form to add it (name its real ' +
+  'fields in the purpose), a list with search, and edit and delete; plus the records it depends on (for a library: ' +
+  'books, members, loans with due dates, returns, fines). Give each kind of record its API routes and its database ' +
+  'table. Add sign-in and roles when the app has staff or private data. Write every purpose as the concrete fields ' +
+  'and actions it shows or does. Keep to 3 to 6 pages - a real first version, not every possible feature.';
+
+/** Wraps the teacher provider so each planning request carries PLANNER_GUIDANCE after the person's description. */
+export function withPlannerGuidance(provider) {
+  return {
+    ...provider,
+    complete(request) {
+      return provider.complete({ ...request, user: `${request.user}\n\n(Planning note: ${PLANNER_GUIDANCE})` });
     },
   };
 }
