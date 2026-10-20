@@ -19,6 +19,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
+import { completeDomainDependencies } from '../dist/workflow/complete-dependencies.js';
 
 const args = process.argv.slice(2);
 const value = (name) => args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
@@ -46,6 +47,7 @@ export function thinPlanReasons(schema) {
 
 const seenPrompts = new Set(base.map((row) => row.user));
 const added = [];
+let linked = 0;
 const dropped = {};
 for (const path of inputs) {
   for (const record of readJsonl(path)) {
@@ -56,7 +58,11 @@ for (const path of inputs) {
       continue;
     }
     seenPrompts.add(record.prompt);
-    added.push({ system, user: record.prompt, assistant: JSON.stringify(record.schema) });
+    // The same backend -> database link VibeCoder adds to every plan (src/workflow/complete-dependencies.ts),
+    // so the planner learns to write it rather than leave it for the safety net.
+    const schema = completeDomainDependencies(record.schema);
+    if (schema !== record.schema) linked += 1;
+    added.push({ system, user: record.prompt, assistant: JSON.stringify(schema) });
   }
 }
 
@@ -70,6 +76,7 @@ const manifest = {
   base: { path: basePath, rows: base.length },
   inputs,
   added: added.length,
+  backendDatabaseLinksAdded: linked,
   dropped,
   rows: rows.length,
   meanPagesPerAddedPlan: pagesPerPlan.length === 0 ? 0 : Number((pagesPerPlan.reduce((a, b) => a + b, 0) / pagesPerPlan.length).toFixed(2)),

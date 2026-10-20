@@ -1,0 +1,23 @@
+{
+  "generatedAt": "2026-10-20T14:31:37.325Z",
+  "base": {
+    "path": "training/formatted/dataset.jsonl",
+    "rows": 288
+  },
+  "inputs": [
+    "capture/planner-r2-w1.jsonl",
+    "capture/planner-r2-w2.jsonl",
+    "capture/planner-r2-w3.jsonl",
+    "capture/planner-r2-w4.jsonl"
+  ],
+  "added": 275,
+  "backendDatabaseLinksAdded": 263,
+  "dropped": {
+    "fewer-than-3-pages": 7,
+    "not-generated:provider-error": 3,
+    "vague-page-purpose": 1
+  },
+  "rows": 563,
+  "meanPagesPerAddedPlan": 4.21,
+  "sha256": "9201df057fd32adf3c8fc99b59b9838adac1a1af8453224fa2ccfe7eaa67068e"
+}
