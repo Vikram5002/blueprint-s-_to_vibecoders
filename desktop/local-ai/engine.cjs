@@ -1,4 +1,5 @@
 const { spawn } = require('node:child_process');
+const http = require('node:http');
 const net = require('node:net');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -89,12 +90,27 @@ class Engine {
       max_tokens: request.maxOutputTokens, temperature: request.temperature ?? 0,
       ...(request.schema ? { response_format: { type: 'json_schema', json_schema: { name: 'response', strict: true, schema: request.schema } } } : {}) };
     this.onStatus(`Running ${model.label} on ${this.mode}`);
-    const response = await fetch(`${this.origin}/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` }, body: JSON.stringify(body), signal });
-    if (!response.ok) throw new Error(`Local runtime HTTP ${response.status}: ${(await response.text()).slice(0, 500)}`);
-    const result = resultFromChat(await response.json(), `${model.id}:${model.base}+${model.adapter}+gguf-q4_k_m-f16`);
+    const response = await postJson(`${this.origin}/v1/chat/completions`, body, { Authorization: `Bearer ${this.apiKey}` }, signal);
+    if (response.status < 200 || response.status >= 300) throw new Error(`Local runtime HTTP ${response.status}: ${response.text.slice(0, 500)}`);
+    const result = resultFromChat(JSON.parse(response.text), `${model.id}:${model.base}+${model.adapter}+gguf-q4_k_m-f16`);
     this.onStatus(`${model.label} is ready in ${this.mode} mode.`);
     return result;
   }
+}
+
+// llama-server sends nothing until the whole answer is written, which on a hybrid
+// laptop can pass the 300s after which Node's fetch gives up; plain http has no such limit.
+function postJson(url, body, headers, signal) {
+  return new Promise((resolve, reject) => {
+    const request = http.request(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, signal }, (response) => {
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => resolve({ status: response.statusCode, text: Buffer.concat(chunks).toString('utf8') }));
+      response.on('error', reject);
+    });
+    request.on('error', reject);
+    request.end(JSON.stringify(body));
+  });
 }
 
 module.exports = { Engine, resultFromChat };
