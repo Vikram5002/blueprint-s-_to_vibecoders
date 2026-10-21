@@ -118,6 +118,18 @@ test('bridge serializes model calls, rejects cross-origin requests, propagates f
   assert.equal(stopped, true);
 });
 
+test('bridge sends headers at once and keeps a slow reply alive with whitespace', async (t) => {
+  const engine = { async complete() { await delay(120); return { ok: true, value: { text: 'done' } }; }, async unload() {}, stop() {} };
+  const bridge = await startBridge(engine, models, { heartbeatMs: 25 });
+  t.after(() => bridge.stop());
+  const started = Date.now();
+  const response = await fetch(bridge.url + '/complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ system: 's', user: 'u', maxOutputTokens: 10 }) });
+  assert.ok(Date.now() - started < 100, 'headers arrive before the model finishes');
+  const text = await response.text();
+  assert.match(text, /^ +\{/);
+  assert.equal(JSON.parse(text).value.text, 'done');
+});
+
 test('engine reuses one process, kills it before switching models, and maps schema and token failures', async (t) => {
   const children = [];
   const engine = new Engine({ executable: process.execPath, assets: os.tmpdir(), folder: os.tmpdir(), mode: 'cpu', models,

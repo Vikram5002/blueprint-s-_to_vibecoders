@@ -9,7 +9,10 @@ function validRequest(body) {
     && (body.schema === undefined || (body.schema !== null && typeof body.schema === 'object' && !Array.isArray(body.schema)));
 }
 
-async function startBridge(engine, models, { timeoutMs = 890_000, idleMs = 5 * 60_000 } = {}) {
+// Node's fetch drops a reply whose headers or next bytes take over 300s, and a
+// long file on a hybrid CPU/GPU laptop takes longer. So an accepted request gets
+// its headers at once and a space now and then; leading whitespace is valid JSON.
+async function startBridge(engine, models, { timeoutMs = 890_000, idleMs = 5 * 60_000, heartbeatMs = 30_000 } = {}) {
   const token = crypto.randomUUID();
   let queue = Promise.resolve();
   let waiting = 0;
@@ -17,7 +20,11 @@ async function startBridge(engine, models, { timeoutMs = 890_000, idleMs = 5 * 6
   let idleTimer;
   const controllers = new Set();
   const server = http.createServer(async (req, res) => {
-    const reply = (status, body) => { if (!res.destroyed) { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(body)); } };
+    const reply = (status, body) => {
+      if (res.destroyed) return;
+      if (!res.headersSent) res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify(body));
+    };
     if (req.headers.origin || req.headers.host !== `127.0.0.1:${server.address()?.port}` || !req.url?.startsWith(`/${token}/`)) { reply(403, { error: 'Forbidden' }); return; }
     const route = req.url.slice(token.length + 1);
     if (req.method === 'GET' && route === '/models') { reply(200, { models: models.map((m) => ({ name: m.id, base: m.base, adapter: m.adapter + '+gguf-q4_k_m-f16', label: `${m.id}:${m.base}+${m.adapter}+gguf-q4_k_m-f16` })), default: 'local' }); return; }
@@ -30,6 +37,7 @@ async function startBridge(engine, models, { timeoutMs = 890_000, idleMs = 5 * 6
     res.on('close', () => { if (!res.writableEnded) controller.abort(); });
     waiting++;
     clearTimeout(idleTimer);
+    let heartbeat;
     try {
       const chunks = [];
       let bytes = 0;
@@ -40,6 +48,9 @@ async function startBridge(engine, models, { timeoutMs = 890_000, idleMs = 5 * 6
       }
       const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
       if (!validRequest(body)) throw new Error('Invalid local request. Output limit must be between 1 and 8192 tokens.');
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.flushHeaders();
+      heartbeat = setInterval(() => { if (!res.destroyed) res.write(' '); }, heartbeatMs);
       const task = queue.then(async () => { signal.throwIfAborted(); if (stopped) throw new Error('Local AI stopped'); return engine.complete(body, signal); });
       queue = task.catch(() => {});
       const result = await task;
@@ -47,6 +58,7 @@ async function startBridge(engine, models, { timeoutMs = 890_000, idleMs = 5 * 6
     } catch (error) {
       reply(200, { ok: false, error: { kind: 'unavailable', message: error.message, retryable: false } });
     } finally {
+      clearInterval(heartbeat);
       controllers.delete(controller);
       waiting--;
       if (!waiting && !stopped) idleTimer = setTimeout(() => { queue = queue.then(() => engine.unload()).catch(() => {}); }, idleMs);
