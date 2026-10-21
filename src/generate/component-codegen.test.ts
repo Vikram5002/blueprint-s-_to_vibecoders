@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  COMPONENT_CODE_SYSTEM_PROMPT,
   createComponentCodeGenerator,
   extractExportedDeclarations,
   extractNamedExports,
@@ -325,5 +326,13 @@ describe('repairInvalidJsonEscapes', () => {
     const valid = JSON.stringify({ code: `a"b\\c
 	${String.fromCharCode(1)}/` });
     expect(repairInvalidJsonEscapes(valid)).toBe(valid);
+  });
+});
+
+describe('COMPONENT_CODE_SYSTEM_PROMPT', () => {
+  // Live (2026-10-21, library app): after its table allowed the field, the API
+  // still built a new row without the table's required total_copies and status.
+  it('tells the coder to give an object every property the declared shape requires', () => {
+    expect(COMPONENT_CODE_SYSTEM_PROMPT).toContain('give it every property that\n  shape requires');
   });
 });

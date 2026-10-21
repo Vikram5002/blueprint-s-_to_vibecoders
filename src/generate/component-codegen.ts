@@ -74,6 +74,10 @@ error anywhere fails the whole build, so the file must compile on its own:
   req.params / req.query values are strings - convert with Number(...)
   before passing them where a number is declared. A function returning
   void (or Promise<void>) cannot be tested for truthiness.
+- When passing an object to a function whose parameter is a declared
+  shape (BookRow, Omit<BookRow, "id">, ...), give it every property that
+  shape requires, with a sensible default for any the request did not
+  supply, and no property the shape does not declare.
 
 Reply with exactly one JSON object matching the schema you were given: a
 single "code" field whose string value is the complete, literal contents of
