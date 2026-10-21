@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   attributeBuildFailure,
+  importedComponentFiles,
   parseTscDiagnostics,
   regenerateForBuildFailure,
 } from './verify-and-regenerate.js';
@@ -307,5 +308,69 @@ describe('regenerateForBuildFailure', () => {
     if (!result.ok) return;
     expect(result.value.attempted).toEqual([]);
     expect(provider.calls).toHaveLength(0);
+  });
+
+  // Live failure (2026-10-21, library app): the API set `available_copies`
+  // through a table function whose type omitted it. Two retries of the API
+  // alone could not fix it - only the table file could allow the field.
+  const CONSUMER = [
+    "import { listUsers } from './user-api-service.js';",
+    'export function createRecipe(title: string): number {',
+    '  return listUsers({ title }).length;',
+    '}',
+  ].join('\n');
+  const CONSUMER_OUTPUT = "backend/src/routes/recipe-api-service.ts(3,20): error TS2554: Expected 0 arguments, but got 1.";
+
+  function consumerFiles(): readonly GeneratedFile[] {
+    return [
+      { path: 'backend/src/routes/recipe-api-service.ts', contents: `${CONSUMER}\n` },
+      { path: 'backend/src/routes/user-api-service.ts', contents: `${OTHER_SERVICE}\n` },
+    ];
+  }
+
+  it('lets a file that already had its retry get its imported component file regenerated first, told what the consumer needs', async () => {
+    const provider = providerFrom((request) => (request.user.includes('Component: UserApiService') ? OTHER_SERVICE : FIXED_RECIPE_SERVICE));
+    const result = await regenerateForBuildFailure(
+      schema,
+      { provider, cache: memoryCache(), root },
+      consumerFiles(),
+      CONSUMER_OUTPUT,
+      new Set(['backend/src/routes/recipe-api-service.ts']),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.attempted.map((a) => a.targetPath)).toEqual([
+      'backend/src/routes/user-api-service.ts',
+      'backend/src/routes/recipe-api-service.ts',
+    ]);
+    expect(provider.calls[0]?.user).toContain('recipe-api-service.ts imports this file');
+    expect(provider.calls[0]?.user).toContain('TS2554');
+  });
+
+  it('regenerates only the failing file on its first retry, even when it imports another component', async () => {
+    const provider = providerFrom(() => FIXED_RECIPE_SERVICE);
+    const result = await regenerateForBuildFailure(schema, { provider, cache: memoryCache(), root }, consumerFiles(), CONSUMER_OUTPUT);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.attempted.map((a) => a.targetPath)).toEqual(['backend/src/routes/recipe-api-service.ts']);
+    expect(provider.calls).toHaveLength(1);
+  });
+});
+
+describe('importedComponentFiles', () => {
+  const schema = buildTwoComponentSchema();
+  const paths = ['backend/src/routes/recipe-api-service.ts', 'backend/src/routes/user-api-service.ts', 'backend/src/index.ts'];
+
+  it('resolves relative .js imports to generated component files, skipping packages and non-components', () => {
+    const source = [
+      "import { Hono } from 'hono';",
+      "import { listUsers } from './user-api-service.js';",
+      "import { start } from '../index.js';",
+    ].join('\n');
+    expect(importedComponentFiles(schema, source, 'backend/src/routes/recipe-api-service.ts', paths)).toEqual([
+      'backend/src/routes/user-api-service.ts',
+    ]);
   });
 });

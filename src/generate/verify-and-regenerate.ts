@@ -19,7 +19,7 @@
  * already keep.
  */
 import { mkdir, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
 import type { Component, DomainName, ValidatedProjectSchema } from '../types/project-schema.js';
 import type { ViolatingEdge, Violation } from '../types/violations.js';
 import { err, ok, type Result } from '../types/result.js';
@@ -392,6 +392,50 @@ function toBuildFailurePriorContext(
   };
 }
 
+/**
+ * The generated component files `source` (at `fromPath`) imports by relative
+ * path - the only files whose exports can force a consumer's type error.
+ */
+export function importedComponentFiles(
+  schema: ValidatedProjectSchema,
+  source: string,
+  fromPath: string,
+  existingPaths: readonly string[],
+): string[] {
+  const dir = posix.dirname(fromPath);
+  const found: string[] = [];
+  for (const match of source.matchAll(/\bfrom\s+['"](\.{1,2}\/[^'"]+)['"]/g)) {
+    const base = posix.normalize(posix.join(dir, match[1] ?? '')).replace(/\.(js|ts|tsx)$/, '');
+    const target = existingPaths.find((p) => p === `${base}.ts` || p === `${base}.tsx`);
+    if (target !== undefined && !found.includes(target) && findComponentByTargetPath(schema, target) !== null) found.push(target);
+  }
+  return found;
+}
+
+/**
+ * Context for regenerating a dependency because its CONSUMER still fails to
+ * compile after its own retry: the consumer cannot fix an error whose cause
+ * is this file's exported types (a field the API must set that the table's
+ * insert type omits), so the dependency is asked to make that use possible.
+ */
+function toConsumerFailurePriorContext(
+  consumerPath: string,
+  diagnostics: readonly TscDiagnostic[],
+  consumerSource: string | undefined,
+): PriorViolationContext {
+  const context = toBuildFailurePriorContext(diagnostics, consumerSource);
+  return {
+    ...context,
+    explanation:
+      `${consumerPath} imports this file and still fails to compile after being regenerated on its own - ` +
+      `${diagnostics.length} real tsc error(s), listed below. Where an error comes from this file's exported ` +
+      'types or function signatures not allowing what the consumer needs, change this file to allow it.',
+    fixInstruction:
+      'Write the complete corrected file: keep every existing exported name and its purpose, and widen or add ' +
+      'exports so the uses shown below compile. Do not remove anything the consumer already uses.',
+  };
+}
+
 export interface BuildFailureRetryAttempt {
   readonly component: Component;
   readonly domain: DomainName;
@@ -421,6 +465,7 @@ export async function regenerateForBuildFailure(
   options: GenerateAndVerifyOptions,
   files: readonly GeneratedFile[],
   buildOutput: string,
+  retriedBefore: ReadonlySet<string> = new Set(),
 ): Promise<Result<BuildFailureRegenerationResult, GenerateProjectFailure>> {
   const diagnostics = parseTscDiagnostics(buildOutput);
   const { attributed } = attributeBuildFailure(schema, diagnostics, files.map((f) => f.path));
@@ -429,8 +474,25 @@ export async function regenerateForBuildFailure(
   const generator = createComponentCodeGenerator(options);
   let current = files;
   const attempted: BuildFailureRetryAttempt[] = [];
+  const failingPaths = new Set(attributed.map((f) => f.targetPath));
   for (const failure of attributed) {
     const previous = current.find((f) => f.path === failure.targetPath);
+    // A file that already had its own retry and still fails may be blocked by
+    // a dependency's types; give each such dependency one chance to allow the use.
+    if (retriedBefore.has(failure.targetPath) && previous !== undefined) {
+      const paths = current.map((f) => f.path);
+      for (const depPath of importedComponentFiles(schema, previous.contents, failure.targetPath, paths)) {
+        if (failingPaths.has(depPath)) continue;
+        const owner = findComponentByTargetPath(schema, depPath);
+        if (owner === null) continue;
+        const depContext = toConsumerFailurePriorContext(failure.targetPath, failure.diagnostics, previous.contents);
+        const dep = await generateComponentFile(generator, schema, owner.component, owner.domain, depContext, current);
+        if (!dep.ok) return err(dep.error);
+        current = current.map((f) => (f.path === depPath ? dep.value : f));
+        failingPaths.add(depPath);
+        attempted.push({ component: owner.component, domain: owner.domain, targetPath: depPath, firstAttemptViolation: depContext });
+      }
+    }
     const priorContext = toBuildFailurePriorContext(failure.diagnostics, previous?.contents, options.repairInstruction);
     const regenerated = await generateComponentFile(generator, schema, failure.component, failure.domain, priorContext, current);
     if (!regenerated.ok) return err(regenerated.error);

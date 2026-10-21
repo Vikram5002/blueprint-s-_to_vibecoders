@@ -20,8 +20,14 @@ import type { GeneratedFile } from './assemble.js';
 import type { GenerateProjectFailure } from './generate-project.js';
 import { filesFailingBuild, regenerateForBuildFailure, type RegenerationAttempt } from './verify-and-regenerate.js';
 
-/** Build-failure repair passes per job - each regenerates every component file tsc still names, then rebuilds. */
-export const MAX_BUILD_FIX_ROUNDS = 2;
+/**
+ * Build-failure repair passes per job - each regenerates every component file
+ * tsc still names, then rebuilds. From the second pass a file that already had
+ * its retry may also have its imported files regenerated (a consumer cannot
+ * fix an error caused by a dependency's types), which can leave the consumer
+ * one small mismatch to correct - hence a third pass.
+ */
+export const MAX_BUILD_FIX_ROUNDS = 3;
 
 /** Trimmed to keep a failed job's payload bounded - a full npm log can run to tens of KB, and only the tail is ever the actionable part. */
 export const MAX_FAILURE_OUTPUT_CHARS = 4_000;
@@ -150,6 +156,7 @@ export async function installBuildAndRepair(
 
   let files = options.files;
   let regenerationLog: RegenerationAttempt[] = [];
+  const retriedBefore = new Set<string>();
 
   for (let round = 0; install.ok && !build.ok && round < MAX_BUILD_FIX_ROUNDS; round += 1) {
     onPhase('build-regenerating');
@@ -164,6 +171,7 @@ export async function installBuildAndRepair(
       },
       files,
       build.output,
+      retriedBefore,
     );
     if (!buildRetry.ok) {
       return { ok: false, error: buildRetry.error };
@@ -173,6 +181,7 @@ export async function installBuildAndRepair(
     if (buildRetry.value.attempted.length === 0) break;
 
     files = buildRetry.value.files;
+    for (const attempt of buildRetry.value.attempted) retriedBefore.add(attempt.targetPath);
     onPhase('build-reverifying');
     const rebuild = await runCommand('npm', ['run', 'build'], root);
     const stillFailing = filesFailingBuild(rebuild.output);

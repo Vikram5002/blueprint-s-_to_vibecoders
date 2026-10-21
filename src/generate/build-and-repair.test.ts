@@ -130,7 +130,7 @@ describe('installBuildAndRepair', () => {
       expect(provider.calls).toHaveLength(MAX_BUILD_FIX_ROUNDS);
       expect(result.value.build.buildOk).toBe(false);
       expect(result.value.build.failureOutput).toContain('TS9999');
-      expect(result.value.regenerationLog.map((a) => a.outcome)).toEqual(['still-violating', 'still-violating']);
+      expect(result.value.regenerationLog.map((a) => a.outcome)).toEqual(Array(MAX_BUILD_FIX_ROUNDS).fill('still-violating'));
     },
     60_000,
   );
