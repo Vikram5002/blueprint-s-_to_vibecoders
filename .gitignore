@@ -41,6 +41,7 @@ pdsf/code_adapter.zip
 pdsf/hf_cache/
 __pycache__/
 pdsf/plan.zip
+pdsf/plan_r3.zip
 presentations/
 
 # VS Code extension: test copy of VS Code and packaged installers
