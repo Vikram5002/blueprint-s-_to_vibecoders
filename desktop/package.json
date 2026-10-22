@@ -1,7 +1,7 @@
 {
   "name": "vibecoder-desktop",
   "productName": "VibeCoder",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "VibeCoder as a desktop app: plan, generate and verify applications against an architecture you can see.",
   "author": "G. Vikram, C. Anil, Sreshta Reddy",
   "license": "UNLICENSED",
@@ -23,7 +23,7 @@
     "productName": "VibeCoder",
     "asar": false,
     "directories": {
-      "output": "release/0.2.2",
+      "output": "release/0.2.3",
       "buildResources": "build"
     },
     "files": [
