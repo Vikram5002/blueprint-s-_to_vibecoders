@@ -30,6 +30,8 @@ import type { Constraint } from '../types/constraints.js';
 import type { ValidatedProjectSchema } from '../types/project-schema.js';
 import type { WorkflowSessionsStore } from '../store/workflow-sessions-store.js';
 import { revisedPlanPrompt } from '../workflow/revise-plan-prompt.js';
+import { suggestFeatures } from '../workflow/suggest-features.js';
+import type { CompletionProvider } from '../llm/provider.js';
 import { err, ok, type Result } from '../types/result.js';
 
 /**
@@ -142,6 +144,8 @@ export interface WorkflowRouteDeps {
    * sidebar. Undefined in tests that only care about job polling.
    */
   readonly sessions?: WorkflowSessionsStore;
+  /** Answers POST /suggestions (suggest-features.ts) - the planner's own model; absent = no suggestions. */
+  readonly suggester?: CompletionProvider;
 }
 
 /**
@@ -211,6 +215,19 @@ export function createWorkflowRoutes(deps: WorkflowRouteDeps): Hono {
     const id = c.req.param('id');
     const session = sessions?.get(id);
     return session === undefined ? c.json({ error: `unknown session: ${id}` }, 404) : c.json(session);
+  });
+
+  // Features the plan does not have yet, for a person to choose from; nothing is added here.
+  app.post('/suggestions', async (c) => {
+    if (deps.suggester === undefined || !(await modelReady(deps.available))) {
+      return c.json({ error: 'no LLM provider configured (missing API key)' }, 503);
+    }
+    const body: unknown = await c.req.json().catch(() => null);
+    const id = typeof body === 'object' && body !== null ? (body as { sessionId?: unknown }).sessionId : undefined;
+    const session = typeof id === 'string' ? sessions?.get(id) : undefined;
+    if (session === undefined) return c.json({ error: 'sessionId must name a saved plan' }, 404);
+    const result = await suggestFeatures(deps.suggester, session.prompt, session.schema);
+    return result.ok ? c.json({ suggestions: result.value }) : c.json({ error: result.error.message }, 502);
   });
 
   return app;

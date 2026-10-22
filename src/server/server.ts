@@ -371,6 +371,7 @@ export async function startServer(context: AnalysisContext, options: StartOption
   const workflowDeps: WorkflowRouteDeps = {
     llm: { generator: createProjectSchemaGenerator(llm), cache: llm.cache },
     sessions,
+    suggester: llm.provider,
     available: async () => (await registry.resolve()) !== null,
   };
   // Same shared cache, but a proxy that follows the code-generation choice

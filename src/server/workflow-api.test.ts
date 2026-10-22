@@ -439,3 +439,33 @@ describe('the real path — live provider, real compiler', () => {
     60_000,
   );
 });
+
+describe('POST /suggestions - features a saved plan does not have yet', () => {
+  const suggester: CompletionProvider = {
+    name: 'stub',
+    model: 'stub',
+    complete: async () => ({
+      ok: true,
+      value: {
+        text: JSON.stringify({ suggestions: [{ title: 'Home delivery', why: 'Customers order from home.', change: 'Add home delivery.' }] }),
+        model: 'stub',
+        usage: { promptTokens: 1, completionTokens: 1, cachedPromptTokens: 0 },
+      },
+    }),
+  };
+  const sessions = memorySessionsStore();
+  sessions.save({ id: 's1', title: 'Cafe', prompt: 'A cafe website', createdAt: '2026-10-22T00:00:00Z', schema: FIXTURE_SCHEMA, prohibitions: [], permissions: [] });
+  const post = (app: ReturnType<typeof createWorkflowRoutes>, body: unknown) =>
+    app.request('/suggestions', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+  it('returns the suggestions for a saved plan', async () => {
+    const response = await post(createWorkflowRoutes({ llm: null, sessions, suggester }), { sessionId: 's1' });
+    expect(response.status).toBe(200);
+    expect(((await response.json()) as { suggestions: { title: string }[] }).suggestions[0]?.title).toBe('Home delivery');
+  });
+
+  it('refuses an unknown plan, and answers 503 with no model', async () => {
+    expect((await post(createWorkflowRoutes({ llm: null, sessions, suggester }), { sessionId: 'nope' })).status).toBe(404);
+    expect((await post(createWorkflowRoutes({ llm: null, sessions }), { sessionId: 's1' })).status).toBe(503);
+  });
+});

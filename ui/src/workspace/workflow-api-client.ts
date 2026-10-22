@@ -53,6 +53,26 @@ export async function submitWorkflowJob(request: PlanRequest): Promise<Submitted
   return (await response.json()) as SubmittedWorkflowJob;
 }
 
+/** A feature the plan does not have yet (src/workflow/suggest-features.ts); `change` is the plan change that adds it. */
+export interface FeatureSuggestion {
+  readonly title: string;
+  readonly why: string;
+  readonly change: string;
+}
+
+/** Asks the planner's model what a real app of this kind would add; nothing changes until a person chooses. */
+export async function fetchFeatureSuggestions(sessionId: string): Promise<FeatureSuggestion[]> {
+  const response = await fetch('/api/workflow/suggestions', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ sessionId }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, `suggestions failed: ${response.status}`));
+  }
+  return ((await response.json()) as { suggestions: FeatureSuggestion[] }).suggestions;
+}
+
 export async function fetchWorkflowJob(id: string): Promise<WorkflowJob> {
   const response = await fetch(`/api/workflow/jobs/${encodeURIComponent(id)}`);
   if (!response.ok) {

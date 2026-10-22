@@ -1,4 +1,5 @@
 import { PlanChangeBar } from './PlanChangeBar';
+import { PlanSuggestions } from './PlanSuggestions';
 import { Icon, type IconName } from '../design/Icon';
 import type { ProjectSchema } from './project-schema-types';
 
@@ -91,6 +92,8 @@ export function PlanReview({
           );
         })}
       </div>
+
+      <PlanSuggestions sessionId={schema.sessionId} onRevise={onRevise} />
 
       <PlanChangeBar
         onRevise={onRevise}

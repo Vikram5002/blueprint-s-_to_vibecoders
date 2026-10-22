@@ -4,6 +4,7 @@ import { SegmentedControl } from '../design/SegmentedControl';
 import { WorkflowGraph } from './WorkflowGraph';
 import { GenerateApplicationPanel } from './GenerateApplicationPanel';
 import { PlanChangeBar } from './PlanChangeBar';
+import { PlanSuggestions } from './PlanSuggestions';
 import {
   SMALL_PROJECT_SCHEMA,
   LARGE_PROJECT_SCHEMA,
@@ -349,6 +350,11 @@ function LiveWorkflow({ initialSession }: LiveWorkflowProps): JSX.Element {
               />
             </GraphFrame>
             <div className="mx-4 mt-3 overflow-hidden rounded-2xl border border-violet-400/[0.14] bg-violet-500/[0.04]">
+              <PlanSuggestions
+                key={`suggest:${state.result.schema.sessionId}:${planVersion}`}
+                sessionId={state.result.schema.sessionId}
+                onRevise={(change) => handleRevise(state.result.schema.sessionId, change)}
+              />
               <PlanChangeBar
                 onRevise={(change) => handleRevise(state.result.schema.sessionId, change)}
               />

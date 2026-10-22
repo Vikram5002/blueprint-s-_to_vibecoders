@@ -70,6 +70,7 @@ const BLOCKED: readonly { readonly method: string; readonly path: RegExp }[] = [
 /** Requests that start model calls - what the daily limit counts. */
 const MODEL_RUNS: readonly RegExp[] = [
   /^\/api\/workflow\/jobs$/,
+  /^\/api\/workflow\/suggestions$/,
   /^\/api\/workflow\/application-jobs$/,
   /^\/api\/workflow\/application-jobs\/[^/]+\/(components|continue|repair|pages\/sync)$/,
   /^\/api\/page-builder\/(design|generate)$/,
