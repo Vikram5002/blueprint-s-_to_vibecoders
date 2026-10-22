@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-10-20T22:17:35.447818",
+  "rows": 563,
+  "epochs": 3,
+  "elapsed_seconds": 1472.4474999904633,
+  "final_loss": 0.7700476081376944,
+  "peak_vram_gb": 9.032142848,
+  "output_dir": "/home/ubuntu/vibe/planner-r3-root/training/runs/run_20261020_215149"
+}

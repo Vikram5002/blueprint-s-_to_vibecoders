@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-10-22T10:36:05.796764",
+  "rows": 331,
+  "epochs": 3,
+  "elapsed_seconds": 1030.614517211914,
+  "final_loss": 0.8375767718357254,
+  "peak_vram_gb": 9.02217728,
+  "output_dir": "/home/ubuntu/ev/planner-r4-root/training/runs/run_20261022_101753"
+}
