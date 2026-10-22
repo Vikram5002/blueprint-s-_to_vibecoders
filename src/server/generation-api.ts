@@ -431,8 +431,10 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
     if (schema === undefined) {
       return c.json({ error: `application job ${id} was not saved with its schema - only saved runs can be repaired` }, 409);
     }
-    if (parent.result.build.installOk && parent.result.build.buildOk) {
-      return c.json({ error: 'this run already builds cleanly - use Generate Application for a full regeneration' }, 409);
+    // A run that builds can still have forms that do not work - or forms never checked (runs from before the check).
+    const formsClean = parent.result.forms !== undefined && parent.result.forms.problems.length === 0;
+    if (parent.result.build.installOk && parent.result.build.buildOk && formsClean) {
+      return c.json({ error: 'this run already builds cleanly and its forms work - use Generate Application for a full regeneration' }, 409);
     }
 
     const body: unknown = await c.req.json().catch(() => null);

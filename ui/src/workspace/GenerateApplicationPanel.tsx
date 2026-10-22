@@ -249,7 +249,7 @@ export function GenerateApplicationPanel({
     state.job.status === 'succeeded' &&
     state.job.result !== undefined &&
     state.job.result.build.installOk &&
-    !state.job.result.build.buildOk;
+    (!state.job.result.build.buildOk || (state.job.result.forms?.problems.length ?? 0) > 0);
 
   return (
     <div className="px-4 pb-8 pt-2">
