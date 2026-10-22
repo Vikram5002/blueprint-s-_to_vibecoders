@@ -1,4 +1,4 @@
-# Desktop 0.2.0: optional local AI
+# Desktop local AI (0.2.3)
 
 The Windows installer offers local planning and code generation on first launch.
 Return to **File > Local AI Setup** to recheck hardware, choose a model folder,
@@ -9,17 +9,18 @@ managed runtime. Other project folders are restored when reopened.
 
 ## Models and requirements
 
-This release uses the current available training artifacts:
+Three adapters on two base models; each choice is the best measured one:
 
-| Role | Base model | Adapter | Training rows |
-| --- | --- | --- | --- |
-| Plan | Qwen2.5-7B-Instruct | `run_20260822_130636` from `pdsf/plan.zip` | 91 |
-| Code | Qwen2.5-Coder-7B-Instruct | `code_modal_20260927_212455` from `pdsf/code_adapter.zip` | 403 |
+| Role | Base model | Adapter | Training rows | Why this one |
+| --- | --- | --- | --- | --- |
+| Plan (`local`) | Qwen2.5-7B-Instruct | `planner_r4` from `pdsf/plan_r4.zip` | 331 complete plans | complete plans for 75 of 86 held-out prompts (round 3: 20; 91-row: 2) - `training/eval/planner` |
+| Code (`local-code`) | Qwen2.5-Coder-7B-Instruct | `code_modal_20260927_212455` from `pdsf/code_adapter.zip` | 403 | best first attempt and whole-project rate of rounds 1-5 |
+| Repair (`local-fix`) | Qwen2.5-Coder-7B-Instruct (same files) | `code_rich_r4` from `pdsf/code_adapter_r4.zip` | 2,221 | round 1 writing + round 4 repairing: 95.7% after repair against 87.0% |
 
-The 288-example planner is **not included**. Recover and validate that checkpoint
-before changing the planner entry in `desktop/prepare-local-ai.py`. Its adapter
-ID, source checksum, converted checksum, model label, UI copy and evaluations
-must all change together; never relabel the 91-example adapter as the newer one.
+The planner also answers **Suggest more features** with its own instruction (no
+separate model). Changing any entry in `desktop/prepare-local-ai.py` means its
+adapter ID, source checksum, converted checksum, model label, UI copy and
+evaluations change together; never relabel one adapter as another.
 
 The installer includes llama.cpp b11572 for Windows x64, F16 GGUF conversions of
 the LoRA adapters, and license files. It downloads the official Qwen Q4_K_M base
@@ -33,7 +34,9 @@ enumerates Vulkan devices and distinguishes shared integrated memory from
 dedicated VRAM. Recommendations are deliberately conservative:
 
 - Dedicated GPU with at least 7,500 MiB: full GPU offload.
-- Dedicated GPU with at least 3,500 MiB: 12 layers on GPU, remaining layers on CPU.
+- Dedicated GPU with at least 3,500 MiB: hybrid - `(memory - 900) / 160` layers on
+  the GPU (4 to 27; 20 on a 4,152 MiB GTX 1650), the rest on CPU. A load that runs
+  out of graphics memory retries with 4 fewer layers.
 - Otherwise: CPU, with a clear speed warning.
 - Wrong architecture, insufficient RAM or a failed runtime probe: setup stays
   unavailable; online providers remain usable.
@@ -45,6 +48,16 @@ mode. The application never silently sends a failed local request to a cloud
 provider. Full GPU behavior still needs validation on a suitable second PC.
 
 ## Runtime behavior
+
+On a GPU the runtime uses flash attention and an 8-bit KV cache. Measured on the
+development laptop (GTX 1650, one 300-token coder answer): the old fixed 12 layers
+wrote 7.8 tok/s and loaded in 12 s; 20 layers with these settings write 12.0 tok/s
+and load in 4 s. 22 or more layers did not fit in 4 GB.
+
+Replies are not limited by time: the bridge sends headers at once and a space
+every 30 s while the model works, and the engine talks to llama-server over plain
+`node:http` - Node's `fetch` drops an answer that takes over 300 s, which a large
+file on a hybrid laptop does.
 
 Only one llama-server process/model is loaded at a time. Planning and code
 requests share a bounded sequential queue; changing roles unloads the previous
