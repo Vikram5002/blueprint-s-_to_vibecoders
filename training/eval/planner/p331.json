@@ -1,0 +1,2814 @@
+[
+ {
+  "prompt": "A journaling app where I write a daily entry and tag my mood, and can look back at trends in how I've been feeling over time.",
+  "status": "succeeded",
+  "seconds": 67,
+  "schema": {
+   "sessionId": "22fa1f6d-2742-446f-8658-57b47d0c4561",
+   "title": "Personal Journal with Mood Tracking",
+   "originalPrompt": "A journaling app where I write a daily entry and tag my mood, and can look back at trends in how I've been feeling over time.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "b9c580a938c62e1a",
+       "name": "Journal Entry Form",
+       "purpose": "Lets the user write a new entry with date, text, and mood selection."
+      },
+      {
+       "id": "8893ea640de27821",
+       "name": "Entry List with Search",
+       "purpose": "Shows the user's entries in a searchable list with date and mood indicators."
+      },
+      {
+       "id": "eaf990aa21a89966",
+       "name": "Mood Trends Chart",
+       "purpose": "Displays a chart showing mood patterns over time."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "546c794a748d1d7f",
+       "name": "Journal API",
+       "purpose": "Serves CRUD operations on journal entries and mood data."
+      },
+      {
+       "id": "6b6ce14f8b3edb06",
+       "name": "Trend Calculation Service",
+       "purpose": "Computes mood trends and patterns from the entry history."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "e704bcdf9a029811",
+       "name": "Journal Entries Table",
+       "purpose": "Stores each entry's date, text, and mood code."
+      },
+      {
+       "id": "7bd033bf2e11b254",
+       "name": "Mood Codes Table",
+       "purpose": "Maps mood names to numeric codes used in the entries."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "0e138030436b647d",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "User authentication required for writing entries.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "The journaling app.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "user-authored",
+      "location": "STATED",
+      "line": null,
+      "timestamp": "2026-10-22T15:33:04.806Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "User must be authenticated to write entries.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A peer-to-peer tool lending app for a neighbourhood - I list tools I own, neighbours request to borrow them, and I approve or decline each request.",
+  "status": "succeeded",
+  "seconds": 75,
+  "schema": {
+   "sessionId": "673be07f-d718-4356-a411-52af323ba8b3",
+   "title": "Neighbourhood Tool Lending App",
+   "originalPrompt": "A peer-to-peer tool lending app for a neighbourhood - I list tools I own, neighbours request to borrow them, and I approve or decline each request.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "c7d19ad5e65f7cb2",
+       "name": "Tool List Page",
+       "purpose": "Shows the owner's tool inventory and lets them add new tools."
+      },
+      {
+       "id": "b55f2264086b1a6d",
+       "name": "Borrow Request Queue",
+       "purpose": "Shows the owner's incoming borrow requests and lets them approve or decline them."
+      },
+      {
+       "id": "ebad7989ff02a5e5",
+       "name": "Neighbour Profile",
+       "purpose": "Shows details about a neighbour and their borrowing history."
+      }
+     ],
+     "dependsOn": []
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "f6f6cfc3469493c2",
+       "name": "Tool API",
+       "purpose": "CRUD operations for tools owned by an account."
+      },
+      {
+       "id": "740b68695061f1d8",
+       "name": "Borrow Request API",
+       "purpose": "Tracks requests from neighbours and their status."
+      },
+      {
+       "id": "533b464d50af5da2",
+       "name": "Neighbour API",
+       "purpose": "Basic profile information about other accounts."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "79b82bc55e42d78d",
+       "name": "Tool Table",
+       "purpose": "Stores tool id, owner id, name, description, condition, and category."
+      },
+      {
+       "id": "d91bed79dc74b60d",
+       "name": "Borrow Request Table",
+       "purpose": "Stores request id, tool id, borrower id, status, and timestamp."
+      },
+      {
+       "id": "75b3f5316896d035",
+       "name": "Neighbour Table",
+       "purpose": "Stores neighbour id, name, email, and address."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "3123a343eaea1c5e",
+       "name": "Account Authentication",
+       "purpose": "Users must sign in with email and password."
+      },
+      {
+       "id": "a006df2ff48d997f",
+       "name": "Tool Ownership Check",
+       "purpose": "Only the owner of a tool can approve or decline a request for it."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "da1fa0eb70333c1d",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a single person's tool inventory is private to them alone.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "no-one else can see a tool's description or condition.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "original-prompt.txt",
+      "line": null,
+      "timestamp": "2026-10-22T15:34:19.249Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "a single person's tool inventory is private to them alone.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A dice roller for tabletop games.",
+  "status": "succeeded",
+  "seconds": 42,
+  "schema": {
+   "sessionId": "cc4070f8-5ef7-4997-b218-c30550dcfc50",
+   "title": "Dice Roller for Tabletop Games",
+   "originalPrompt": "A dice roller for tabletop games.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "e6bb4de29e40cf99",
+       "name": "Dice Roller",
+       "purpose": "Rolls virtual dice with configurable sides and modifiers."
+      },
+      {
+       "id": "51df368a18bd7292",
+       "name": "Result Display",
+       "purpose": "Shows the result of each dice roll with history."
+      },
+      {
+       "id": "628a4610509e8f04",
+       "name": "User Interface",
+       "purpose": "Provides a simple, responsive interface for rolling dice."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "d2d71f31810d2855",
+       "name": "Dice Roller Service",
+       "purpose": "Handles dice rolling logic and stores results for history."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "ae7584506a012f9d",
+       "name": "Rolls Table",
+       "purpose": "Stores dice roll history with user, dice type, result, and timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "6ec7e65b1aff0e1a",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "User Interface Layer",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "Backend Service Layer",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "user-authored",
+      "location": "original-prompt",
+      "line": null,
+      "timestamp": "2026-10-22T15:35:00.843Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "The frontend must be a layer above the backend service layer.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "Something for tracking stuff.",
+  "status": "succeeded",
+  "seconds": 54,
+  "schema": {
+   "sessionId": "7d1b9fd1-4216-48f7-be2e-207c6ee6e9d0",
+   "title": "Tracking System",
+   "originalPrompt": "Something for tracking stuff.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "708e12bc79fd364a",
+       "name": "Dashboard",
+       "purpose": "Main landing page showing overview of tracked items and quick access to key functions"
+      },
+      {
+       "id": "3219af4926aee9e4",
+       "name": "Item List Page",
+       "purpose": "List view of all tracked items with search/filter capabilities"
+      },
+      {
+       "id": "41af53519f01e125",
+       "name": "Item Form",
+       "purpose": "Form for adding new tracked items with fields for name, description, status, and timestamps"
+      },
+      {
+       "id": "8670618bbbd184fb",
+       "name": "Edit Item Form",
+       "purpose": "Form for editing existing tracked items with fields for name, description, status, and timestamps"
+      }
+     ],
+     "dependsOn": []
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "6368563eefc600ed",
+       "name": "API Server",
+       "purpose": "Handles HTTP requests and responses for all tracked item operations"
+      },
+      {
+       "id": "89585a561474a9e6",
+       "name": "Authentication Service",
+       "purpose": "Manages user authentication and authorization for accessing tracked items"
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "47615da69814bc6b",
+       "name": "Tracked Items Table",
+       "purpose": "Stores information about each tracked item including id, name, description, status, creation date, and last modified date"
+      },
+      {
+       "id": "fa8b3100217be3f6",
+       "name": "Users Table",
+       "purpose": "Stores user account information including id, username, password hash, and role"
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "7a50ad9cad30da90",
+       "name": "User Authentication",
+       "purpose": "Ensures only authenticated users can access and modify tracked items"
+      },
+      {
+       "id": "86c6c6a87d87a522",
+       "name": "Role-Based Access Control",
+       "purpose": "Controls access to tracked items based on user roles (e.g., admin, staff, guest)"
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "ea0a861e42120456",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "User Authentication System",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "Role-Based Access Control System",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "user-authored",
+      "location": "provenance:STATED",
+      "line": null,
+      "timestamp": "2026-10-22T15:35:54.485Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "User authentication must be implemented before role-based access control can be layered above it.",
+     "provenance": "STATED",
+     "via": null
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A fully offline note-taking app with no server or account at all - notes stay on my device, and I sync between my own devices only by manually exporting and importing a file.",
+  "status": "succeeded",
+  "seconds": 30,
+  "schema": {
+   "sessionId": "e845976a-58d1-4afb-8d8a-d51f80fca55b",
+   "title": "A fully offline note-taking app with no server or account at all - notes stay on my device, and I sync between my own devices only by manually exporting and importing a file.",
+   "originalPrompt": "A fully offline note-taking app with no server or account at all - notes stay on my device, and I sync between my own devices only by manually exporting and importing a file.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "83567d6169d30aa8",
+       "name": "Note Editor",
+       "purpose": "A simple text editor where the user types and saves notes."
+      },
+      {
+       "id": "fd3e622bd4551a69",
+       "name": "File Export/Import",
+       "purpose": "A file browser and import/export interface for manually transferring notes between devices."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [],
+     "dependsOn": []
+    },
+    "database": {
+     "components": [],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "1a9c921733b12ec9",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a note from another device's export file",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the local note store",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "user-authored",
+      "location": "originalPrompt",
+      "line": null,
+      "timestamp": "2026-10-22T15:36:25.720Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "Notes must never be imported from another device's export file; each device has its own, completely isolated note store.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A whistleblower tip submission portal where submissions are completely anonymous - the system must never store or log the submitter's IP address, account, or any identifying information.",
+  "status": "succeeded",
+  "seconds": 48,
+  "schema": {
+   "sessionId": "ef13416b-12c0-4bf4-9469-667ff0565be6",
+   "title": "Whistleblower Tip Submission Portal",
+   "originalPrompt": "A whistleblower tip submission portal where submissions are completely anonymous - the system must never store or log the submitter's IP address, account, or any identifying information.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "040aae09a1908fb2",
+       "name": "Submission Form",
+       "purpose": "Collects tip content from the whistleblower without collecting their identity."
+      },
+      {
+       "id": "29e868548c7a656c",
+       "name": "Anonymous Submission Confirmation",
+       "purpose": "Shows the whistleblower a generic confirmation message after submitting, with no reference to their identity."
+      },
+      {
+       "id": "c64da5dee8077603",
+       "name": "Staff Review Dashboard",
+       "purpose": "Lets administrators view and manage tips without seeing the submitter's identity."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "4576a6c62641b7f4",
+       "name": "Tip Submission Service",
+       "purpose": "Stores the tip text and metadata (timestamp, staff assignee) but never the submitter's identity."
+      },
+      {
+       "id": "98ad4291b17c5fe7",
+       "name": "Staff Review Service",
+       "purpose": "Lets administrators view and manage tips without seeing the submitter's identity."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "c92fe8d3df1429cd",
+       "name": "Tips Table",
+       "purpose": "Stores tip text, timestamp, and staff assignee id - never the submitter's identity."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "101272a27301a1af",
+       "name": "IP Address Blacklisting",
+       "purpose": "Blocks known malicious IP addresses from accessing the system, but does not log or check the submitter's IP."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "b87242b6028cb7e3",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the system's backend or database layer ever sees the submitter's identity.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "any component or log entry.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "user-authored",
+      "location": "originalPrompt",
+      "line": null,
+      "timestamp": "2026-10-22T15:37:15.328Z"
+     },
+     "confidence": 1,
+     "lowConfidence": false,
+     "rawText": "The system must never store or log the submitter's IP address, account, or any identifying information.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A scheduling app for our church community: members RSVP to events, volunteers sign up for setup and cleanup shifts on each event, and admins get reminder emails sent automatically 24 hours before an event starts.",
+  "status": "succeeded",
+  "seconds": 60,
+  "schema": {
+   "sessionId": "1c85cbb1-4eca-437c-8807-a0a6d44d3b1d",
+   "title": "Church Community Scheduling App",
+   "originalPrompt": "A scheduling app for our church community: members RSVP to events, volunteers sign up for setup and cleanup shifts on each event, and admins get reminder emails sent automatically 24 hours before an event starts.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "04fc4179d5d2cadd",
+       "name": "Event List Page",
+       "purpose": "Shows upcoming events with RSVP and volunteer sign-up buttons."
+      },
+      {
+       "id": "8cabbc06c47cadea",
+       "name": "Event Form",
+       "purpose": "Lets a volunteer or admin create or edit an event."
+      },
+      {
+       "id": "7d32a819b70d6755",
+       "name": "RSVP Form",
+       "purpose": "Lets a member RSVP to an event."
+      },
+      {
+       "id": "ad655698b297fb35",
+       "name": "Volunteer Shift Form",
+       "purpose": "Lets a volunteer sign up for a setup or cleanup shift."
+      },
+      {
+       "id": "089d49e75e30cb0f",
+       "name": "Admin Dashboard",
+       "purpose": "Shows upcoming events and lets an admin send reminder emails."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "7e6fe8a73bf85982",
+       "name": "Event API",
+       "purpose": "CRUD operations for events, plus volunteer shift and RSVP counts."
+      },
+      {
+       "id": "559d887a7e5780f7",
+       "name": "Reminder Email Service",
+       "purpose": "Sends reminder emails to admins 24 hours before an event."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "0789fbeffd421a90",
+       "name": "events table",
+       "purpose": "Stores event details, organizer id, and timestamps."
+      },
+      {
+       "id": "5e3e249a9779c7e5",
+       "name": "rsvps table",
+       "purpose": "Stores member id, event id, and RSVP status."
+      },
+      {
+       "id": "c588a9f76a50df49",
+       "name": "volunteer_shifts table",
+       "purpose": "Stores volunteer id, event id, shift type, and timestamps."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "85266c8716e6698b",
+       "name": "Role-Based Access Control",
+       "purpose": "Only admins can send reminder emails; everyone else can RSVP or sign up for shifts."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "eab95a75035ab546",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the reminder email service must only send emails to admins, never to members or volunteers.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the rsvp and volunteer sign-up forms must never be visible to admins.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "user-authored",
+      "location": "originalPrompt",
+      "line": null,
+      "timestamp": "2026-10-22T15:38:15.058Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "The reminder email service must only send emails to admins, never to members or volunteers. The RSVP and volunteer sign-up forms must never be visible to admins.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A citizen science app where volunteers log wildlife sightings with a photo and location, and researchers review and verify or reject each submission.",
+  "status": "failed",
+  "seconds": 355,
+  "error": {
+   "phase": "generate",
+   "reason": "provider-error",
+   "message": "The local model reached its output limit. Try a smaller request."
+  }
+ },
+ {
+  "prompt": "A carbon footprint tracker: I log my transport, food, and energy use, it estimates emissions from what I logged, and shows how my footprint trends over time.",
+  "status": "succeeded",
+  "seconds": 60,
+  "schema": {
+   "sessionId": "4de09d12-f3b7-453d-974d-e48f1052b6fc",
+   "title": "Carbon Footprint Tracker",
+   "originalPrompt": "A carbon footprint tracker: I log my transport, food, and energy use, it estimates emissions from what I logged, and shows how my footprint trends over time.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "99c84b9ba51d1cc9",
+       "name": "Entry Forms",
+       "purpose": "Collect daily entries for transport, food, and energy use."
+      },
+      {
+       "id": "9c69ee92d599ef30",
+       "name": "Dashboard",
+       "purpose": "Show carbon footprint trends and summary statistics."
+      },
+      {
+       "id": "761a77b93072b5c0",
+       "name": "Search",
+       "purpose": "Allow browsing through past entries and footprint history."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "b6dad7a11aad61bc",
+       "name": "Footprint Estimation Service",
+       "purpose": "Calculate carbon emissions from logged activities using official emission factors."
+      },
+      {
+       "id": "d55f688accfc03fd",
+       "name": "Data Storage Service",
+       "purpose": "Store entries and footprint calculations in a database."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "2988e053118ef85c",
+       "name": "Entries Table",
+       "purpose": "Store daily transport, food, and energy use entries."
+      },
+      {
+       "id": "cace6508351228ba",
+       "name": "Footprint Calculations Table",
+       "purpose": "Store calculated carbon emissions and trend data."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "60a6013845e988f4",
+       "name": "User Authentication",
+       "purpose": "Allow users to sign in with email and password."
+      },
+      {
+       "id": "761c7d82110a7bfe",
+       "name": "Data Encryption",
+       "purpose": "Encrypt sensitive footprint data at rest."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "4f2595ab115371f4",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "User Authentication System",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "Data Storage Service",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "user-authored",
+      "location": "STATED",
+      "line": null,
+      "timestamp": "2026-10-22T15:45:10.772Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "The application must support multiple users, so the data storage service must be layer-above the authentication system.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A local business directory where owners claim and update their own listing, and customers can leave reviews on it.",
+  "status": "failed",
+  "seconds": 358,
+  "error": {
+   "phase": "generate",
+   "reason": "provider-error",
+   "message": "The local model reached its output limit. Try a smaller request."
+  }
+ },
+ {
+  "prompt": "A hospital shift-handoff app where outgoing nurses write patient notes and incoming nurses read them, but front-desk staff must never see clinical notes, only appointment schedules.",
+  "status": "succeeded",
+  "seconds": 57,
+  "schema": {
+   "sessionId": "aaaddb13-dafd-4a08-8d53-e0a0e5d9cfa2",
+   "title": "Hospital Shift-Handoff App",
+   "originalPrompt": "A hospital shift-handoff app where outgoing nurses write patient notes and incoming nurses read them, but front-desk staff must never see clinical notes, only appointment schedules.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "67b6413a4cfc8231",
+       "name": "Nurse Handoff Panel",
+       "purpose": "Outgoing nurse writes clinical notes and appointment details for a patient."
+      },
+      {
+       "id": "7721f68b9fe01e28",
+       "name": "Incoming Nurse View",
+       "purpose": "Incoming nurse reads clinical notes and appointment details for a patient."
+      },
+      {
+       "id": "5a08d14040c498da",
+       "name": "Front Desk Schedule View",
+       "purpose": "Front desk staff see only appointment schedules, never clinical notes."
+      }
+     ],
+     "dependsOn": []
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "28bc1fa6f6ac270f",
+       "name": "Handoff API",
+       "purpose": "Serves clinical notes and appointment details to nurses, filtered by role."
+      },
+      {
+       "id": "31935fbec12a2e76",
+       "name": "Schedule API",
+       "purpose": "Serves appointment schedules to front desk staff, never clinical notes."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "7f89191f2f8abd52",
+       "name": "Patient Records Table",
+       "purpose": "Stores patient id, clinical notes, and appointment schedule."
+      },
+      {
+       "id": "68cc82db7e61bd82",
+       "name": "User Roles Table",
+       "purpose": "Maps user ids to their role (nurse, front desk, doctor)."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "177967247aaeec08",
+       "name": "Role-Based Access Control",
+       "purpose": "Filters clinical notes based on user role before serving them."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "2a9ccd04de1442d0",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "clinical notes are never visible to front desk staff.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "only appointment schedules are visible to front desk staff.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "user-authored",
+      "location": "originalPrompt",
+      "line": null,
+      "timestamp": "2026-10-22T15:52:04.684Z"
+     },
+     "confidence": 1,
+     "lowConfidence": false,
+     "rawText": "Front desk staff must never see clinical notes, only appointment schedules.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A landlord-tenant maintenance portal where tenants file repair requests and landlords assign contractors, but contractors can only see requests assigned to them, never the full building's request history.",
+  "status": "succeeded",
+  "seconds": 45,
+  "schema": {
+   "sessionId": "2db2f208-b074-4068-9208-792bf0e9d378",
+   "title": "Landlord-Tenant Maintenance Portal",
+   "originalPrompt": "A landlord-tenant maintenance portal where tenants file repair requests and landlords assign contractors, but contractors can only see requests assigned to them, never the full building's request history.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "71adb1e68d710996",
+       "name": "Tenant Request Form",
+       "purpose": "Lets a tenant describe a repair job."
+      },
+      {
+       "id": "adf3e36fa02b93b1",
+       "name": "Landlord Assignment Panel",
+       "purpose": "Shows a landlord a queue of unassigned requests."
+      },
+      {
+       "id": "76afeaa374dcac7c",
+       "name": "Contractor Job View",
+       "purpose": "Shows a contractor only the jobs assigned to them."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "90652043d6250f5f",
+       "name": "Requests API",
+       "purpose": "Stores requests and tracks assignment status."
+      },
+      {
+       "id": "2e3bee86e1876e1a",
+       "name": "Assignment Service",
+       "purpose": "Notifies a contractor when a request is assigned to them."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "909b9c6f7836158d",
+       "name": "requests table",
+       "purpose": "Stores tenant id, description, and current assignee."
+      },
+      {
+       "id": "2d4afd417b5b3575",
+       "name": "assignments table",
+       "purpose": "Maps a request id to a contractor id."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "c15c47b8978d8dab",
+       "name": "Contractor Scope Guard",
+       "purpose": "Rejects any contractor attempt to read another's assigned request."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    }
+   },
+   "constraints": [
+    {
+     "id": "2395cfc8393d3090",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a contractor's job view.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "another contractor's assigned request.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "originalPrompt",
+      "line": null,
+      "timestamp": "2026-10-22T15:52:48.544Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "Contractors can only see their own assigned requests, never another's.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A university grading system where professors enter grades and students view their own, but a student must never be able to see another student's grade for any assignment.",
+  "status": "succeeded",
+  "seconds": 51,
+  "schema": {
+   "sessionId": "b26d2986-d64f-49c0-a107-1002792016ac",
+   "title": "University Grading System",
+   "originalPrompt": "A university grading system where professors enter grades and students view their own, but a student must never be able to see another student's grade for any assignment.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "e115369d17e7f8a6",
+       "name": "Student Grade View",
+       "purpose": "Shows a student their own grades on each assignment."
+      },
+      {
+       "id": "b4b8e222857a6c48",
+       "name": "Professor Grade Entry",
+       "purpose": "Lets a professor enter a grade for an assignment, scoped to the current student."
+      },
+      {
+       "id": "89a120bd7d872f7c",
+       "name": "Assignment List",
+       "purpose": "Lists assignments for a student or professor, with appropriate access controls."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "eadc8cf14a18c06b",
+       "name": "Grading API",
+       "purpose": "Serves grade data with proper authorization checks to prevent students from seeing each other's grades."
+      },
+      {
+       "id": "b01673372463fd26",
+       "name": "Authentication Service",
+       "purpose": "Manages user sessions and role-based access control for students and professors."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "02d0c6e46e42d992",
+       "name": "Grades Table",
+       "purpose": "Stores assignment id, student id, and grade value."
+      },
+      {
+       "id": "959cd94a0ec87af7",
+       "name": "Users Table",
+       "purpose": "Stores user id, role (student/professor), and authentication data."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "f160c03346a19ba2",
+       "name": "Authorization Layer",
+       "purpose": "Checks that a student can only see their own grades and never another student's."
+      },
+      {
+       "id": "ac03499f86466bdb",
+       "name": "Session Management",
+       "purpose": "Manages authenticated sessions for students and professors."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    }
+   },
+   "constraints": [
+    {
+     "id": "98dabecca3464045",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a student's grade view page",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "another student's grade data",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "user-authored",
+      "location": "originalPrompt",
+      "line": null,
+      "timestamp": "2026-10-22T15:53:40.400Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "A student must never be able to see another student's grade for any assignment.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A corporate expense report tool where employees submit receipts and managers approve them, but an employee must never be able to approve their own expense report even if they also have a manager role.",
+  "status": "succeeded",
+  "seconds": 48,
+  "schema": {
+   "sessionId": "f54cfb3d-b44d-45f8-81d6-23eaa47e4dc0",
+   "title": "Expense Report Tool",
+   "originalPrompt": "A corporate expense report tool where employees submit receipts and managers approve them, but an employee must never be able to approve their own expense report even if they also have a manager role.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "78b12bfb7ab20f9c",
+       "name": "Expense Report Form",
+       "purpose": "Collects receipt details from the employee who submits the report."
+      },
+      {
+       "id": "b1d4508d2d81a341",
+       "name": "Manager Approval Queue",
+       "purpose": "Shows the manager a list of reports to approve, with a check that the approver is not the submitter."
+      },
+      {
+       "id": "fa0daca26317e48e",
+       "name": "Employee Dashboard",
+       "purpose": "Shows the employee their own submitted reports and a link to view approved status."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "e22df3351980dd0d",
+       "name": "Expense Reports API",
+       "purpose": "Stores reports and tracks approval status, with a rule that an employee cannot approve their own report."
+      },
+      {
+       "id": "664c785101e50fd1",
+       "name": "Approval Service",
+       "purpose": "Manages the approval workflow, ensuring the approver is not the submitter."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "1fc32c5c443ab518",
+       "name": "expense_reports table",
+       "purpose": "Stores report id, submitter id, amount, receipt image, and approval status."
+      },
+      {
+       "id": "83b922d32ea237d6",
+       "name": "approvals table",
+       "purpose": "Stores report id, approver id, and approval timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "8a3725d38b75db25",
+       "name": "Approval Guard",
+       "purpose": "Rejects an approval attempt where the approver is the submitter."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    }
+   },
+   "constraints": [
+    {
+     "id": "4a6dcf1feff542f1",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "an employee approving their own report",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "ever be allowed",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "original-prompt",
+      "line": null,
+      "timestamp": "2026-10-22T15:54:29.071Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "an employee must never be able to approve their own expense report even if they also have a manager role.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A daycare app where staff log incidents and only the center director can edit or delete a submitted incident report - staff can add but never modify after submission.",
+  "status": "succeeded",
+  "seconds": 42,
+  "schema": {
+   "sessionId": "b57101a3-dc33-4f4d-979d-bb058dabcf25",
+   "title": "Daycare Incident Reporting App",
+   "originalPrompt": "A daycare app where staff log incidents and only the center director can edit or delete a submitted incident report - staff can add but never modify after submission.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "cba46b598669c5eb",
+       "name": "Incident Log Form",
+       "purpose": "Lets a staff member describe an incident."
+      },
+      {
+       "id": "333127a432e3d783",
+       "name": "Incident List",
+       "purpose": "Shows every incident logged, with edit/delete buttons only for the center director."
+      },
+      {
+       "id": "0c9b74702243e08d",
+       "name": "Director Edit Mode",
+       "purpose": "Lets the center director modify or delete any incident."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "98900d665711b85f",
+       "name": "Incident API",
+       "purpose": "Stores incidents and serves them to the frontend."
+      },
+      {
+       "id": "da5f617761d2a047",
+       "name": "Director Guard",
+       "purpose": "Rejects edit/delete requests from anyone other than the center director."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "c8290d54f3984d3a",
+       "name": "incidents table",
+       "purpose": "Stores incident id, staff id, description, and timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "9338507b72980d57",
+       "name": "Director-Only Edit Guard",
+       "purpose": "Rejects edit/delete requests from anyone other than the center director."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    }
+   },
+   "constraints": [
+    {
+     "id": "5e30c8167bb4b096",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a staff member's incident log entry after submission.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "be edited or deleted by that staff member.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "original-prompt.txt",
+      "line": null,
+      "timestamp": "2026-10-22T15:55:10.987Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "Staff can add but never modify after submission.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A ride-share driver payout system where drivers see their own earnings and dispatchers see all drivers' earnings, but a driver must never query another driver's payout data through the API.",
+  "status": "succeeded",
+  "seconds": 42,
+  "schema": {
+   "sessionId": "2b2f8c46-c422-482b-ae30-63ff5a66ce38",
+   "title": "Ride-Share Driver Payout System",
+   "originalPrompt": "A ride-share driver payout system where drivers see their own earnings and dispatchers see all drivers' earnings, but a driver must never query another driver's payout data through the API.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "26d43d271af3be6b",
+       "name": "Driver Earnings Dashboard",
+       "purpose": "Shows the driver's own earnings history and total."
+      },
+      {
+       "id": "48ed5f8ff9550676",
+       "name": "Dispatcher Earnings Dashboard",
+       "purpose": "Shows all drivers' earnings history and totals."
+      },
+      {
+       "id": "cda503080fd8cccf",
+       "name": "API Rate Limiter",
+       "purpose": "Rejects any driver's attempt to query another driver's payout data."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "0783cd04dddd155a",
+       "name": "Payout Service",
+       "purpose": "Calculates and stores driver earnings."
+      },
+      {
+       "id": "9e4f2168ab46d74c",
+       "name": "API Gateway",
+       "purpose": "Validates requests and enforces the rate limiter."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "5678e679306358b0",
+       "name": "Payouts Table",
+       "purpose": "Stores driver id, date, and amount earned."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "a84f736a293b065a",
+       "name": "API Rate Limiter",
+       "purpose": "Rejects any driver's attempt to query another driver's payout data."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "db3a107e44eb90a1",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a driver's API request to another driver's payout data",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "be fulfilled by the system",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-real-023-raw-log.txt",
+      "line": null,
+      "timestamp": "2026-10-22T15:55:52.980Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "a driver must never query another driver's payout data through the API",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A software team's on-call rotation tool where engineers see the schedule and only the team lead can override an on-call assignment - the override must be logged with who made the change and why.",
+  "status": "succeeded",
+  "seconds": 57,
+  "schema": {
+   "sessionId": "c84bfb77-40c7-4377-ba6e-5fa9192ec202",
+   "title": "On-Call Rotation Tool",
+   "originalPrompt": "A software team's on-call rotation tool where engineers see the schedule and only the team lead can override an on-call assignment - the override must be logged with who made the change and why.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "41cb43ed5da2c7e8",
+       "name": "On-Call Schedule View",
+       "purpose": "Shows the current on-call rotation schedule to all team members."
+      },
+      {
+       "id": "23f177d73dcb1ee8",
+       "name": "Override Request Form",
+       "purpose": "Lets the team lead request an override of an on-call assignment."
+      },
+      {
+       "id": "664db317e1b13095",
+       "name": "Override Log",
+       "purpose": "Shows the history of override requests and their outcomes."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "53dffbb47632973b",
+       "name": "On-Call Scheduler Service",
+       "purpose": "Manages the on-call rotation schedule and handles override requests."
+      },
+      {
+       "id": "9d0e60bb15d28863",
+       "name": "Override Request Service",
+       "purpose": "Logs override requests and their outcomes."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "b268df84187302f6",
+       "name": "On-Call Schedule Table",
+       "purpose": "Stores the current on-call rotation schedule."
+      },
+      {
+       "id": "3bef248eb4559193",
+       "name": "Override Request Log Table",
+       "purpose": "Stores the history of override requests and their outcomes."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "f64620d30f2ffb1b",
+       "name": "Team Lead Role Check",
+       "purpose": "Only the team lead can make override requests."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "c635033a98e012b2",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "The override log must show the reason given for each override request.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "The override log must be private and only visible to the team lead.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "user-authored",
+      "location": "originalPrompt",
+      "line": null,
+      "timestamp": "2026-10-22T15:56:50.392Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "The override log must show the reason given for each override request.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A subscription box service where customers manage their own billing and support staff can view but never edit a customer's payment method directly.",
+  "status": "succeeded",
+  "seconds": 36,
+  "schema": {
+   "sessionId": "7e43020d-e56e-43f1-aad6-13573a0bbe20",
+   "title": "Subscription Box Service",
+   "originalPrompt": "A subscription box service where customers manage their own billing and support staff can view but never edit a customer's payment method directly.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "da9de16c1e85fadb",
+       "name": "Customer Billing Dashboard",
+       "purpose": "Lets a customer view and manage their billing information."
+      },
+      {
+       "id": "c11ae06fcaafa82e",
+       "name": "Support Staff View-Only Mode",
+       "purpose": "Shows support staff the payment method type and last four digits, but never the full card number."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "39fee58679568ba9",
+       "name": "Billing API",
+       "purpose": "Handles customer billing operations and exposes a read-only view for support staff."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "b18a47a83870e322",
+       "name": "billing_customers table",
+       "purpose": "Stores customer ID, payment method type, and last four digits."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "0d6dc71b58bbf995",
+       "name": "Read-Only Support Staff Mode",
+       "purpose": "Support staff can see the payment method type and last four digits, but cannot edit the payment method."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    }
+   },
+   "constraints": [
+    {
+     "id": "10106a7c27a7a7cc",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "Support staff view-only mode",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "Payment method full card number",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "user-authored",
+      "location": "originalPrompt",
+      "line": null,
+      "timestamp": "2026-10-22T15:57:27.214Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "Support staff can view but never edit a customer's payment method directly.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A shared vacation-home booking calendar for extended family where any family member can request dates but only the two owners can approve a booking, and a rejected request must not silently become approved later.",
+  "status": "succeeded",
+  "seconds": 45,
+  "schema": {
+   "sessionId": "94ea5d9d-e8eb-4876-bc89-2f4898bd0d4e",
+   "title": "Family Vacation Home Booking Calendar",
+   "originalPrompt": "A shared vacation-home booking calendar for extended family where any family member can request dates but only the two owners can approve a booking, and a rejected request must not silently become approved later.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "86dd0a6916058707",
+       "name": "Booking Request Form",
+       "purpose": "Lets a family member select date ranges and submit a request."
+      },
+      {
+       "id": "a95269c005efa9d4",
+       "name": "Owner Approval Dashboard",
+       "purpose": "Shows the owners every booking request and lets them approve or reject it."
+      },
+      {
+       "id": "786ff486d5e7029b",
+       "name": "Calendar View",
+       "purpose": "Displays the current booking status for all date ranges."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "6aec25b1e20c3436",
+       "name": "Bookings API",
+       "purpose": "Records requests, approvals, and rejections in the database and enforces owner-only approval."
+      },
+      {
+       "id": "70c3f7d48a171a72",
+       "name": "Email Notifications Service",
+       "purpose": "Sends email notifications to the requester and owners when a booking is approved or rejected."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "7ba4a20cc17c8b5c",
+       "name": "bookings table",
+       "purpose": "Stores date ranges, requester id, owner approval status, and request/rejection timestamps."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "edc2c5e922a74282",
+       "name": "Owner-Approval-Only Guard",
+       "purpose": "Rejects any attempt to approve a booking that isn't from one of the two owners."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "cd39d4e13d0dfdfd",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a rejected request must not silently become approved later",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the approval status of a rejected request must remain rejected forever",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "original-prompt",
+      "line": null,
+      "timestamp": "2026-10-22T15:58:11.090Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "a rejected request must not silently become approved later",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A voting app for a homeowners association where residents cast one vote per household and the board can view aggregate results but never see how an individual household voted.",
+  "status": "succeeded",
+  "seconds": 48,
+  "schema": {
+   "sessionId": "1e4af44b-9ca0-42ee-8777-fc1ca01faa3f",
+   "title": "Homeowners Association Voting App",
+   "originalPrompt": "A voting app for a homeowners association where residents cast one vote per household and the board can view aggregate results but never see how an individual household voted.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "31eaf1733a77f759",
+       "name": "Voting Interface",
+       "purpose": "Lets a resident cast a vote for one of two options per household."
+      },
+      {
+       "id": "061392c86f3bc2d6",
+       "name": "Board Dashboard",
+       "purpose": "Shows the board the total count for each option, never revealing individual votes."
+      },
+      {
+       "id": "0a5f269522ec1ed5",
+       "name": "Login Page",
+       "purpose": "Requires a board member to sign in to see the dashboard."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "fd3730b473530c12",
+       "name": "Voting API",
+       "purpose": "Records votes and aggregates them by household, never storing individual vote data."
+      },
+      {
+       "id": "cdf4b13fa0f98e99",
+       "name": "Board Authentication",
+       "purpose": "Checks a board member's credentials before serving the dashboard."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "2fc8746afe5844a1",
+       "name": "Votes Table",
+       "purpose": "Stores household id, option chosen, and timestamp, but no individual voter identity."
+      },
+      {
+       "id": "36b0d3f2c17bf836",
+       "name": "Board Members Table",
+       "purpose": "Stores board member usernames and passwords."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "a61eb05d541b7c3d",
+       "name": "Board-Only Access",
+       "purpose": "The dashboard is only served to authenticated board members."
+      },
+      {
+       "id": "4347cd60d4858e07",
+       "name": "Vote Aggregation",
+       "purpose": "The backend aggregates votes but never stores or exposes individual voter data."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    }
+   },
+   "constraints": [
+    {
+     "id": "3e84177faf5605cb",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the board dashboard page",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "individual voter data",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "original-prompt",
+      "line": null,
+      "timestamp": "2026-10-22T15:59:00.090Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "The board can only see the total count for each option, never individual votes.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A freelance marketplace where clients post jobs and freelancers bid, but a freelancer must never see a competing freelancer's bid amount before submitting their own.",
+  "status": "succeeded",
+  "seconds": 48,
+  "schema": {
+   "sessionId": "3b54c3ad-d588-444d-a9a1-1decb90a9b0a",
+   "title": "Freelance Marketplace",
+   "originalPrompt": "A freelance marketplace where clients post jobs and freelancers bid, but a freelancer must never see a competing freelancer's bid amount before submitting their own.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "4792a0ff1afe11aa",
+       "name": "Job Posting Form",
+       "purpose": "Lets a client post a new job with title, description, budget, and deadline."
+      },
+      {
+       "id": "9495ee1403a38d28",
+       "name": "Bid Submission Form",
+       "purpose": "Lets a freelancer submit a bid for a job they've been invited to bid on."
+      },
+      {
+       "id": "1c7559e4386d8311",
+       "name": "Job Bids List",
+       "purpose": "Shows a freelancer the bids they've submitted for a job, with their own bid amount visible but no other freelancer's bid amount."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "ca40d81a14bc0aff",
+       "name": "Jobs API",
+       "purpose": "Serves job listings, bid requests, and bid status to the frontend."
+      },
+      {
+       "id": "5ccf1438fc63f5a5",
+       "name": "Bids API",
+       "purpose": "Manages bid submissions and maintains bid secrecy until a job has exactly one bid."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "00345fee79c254c9",
+       "name": "jobs table",
+       "purpose": "Stores job postings with client id, title, description, budget, and deadline."
+      },
+      {
+       "id": "b72a8066c2ac0fb0",
+       "name": "bids table",
+       "purpose": "Stores bid submissions with freelancer id, job id, and bid amount."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "bf2d27ff73f4a27e",
+       "name": "Bid Secrecy Guard",
+       "purpose": "Rejects a bid submission if the job already has another bid, to maintain bid secrecy."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    }
+   },
+   "constraints": [
+    {
+     "id": "553f2a3a78abadfb",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a freelancer's bid submission form.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "show another freelancer's bid amount.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-real-023-raw.txt",
+      "line": null,
+      "timestamp": "2026-10-22T15:59:49.375Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "a freelancer must never see a competing freelancer's bid amount before submitting their own.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A internal bug tracker where developers file and close bugs, but only QA can mark a bug as verified-fixed - a developer closing their own bug does not count as verification.",
+  "status": "succeeded",
+  "seconds": 57,
+  "schema": {
+   "sessionId": "74a8427a-b5b1-4a0e-aab3-7b34ee9d670d",
+   "title": "Internal Bug Tracker",
+   "originalPrompt": "A internal bug tracker where developers file and close bugs, but only QA can mark a bug as verified-fixed - a developer closing their own bug does not count as verification.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "4417f876df124d8b",
+       "name": "Bug List Page",
+       "purpose": "Shows every open bug, with a title, description, and assignee."
+      },
+      {
+       "id": "a5bce812027a1668",
+       "name": "Bug Form",
+       "purpose": "Lets a developer file a new bug with a title, description, and initial assignee."
+      },
+      {
+       "id": "9e1966a27b752d3f",
+       "name": "Bug Edit Form",
+       "purpose": "Lets an assignee update a bug's status, description, or assignee."
+      },
+      {
+       "id": "872e28bdbc03b7b5",
+       "name": "Verification Guard",
+       "purpose": "Only QA staff can ever see or click the 'verified-fixed' button on a bug."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "33e1118514868dee",
+       "name": "Bugs API",
+       "purpose": "CRUD operations on bugs, plus a 'verify-fix' endpoint restricted to QA."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "a1e66141010b3a22",
+       "name": "bugs table",
+       "purpose": "Stores bug id, title, description, current status, and assignee id."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "12112c6b003896e1",
+       "name": "QA-Only Verification Guard",
+       "purpose": "Rejects any 'verify-fix' request that isn't from a QA user."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    }
+   },
+   "constraints": [
+    {
+     "id": "6f3f9f914356e404",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a developer closing their own bug does not count as verification",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the 'verified-fixed' button is only visible to QA.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "original-prompt",
+      "line": null,
+      "timestamp": "2026-10-22T16:00:45.694Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "a developer closing their own bug does not count as verification",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A school field trip payment app where parents pay a fee and the school treasurer reconciles payments, but teachers organizing the trip can see who has paid, never the payment method or card details.",
+  "status": "succeeded",
+  "seconds": 45,
+  "schema": {
+   "sessionId": "1b2f800e-aec8-4722-bcd0-f177e581fa77",
+   "title": "School Field Trip Payment App",
+   "originalPrompt": "A school field trip payment app where parents pay a fee and the school treasurer reconciles payments, but teachers organizing the trip can see who has paid, never the payment method or card details.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "56cc7ad44ac27545",
+       "name": "Payment Form",
+       "purpose": "Collects parent name, email, and payment amount."
+      },
+      {
+       "id": "7f8d6bd33899909a",
+       "name": "Teacher Dashboard",
+       "purpose": "Shows which students have paid, but not their payment method."
+      },
+      {
+       "id": "2bf4f64faf6da0f6",
+       "name": "Treasurer Reconciliation",
+       "purpose": "Lets the treasurer see every payment and mark it as cleared."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "3f86a8ac7d50b557",
+       "name": "Payment Service",
+       "purpose": "Stores payments and marks them as cleared by the treasurer."
+      },
+      {
+       "id": "ea2f49e193fe8680",
+       "name": "Reconciliation Service",
+       "purpose": "Lets the treasurer see all payments and mark them as cleared."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "1253e925de1330be",
+       "name": "Payments Table",
+       "purpose": "Stores student id, amount, payment status, and timestamp."
+      },
+      {
+       "id": "b3388f795d1735a7",
+       "name": "Reconciliation Records",
+       "purpose": "Stores treasurer id, payment id, and clearance timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "9bf0271427eed5f1",
+       "name": "Payment Masking",
+       "purpose": "Hides payment method and card details from teachers."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "7ca3a2fe20fde29d",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "teachers organizing the trip can see who has paid.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "payment method or card details.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "original-prompt",
+      "line": null,
+      "timestamp": "2026-10-22T16:01:30.723Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "Teachers can see payment status but never payment method or card details.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A restaurant loyalty points system where customers redeem points and staff issue them at checkout, but a customer must never be able to issue points to their own account directly.",
+  "status": "succeeded",
+  "seconds": 45,
+  "schema": {
+   "sessionId": "7b47e56b-b3b1-49e4-9432-5981df291992",
+   "title": "Restaurant Loyalty Points System",
+   "originalPrompt": "A restaurant loyalty points system where customers redeem points and staff issue them at checkout, but a customer must never be able to issue points to their own account directly.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "bcf4bd5b615e0620",
+       "name": "Customer Points Balance",
+       "purpose": "Shows a customer their current points balance."
+      },
+      {
+       "id": "ec873ab65408411b",
+       "name": "Staff Point Issuance Form",
+       "purpose": "Lets a staff member issue points to a customer's account."
+      },
+      {
+       "id": "f691864bd67e4ed7",
+       "name": "Redemption Form",
+       "purpose": "Lets a customer redeem points for a reward."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "84a9bcd77cecb530",
+       "name": "Points Issuance Service",
+       "purpose": "Records point issuance by staff members, not customers."
+      },
+      {
+       "id": "ffda29ef854accbf",
+       "name": "Redemption Service",
+       "purpose": "Processes point redemptions."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "43f566f13081efcd",
+       "name": "Customers Table",
+       "purpose": "Stores customer information and points balance."
+      },
+      {
+       "id": "0600d86b7c09f94a",
+       "name": "Point Issuances Table",
+       "purpose": "Stores staff-issued point records."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "09a48a9882899bea",
+       "name": "Self-Issuance Guard",
+       "purpose": "Rejects point issuance from the customer's own session."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    }
+   },
+   "constraints": [
+    {
+     "id": "73a21aae68ae3339",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a customer's own session issuing points to their account",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "be allowed",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "original-prompt",
+      "line": null,
+      "timestamp": "2026-10-22T16:02:14.776Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "a customer must never be able to issue points to their own account directly",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A construction site safety inspection app where inspectors file reports and site managers respond, but a site manager must never edit an inspector's original findings, only add a response.",
+  "status": "succeeded",
+  "seconds": 48,
+  "schema": {
+   "sessionId": "080501fa-9e03-4e3b-aade-0247ad8e0b55",
+   "title": "Construction Site Safety Inspection App",
+   "originalPrompt": "A construction site safety inspection app where inspectors file reports and site managers respond, but a site manager must never edit an inspector's original findings, only add a response.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "4fc002dd3fdd422a",
+       "name": "Inspector Report Form",
+       "purpose": "Collects field name, status, and description from an inspector."
+      },
+      {
+       "id": "5fa1ff3c6b3eb424",
+       "name": "Manager Response Box",
+       "purpose": "Lets a site manager add a response to an inspector's report, never editing the original."
+      },
+      {
+       "id": "d259244c265993fb",
+       "name": "Report List",
+       "purpose": "Shows every report and its manager response, with role checks to prevent managers editing inspector fields."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "0ea7480040e49db5",
+       "name": "Inspection API",
+       "purpose": "Stores reports and responses, with a manager-response-only write path."
+      },
+      {
+       "id": "ed0424b950319bd2",
+       "name": "Role Check Service",
+       "purpose": "Rejects any manager edit of an inspector's original fields."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "856c7ed5d5af40eb",
+       "name": "inspections table",
+       "purpose": "Stores id, field_name, status, description, and author_id."
+      },
+      {
+       "id": "db1d4c5124eff7e4",
+       "name": "responses table",
+       "purpose": "Stores report_id, author_id, and text, with a foreign key to inspections."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "77627069343d6392",
+       "name": "Manager-Edit-Prevention Guard",
+       "purpose": "Rejects any manager attempt to edit an inspector's original fields."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    }
+   },
+   "constraints": [
+    {
+     "id": "b11c9dc9cc695968",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a site manager's response box",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "an inspector's original fields",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "original-prompt",
+      "line": null,
+      "timestamp": "2026-10-22T16:03:02.992Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "a site manager must never edit an inspector's original findings, only add a response.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A community lending library for board games where members borrow and return games, and only librarians can mark a game as lost or damaged - a member reporting damage does not itself change the game's status.",
+  "status": "succeeded",
+  "seconds": 57,
+  "schema": {
+   "sessionId": "f12715b6-bfa7-4823-901d-a640e0b9b563",
+   "title": "Community Board Game Lending Library",
+   "originalPrompt": "A community lending library for board games where members borrow and return games, and only librarians can mark a game as lost or damaged - a member reporting damage does not itself change the game's status.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "4b02159200b7299d",
+       "name": "Game Borrow/Return",
+       "purpose": "Lets a member borrow or return a game."
+      },
+      {
+       "id": "6672e8abf0a722c9",
+       "name": "Librarian Damage Mark",
+       "purpose": "Lets a librarian mark a game as damaged."
+      },
+      {
+       "id": "1e8197c304982a1d",
+       "name": "Member Damage Report",
+       "purpose": "Lets a member report damage to a game, which only a librarian can mark as damaged."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "289de540b711fcaf",
+       "name": "Game Borrow/Return Service",
+       "purpose": "Records a game being borrowed or returned."
+      },
+      {
+       "id": "da7266b8f265d107",
+       "name": "Librarian Damage Mark Service",
+       "purpose": "Marks a game as damaged, restricted to librarians."
+      },
+      {
+       "id": "3501fe95650a3fdb",
+       "name": "Member Damage Report Service",
+       "purpose": "Records a member's damage report, which only a librarian can mark as damaged."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "7c9feff90707f929",
+       "name": "games table",
+       "purpose": "Stores game id, title, and current status."
+      },
+      {
+       "id": "79a7fe09f486143d",
+       "name": "borrow_returns table",
+       "purpose": "Stores member id, game id, borrow time, and return time."
+      },
+      {
+       "id": "e50cbe04d94b2edc",
+       "name": "damage_reports table",
+       "purpose": "Stores member id, game id, and report timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "9aa22d9e08eb406c",
+       "name": "Librarian-Only Damage Mark",
+       "purpose": "Only librarians can mark a game as damaged."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "c6d9b7f71396af2f",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a member reporting damage does not itself change the game's status.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the game's damage status.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-real-023a3552-2222-4222-8222-222222222222",
+      "line": null,
+      "timestamp": "2026-10-22T16:04:00.129Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "a member reporting damage does not itself change the game's status.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A telehealth app where patients book video visits with doctors, and billing staff can see appointment times and durations for invoicing but must never access the visit's clinical summary.",
+  "status": "failed",
+  "seconds": 361,
+  "error": {
+   "phase": "generate",
+   "reason": "provider-error",
+   "message": "The local model reached its output limit. Try a smaller request."
+  }
+ },
+ {
+  "prompt": "A co-working space access system where members badge in with their own credentials, and front-desk staff can see who is currently in the building but never a member's full entry/exit history.",
+  "status": "succeeded",
+  "seconds": 45,
+  "schema": {
+   "sessionId": "a5d2db75-a016-4463-a091-7df5a6586fdc",
+   "title": "Co-Working Space Access System",
+   "originalPrompt": "A co-working space access system where members badge in with their own credentials, and front-desk staff can see who is currently in the building but never a member's full entry/exit history.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "04c94b267b1391b6",
+       "name": "Member Badge-In Panel",
+       "purpose": "Shows the member's current status and lets them badge in."
+      },
+      {
+       "id": "ef7b57d2dc731d1e",
+       "name": "Staff Presence View",
+       "purpose": "Shows which members are currently in the building, but does not show entry/exit times."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "7a1e84aaa5ce87a9",
+       "name": "Access Control API",
+       "purpose": "Checks credentials and records presence, but never stores full entry/exit history."
+      },
+      {
+       "id": "d1765251fdc45d15",
+       "name": "Presence Service",
+       "purpose": "Tracks which members are currently in the building."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "96261c167504220d",
+       "name": "Members Table",
+       "purpose": "Stores member id, name, and badge number."
+      },
+      {
+       "id": "27d404499a8b3a43",
+       "name": "Presence Table",
+       "purpose": "Stores member id and current status (in/absent)."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "5134039a278588d7",
+       "name": "Single-Factor Authentication",
+       "purpose": "Requires each member to prove their identity with a badge."
+      },
+      {
+       "id": "eb44d16b83851a30",
+       "name": "Role-Based Access",
+       "purpose": "Front-desk staff can see presence, but never the full entry/exit history."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "eeadf57c1b132c31",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "staff presence view",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "full entry/exit history",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "original-prompt",
+      "line": null,
+      "timestamp": "2026-10-22T16:10:48.231Z"
+     },
+     "confidence": 0.95,
+     "lowConfidence": false,
+     "rawText": "The staff presence view must never show a member's full entry/exit history.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ }
+]

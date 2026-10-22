@@ -1,0 +1,3719 @@
+[
+ {
+  "prompt": "An app for a college canteen where students pre-order lunch and pick it up at a set time.",
+  "status": "succeeded",
+  "seconds": 34,
+  "schema": {
+   "sessionId": "d18ba6ce-a248-4bd4-8655-42d19a042075",
+   "title": "College Canteen Pre-Order",
+   "originalPrompt": "An app for a college canteen where students pre-order lunch and pick it up at a set time.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "436d0c853c08ca3d",
+       "name": "Order Queue",
+       "purpose": "Shows each student's pre-order with a pick-up slot."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "59287723a5de8116",
+       "name": "Order Service",
+       "purpose": "Accepts pre-orders and assigns pick-up slots."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "8ba0ff88852c1e40",
+       "name": "orders table",
+       "purpose": "Stores student id, meal choice, and pick-up slot."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A hostel complaint tracker where residents report broken fans or taps and the warden assigns a fix.",
+  "status": "succeeded",
+  "seconds": 30,
+  "schema": {
+   "sessionId": "38ed6913-2c89-4e63-b98e-065dd224cbbf",
+   "title": "Hostel Complaint Tracker",
+   "originalPrompt": "A hostel complaint tracker where residents report broken fans or taps and the warden assigns a fix.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "0fb960535543c232",
+       "name": "Complaint Form",
+       "purpose": "Lets a resident describe a repair need."
+      },
+      {
+       "id": "27580fbed4d0cfd2",
+       "name": "Warden Dashboard",
+       "purpose": "Shows open complaints and lets the warden assign them."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "bb4abf3682f0f39b",
+       "name": "Complaints API",
+       "purpose": "Stores complaints and lets the warden mark them as resolved."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "a6d02b221660adef",
+       "name": "complaints table",
+       "purpose": "Stores resident id, description, and current status."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A blood donor finder for a city: donors register their blood group and hospitals search when they need someone.",
+  "status": "succeeded",
+  "seconds": 36,
+  "schema": {
+   "sessionId": "aa99c4dd-f5b7-4e66-a217-82c7c6d2966c",
+   "title": "Blood Donor Finder",
+   "originalPrompt": "A blood donor finder for a city: donors register their blood group and hospitals search when they need someone.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "e18d30e4bb6b3306",
+       "name": "Donor Registration Form",
+       "purpose": "Collects the donor's name and blood group."
+      },
+      {
+       "id": "90b42d18c630769a",
+       "name": "Hospital Search Widget",
+       "purpose": "Lets a hospital search for matching blood donors by group."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "668fb864a1506d7f",
+       "name": "Donors API",
+       "purpose": "Stores donor registrations and serves search results against blood group."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "6b0e8fc87555b6c6",
+       "name": "donors table",
+       "purpose": "Stores donor id, name, and blood group."
+      },
+      {
+       "id": "671b1712a19a874a",
+       "name": "search_requests table",
+       "purpose": "Stores a hospital's search query and the matching donors."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A tuition centre app where teachers post homework and parents see marks for each test.",
+  "status": "succeeded",
+  "seconds": 30,
+  "schema": {
+   "sessionId": "8e098b6d-caba-4a5b-829b-46a6ec37d5bd",
+   "title": "Tuition Centre Homework App",
+   "originalPrompt": "A tuition centre app where teachers post homework and parents see marks for each test.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "d8c25531a15e1cda",
+       "name": "Homework Board",
+       "purpose": "Shows teachers' posted homework and marks per student."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "e320f41b99ce2bef",
+       "name": "Homework API",
+       "purpose": "Serves homework and marks, with a gradebook for teachers."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "8f945edf2ab559f7",
+       "name": "homework table",
+       "purpose": "Stores teacher id, subject, and question text."
+      },
+      {
+       "id": "e05ddcc877a49b7e",
+       "name": "marks table",
+       "purpose": "Stores student id, test id, and mark."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A temple donation register that records offerings and prints a receipt for each donor.",
+  "status": "succeeded",
+  "seconds": 33,
+  "schema": {
+   "sessionId": "4a5e2035-3598-43e9-892e-b77ff5ea95b0",
+   "title": "Temple Donation Register",
+   "originalPrompt": "A temple donation register that records offerings and prints a receipt for each donor.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "12de78d3891a0bf5",
+       "name": "Donation Entry Form",
+       "purpose": "Collects the donor's name and the amount of their offering."
+      },
+      {
+       "id": "eaa22c13ac489a0a",
+       "name": "Receipt Printer",
+       "purpose": "Generates a printed receipt for the donor after their offering is recorded."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "ddb2144e61503c8f",
+       "name": "Donations API",
+       "purpose": "Stores each recorded offering and timestamps the entry."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "6186c80ccce247ab",
+       "name": "donations table",
+       "purpose": "Stores donor name, offering amount, and timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A kirana shop credit book: the owner records what each regular customer owes and when they pay.",
+  "status": "succeeded",
+  "seconds": 27,
+  "schema": {
+   "sessionId": "5b90a3a7-86a7-4118-8d37-8e515f517ae2",
+   "title": "Kirana Shop Credit Book",
+   "originalPrompt": "A kirana shop credit book: the owner records what each regular customer owes and when they pay.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "a694bb5df62a576c",
+       "name": "Customer Ledger View",
+       "purpose": "Shows each customer's outstanding balance and payment history."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "88285080404f23c5",
+       "name": "Credit Records API",
+       "purpose": "Records customer purchases and payments, updating each customer's outstanding balance."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "c06f949a9801a345",
+       "name": "credit_records table",
+       "purpose": "Stores customer id, purchase amount, payment status, and date."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "An app to split rent and electricity bills among flatmates.",
+  "status": "succeeded",
+  "seconds": 27,
+  "schema": {
+   "sessionId": "0d5d9243-1a61-4ead-ba6e-295432f5724d",
+   "title": "Flatmate Bill Splitter",
+   "originalPrompt": "An app to split rent and electricity bills among flatmates.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "78afb65e9edc4214",
+       "name": "Bill Split View",
+       "purpose": "Shows each flatmate's share of rent and utilities."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "2e3c0fbaf48cd184",
+       "name": "Billing Service",
+       "purpose": "Calculates each flatmate's share based on agreed contributions."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "2f66293c0097b507",
+       "name": "bills table",
+       "purpose": "Stores bill type, total amount, and per-flatmate allocation."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A crop price board where farmers see today's mandi prices for their district.",
+  "status": "succeeded",
+  "seconds": 27,
+  "schema": {
+   "sessionId": "0b9afa98-64e0-4fb9-bfb3-eb3552a0dd53",
+   "title": "Crop Price Board",
+   "originalPrompt": "A crop price board where farmers see today's mandi prices for their district.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "a32db53acaf743fa",
+       "name": "Price Board View",
+       "purpose": "Shows current mandi prices by district, updated hourly."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "512ba54568cd9dfd",
+       "name": "Price Data API",
+       "purpose": "Serves current mandi prices for a farmer's district, sourced from an external feed."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "6b8a4b863e96316f",
+       "name": "price_data table",
+       "purpose": "Stores mandi price records keyed by district and timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A cricket club scorebook that keeps match scores and player averages for a season.",
+  "status": "succeeded",
+  "seconds": 39,
+  "schema": {
+   "sessionId": "76ee3592-654e-4380-9f87-3b33e0f1c2ca",
+   "title": "Cricket Club Scorebook",
+   "originalPrompt": "A cricket club scorebook that keeps match scores and player averages for a season.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "e7816c7f1eeb0c7c",
+       "name": "Match Result Entry Form",
+       "purpose": "Enters a new match result with innings, wickets, and run totals."
+      },
+      {
+       "id": "c1dc4438e8ac506c",
+       "name": "Player Stats Dashboard",
+       "purpose": "Shows each player's batting and bowling average across the season."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "1a6164838cd28eac",
+       "name": "Scores API",
+       "purpose": "Stores match results and computes player averages."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "465dc829d439076f",
+       "name": "matches table",
+       "purpose": "Stores match id, date, and teams."
+      },
+      {
+       "id": "4650101e03bae17a",
+       "name": "player_stats table",
+       "purpose": "Stores player id, average batting, and average bowling."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A society parking app where residents register vehicles and guards check them at the gate.",
+  "status": "succeeded",
+  "seconds": 39,
+  "schema": {
+   "sessionId": "094e58d8-3ec6-4131-8aaa-be2ffae73696",
+   "title": "Society Parking App",
+   "originalPrompt": "A society parking app where residents register vehicles and guards check them at the gate.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "e78f9598c0c33a37",
+       "name": "Registration Form",
+       "purpose": "Lets a resident register a vehicle with their name and block."
+      },
+      {
+       "id": "11e308e71de75503",
+       "name": "Gate Check UI",
+       "purpose": "Lets a guard scan a vehicle's registration code and decide if it's allowed in."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "d7023b3964758db4",
+       "name": "Parking API",
+       "purpose": "Checks a vehicle's registration against the resident list and records entry/exit events."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "e2e1d46ceff49502",
+       "name": "residents table",
+       "purpose": "Stores resident id, name, and registered vehicle codes."
+      },
+      {
+       "id": "9a32c30f3b331a54",
+       "name": "gate_events table",
+       "purpose": "Stores who checked in/out which vehicle and when."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A library seat booking system for a reading room with fixed time slots.",
+  "status": "succeeded",
+  "seconds": 30,
+  "schema": {
+   "sessionId": "4f1fe84f-986c-44f7-9dac-28daaa49b67c",
+   "title": "Library Seat Booking System",
+   "originalPrompt": "A library seat booking system for a reading room with fixed time slots.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "8c75f8af8c3386e5",
+       "name": "Booking Calendar",
+       "purpose": "Shows available seats per time slot and lets the user book a specific slot."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "1ced97e74d37c5c8",
+       "name": "Bookings API",
+       "purpose": "Manages seat bookings and enforces no-overlap constraints per time slot."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "04b84271f072cc3a",
+       "name": "bookings table",
+       "purpose": "Stores seat id, user id, and booked time slot."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A placement cell portal where companies post drives and students apply.",
+  "status": "succeeded",
+  "seconds": 57,
+  "schema": {
+   "sessionId": "5fab5f27-bf5b-4935-a951-223505a7bb91",
+   "title": "Placement Cell Portal",
+   "originalPrompt": "A placement cell portal where companies post drives and students apply.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "266fa289c29ef6af",
+       "name": "Company Drive Board",
+       "purpose": "Lists open job/internship drives with application deadlines."
+      },
+      {
+       "id": "265ab051a6fc7a2b",
+       "name": "Student Application Form",
+       "purpose": "Lets a student apply to a selected drive with a resume upload."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "ad245ae6b25f66dc",
+       "name": "Placement API",
+       "purpose": "Serves company drive listings, student application submission, and matching."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "8766a0a18775a97c",
+       "name": "drives table",
+       "purpose": "Stores company id, title, role, and application deadline."
+      },
+      {
+       "id": "b4fc4b6113e05172",
+       "name": "applications table",
+       "purpose": "Stores student id, drive id, and resume file reference."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "29ed49cacc7400fe",
+       "name": "Two-Factor Login",
+       "purpose": "Requires a second factor for login beyond the password."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A bus pass renewal app for a city transport office.",
+  "status": "succeeded",
+  "seconds": 27,
+  "schema": {
+   "sessionId": "1bc58f23-e14f-408c-a2fa-01b93a2cf2a9",
+   "title": "Bus Pass Renewal App",
+   "originalPrompt": "A bus pass renewal app for a city transport office.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "aa3aec18670d44a8",
+       "name": "Pass Renewal Form",
+       "purpose": "Collects the renewal applicant's id and payment method."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "e76ea30022d4d853",
+       "name": "Pass Renewal API",
+       "purpose": "Checks the applicant's eligibility and records the renewal."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "c9407c93addb048b",
+       "name": "pass_renewals table",
+       "purpose": "Stores pass id, renewal date, and payment status."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A milk delivery tracker where the milkman marks daily deliveries and customers pay monthly.",
+  "status": "succeeded",
+  "seconds": 27,
+  "schema": {
+   "sessionId": "6c651dbd-c8e4-4be0-a136-fc8779b80c3b",
+   "title": "Milk Delivery Tracker",
+   "originalPrompt": "A milk delivery tracker where the milkman marks daily deliveries and customers pay monthly.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "44d84bd021497142",
+       "name": "Delivery Marking UI",
+       "purpose": "Lets a milkman mark which customer's slot was filled today."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "1fea223309b388ec",
+       "name": "Deliveries API",
+       "purpose": "Records daily deliveries per customer and handles monthly billing."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "a263cad26bc586ed",
+       "name": "deliveries table",
+       "purpose": "Stores customer id, delivery date, and amount owed."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A plant nursery inventory with plants, pots and seasonal stock.",
+  "status": "succeeded",
+  "seconds": 27,
+  "schema": {
+   "sessionId": "090619a8-3da9-40f8-9761-bc589e4cfc84",
+   "title": "Plant Nursery Inventory",
+   "originalPrompt": "A plant nursery inventory with plants, pots and seasonal stock.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "5704097257c0702c",
+       "name": "Inventory Grid",
+       "purpose": "Browses plants, pots, and seasonal stock with filtering."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "ead576316ce1a968",
+       "name": "Inventory API",
+       "purpose": "Manages stock quantities and seasonal availability."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "5714838b2d67639c",
+       "name": "stock_items table",
+       "purpose": "Stores plant, pot, and seasonal stock records."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "An app for a dance academy to manage batches, fees and attendance.",
+  "status": "succeeded",
+  "seconds": 42,
+  "schema": {
+   "sessionId": "492532c6-6771-455f-b7d5-736e23135f3a",
+   "title": "Dance Academy Management",
+   "originalPrompt": "An app for a dance academy to manage batches, fees and attendance.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "39d112646e59cd76",
+       "name": "Batch/Class View",
+       "purpose": "Shows current and past dance classes per batch."
+      },
+      {
+       "id": "566588785f46fa82",
+       "name": "Fees Collection Panel",
+       "purpose": "Lets a staff member record payment against a student's account."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "4e858e9ac612a367",
+       "name": "Academy API",
+       "purpose": "Manages batches, student records, and attendance marking."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "7b52f55f62ccb5dc",
+       "name": "students table",
+       "purpose": "Stores student id, batch id, and payment status."
+      },
+      {
+       "id": "b696aca9309947fd",
+       "name": "attendance table",
+       "purpose": "Records which student attended which class."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "3ec505286db383fe",
+       "name": "Staff-Only Guard",
+       "purpose": "Only staff accounts can mark attendance or manage fees."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A cycle rental service at a railway station.",
+  "status": "succeeded",
+  "seconds": 27,
+  "schema": {
+   "sessionId": "0e7514a7-dfe7-4bc7-bd61-e9e70a934fdd",
+   "title": "Cycle Rental Service",
+   "originalPrompt": "A cycle rental service at a railway station.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "b32097b84d029f7f",
+       "name": "Rental Queue",
+       "purpose": "Lists bikes available for rent, with a queue position for each."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "66f797f20ca801b8",
+       "name": "Rental API",
+       "purpose": "Manages bike inventory and rental queues."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "64dd7de0d8ff3f3b",
+       "name": "bikes table",
+       "purpose": "Stores bike id, status (available/rented), and station id."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A recipe sharing app where home cooks post regional dishes and others rate them.",
+  "status": "succeeded",
+  "seconds": 72,
+  "schema": {
+   "sessionId": "dbbc6b0e-bedb-40d9-9443-122c0a8a8911",
+   "title": "Recipe Sharing App",
+   "originalPrompt": "A recipe sharing app where home cooks post regional dishes and others rate them.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "8f6d5f3156ded043",
+       "name": "Recipe Listing Page",
+       "purpose": "Shows a grid of recipes with titles, ingredients, and a rating."
+      },
+      {
+       "id": "bc3707ec141aa7ef",
+       "name": "Recipe Form",
+       "purpose": "Lets a user submit a new recipe with ingredients, cooking steps, and a region tag."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "b7f0c40e9da07bdc",
+       "name": "Recipes API",
+       "purpose": "CRUD for recipes and ratings, scoped to the posting user."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "4a58a8cb3d9e7fa4",
+       "name": "recipes table",
+       "purpose": "Stores recipe title, ingredients, cooking steps, and region tag."
+      },
+      {
+       "id": "ea85b5fce2bcda83",
+       "name": "ratings table",
+       "purpose": "Stores rating value and the rating user, keyed to the recipe."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "0f6bae41f17d7f14",
+       "name": "User-Scoped Write Guard",
+       "purpose": "Only the original poster can edit or delete their own recipe."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "868f49257159f7b9",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the rating user field on the ratings table",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "any other user besides the original poster",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T16:25:05.609Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Only the original poster can edit or delete their own recipe.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "6445419aacd52e72",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the recipes api",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the frontend recipe listing page",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T16:25:05.609Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "The frontend shows a grid of recipes, which must be backed by the recipes api.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A clinic queue system where patients take a token and see how many are ahead.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "895bfe32-a1b0-4f8a-aeec-0dd7100041f8",
+   "title": "Clinic Queue System",
+   "originalPrompt": "A clinic queue system where patients take a token and see how many are ahead.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "0834225afab976f1",
+       "name": "Queue Board",
+       "purpose": "Shows each patient's position in line."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "4ad47bda1dff7c9c",
+       "name": "Queue Service",
+       "purpose": "Manages token issuance and queue position."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "4b15b781c0e77ded",
+       "name": "queue_items table",
+       "purpose": "Stores patient id and position."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A laptop repair shop job card system.",
+  "status": "succeeded",
+  "seconds": 36,
+  "schema": {
+   "sessionId": "1c281afa-f87d-4e0c-a177-cfc5dd7b76bc",
+   "title": "Laptop Repair Job Card System",
+   "originalPrompt": "A laptop repair shop job card system.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "2e5a50a427abba0a",
+       "name": "Job Card View",
+       "purpose": "Shows the current repair task, customer contact, and parts/ labour breakdown."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "282ab88ded571cee",
+       "name": "Repair API",
+       "purpose": "Schedules jobs, tracks parts used, and generates invoices."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "4ad58c82cd21a9a4",
+       "name": "jobs table",
+       "purpose": "Stores repair task, customer id, and status."
+      },
+      {
+       "id": "7eb2a8df915a8ec7",
+       "name": "parts_stock table",
+       "purpose": "Tracks available parts and inventory levels."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "f412a4567448f4fc",
+       "name": "Staff-Only Login",
+       "purpose": "Requires a staff account to access the repair scheduling interface."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A courier pickup request app for a small town.",
+  "status": "succeeded",
+  "seconds": 33,
+  "schema": {
+   "sessionId": "aad9a96e-87ac-4fa8-889e-0313dc6be474",
+   "title": "Courier Pickup Request App",
+   "originalPrompt": "A courier pickup request app for a small town.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "22784220231661ed",
+       "name": "Pickup Request Form",
+       "purpose": "Lets a customer request a pickup with a description and address."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "9f263ed26ad5f6c8",
+       "name": "Pickup Requests API",
+       "purpose": "Serves CRUD for pickup requests and notifies a dispatcher when a new request arrives."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "d5cbf2760c6bb736",
+       "name": "pickup_requests table",
+       "purpose": "Stores customer id, description, address, and status."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "98c0356cfe05516f",
+       "name": "Dispatcher Login",
+       "purpose": "A restricted login for the courier dispatch office to view and assign pickup requests."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A mess menu voting app where hostel students vote for next week's dishes.",
+  "status": "succeeded",
+  "seconds": 27,
+  "schema": {
+   "sessionId": "31e77bb4-8d0b-4bdc-aa94-899231ad4fff",
+   "title": "Mess Menu Voting App",
+   "originalPrompt": "A mess menu voting app where hostel students vote for next week's dishes.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "1082dc4b999118ff",
+       "name": "Voting Interface",
+       "purpose": "Lets a student see today's menu and vote for next week."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "55ee6d1778855cc1",
+       "name": "Voting API",
+       "purpose": "Records votes and computes the weekly menu from the vote tally."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "c5be70ecba013e7b",
+       "name": "votes table",
+       "purpose": "Stores student id, menu item id, and vote timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A volunteer roster for a food bank.",
+  "status": "succeeded",
+  "seconds": 30,
+  "schema": {
+   "sessionId": "f57582e5-fe38-493d-9874-cb081c56a2e8",
+   "title": "Volunteer Roster",
+   "originalPrompt": "A volunteer roster for a food bank.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "4c6a4a5c2445c82f",
+       "name": "Roster View",
+       "purpose": "Lists available shifts and which volunteers have signed up."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "dea1190a59ad23c3",
+       "name": "Shifts API",
+       "purpose": "Serves shift listings and records volunteer sign-ups."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "e185ac3f9e4331ab",
+       "name": "shifts table",
+       "purpose": "Stores shift date, time, and capacity."
+      },
+      {
+       "id": "bd9b9d43900a8cf0",
+       "name": "volunteer_signups table",
+       "purpose": "Maps volunteers to the shifts they signed up for."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A gym membership tracker with plans, renewals and trainer assignment.",
+  "status": "succeeded",
+  "seconds": 33,
+  "schema": {
+   "sessionId": "641a0039-13eb-4b98-b6da-3335fc22a10d",
+   "title": "Gym Membership Tracker",
+   "originalPrompt": "A gym membership tracker with plans, renewals and trainer assignment.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "306256eefe974c78",
+       "name": "Membership Dashboard",
+       "purpose": "Shows current plan, renewal date, and assigned trainer."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "15cbc21422392574",
+       "name": "Members API",
+       "purpose": "Manages membership plans, renewal dates, and trainer assignments."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "5d6aa1ab260b68fd",
+       "name": "members table",
+       "purpose": "Stores member id, plan id, renewal date, and trainer id."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "f6d6259332240a27",
+       "name": "Two-Factor Login",
+       "purpose": "Requires a second factor for login."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A pet vaccination reminder app.",
+  "status": "succeeded",
+  "seconds": 33,
+  "schema": {
+   "sessionId": "43c0da00-7aa8-4ea7-8511-672fb7aa9d03",
+   "title": "Pet Vaccination Reminder",
+   "originalPrompt": "A pet vaccination reminder app.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "ede003250f31b6ba",
+       "name": "Vaccination Schedule View",
+       "purpose": "Shows the pet's upcoming vaccination dates."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "0e7973f00b24016d",
+       "name": "Vaccination Scheduling API",
+       "purpose": "Serves the pet's vaccination schedule and lets a vet add a new entry."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "5ff903923a745a8f",
+       "name": "pets table",
+       "purpose": "Stores pet id, owner id, and species."
+      },
+      {
+       "id": "74061464bbed43a4",
+       "name": "vaccinations table",
+       "purpose": "Stores pet id, vaccine name, date, and notes."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A event ticketing app for a college fest with passes for each event.",
+  "status": "succeeded",
+  "seconds": 27,
+  "schema": {
+   "sessionId": "9db48599-ad65-4ace-abe0-78237e1f4692",
+   "title": "College Fest Ticketing",
+   "originalPrompt": "A event ticketing app for a college fest with passes for each event.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "8395561bc90cedb1",
+       "name": "Event Ticket View",
+       "purpose": "Shows a attendee's pass for the events they bought tickets for."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "574935871a325fff",
+       "name": "Event Ticketing API",
+       "purpose": "Sells tickets per event and associates them with attendee accounts."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "20080ce8d20b39a4",
+       "name": "tickets table",
+       "purpose": "Stores event id, attendee id, and ticket quantity."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A garbage collection complaint app for a municipal ward.",
+  "status": "succeeded",
+  "seconds": 27,
+  "schema": {
+   "sessionId": "053cc000-9408-40b3-9e39-dd4ee4a97fc9",
+   "title": "Garbage Collection Complaint App",
+   "originalPrompt": "A garbage collection complaint app for a municipal ward.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "7cf4623892dd9bc1",
+       "name": "Complaint Form",
+       "purpose": "Lets a resident report a garbage collection issue."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "fa294a760230d34f",
+       "name": "Complaints API",
+       "purpose": "Stores new complaints and notifies the sanitation team."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "a003e7005bb9961c",
+       "name": "complaints table",
+       "purpose": "Stores resident id, address, and issue description."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A car pooling app for employees of one office.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "794e2734-9ff3-49fd-b5b9-07ec66906cf4",
+   "title": "Employee Car Pooling",
+   "originalPrompt": "A car pooling app for employees of one office.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "9e4152025a138b4f",
+       "name": "Ride Request Form",
+       "purpose": "Lets an employee request a carpool match for a day."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "dbb83250fdde2f9e",
+       "name": "Rides API",
+       "purpose": "Matches employees into carpool groups for a day."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "d8caf0516dad53e3",
+       "name": "rides table",
+       "purpose": "Stores carpool group membership per day."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A vaccination camp registration app for a village.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "c598a903-af8f-4c7f-8b6b-b989360f462c",
+   "title": "Village Vaccination Camp Registration",
+   "originalPrompt": "A vaccination camp registration app for a village.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "059b0c197ca592f5",
+       "name": "Registration Form",
+       "purpose": "Collects patient name, age, and vaccine type."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "a29215123dc309e7",
+       "name": "Vaccination Records API",
+       "purpose": "Records patient registrations and tracks which vaccines are available."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "d0094dac17fbf29b",
+       "name": "vaccinations table",
+       "purpose": "Stores patient id, vaccine type, and timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A warehouse stock movement log for a small distributor.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "6635d58e-7b2a-41f4-a557-4e3fc9584bb9",
+   "title": "Warehouse Stock Movement Log",
+   "originalPrompt": "A warehouse stock movement log for a small distributor.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "467dbea3c77e6cd6",
+       "name": "Stock Movement Log",
+       "purpose": "Lists stock movements with product, quantity, and location."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "2366da4be47c3bf2",
+       "name": "Stock Movement API",
+       "purpose": "Records stock movements and reports current inventory per location."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "785e5d0599ff4841",
+       "name": "stock_movements table",
+       "purpose": "Stores movement id, product id, quantity, location, and timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A coaching institute test series with online answer submission and results.",
+  "status": "succeeded",
+  "seconds": 75,
+  "schema": {
+   "sessionId": "59c078e1-6f57-45bf-8166-d657047fe1a1",
+   "title": "Online Test Series Platform",
+   "originalPrompt": "A coaching institute test series with online answer submission and results.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "21e4763fe63085a2",
+       "name": "Test Submission Form",
+       "purpose": "Collects student answers and submits them."
+      },
+      {
+       "id": "a2b4b9bd66b642a5",
+       "name": "Result Page",
+       "purpose": "Shows each student's raw score and ranking."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "bdd7d6d671246bda",
+       "name": "Test Submission API",
+       "purpose": "Stores answers and computes results per test."
+      },
+      {
+       "id": "f5107bcf2a8b41ee",
+       "name": "Result Calculation Service",
+       "purpose": "Ranks students by raw score after a test window closes."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "0f0aa53cc620aca1",
+       "name": "test_submissions table",
+       "purpose": "Stores student id, question id, and answer text."
+      },
+      {
+       "id": "76162ede126b47d9",
+       "name": "results table",
+       "purpose": "Stores student id, raw score, and rank."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "8db5ed6e6595a345",
+       "name": "Two-Factor Authentication",
+       "purpose": "Optional second factor for login."
+      },
+      {
+       "id": "bf7923e035ef6f5f",
+       "name": "Role-Based Access",
+       "purpose": "Coaches and administrators have different permissions."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "10210948739b5bc5",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the result calculation service",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "raw scores from an open test window",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T16:32:02.269Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Results are only calculated after the test window closes, never while it's still open.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "442f327b30feb4d7",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the frontend submission form",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the test submission api",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T16:32:02.269Z"
+     },
+     "confidence": 1,
+     "lowConfidence": false,
+     "rawText": "The frontend submission form must send its answers to the test submission API; the form itself does not store answers.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A medicine stock tracker for a small pharmacy with expiry alerts.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "b985dc53-cf28-43b1-99a8-de489eff3141",
+   "title": "Medicine Stock Tracker",
+   "originalPrompt": "A medicine stock tracker for a small pharmacy with expiry alerts.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "3afd7c67879ac778",
+       "name": "Stock Dashboard",
+       "purpose": "Shows current stock levels and expiry dates per medicine."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "8b1b1d777a779186",
+       "name": "Stock Management API",
+       "purpose": "Tracks stock movements and calculates expiry alerts."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "6ec121b2b4ff14c0",
+       "name": "stock_items table",
+       "purpose": "Stores medicine name, quantity, and expiry date."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A school transport app where parents see which bus their child is on.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "7b8bdfd9-e39c-4a36-8f1f-a5f919761a1a",
+   "title": "School Transport App",
+   "originalPrompt": "A school transport app where parents see which bus their child is on.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "e6c1f8f377024c8a",
+       "name": "Child Bus Lookup",
+       "purpose": "Shows a parent which bus their child is assigned to."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "3ad6a3efe8bffe1c",
+       "name": "Transport API",
+       "purpose": "Serves the bus assignment lookup to parent-facing clients."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "905f408e40d245a2",
+       "name": "student_bus table",
+       "purpose": "Maps each student to their assigned bus."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A freelance invoice generator for designers.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "0ee00343-7314-4bef-81ad-bf9177317986",
+   "title": "Freelance Invoice Generator",
+   "originalPrompt": "A freelance invoice generator for designers.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "03abd3909d57ec3d",
+       "name": "Invoice Form",
+       "purpose": "Step-by-step invoice creation for a client, service, amount, and payment terms."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "bff45fc8212594bc",
+       "name": "Invoices API",
+       "purpose": "Saves invoices and generates PDF exports."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "83c59469a8ec9dfe",
+       "name": "invoices table",
+       "purpose": "Stores client id, service description, amount, and payment status."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A community notice board for a residential colony.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "a3e7ffc3-10b7-4d24-841f-cf713efa84f3",
+   "title": "Residential Colony Notice Board",
+   "originalPrompt": "A community notice board for a residential colony.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "644f5a9b78750524",
+       "name": "Notice List",
+       "purpose": "Public read-only view of posted notices."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "9ba604ef8cf5de15",
+       "name": "Notice Board API",
+       "purpose": "Serves posted notices and handles new notice submissions."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "586b88984170b377",
+       "name": "notices table",
+       "purpose": "Stores notice title, content, and author id."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A tiffin service app with weekly menus and subscriptions.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "d293b91d-2416-4743-a8f0-c7af3eba1c3c",
+   "title": "Tiffin Service App",
+   "originalPrompt": "A tiffin service app with weekly menus and subscriptions.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "ebf11d20d572bbe6",
+       "name": "Menu Browser",
+       "purpose": "Browses and orders from the weekly menu."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "2b5b5637b94078cd",
+       "name": "Orders API",
+       "purpose": "Manages menu items, subscriptions, and order fulfilment."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "e65b96e3b20090b6",
+       "name": "orders table",
+       "purpose": "Stores customer subscriptions and order history."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "An internship diary where interns log daily work and mentors approve it.",
+  "status": "succeeded",
+  "seconds": 69,
+  "schema": {
+   "sessionId": "2d863e40-33bf-45c1-be03-a96de2f86022",
+   "title": "Internship Diary",
+   "originalPrompt": "An internship diary where interns log daily work and mentors approve it.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "635fd1e3a6b4920d",
+       "name": "Entry Form",
+       "purpose": "Lets an intern log a day's work."
+      },
+      {
+       "id": "8437fdc75295a137",
+       "name": "Mentor Approval Queue",
+       "purpose": "Shows new entries for a mentor to approve or reject."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "5af69c793d476cb2",
+       "name": "Entries API",
+       "purpose": "Stores entries and marks them for mentor review."
+      },
+      {
+       "id": "aaf65b2d852e3f53",
+       "name": "Mentor Review Queue",
+       "purpose": "Categorises new entries for a mentor to approve."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "7d8fa037f75fcea2",
+       "name": "entries table",
+       "purpose": "Stores intern id, date, and log text."
+      },
+      {
+       "id": "fc4006454a393cfd",
+       "name": "mentors table",
+       "purpose": "Stores mentor id and the interns they oversee."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "ae7d446d3d572475",
+       "name": "Mentor-Only Review Guard",
+       "purpose": "Rejects approval from anyone who isn't a mentor."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "e4ebf105ce71165d",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the approval queue",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "non-mentor reviewers",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-real-021",
+      "line": null,
+      "timestamp": "2026-10-21T16:35:11.818Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Only a mentor can approve an intern's entry; non-mentor reviewers are never shown the queue.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "52a7d8bf1f810320",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the frontend entry form",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the backend entries API",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-real-021",
+      "line": null,
+      "timestamp": "2026-10-21T16:35:11.818Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "The form submits to the API; the frontend never directly reads or writes the database.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A sports equipment issue register for a school.",
+  "status": "succeeded",
+  "seconds": 27,
+  "schema": {
+   "sessionId": "9d49a357-ce07-4494-a033-d72972861692",
+   "title": "School Sports Equipment Issue Register",
+   "originalPrompt": "A sports equipment issue register for a school.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "b474ff785ea866f1",
+       "name": "Issue Form",
+       "purpose": "Categorises an issue (e.g. lost, broken) and notes the equipment and quantity."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "587ae5a048abfff8",
+       "name": "Issues API",
+       "purpose": "Records issues against a specific piece of equipment."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "b7c1110f013f857a",
+       "name": "issues table",
+       "purpose": "Stores issue id, equipment id, issue category, and note."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A furniture shop catalogue with custom order requests.",
+  "status": "succeeded",
+  "seconds": 60,
+  "schema": {
+   "sessionId": "11171a33-8503-47f0-a8f9-c32d0743295d",
+   "title": "Furniture Shop Catalogue",
+   "originalPrompt": "A furniture shop catalogue with custom order requests.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "96784f3c327889f0",
+       "name": "Catalog Browser",
+       "purpose": "Browses the shop's furniture catalogue."
+      },
+      {
+       "id": "c4ff8c32ded1a671",
+       "name": "Custom Order Form",
+       "purpose": "Lets a customer request a bespoke furniture build."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "bf238ea112247281",
+       "name": "Catalog API",
+       "purpose": "Serves catalogue data and handles custom order requests."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "542cfa19b895e544",
+       "name": "furniture_items table",
+       "purpose": "Stores furniture stock and pricing."
+      },
+      {
+       "id": "8d0bb2a52f85549f",
+       "name": "custom_orders table",
+       "purpose": "Stores customer-requested bespoke furniture orders."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "9a8ee0a0ee1eb73d",
+       "name": "Order Approval Guard",
+       "purpose": "Rejects a custom order until a staff member approves it."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "87e471859e1c315e",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the custom order form",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "unapproved furniture build",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T16:36:40.847Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "A custom order request must be approved by a staff member before it can be fulfilled.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "7ffc26a0b7fb0b41",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the catalogue browsing view",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the custom order form",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T16:36:40.847Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "The custom order form is only available after a customer has browsed the catalogue.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A yoga class app with sessions, instructors and attendance.",
+  "status": "succeeded",
+  "seconds": 66,
+  "schema": {
+   "sessionId": "eca6fb37-ee16-406d-932a-95220e87a787",
+   "title": "Yoga Class App",
+   "originalPrompt": "A yoga class app with sessions, instructors and attendance.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "051c7ea6cfc97496",
+       "name": "Class Schedule View",
+       "purpose": "Shows upcoming sessions with instructor and time."
+      },
+      {
+       "id": "563cc03a6f9af427",
+       "name": "Instructor Profile Page",
+       "purpose": "Lists the instructor's bio and teaching schedule."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "f1efdab83d471875",
+       "name": "Classes API",
+       "purpose": "Serves session schedules, instructor rosters, and attendance records."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "bca8481ea40800c1",
+       "name": "sessions table",
+       "purpose": "Stores session id, time, and instructor id."
+      },
+      {
+       "id": "add9d4dd0bd19415",
+       "name": "instructors table",
+       "purpose": "Stores instructor id and bio."
+      },
+      {
+       "id": "790fc12cd88ba06d",
+       "name": "attendance table",
+       "purpose": "Maps student id to session id."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "f6d6259332240a27",
+       "name": "Two-Factor Login",
+       "purpose": "Requires a second factor for login."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "c075d47ad00079a6",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the attendance record for a session.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "be empty.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session-gold-021-log.txt",
+      "line": null,
+      "timestamp": "2026-10-21T16:37:46.201Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Every session must have at least one student marked as present.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "650bfeee9eb206b1",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the frontend's class schedule view.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the backend's classes api.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session-gold-021-log.txt",
+      "line": null,
+      "timestamp": "2026-10-21T16:37:46.201Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "The frontend must fetch session data from the backend's Classes API.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A complaint box for an office where employees can post anonymously.",
+  "status": "succeeded",
+  "seconds": 27,
+  "schema": {
+   "sessionId": "5833b159-db7c-43a8-aec5-64244ccc5cf3",
+   "title": "Anonymous Office Complaints",
+   "originalPrompt": "A complaint box for an office where employees can post anonymously.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "08919895e4c62e2d",
+       "name": "Complaint Form",
+       "purpose": "Lets an employee author and submit a complaint anonymously."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "2da81c10ab165444",
+       "name": "Complaints API",
+       "purpose": "Stores complaints with no author association and serves them to other employees."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "c97ed908b4256a23",
+       "name": "complaints table",
+       "purpose": "Stores complaint text and a timestamp, with no author field."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A seed and fertiliser order app for a farmer cooperative.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "974262c7-ff07-47f5-b8f1-25b38189064b",
+   "title": "Farmer Cooperative Order App",
+   "originalPrompt": "A seed and fertiliser order app for a farmer cooperative.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "5e2f66d7b0f7c531",
+       "name": "Order Form",
+       "purpose": "Lets a farmer select products and quantity for an order."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "cc73fcceb40e379b",
+       "name": "Order Service",
+       "purpose": "Saves orders and sends them to the warehouse for fulfilment."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "72ec19557c47da2b",
+       "name": "orders table",
+       "purpose": "Stores farmer id, product, quantity, and order date."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A chess tournament manager with pairings and results.",
+  "status": "succeeded",
+  "seconds": 30,
+  "schema": {
+   "sessionId": "b251c6e5-673f-4598-aec3-9fc8d74a13e9",
+   "title": "Chess Tournament Manager",
+   "originalPrompt": "A chess tournament manager with pairings and results.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "e5fd0ce478de476d",
+       "name": "Pairing Board",
+       "purpose": "Shows round pairings and lets a tournament director mark results."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "7aade41ec05d86f5",
+       "name": "Tournament API",
+       "purpose": "Manages tournament structure, generates pairings, and records results."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "ebe1001fea11bf2d",
+       "name": "tournaments table",
+       "purpose": "Stores tournament name, date, and format."
+      },
+      {
+       "id": "1552920b03449487",
+       "name": "matches table",
+       "purpose": "Stores match results and round number."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A book club app with monthly picks and discussion threads.",
+  "status": "succeeded",
+  "seconds": 33,
+  "schema": {
+   "sessionId": "a6749a23-281c-48d7-b7da-2d714a69e9e9",
+   "title": "Book Club App",
+   "originalPrompt": "A book club app with monthly picks and discussion threads.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "e8487ee1d7f1e6c2",
+       "name": "Bookshelf View",
+       "purpose": "Shows the current month's book pick and past picks."
+      },
+      {
+       "id": "2cee5341b5e5241c",
+       "name": "Discussion Thread",
+       "purpose": "A threaded comment system for discussing the month's book."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "f92eadeed37e5657",
+       "name": "Books API",
+       "purpose": "Manages monthly book picks and discussion thread moderation."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "4e132db6890f0fdd",
+       "name": "books table",
+       "purpose": "Stores monthly book picks and associated discussion thread id."
+      },
+      {
+       "id": "54fa622b0d5e0777",
+       "name": "discussion_threads table",
+       "purpose": "Stores discussion thread content and author id."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A sweet shop festival order booking system.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "f387cac1-7ae1-43b2-ae5c-aad6bdf0d295",
+   "title": "Sweet Shop Festival Order Booking",
+   "originalPrompt": "A sweet shop festival order booking system.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "5221e37245211b89",
+       "name": "Order Form",
+       "purpose": "Collects a customer's name, address, and the items they're ordering."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "db40abdc173228a8",
+       "name": "Order Service",
+       "purpose": "Stores orders and checks stock quantity before confirming."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "a0affb9a6a7e21b0",
+       "name": "orders table",
+       "purpose": "Stores customer name, address, and order line items."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A rainfall and weather log for a farm.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "a2a25d48-509c-4250-b12c-6c1ab6333fb1",
+   "title": "Farm Rainfall and Weather Log",
+   "originalPrompt": "A rainfall and weather log for a farm.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "73a81fe4d13c600f",
+       "name": "Log Entry Form",
+       "purpose": "Lets the farmer record rainfall amount, weather conditions, and any notes."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "a354f5d6d398a88e",
+       "name": "Weather Log API",
+       "purpose": "Stores log entries and serves them to the log view."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "d6f8ca6365b81403",
+       "name": "weather_log table",
+       "purpose": "Stores farm id, rainfall amount, weather conditions, and note text."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A jewellery shop gold savings scheme tracker.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "f2e7b1a1-546c-4f34-97f8-24a11de47c44",
+   "title": "Jewellery Shop Gold Savings Tracker",
+   "originalPrompt": "A jewellery shop gold savings scheme tracker.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "c170943fb8265e0d",
+       "name": "Savings Tracker View",
+       "purpose": "Shows the customer's gold savings balance and contribution history."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "3729894117b34924",
+       "name": "Savings API",
+       "purpose": "Records customer contributions and calculates the current gold savings balance."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "8d37cb7a7ac411c9",
+       "name": "savings_contributions table",
+       "purpose": "Stores customer id, contribution amount, and date."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A carpentry workshop project and material tracker.",
+  "status": "succeeded",
+  "seconds": 33,
+  "schema": {
+   "sessionId": "a04d096a-a76a-4e5d-8f5d-03f0765e5af3",
+   "title": "Carpentry Workshop Project Tracker",
+   "originalPrompt": "A carpentry workshop project and material tracker.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "9be3408fef4cc685",
+       "name": "Project Board",
+       "purpose": "Browses projects, tasks, and material inventories."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "8cc57296ffee667c",
+       "name": "Workshop API",
+       "purpose": "Manages projects, tasks, and material inventories."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "a33fa85edb006fa8",
+       "name": "workshops table",
+       "purpose": "Stores workshop projects."
+      },
+      {
+       "id": "e6cd58d5500af8eb",
+       "name": "materials table",
+       "purpose": "Stores material inventories per project."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "6a47714c2b1fbfe2",
+       "name": "User Login",
+       "purpose": "Requires a login to access the project board."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A language exchange app pairing learners of Hindi and Tamil.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "bb42f6ca-b510-4004-8f26-7cdabc9f3c77",
+   "title": "Language Exchange App",
+   "originalPrompt": "A language exchange app pairing learners of Hindi and Tamil.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "c6a733debad0a8a1",
+       "name": "Language Match Queue",
+       "purpose": "Shows learners of Hindi paired with learners of Tamil, and vice versa."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "193f500834228b07",
+       "name": "Matching Service",
+       "purpose": "Automatically pairs learners into conversation partners based on their target language."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "02f2979d48983578",
+       "name": "match_queue table",
+       "purpose": "Stores learner id and target language for active pairing requests."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A study group finder for engineering students.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "81d6fa83-f94e-4f4f-ae7d-75e71ea48c14",
+   "title": "Study Group Finder",
+   "originalPrompt": "A study group finder for engineering students.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "deb36d37d387b139",
+       "name": "Group Listing Page",
+       "purpose": "Shows a searchable, tag-filterable list of study groups."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "9a03c73d24bd3780",
+       "name": "Group Matching API",
+       "purpose": "Searches groups by tags and member count, returning matching groups."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "fa27c674e9d72e73",
+       "name": "groups table",
+       "purpose": "Stores group title, tags, and current member count."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A fish market price and stock board.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "7643768b-7d50-4575-800c-96c0f065a6e9",
+   "title": "Fish Market Price Board",
+   "originalPrompt": "A fish market price and stock board.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "068a46e23c1428c5",
+       "name": "Price and Stock Board",
+       "purpose": "Public view of current fish prices and stock levels."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "4d4e9ade1b57b5ca",
+       "name": "Market API",
+       "purpose": "Serves current prices and stock status, updated by staff."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "0c9d4f2983e4b32d",
+       "name": "fish_prices table",
+       "purpose": "Stores fish type, current price, and stock count."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A driving school app with lesson slots and test dates.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "4431a9c9-8cac-462d-8068-d2604e6b5fa7",
+   "title": "Driving School Scheduling",
+   "originalPrompt": "A driving school app with lesson slots and test dates.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "22e52ce8822b3a9c",
+       "name": "Scheduling Calendar",
+       "purpose": "Shows available lesson slots and test dates, with booking."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "9e79896bab48efee",
+       "name": "Scheduling API",
+       "purpose": "Manages lesson and test slot bookings."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "7e64e6baf300d47b",
+       "name": "bookings table",
+       "purpose": "Stores student id, slot id, and booking status."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A beauty parlour appointment and package booking app.",
+  "status": "succeeded",
+  "seconds": 33,
+  "schema": {
+   "sessionId": "11c32b5f-d601-4534-90eb-79a48e208982",
+   "title": "Beauty Parlour Booking",
+   "originalPrompt": "A beauty parlour appointment and package booking app.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "8852c565c655d33a",
+       "name": "Appointment Calendar",
+       "purpose": "Lets a client book or reschedule an appointment."
+      },
+      {
+       "id": "1d56956536340d04",
+       "name": "Package Catalog",
+       "purpose": "Shows available beauty treatments and their prices."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "748c0bc3c4bf79b1",
+       "name": "Bookings API",
+       "purpose": "Manages appointment and package bookings."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "ce4346c8a4d2f037",
+       "name": "bookings table",
+       "purpose": "Stores client id, service id, and appointment time."
+      },
+      {
+       "id": "d16fd0a91011ea7b",
+       "name": "packages table",
+       "purpose": "Stores treatment name, description, and price."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A spare parts inventory for a two-wheeler workshop.",
+  "status": "succeeded",
+  "seconds": 30,
+  "schema": {
+   "sessionId": "2162770b-a655-4686-a104-d30479b5b08b",
+   "title": "Two-Wheeler Spare Parts Inventory",
+   "originalPrompt": "A spare parts inventory for a two-wheeler workshop.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "eb7976fd1ce4c1a4",
+       "name": "Part Catalog",
+       "purpose": "Browses and searches the spare parts inventory."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "2ec32ea7674424c5",
+       "name": "Inventory API",
+       "purpose": "Manages part stock levels and order history."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "fd7157c5e4c08cfd",
+       "name": "parts table",
+       "purpose": "Stores part id, name, category, and stock quantity."
+      },
+      {
+       "id": "4ade0f7b2abc572a",
+       "name": "orders table",
+       "purpose": "Stores order line items and shipment status."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A art exhibition entry and voting app.",
+  "status": "succeeded",
+  "seconds": 66,
+  "schema": {
+   "sessionId": "e7404e09-e186-4d52-8e4c-6e1e16372037",
+   "title": "Art Exhibition Entry and Voting",
+   "originalPrompt": "A art exhibition entry and voting app.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "b58f9d05efa98350",
+       "name": "Entry Form",
+       "purpose": "Lets an artist submit a title, medium, and image link for their piece."
+      },
+      {
+       "id": "cd43e840cbde2697",
+       "name": "Voting Page",
+       "purpose": "Shows all entries and lets visitors cast one vote per artist."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "8f10e114ef46a23f",
+       "name": "Entries API",
+       "purpose": "Stores entries and serves the voting page."
+      },
+      {
+       "id": "aa4a0ee33931ecb4",
+       "name": "Voting Guard",
+       "purpose": "Rejects votes from the same visitor address for an artist."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "255c198ae10e2230",
+       "name": "entries table",
+       "purpose": "Stores artist id, title, medium, and image url."
+      },
+      {
+       "id": "3394bf8cdd26f376",
+       "name": "votes table",
+       "purpose": "Stores visitor address, artist id, and vote timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "d6e4ceae0dda520d",
+       "name": "Vote Guard",
+       "purpose": "Rejects duplicate votes from the same visitor address."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "688269ada75eb38b",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the voting page",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "an artist's own entry",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T16:45:11.430Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Visitors can only vote once per artist, not their own entry.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "864e5e573f763582",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the frontend",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the database",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T16:45:11.430Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "The frontend talks to the Entries API, which talks to the database.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A rickshaw stand queue and fare log.",
+  "status": "succeeded",
+  "seconds": 30,
+  "schema": {
+   "sessionId": "b6a94481-d75d-439a-a0e2-1baea4281abc",
+   "title": "Rickshaw Stand Queue",
+   "originalPrompt": "A rickshaw stand queue and fare log.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "612fa7b96c7b1611",
+       "name": "Queue Board",
+       "purpose": "Shows the current queue of waiting customers."
+      },
+      {
+       "id": "0e0a8a895047f578",
+       "name": "Fare Entry Form",
+       "purpose": "Lets a stand owner log a fare amount for a completed ride."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "3ba86719cf9dea3f",
+       "name": "Rides API",
+       "purpose": "Records customer check-in time, stand owner id, and fare amount per ride."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "46f4dae46aba418d",
+       "name": "rides table",
+       "purpose": "Stores customer id, stand owner id, check-in time, and fare amount."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A conference room booking app for a startup.",
+  "status": "succeeded",
+  "seconds": 24,
+  "schema": {
+   "sessionId": "86b789ae-69b2-4afb-aadf-75fd85b1a3d6",
+   "title": "Conference Room Booking",
+   "originalPrompt": "A conference room booking app for a startup.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "9009c28058dead09",
+       "name": "Room Booking Calendar",
+       "purpose": "Shows available times for each room and lets a user book a slot."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "84f78c271468f90e",
+       "name": "Bookings API",
+       "purpose": "Serves the booking calendar and records new bookings."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "ae957d3a3dfea0d1",
+       "name": "bookings table",
+       "purpose": "Stores room id, booked time slot, and booker id."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A old-age home visitor and care schedule app.",
+  "status": "succeeded",
+  "seconds": 33,
+  "schema": {
+   "sessionId": "69b97f4c-bdaf-40b8-9955-93bf6b2d74e3",
+   "title": "Old-Age Home Visitor and Care Schedule",
+   "originalPrompt": "A old-age home visitor and care schedule app.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "09be9d193c8353ba",
+       "name": "Visit Queue",
+       "purpose": "Lists upcoming visits for a caregiver."
+      },
+      {
+       "id": "b76d2abb02bd0064",
+       "name": "Daily Care Plan",
+       "purpose": "Schedules daily tasks for an elderly resident."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "310062dfbc227631",
+       "name": "Care Scheduling API",
+       "purpose": "Manages visit and care plan schedules."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "8d84748e0dd97eb5",
+       "name": "care_schedule table",
+       "purpose": "Stores resident id, visit time, and caregiver id."
+      },
+      {
+       "id": "f8ca3ddf5db74bbb",
+       "name": "care_tasks table",
+       "purpose": "Stores resident id, task description, and scheduled time."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ }
+]

@@ -1,0 +1,3189 @@
+[
+ {
+  "prompt": "A journaling app where I write a daily entry and tag my mood, and can look back at trends in how I've been feeling over time.",
+  "status": "succeeded",
+  "seconds": 66,
+  "schema": {
+   "sessionId": "9957ef96-c1bd-4328-8fc8-1db27c87eb21",
+   "title": "Daily Mood Journal",
+   "originalPrompt": "A journaling app where I write a daily entry and tag my mood, and can look back at trends in how I've been feeling over time.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "a04d1894f290af9e",
+       "name": "Entry Form",
+       "purpose": "Lets the user write a daily entry and pick a mood tag."
+      },
+      {
+       "id": "23e2683fdf4a57fe",
+       "name": "Trend View",
+       "purpose": "Shows a timeline of mood over days or weeks, with aggregated trends."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "e7d5036b21cbb490",
+       "name": "Journal API",
+       "purpose": "Stores entries and mood tags, and computes trends over time."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "eb143ad98cb86046",
+       "name": "entries table",
+       "purpose": "Stores daily entries and mood tag id."
+      },
+      {
+       "id": "b2f0d759808b91ba",
+       "name": "mood_tags table",
+       "purpose": "Stores mood tag names."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A peer-to-peer tool lending app for a neighbourhood - I list tools I own, neighbours request to borrow them, and I approve or decline each request.",
+  "status": "succeeded",
+  "seconds": 57,
+  "schema": {
+   "sessionId": "51b2b81d-66c7-4d64-81a1-0ed964c1a544",
+   "title": "Neighbourhood Tool Lending",
+   "originalPrompt": "A peer-to-peer tool lending app for a neighbourhood - I list tools I own, neighbours request to borrow them, and I approve or decline each request.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "5c9feebdeabc19d9",
+       "name": "Tool Listing Page",
+       "purpose": "Shows the owner's listed tools and lets a neighbour request one."
+      },
+      {
+       "id": "67fc57175750304d",
+       "name": "Borrow Request Queue",
+       "purpose": "Lists pending borrow requests from neighbours, for the owner to approve."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "66dc9558c5e088c2",
+       "name": "Tool Requests API",
+       "purpose": "Receives borrow requests from neighbours and lets the owner approve or decline them."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "1b2e9a71cdc4ea71",
+       "name": "tool_requests table",
+       "purpose": "Stores one row per borrow request: tool id, neighbour id, status."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A dice roller for tabletop games.",
+  "status": "succeeded",
+  "seconds": 33,
+  "schema": {
+   "sessionId": "236b5b6b-0cb9-4799-968d-87f34813378a",
+   "title": "Tabletop Dice Roller",
+   "originalPrompt": "A dice roller for tabletop games.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "af09603a97191e4d",
+       "name": "Roll Button",
+       "purpose": "Lets the player roll one or more dice."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "c3bfd0cd1175e9b2",
+       "name": "Roll Service",
+       "purpose": "Simulates dice rolls and returns the result."
+      }
+     ],
+     "dependsOn": [
+      "security"
+     ]
+    },
+    "database": {
+     "components": [],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "Something for tracking stuff.",
+  "status": "succeeded",
+  "seconds": 39,
+  "schema": {
+   "sessionId": "af8b2028-69f2-4403-a823-0ef57e72939a",
+   "title": "Generic Tracking Tool",
+   "originalPrompt": "Something for tracking stuff.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "31866afa5c8dfe82",
+       "name": "Item Tracker",
+       "purpose": "Lists and creates tracking items."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "4dd61c9fe0852d2b",
+       "name": "Tracking API",
+       "purpose": "Manages tracking items and their status."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "c127ec5aaaabca40",
+       "name": "tracking_items table",
+       "purpose": "Stores item id, description, and current status."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A fully offline note-taking app with no server or account at all - notes stay on my device, and I sync between my own devices only by manually exporting and importing a file.",
+  "status": "succeeded",
+  "seconds": 78,
+  "schema": {
+   "sessionId": "7eace4ba-82d6-4a55-81e8-066d6ef6aca3",
+   "title": "Fully-Offline Note-Taking",
+   "originalPrompt": "A fully offline note-taking app with no server or account at all - notes stay on my device, and I sync between my own devices only by manually exporting and importing a file.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "18315406fb363157",
+       "name": "Note Editor",
+       "purpose": "Plain-text note-taking with markdown support."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [],
+     "dependsOn": []
+    },
+    "database": {
+     "components": [],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "7c58739977b60f4e",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a note-taking app instance",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "a remote server or another user's device",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-real-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:27:09.146Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Notes stay on my device and are never synced to a server or another user's device.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "33ef1d3a6400dbbf",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a note-taking app instance",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "a different device without an exported file",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-real-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:27:09.146Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Syncing is manual and only ever between my own devices.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A whistleblower tip submission portal where submissions are completely anonymous - the system must never store or log the submitter's IP address, account, or any identifying information.",
+  "status": "succeeded",
+  "seconds": 102,
+  "schema": {
+   "sessionId": "9c3b1e4a-447a-4168-b921-cce5b7676892",
+   "title": "Whistleblower Tip Submission Portal",
+   "originalPrompt": "A whistleblower tip submission portal where submissions are completely anonymous - the system must never store or log the submitter's IP address, account, or any identifying information.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "d5ccd5639472b751",
+       "name": "Submission Form",
+       "purpose": "Collects the tip text and any supporting documents; never records the submitter's identity."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "c9d9761bdfb39ded",
+       "name": "Submission API",
+       "purpose": "Stores the tip and supporting documents; must never record the submitter's identity or any identifying context."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "edba91457729e5a2",
+       "name": "tips table",
+       "purpose": "Stores tip text and supporting documents; never stores the submitter's identity."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "2704e41e64dd2f4b",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the system itself",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "ever learn the submitter's identity",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:28:50.198Z"
+     },
+     "confidence": 0.85,
+     "lowConfidence": false,
+     "rawText": "The system must never store or log the submitter's IP address, account, or any identifying information.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "db5aedb33c6af759",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the submission handling workflow",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the database layer",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:28:50.198Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "The system must never record the submitter's identity or any identifying context, so the database must never see it.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A scheduling app for our church community: members RSVP to events, volunteers sign up for setup and cleanup shifts on each event, and admins get reminder emails sent automatically 24 hours before an event starts.",
+  "status": "succeeded",
+  "seconds": 78,
+  "schema": {
+   "sessionId": "d1148947-c19a-45f6-b95a-9c97420fd7c4",
+   "title": "Church Community Scheduling",
+   "originalPrompt": "A scheduling app for our church community: members RSVP to events, volunteers sign up for setup and cleanup shifts on each event, and admins get reminder emails sent automatically 24 hours before an event starts.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "2dbd7ec242e7e501",
+       "name": "Event RSVP Widget",
+       "purpose": "Lets a member mark attendance for an event."
+      },
+      {
+       "id": "09be7ec64ad59b33",
+       "name": "Shift Sign-Up Queue",
+       "purpose": "Lets a volunteer reserve a setup or cleanup shift for an event."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "f50607c898e02894",
+       "name": "Event API",
+       "purpose": "Records RSVPs and shift sign-ups, and sends reminder emails to admin."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "a19ad6b46362dccc",
+       "name": "events table",
+       "purpose": "Stores event title, date, and capacity."
+      },
+      {
+       "id": "db4642f2ecd70c54",
+       "name": "rsvps table",
+       "purpose": "Stores member id and event id for who RSVPed."
+      },
+      {
+       "id": "b0cd505d1f7c7ada",
+       "name": "shift_signups table",
+       "purpose": "Stores volunteer id, event id, and shift role (setup/cleanup)."
+      },
+      {
+       "id": "3591fc7000dfdf84",
+       "name": "reminders queue",
+       "purpose": "Scheduled queue of reminder email tasks."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "04b3368cf0561131",
+       "name": "Email-Address-Only Login",
+       "purpose": "Login only via email address, no password field shown."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "936108a60e985f4c",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the shift sign-up queue component",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the rsvps table",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-real-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:30:07.674Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Volunteers sign up for setup/cleanup shifts separately from event RSVPs.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "d594da03908f87d9",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the reminder email task queue",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the event api or shift sign-up queue",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-real-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:30:07.674Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "Reminders are sent automatically 24 hours before an event, from the reminder queue.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A citizen science app where volunteers log wildlife sightings with a photo and location, and researchers review and verify or reject each submission.",
+  "status": "succeeded",
+  "seconds": 84,
+  "schema": {
+   "sessionId": "546f0fb6-a6b0-4dd3-8a22-35f778166544",
+   "title": "Citizen Science Wildlife Sighting App",
+   "originalPrompt": "A citizen science app where volunteers log wildlife sightings with a photo and location, and researchers review and verify or reject each submission.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "6e85f41175da7186",
+       "name": "Sighting Form",
+       "purpose": "Lets a volunteer enter a species, location, and upload a photo."
+      },
+      {
+       "id": "a79de64a33e467a9",
+       "name": "Research Review Queue",
+       "purpose": "Shows verified and unverified sightings for a researcher to review."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "c8f228ca8f9a5e51",
+       "name": "Sightings API",
+       "purpose": "Stores sightings and serves them to the review queue."
+      },
+      {
+       "id": "0c88ba5be524a883",
+       "name": "Review API",
+       "purpose": "Lets a researcher mark a sighting as verified or rejected."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "33f7c1e44e98697b",
+       "name": "sightings table",
+       "purpose": "Stores volunteer id, species, location, and photo reference."
+      },
+      {
+       "id": "a74e66e7ccf52f71",
+       "name": "review_decisions table",
+       "purpose": "Stores researcher id, sighting id, and decision (verified/rejected)."
+      },
+      {
+       "id": "f4cb3eb13f66d76d",
+       "name": "user_roles table",
+       "purpose": "Maps user ids to volunteer/researcher role."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "87a1102965cab65f",
+       "name": "Role-Based Access",
+       "purpose": "Researchers can only see and act on the review queue, volunteers can only submit sightings."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "9e34c1b2c5e26d63",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the review queue view for researchers.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "a volunteer's own sighting.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:31:32.991Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Researchers review and verify or reject each submission; volunteers can only ever submit a sighting, never see or edit another volunteer's entry.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "fc31e13f21fdf683",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the sighting form.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the review queue.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:31:32.991Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "A volunteer submits a sighting, which goes into the review queue for researchers to verify or reject before it's considered official.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A carbon footprint tracker: I log my transport, food, and energy use, it estimates emissions from what I logged, and shows how my footprint trends over time.",
+  "status": "succeeded",
+  "seconds": 33,
+  "schema": {
+   "sessionId": "4522b427-f059-46b4-8334-4202e4fb421f",
+   "title": "Carbon Footprint Tracker",
+   "originalPrompt": "A carbon footprint tracker: I log my transport, food, and energy use, it estimates emissions from what I logged, and shows how my footprint trends over time.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "878759d13ec421ca",
+       "name": "Log Entry Form",
+       "purpose": "Collects transport, food, and energy use data."
+      },
+      {
+       "id": "13c593dc8066f4e3",
+       "name": "Footprint Dashboard",
+       "purpose": "Shows total and trended carbon footprint over time."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "3011b9f5fc998833",
+       "name": "Footprint Calculation Service",
+       "purpose": "Estimates carbon emissions from logged activities."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "baf61b70c32ee2c0",
+       "name": "footprints table",
+       "purpose": "Stores logged entries and calculated footprint totals."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A local business directory where owners claim and update their own listing, and customers can leave reviews on it.",
+  "status": "succeeded",
+  "seconds": 75,
+  "schema": {
+   "sessionId": "8c3d76c1-5f62-48d3-beec-ccdb87f23264",
+   "title": "Business Directory with Owner Control",
+   "originalPrompt": "A local business directory where owners claim and update their own listing, and customers can leave reviews on it.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "1f3b76e36567b1cf",
+       "name": "Business Listing Form",
+       "purpose": "Lets an owner edit their business's name, category, and description."
+      },
+      {
+       "id": "5ff6f14365a95d69",
+       "name": "Review List",
+       "purpose": "Shows customer reviews for a business, with a "
+      },
+      {
+       "id": "95db6e38341ccbb0",
+       "name": "Claim Code Entry",
+       "purpose": "Lets a business prove ownership before editing their listing."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "95340e6e070fdff8",
+       "name": "Business API",
+       "purpose": "Manages business listings and owner-verified edit access."
+      },
+      {
+       "id": "8fb76d7490d63938",
+       "name": "Review Service",
+       "purpose": "Stores and lists customer reviews."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "382633af148af46f",
+       "name": "businesses table",
+       "purpose": "Stores business name, category, and owner id."
+      },
+      {
+       "id": "b73d2f5bf21aa376",
+       "name": "reviews table",
+       "purpose": "Stores customer id, business id, and text."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "933b1cf96c4b4de6",
+       "name": "Owner-Verified Edit Guard",
+       "purpose": "Rejects edit attempts from a user who isn't the claimed business owner."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "316e0107262421a5",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a customer review form.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "be editable by the customer who wrote it.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:33:20.784Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Customers can leave a review, but the review form is not editable once submitted.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "9bd41529b97fac0b",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the claim code entry step.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the business listing form.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:33:20.784Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "An owner must prove ownership with a claim code before editing their listing.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A hospital shift-handoff app where outgoing nurses write patient notes and incoming nurses read them, but front-desk staff must never see clinical notes, only appointment schedules.",
+  "status": "succeeded",
+  "seconds": 72,
+  "schema": {
+   "sessionId": "c35282e6-e6b5-4014-bbd0-a489637879dd",
+   "title": "Hospital Shift-Handoff App",
+   "originalPrompt": "A hospital shift-handoff app where outgoing nurses write patient notes and incoming nurses read them, but front-desk staff must never see clinical notes, only appointment schedules.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "5c0cefdb9248d6bb",
+       "name": "Handoff Notes Editor",
+       "purpose": "Lets an outgoing nurse add or edit a patient's notes."
+      },
+      {
+       "id": "5ecc887a616bd6cd",
+       "name": "Handoff Notes Reader",
+       "purpose": "Lets an incoming nurse read the latest notes for a patient."
+      },
+      {
+       "id": "cd1143665b5c4313",
+       "name": "Front-Desk Schedule View",
+       "purpose": "Shows appointment schedules; never shows clinical notes."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "508615d3d9f225a3",
+       "name": "Handoff Notes API",
+       "purpose": "Serves notes to the nurse reading view and never to the front-desk schedule view."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "8fae5d7bf90026f8",
+       "name": "patient_notes table",
+       "purpose": "Stores clinical notes keyed by patient id and shift timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "8a96286528a8b110",
+       "name": "Clinical-View Guard",
+       "purpose": "Denies front-desk staff access to the clinical notes; only nurse shift handoff ever sees clinical notes."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "063b935e216b38df",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the front-desk schedule view",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "clinical notes",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:34:32.003Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Front-desk staff must never see clinical notes, only appointment schedules.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "fa93cd48e38fe963",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the handoff notes reader view",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the handoff notes editor view",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:34:32.003Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "Outgoing nurses write notes and incoming nurses read them; the read view must never edit or create a note.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A landlord-tenant maintenance portal where tenants file repair requests and landlords assign contractors, but contractors can only see requests assigned to them, never the full building's request history.",
+  "status": "succeeded",
+  "seconds": 69,
+  "schema": {
+   "sessionId": "ce8ed6e1-d58d-4585-be82-c997c655c851",
+   "title": "Landlord-Tenant Maintenance Portal",
+   "originalPrompt": "A landlord-tenant maintenance portal where tenants file repair requests and landlords assign contractors, but contractors can only see requests assigned to them, never the full building's request history.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "7413bee9eabefa1a",
+       "name": "Tenant Request Form",
+       "purpose": "Lets a tenant describe a repair need."
+      },
+      {
+       "id": "37cdc2bf999c7a9f",
+       "name": "Landlord Assignment Panel",
+       "purpose": "Lets a landlord assign a request to a contractor."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "f80af87637c6694f",
+       "name": "Maintenance Requests API",
+       "purpose": "Stores requests and lets landlords assign them."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "1e1351be008a29e3",
+       "name": "requests table",
+       "purpose": "Stores tenant id, description, and current status."
+      },
+      {
+       "id": "f5e1e051d9dbc7cd",
+       "name": "request_assignments table",
+       "purpose": "Maps a request to its assigned contractor."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "c7b0dfdf491b81ba",
+       "name": "Contractor Request Guard",
+       "purpose": "Rejects contractor reads of unassigned requests or full history."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "86f3f6e62251d293",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a contractor's read access to requests.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the full building's request history.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:35:41.967Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Contractors can only see requests assigned to them, never the full building's request history.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "782370dd727d6943",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the landlord-tenant domain.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the contractor domain.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:35:41.967Z"
+     },
+     "confidence": 1,
+     "lowConfidence": false,
+     "rawText": "Contractors can only see requests assigned to them, never the full building's request history.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A university grading system where professors enter grades and students view their own, but a student must never be able to see another student's grade for any assignment.",
+  "status": "failed",
+  "seconds": 551,
+  "error": {
+   "phase": "generate",
+   "reason": "provider-error",
+   "message": "The local model reached its output limit. Try a smaller request."
+  }
+ },
+ {
+  "prompt": "A corporate expense report tool where employees submit receipts and managers approve them, but an employee must never be able to approve their own expense report even if they also have a manager role.",
+  "status": "succeeded",
+  "seconds": 69,
+  "schema": {
+   "sessionId": "229bd412-da93-487b-8ad0-74832250cf67",
+   "title": "Expense Report Tool",
+   "originalPrompt": "A corporate expense report tool where employees submit receipts and managers approve them, but an employee must never be able to approve their own expense report even if they also have a manager role.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "1925ca4a3cecde4e",
+       "name": "Expense Submission Form",
+       "purpose": "Lets an employee upload receipts and submit their report."
+      },
+      {
+       "id": "d7c882c861958ce3",
+       "name": "Manager Approval Queue",
+       "purpose": "Shows a manager the pending expense reports for their team."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "825b75c3de0a2df1",
+       "name": "Expenses API",
+       "purpose": "Stores reports and checks manager/employee role before approving."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "22c51fdb1d82baee",
+       "name": "expenses table",
+       "purpose": "Stores employee id, manager id, and receipt data."
+      },
+      {
+       "id": "e9d4932b33fc13f3",
+       "name": "approvals table",
+       "purpose": "Stores which manager approved which report."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "228a8f07b3ff2650",
+       "name": "Self-Approval Guard",
+       "purpose": "Rejects an approval from the employee's own report, even if the employee is also a manager."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "8fb54d94691ffa8d",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "an employee approving their own report",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "be allowed under any circumstances",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:46:02.829Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "An employee must never be able to approve their own expense report, even if they also have a manager role.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "40119623b36796f1",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the approval guard",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the manager-approval queue presentation layer",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:46:02.829Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "Managers see a queue of pending expense reports to approve; an employee must never see or approve their own report.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A daycare app where staff log incidents and only the center director can edit or delete a submitted incident report - staff can add but never modify after submission.",
+  "status": "succeeded",
+  "seconds": 63,
+  "schema": {
+   "sessionId": "3a6e657b-fa50-465f-b757-6cb8d10d4896",
+   "title": "Daycare Incident Tracking",
+   "originalPrompt": "A daycare app where staff log incidents and only the center director can edit or delete a submitted incident report - staff can add but never modify after submission.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "a1afca95a3fb6503",
+       "name": "Incident Log Form",
+       "purpose": "Collects staff-entered incident details."
+      },
+      {
+       "id": "e2c3551a2f3f79db",
+       "name": "Staff-Only View",
+       "purpose": "Shows submitted incidents to staff but not the edit/delete button."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "6f3990385bf6d039",
+       "name": "Incidents API",
+       "purpose": "Stores incidents and restricts edits/deletes to the director."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "dde5f9bc4e3ae387",
+       "name": "incidents table",
+       "purpose": "Stores staff id, incident details, and a submitted timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "59b1eae400249116",
+       "name": "Director-Only Edit Guard",
+       "purpose": "Rejects edit or delete from anyone other than the center director."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "d080f2304c99aad5",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a staff member's own incident report after submission",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "be edited or deleted by that staff member",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:47:05.584Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Staff can add but never modify after submission.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "045a363f40dce052",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the center director role",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the incidents:edit or incidents:delete permission",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:47:05.584Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "Only the center director can edit or delete a submitted incident report.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A ride-share driver payout system where drivers see their own earnings and dispatchers see all drivers' earnings, but a driver must never query another driver's payout data through the API.",
+  "status": "succeeded",
+  "seconds": 66,
+  "schema": {
+   "sessionId": "402e6e5c-a5ac-4621-aed1-ca66b6940ca0",
+   "title": "Ride-Share Driver Payout System",
+   "originalPrompt": "A ride-share driver payout system where drivers see their own earnings and dispatchers see all drivers' earnings, but a driver must never query another driver's payout data through the API.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "d23766b0774c206e",
+       "name": "Driver Earnings View",
+       "purpose": "Shows the driver's own payout history."
+      },
+      {
+       "id": "1cc77dc7c0cdf780",
+       "name": "Dispatcher Earnings View",
+       "purpose": "Shows all drivers' payout history."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "d702a47f7a76a4d1",
+       "name": "Payout API",
+       "purpose": "Serves driver and dispatcher earnings data, with a restriction that a driver cannot query another driver's data."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "243c70367ca77e7b",
+       "name": "payouts table",
+       "purpose": "Stores driver id, trip amount, and timestamp."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "81410f1a0a06bf4a",
+       "name": "Cross-User Earnings Query Guard",
+       "purpose": "Rejects a driver's attempt to query another driver's payout data."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "a485879a5e3a5b8b",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a driver querying another driver's payout data",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the api",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:48:11.590Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "A driver must never query another driver's payout data through the API.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "56f938ef488b2fb7",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the dispatcher earnings view",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the driver earnings view",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:48:11.590Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "Dispatchers see all drivers' earnings, but a driver must never query another driver's payout data through the API.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A software team's on-call rotation tool where engineers see the schedule and only the team lead can override an on-call assignment - the override must be logged with who made the change and why.",
+  "status": "succeeded",
+  "seconds": 69,
+  "schema": {
+   "sessionId": "b1cf6538-8a54-4b50-94c3-7573257a29f5",
+   "title": "On-Call Rotation Tool",
+   "originalPrompt": "A software team's on-call rotation tool where engineers see the schedule and only the team lead can override an on-call assignment - the override must be logged with who made the change and why.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "c6e69f5606bab23a",
+       "name": "On-Call Schedule View",
+       "purpose": "Shows each engineer their on-call slot for the current and next shift."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "85630000350186af",
+       "name": "On-Call Scheduler API",
+       "purpose": "Manages the on-call rotation and enforces the team lead override guard."
+      },
+      {
+       "id": "01d8eafa8cb56bd2",
+       "name": "Override Log Service",
+       "purpose": "Records every override with the reason, the lead's id, and the timestamp."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "603f45469a136238",
+       "name": "oncall_shifts table",
+       "purpose": "Stores team membership and scheduled on-call rotations."
+      },
+      {
+       "id": "6a30f20fbb4b0aed",
+       "name": "override_logs table",
+       "purpose": "Stores every override decision with context."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "545d9f2c3ce2aa0b",
+       "name": "Team Lead Override Guard",
+       "purpose": "Only the team lead role can override an on-call assignment, and every override must be logged."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "62bac07a33d44b28",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "an engineer's override attempt",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "be approved by the team lead",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-real-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:49:21.663Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Only the team lead can override an on-call assignment; engineers cannot override or bypass the schedule.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "f9da73cebb320690",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the override log service",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the on-call scheduler api",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-real-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:49:21.663Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "Every override must be logged with who made the change and why.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A subscription box service where customers manage their own billing and support staff can view but never edit a customer's payment method directly.",
+  "status": "succeeded",
+  "seconds": 63,
+  "schema": {
+   "sessionId": "cda7007d-f899-412b-a4de-3c293111a265",
+   "title": "Subscription Box Billing Service",
+   "originalPrompt": "A subscription box service where customers manage their own billing and support staff can view but never edit a customer's payment method directly.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "31e217c2f29af0fc",
+       "name": "Billing Dashboard",
+       "purpose": "Lets a customer view and change their own payment method."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "6e1b28539a3590ff",
+       "name": "Billing API",
+       "purpose": "Manages subscriptions and payment methods, exposing a read-only view for support staff."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "cdb23aa4f0696991",
+       "name": "subscriptions table",
+       "purpose": "Stores customer subscription plan and payment method id."
+      },
+      {
+       "id": "129790dbcb315dde",
+       "name": "payment_methods table",
+       "purpose": "Stores payment method details, only ever read by support staff."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "9050f8a134a02ad3",
+       "name": "Read-Only Support View",
+       "purpose": "Support staff can see a customer's payment method id but never the raw payment details."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "e2fe0880f4073568",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a support staff member's view of a customer's payment method",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the raw payment card number or expiry date",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:50:24.579Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Support staff can view a customer's payment method id but never the raw payment card number or expiry date.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "a8ae3521c1dbf4d6",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the billing dashboard's payment method edit form",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the payment_methods table",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:50:24.579Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "Customers manage their own payment method directly, never through support staff.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A shared vacation-home booking calendar for extended family where any family member can request dates but only the two owners can approve a booking, and a rejected request must not silently become approved later.",
+  "status": "succeeded",
+  "seconds": 66,
+  "schema": {
+   "sessionId": "9514bcc2-8f3a-4ea8-86f4-65e728695cfd",
+   "title": "Family Vacation-Home Booking",
+   "originalPrompt": "A shared vacation-home booking calendar for extended family where any family member can request dates but only the two owners can approve a booking, and a rejected request must not silently become approved later.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "36b929b4d9eac77c",
+       "name": "Booking Request Form",
+       "purpose": "Lets a family member request a date range."
+      },
+      {
+       "id": "383baacf9fe03df0",
+       "name": "Approval Queue",
+       "purpose": "Shows pending and owner-approved requests."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "5ddf086be6ec6765",
+       "name": "Bookings API",
+       "purpose": "Records requests and requires owner approval to mark a date range as booked."
+      },
+      {
+       "id": "96e4319c84cfb99d",
+       "name": "Rejection Guard",
+       "purpose": "Rejects any attempt to approve a previously rejected request."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "ea27cb669947390b",
+       "name": "bookings table",
+       "purpose": "Stores requestor, date range, and approval status."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "7694803ca45107ef",
+       "name": "Owner-Approval Guard",
+       "purpose": "Only the two owners can approve or reject a booking request."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "1d810b9b2785a2be",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a rejected request being approved later",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "ever be approved",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:51:32.048Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "A rejected request must not silently become approved later.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "89869c6aed805538",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the two owners approving or rejecting a request",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "any family member's booking request",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:51:32.048Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "only the two owners can approve a booking, and a rejected request must not silently become approved later.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A voting app for a homeowners association where residents cast one vote per household and the board can view aggregate results but never see how an individual household voted.",
+  "status": "succeeded",
+  "seconds": 51,
+  "schema": {
+   "sessionId": "bed6a485-fdd4-4a70-a353-df6a2365bf77",
+   "title": "Homeowners Association Voting App",
+   "originalPrompt": "A voting app for a homeowners association where residents cast one vote per household and the board can view aggregate results but never see how an individual household voted.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "96ce7779f66db37a",
+       "name": "Voting Interface",
+       "purpose": "Lets a resident cast a vote; only one vote per household."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "c23a07634baa4be8",
+       "name": "Voting API",
+       "purpose": "Records votes and computes aggregate results per question."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "57021181d32065bb",
+       "name": "votes table",
+       "purpose": "Stores one vote per household per question."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "7fb7b66dfd81dfae",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the board's view of results",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "raw individual votes",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:52:21.648Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "The board can view aggregate results but never see how an individual household voted.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "eb23e75510be0e98",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the frontend voting interface",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the voting backend API",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:52:21.648Z"
+     },
+     "confidence": 1,
+     "lowConfidence": false,
+     "rawText": "Residents cast votes through the frontend, which talks to the voting backend API.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A freelance marketplace where clients post jobs and freelancers bid, but a freelancer must never see a competing freelancer's bid amount before submitting their own.",
+  "status": "succeeded",
+  "seconds": 57,
+  "schema": {
+   "sessionId": "a572641c-8fa2-424d-96b7-921ddb217e15",
+   "title": "Freelance Marketplace",
+   "originalPrompt": "A freelance marketplace where clients post jobs and freelancers bid, but a freelancer must never see a competing freelancer's bid amount before submitting their own.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "ab2b11e110f40419",
+       "name": "Job Bidding Form",
+       "purpose": "Lets a freelancer submit a bid amount without seeing other bidders' amounts."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "d7eff427e31a13e9",
+       "name": "Bid Submission Guard",
+       "purpose": "Rejects a bid if the client has already received another bid, ensuring no one sees competing bids."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "5a94946f4d836b45",
+       "name": "bids table",
+       "purpose": "Stores client id, job id, and freelancer id, plus a timestamp of when the bid was submitted."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "47206e972527a4b9",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a freelancer's bid amount view",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "another freelancer's bid amount view",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:53:19.458Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "A freelancer must never see a competing freelancer's bid amount before submitting their own.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "8489492e0f13d12d",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the bid submission guard mechanism",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the client's bid evaluation process",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:53:19.458Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "Rejects a bid if the client has already received another bid, ensuring no one sees competing bids.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A internal bug tracker where developers file and close bugs, but only QA can mark a bug as verified-fixed - a developer closing their own bug does not count as verification.",
+  "status": "succeeded",
+  "seconds": 63,
+  "schema": {
+   "sessionId": "caca33cf-af45-4ede-9151-2fd9e7eef2ac",
+   "title": "Internal Bug Tracker",
+   "originalPrompt": "A internal bug tracker where developers file and close bugs, but only QA can mark a bug as verified-fixed - a developer closing their own bug does not count as verification.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "5bf7feff7757b220",
+       "name": "Bug List View",
+       "purpose": "Shows open bugs, with a form to file a new one."
+      },
+      {
+       "id": "8d53ba35c41e76f9",
+       "name": "Bug Detail View",
+       "purpose": "Shows a bug's status and comments, with a button to close it only if the reporter is the author."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "07843c3c5874c3bc",
+       "name": "Bugs API",
+       "purpose": "CRUD for bugs, with a verified-fixed flag restricted to QA."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "391cb53603b9b346",
+       "name": "bugs table",
+       "purpose": "Stores bug title, status, reporter id, and assignee id."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "0e2460c4a7f049a5",
+       "name": "Verification Guard",
+       "purpose": "Only QA team members can mark a bug as verified-fixed."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "79d200d0a9a20449",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a developer closing their own bug.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "be marked as verified-fixed.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-real-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:54:21.662Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "A developer closing their own bug does not count as verification.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "cdffce1a2d2f35ea",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the QA team.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the verification guard.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-real-021",
+      "line": null,
+      "timestamp": "2026-10-21T10:54:21.662Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "Only QA can mark a bug as verified-fixed.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A school field trip payment app where parents pay a fee and the school treasurer reconciles payments, but teachers organizing the trip can see who has paid, never the payment method or card details.",
+  "status": "succeeded",
+  "seconds": 63,
+  "schema": {
+   "sessionId": "2f8f01d9-25ce-4126-86f2-6c22fe1472bf",
+   "title": "School Field Trip Payment App",
+   "originalPrompt": "A school field trip payment app where parents pay a fee and the school treasurer reconciles payments, but teachers organising the trip can see who has paid, never the payment method or card details.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "72f17f196aa8b95f",
+       "name": "Trip Overview Page",
+       "purpose": "Shows which students have paid and which are still outstanding."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "ad7e2628e0f4eb1d",
+       "name": "Reconciliation API",
+       "purpose": "Lets the treasurer see raw payment records, but teachers only see payment status."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "4a07f7a26a874b9c",
+       "name": "payments table",
+       "purpose": "Stores student id, payment status, and amount."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "2fe5d775cc7340c5",
+       "name": "Payment Method Masking",
+       "purpose": "Teachers see a generic 'paid' status instead of credit card details."
+      },
+      {
+       "id": "9094577e91dfc2a4",
+       "name": "Reconciliation Guard",
+       "purpose": "The treasurer's view of raw payment records is separate from the teachers' overview."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "4acc41d42c14f1d4",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the teachers' overview page",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "raw payment records",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:55:26.288Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Teachers organising the trip can see who has paid, never the payment method or card details.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "4a036a8f7b97e91d",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the treasurer's reconciliation view",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "raw payment records",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:55:26.288Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "The treasurer's reconciliation view is a separate, raw view of payment records, not exposed to teachers.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A restaurant loyalty points system where customers redeem points and staff issue them at checkout, but a customer must never be able to issue points to their own account directly.",
+  "status": "succeeded",
+  "seconds": 66,
+  "schema": {
+   "sessionId": "b71c275a-a28b-476f-9f25-d7dd301912a1",
+   "title": "Restaurant Loyalty Points System",
+   "originalPrompt": "A restaurant loyalty points system where customers redeem points and staff issue them at checkout, but a customer must never be able to issue points to their own account directly.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "c64943befbf9e9ed",
+       "name": "Points Redemption Form",
+       "purpose": "Lets a customer redeem a specific number of points."
+      },
+      {
+       "id": "94c4da80a4e0ce6f",
+       "name": "Staff Issuance Interface",
+       "purpose": "Lets a staff member issue points to a customer's account."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "a5c4f9554f55bf17",
+       "name": "Points Service",
+       "purpose": "Manages point issuance and redemption, enforcing the customer-cannot-issue-to-self constraint."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "1cd2c7403c2df2b0",
+       "name": "points table",
+       "purpose": "Stores customer id, point amount, and redemption status."
+      },
+      {
+       "id": "bf1015c2bf750db2",
+       "name": "point_issuance table",
+       "purpose": "Stores staff member id, customer id, and point amount for issued points."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "d9e2aa9c99d83905",
+       "name": "Customer-Own-Only Guard",
+       "purpose": "Rejects any point issuance from a customer's own account."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "ea3ed8bca18f208f",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a customer's own account directly.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "issue points to.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:56:32.931Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "a customer must never be able to issue points to their own account directly.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "6b71067c977e9776",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the points service.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the point issuance guard.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:56:32.931Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "the points service must enforce the customer-cannot-issue-to-self constraint.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A construction site safety inspection app where inspectors file reports and site managers respond, but a site manager must never edit an inspector's original findings, only add a response.",
+  "status": "succeeded",
+  "seconds": 60,
+  "schema": {
+   "sessionId": "d5fc4849-7339-4db1-b80f-e8f2452c85ad",
+   "title": "Construction Site Safety Inspection App",
+   "originalPrompt": "A construction site safety inspection app where inspectors file reports and site managers respond, but a site manager must never edit an inspector's original findings, only add a response.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "1cafd79ed3d02a34",
+       "name": "Report Form",
+       "purpose": "Lets an inspector describe a safety issue and upload photos."
+      },
+      {
+       "id": "a604458401033b9e",
+       "name": "Manager Response Panel",
+       "purpose": "Lets a site manager add a reply to an existing report, never editing the original findings."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "c04a7307e3ce70d0",
+       "name": "Inspection Reports API",
+       "purpose": "Stores inspector reports and manager responses as separate entities."
+      }
+     ],
+     "dependsOn": [
+      "database"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "858f0c3161e32b15",
+       "name": "inspections table",
+       "purpose": "Stores report text and any uploaded media."
+      },
+      {
+       "id": "f64d612372b5aee2",
+       "name": "responses table",
+       "purpose": "Stores manager replies keyed to an inspection, never updating the original report."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "09c05bd72757b386",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a site manager's response edit action",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "an inspector's original findings",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:57:31.302Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "A site manager must never edit an inspector's original findings, only add a response.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "4a9eee07372c8952",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the frontend report form",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the backend inspection reports API",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:57:31.302Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "Inspectors file reports through a form that talks to the backend reports API.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A community lending library for board games where members borrow and return games, and only librarians can mark a game as lost or damaged - a member reporting damage does not itself change the game's status.",
+  "status": "succeeded",
+  "seconds": 72,
+  "schema": {
+   "sessionId": "897a6642-0b2d-4150-aea6-76e399bfd1a6",
+   "title": "Community Lending Library",
+   "originalPrompt": "A community lending library for board games where members borrow and return games, and only librarians can mark a game as lost or damaged - a member reporting damage does not itself change the game's status.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "455c39faf0d1aa08",
+       "name": "Game Borrow/Return Queue",
+       "purpose": "Lists games a member can borrow or return."
+      },
+      {
+       "id": "0426f153829329ab",
+       "name": "Librarian Mark As Lost/Damaged Panel",
+       "purpose": "Lets a librarian mark a game as lost or damaged, with a reason field."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "1ca7c7b728336279",
+       "name": "Games API",
+       "purpose": "Manages game borrow/return records and librarian-only mark-as-lost/damaged actions."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "7c9feff90707f929",
+       "name": "games table",
+       "purpose": "Stores game id, title, and current status."
+      },
+      {
+       "id": "7b3e50fd10b871d8",
+       "name": "borrow_returns table",
+       "purpose": "Stores who borrowed a game to whom, and when."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "24c305708d1f76c8",
+       "name": "Librarian-Only Mark-As-Lost/Damaged Guard",
+       "purpose": "Only librarians can mark a game as lost or damaged."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "cc358b8ae978693f",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "a member reporting damage",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "change the game's status directly",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:58:45.046Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "A member reporting damage does not itself change the game's status.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "6f0d8e354a9f69ec",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the librarian mark-as-lost/damaged panel",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the borrow/return queue view for members",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:58:45.046Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "Only librarians can mark a game as lost or damaged - a member reporting damage does not itself change the game's status.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A telehealth app where patients book video visits with doctors, and billing staff can see appointment times and durations for invoicing but must never access the visit's clinical summary.",
+  "status": "succeeded",
+  "seconds": 66,
+  "schema": {
+   "sessionId": "0fb5e035-ea85-4ee8-9cc9-fcfd0c09656d",
+   "title": "Telehealth App",
+   "originalPrompt": "A telehealth app where patients book video visits with doctors, and billing staff can see appointment times and durations for invoicing but must never access the visit's clinical summary.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "258aa797a9981db8",
+       "name": "Visit Booking Calendar",
+       "purpose": "Lets a patient book a video visit with a specific doctor."
+      },
+      {
+       "id": "8af58b268017660c",
+       "name": "Billing Staff Dashboard",
+       "purpose": "Shows appointment times and durations; never shows the clinical summary."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "3e4032de78aebf69",
+       "name": "Scheduling API",
+       "purpose": "Schedules visits and exposes an API for billing staff to read appointment details."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "373540fe09ebb56c",
+       "name": "appointments table",
+       "purpose": "Stores doctor id, patient id, visit time, and duration."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "408a4df2786a79d2",
+       "name": "Clinical Summary Guard",
+       "purpose": "Billing staff can read appointment times/durations but never the clinical summary content."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "757f462651a0ebd4",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "billing staff access to the clinical summary.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "ever.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:59:49.316Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Billing staff can see appointment times and durations for invoicing but must never access the visit's clinical summary.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "af2738ab583af253",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "billing staff dashboard.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "clinical summary view.",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-022",
+      "line": null,
+      "timestamp": "2026-10-21T10:59:49.316Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Billing staff can see appointment times and durations for invoicing but must never access the visit's clinical summary.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ },
+ {
+  "prompt": "A co-working space access system where members badge in with their own credentials, and front-desk staff can see who is currently in the building but never a member's full entry/exit history.",
+  "status": "succeeded",
+  "seconds": 69,
+  "schema": {
+   "sessionId": "ef91e141-620c-46ca-9f69-1a13cfc7f21d",
+   "title": "Co-Working Space Access",
+   "originalPrompt": "A co-working space access system where members badge in with their own credentials, and front-desk staff can see who is currently in the building but never a member's full entry/exit history.",
+   "domains": {
+    "frontend": {
+     "components": [
+      {
+       "id": "b69266566ddc2b2d",
+       "name": "Member Badge-In Portal",
+       "purpose": "Lets a member scan their badge and confirms access."
+      },
+      {
+       "id": "27cd7e9c5515b19e",
+       "name": "Staff Presence Dashboard",
+       "purpose": "Shows current visitor count but never logs individual entries/exits."
+      }
+     ],
+     "dependsOn": [
+      "backend"
+     ]
+    },
+    "backend": {
+     "components": [
+      {
+       "id": "6da460b1c0e72d9e",
+       "name": "Access API",
+       "purpose": "Verifies badge access and records presence for the current session only."
+      },
+      {
+       "id": "6383c92b423b8acb",
+       "name": "Staff Presence Service",
+       "purpose": "Real-time presence feed for staff, never recording individual member history."
+      }
+     ],
+     "dependsOn": [
+      "database",
+      "security"
+     ]
+    },
+    "database": {
+     "components": [
+      {
+       "id": "d1ede1e6d0d59433",
+       "name": "presence_events table",
+       "purpose": "Stores current visitor count; never stores individual member entry/exit records."
+      }
+     ],
+     "dependsOn": []
+    },
+    "security": {
+     "components": [
+      {
+       "id": "e3512abe304408bf",
+       "name": "Access-Only Logging",
+       "purpose": "Only records presence for the current session; no full entry/exit history is ever logged."
+      }
+     ],
+     "dependsOn": []
+    }
+   },
+   "constraints": [
+    {
+     "id": "b08d8552cc7b7ace",
+     "relation": "must-not-import",
+     "subject": {
+      "phrase": "the staff presence dashboard",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "a member's full entry/exit history",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T11:01:00.957Z"
+     },
+     "confidence": 0.8,
+     "lowConfidence": false,
+     "rawText": "Front-desk staff can see who is currently in the building but never a member's full entry/exit history.",
+     "via": null,
+     "provenance": "STATED"
+    },
+    {
+     "id": "f0078a1717081764",
+     "relation": "must-be-layer-above",
+     "subject": {
+      "phrase": "the access api",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "object": {
+      "phrase": "the badge-in portal",
+      "status": "UNRESOLVED",
+      "target": null,
+      "origin": "prose",
+      "reason": "no-candidate",
+      "similarity": 0,
+      "alternatives": []
+     },
+     "source": {
+      "type": "chat-log",
+      "location": "session:session-gold-021",
+      "line": null,
+      "timestamp": "2026-10-21T11:01:00.957Z"
+     },
+     "confidence": 0.9,
+     "lowConfidence": false,
+     "rawText": "The access API verifies badge access and the portal calls it to confirm access.",
+     "via": null,
+     "provenance": "STATED"
+    }
+   ],
+   "provenance": "STATED"
+  }
+ }
+]

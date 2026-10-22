@@ -49,8 +49,9 @@ def main():
     llama = WORK / f"llama.cpp-{TAG}"
     (OUT / "LICENSE-llama.cpp").write_bytes((llama / "LICENSE").read_bytes())
     models = [
-        {"id": "local", "label": "Planner · round 3 · 563 examples", "adapter": "planner_r3", "archive": "plan_r3.zip",
-         "sourceSha256": "c150e8f190d5ba574b336f988addcbe84eeb1bacc19fc00bd6cad8d81a12627f",
+        # Round 4: trained only on complete plans - 75 of 86 held-out prompts got a complete plan against 20 for round 3.
+        {"id": "local", "label": "Planner · round 4 · 331 complete plans", "adapter": "planner_r4", "archive": "plan_r4.zip",
+         "sourceSha256": "35403e5b3b44d37d3b4d022fd4231b01b37fd36eae5d3fe5847c927716402355",
          "base": "Qwen/Qwen2.5-7B-Instruct", "baseRevision": "a09a35458c702b33eeacc393d103063234e8bc28", "revision": "bb5d59e06d9551d752d08b292a50eb208b07ab1f",
          "files": [
              ["qwen2.5-7b-instruct-q4_k_m-00001-of-00002.gguf", 3993201344, "dfce12e3862a5283ccfb88221b48480e58745165de856439950d0f22590580db"],
