@@ -54,16 +54,18 @@ setsid -f $PY ~/local_inference_server.py --port 8712 \
 wait_http http://127.0.0.1:8712/models code5
 log coders-ready
 S=http://127.0.0.1:8712
-run_eval() { # name, reference dir, candidate model, [repair model]
+run_eval() { # name, reference dir, plans file, candidate model, [repair model]
   log "eval-$1-start"
-  node scripts/eval-code-model.mjs --candidate=$S,model=$3 ${4:+--repair=$S,model=$4} \
-    --reference=$2 --out=training/eval/code/qwen-coder-7b-$1.json > ~/r4-eval-$1.log 2>&1
+  # --gold names the plans the references were built from; without it the script reads the old 47.
+  node scripts/eval-code-model.mjs --candidate=$S,model=$4 ${5:+--repair=$S,model=$5} \
+    --reference=$2 --gold=$3 --out=training/eval/code/qwen-coder-7b-$1.json > ~/r4-eval-$1.log 2>&1
   log "eval-$1-exit $?"
 }
-run_eval fix-r1r4 capture/code/gold-reference code1 code4
-run_eval new-r1 capture/code/new-reference code1
-run_eval new-r5 capture/code/new-reference code5
-run_eval new-r1r4 capture/code/new-reference code1 code4
+NEW=training/data/eval-new/plans-563.jsonl
+run_eval fix-r1r4 capture/code/gold-reference training/data/gold/gold.jsonl code1 code4
+run_eval new-r1 capture/code/new-reference $NEW code1
+run_eval new-r5 capture/code/new-reference $NEW code5
+run_eval new-r1r4 capture/code/new-reference $NEW code1 code4
 kill $(pgrep -f "[l]ocal_inference_server") 2>/dev/null
 sleep 20
 
