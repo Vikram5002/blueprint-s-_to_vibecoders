@@ -59,6 +59,11 @@ def main():
          "sourceSha256": "42855369d8b1a647c5fc47f40ec513695a915adfa8180dc104c71f7bee9c9846",
          "base": "Qwen/Qwen2.5-Coder-7B-Instruct", "baseRevision": "c03e6d358207e414f1eca0bb1891e29f1db0e242", "revision": "13fb94bfda8c8cf22497dc57b78f391a9acb426a",
          "files": [["qwen2.5-coder-7b-instruct-q4_k_m.gguf", 4683073536, "509287f78cb4d4cf6b3843734733b914b2c158e43e22a7f4bf5e963800894d3c"]]},
+        # Repairs only (src/llm/provider-registry.ts LOCAL_REPAIR_MODEL): round 1 writes, round 4 fixes - 95.7% after repair against 87.0%.
+        {"id": "local-fix", "label": "Repair coder · round 4", "adapter": "code_rich_r4", "archive": "code_adapter_r4.zip",
+         "sourceSha256": "21806c5294b223046f39d6b6373de4603c6b7b36ab52a240234b859d64282b66",
+         "base": "Qwen/Qwen2.5-Coder-7B-Instruct", "baseRevision": "c03e6d358207e414f1eca0bb1891e29f1db0e242", "revision": "13fb94bfda8c8cf22497dc57b78f391a9acb426a",
+         "files": [["qwen2.5-coder-7b-instruct-q4_k_m.gguf", 4683073536, "509287f78cb4d4cf6b3843734733b914b2c158e43e22a7f4bf5e963800894d3c"]]},
     ]
     for model in models:
         archive_path = ROOT.parent / "pdsf" / model["archive"]
@@ -70,7 +75,7 @@ def main():
         config = next(adapter_dir.rglob("adapter_config.json"))
         base_dir = WORK / (model["id"] + "-config")
         base_dir.mkdir(exist_ok=True)
-        config_sha = {"local": "7463bb0ea78315365e6c6b74de4e73bbcc8359dfb0c5a737584e077d42c0b03c", "local-code": "c0242402ad6a13b331ea320feea8c7e3776ffb7a4eff0757b9cd667e116d9a28"}[model["id"]]
+        config_sha = {"local": "7463bb0ea78315365e6c6b74de4e73bbcc8359dfb0c5a737584e077d42c0b03c", "local-code": "c0242402ad6a13b331ea320feea8c7e3776ffb7a4eff0757b9cd667e116d9a28", "local-fix": "c0242402ad6a13b331ea320feea8c7e3776ffb7a4eff0757b9cd667e116d9a28"}[model["id"]]
         download(f"https://huggingface.co/{model['base']}/raw/{model['baseRevision']}/config.json", base_dir / "config.json", config_sha)
         dest = OUT / (model["adapter"] + ".gguf")
         env = {**os.environ, "PYTHONPATH": str(llama / "gguf-py"), "PYTHONDONTWRITEBYTECODE": "1"}
