@@ -134,6 +134,28 @@ describe('installBuildAndRepair', () => {
     },
     60_000,
   );
+
+  it(
+    'sends build repairs to repairProvider when one is given, never to the writing provider',
+    async () => {
+      const schema = oneRouterSchema();
+      const files = [
+        { path: 'package.json', contents: JSON.stringify({ name: 'fixture', private: true, scripts: { build: 'node fake-tsc.js' } }) },
+        { path: 'fake-tsc.js', contents: FAKE_TSC },
+        { path: 'backend/src/routes/thing.ts', contents: 'export const router = 1;\n' },
+      ];
+      await writeProjectFiles(root, files, true);
+      const provider = providerFrom(() => 'export const router = 3;\n');
+      const repairProvider = providerFrom(() => '// FIXED\nexport const router = 2;\n');
+
+      const result = await installBuildAndRepair({ schema, llm: { provider, repairProvider, cache: nullCache }, root, files });
+
+      expect(result.ok).toBe(true);
+      expect(provider.calls).toHaveLength(0);
+      expect(repairProvider.calls).toHaveLength(1);
+    },
+    60_000,
+  );
 });
 
 describe('runCommand timeout', () => {

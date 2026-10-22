@@ -60,7 +60,8 @@ export interface CommandResult {
 
 export interface InstallBuildAndRepairOptions {
   readonly schema: ValidatedProjectSchema;
-  readonly llm: { readonly provider: CompletionProvider; readonly cache: LabelCache };
+  /** `repairProvider`, when given, writes the build-failure repairs instead of `provider` (see LOCAL_REPAIR_MODEL). */
+  readonly llm: { readonly provider: CompletionProvider; readonly cache: LabelCache; readonly repairProvider?: CompletionProvider };
   /** The generated project's directory - where npm runs and where regenerated files are written. */
   readonly root: string;
   /** The project's files as currently on disk under `root`; the returned files are these with every repaired file replaced. */
@@ -163,7 +164,7 @@ export async function installBuildAndRepair(
     const buildRetry = await regenerateForBuildFailure(
       schema,
       {
-        provider: llm.provider,
+        provider: llm.repairProvider ?? llm.provider,
         cache: llm.cache,
         skipCache: true,
         root,

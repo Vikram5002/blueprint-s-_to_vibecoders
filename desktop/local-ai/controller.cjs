@@ -2,6 +2,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { detect, GiB } = require('./hardware.cjs');
 const { download, verified } = require('./files.cjs');
+
+/** Every base-model file once, even when several adapters share a base. */
+function uniqueFiles(models) {
+  return [...new Map(models.flatMap((m) => m.files).map((f) => [f.name, f])).values()];
+}
 const { Engine } = require('./engine.cjs');
 const { startBridge } = require('./bridge.cjs');
 
@@ -11,7 +16,7 @@ class LocalAI {
     this.manifest = JSON.parse(fs.readFileSync(path.join(assets, 'manifest.json'), 'utf8'));
     this.executable = path.join(assets, 'runtime', 'llama-server.exe');
     this.folder = readSettings().localAI?.folder ?? defaultFolder;
-    this.state = { busy: false, message: 'Check this computer to get started.', enabled: false, folder: this.folder, models: this.manifest.models.map((m) => m.label), downloadGB: this.manifest.models.flatMap((m) => m.files).reduce((sum, f) => sum + f.bytes, 0) / 1e9 };
+    this.state = { busy: false, message: 'Check this computer to get started.', enabled: false, folder: this.folder, models: this.manifest.models.map((m) => m.label), downloadGB: uniqueFiles(this.manifest.models).reduce((sum, f) => sum + f.bytes, 0) / 1e9 };
   }
 
   update(values) { Object.assign(this.state, values); this.onChange(this.state); }
@@ -57,7 +62,7 @@ class LocalAI {
       const selected = mode === 'auto' ? recommended.mode : mode;
       if (selected !== 'cpu' && !recommended.device) throw new Error('No compatible dedicated GPU was detected. Select CPU mode.');
       fs.mkdirSync(this.folder, { recursive: true });
-      const files = this.manifest.models.flatMap((m) => m.files);
+      const files = uniqueFiles(this.manifest.models);
       const remaining = files.reduce((sum, file) => {
         const final = path.join(this.folder, file.name);
         const part = final + '.part';
@@ -66,10 +71,14 @@ class LocalAI {
       }, 0);
       const disk = fs.statfsSync(this.folder);
       if (disk.bavail * disk.bsize < remaining + GiB) throw new Error(`Not enough disk space. Keep at least ${(remaining / GiB + 1).toFixed(1)} GB free in the selected folder.`);
+      const ready = new Set();
       for (const model of this.manifest.models) {
         this.update({ progress: null, message: `Verifying bundled ${model.label} adapter...` });
         if (!await verified(path.join(this.assets, model.adapterFile), { sha256: model.adapterSha256 }, signal)) throw new Error('Bundled adapter checksum failed. Reinstall VibeCoder.');
         for (const file of model.files) {
+          // Models on one base share its files: check or download each once.
+          if (ready.has(file.name)) continue;
+          ready.add(file.name);
           if (importOnly) {
             this.update({ message: `Checking ${file.name}...` });
             if (!await verified(path.join(this.folder, file.name), file, signal)) throw new Error(`Missing or incorrect file: ${file.name}. Select the folder containing the official Q4_K_M files, or use Download / resume.`);

@@ -193,7 +193,7 @@ export function createApplicationJobStore(): ApplicationJobStore {
 }
 
 export interface ApplicationRouteDeps {
-  readonly llm: { readonly provider: CompletionProvider; readonly cache: LabelCache } | null;
+  readonly llm: { readonly provider: CompletionProvider; readonly cache: LabelCache; readonly repairProvider?: CompletionProvider } | null;
   /** Whether the server's own code model can answer now; absent = assume yes. A request's own key counts too. */
   readonly available?: () => Promise<boolean>;
   /** Directory each job writes its generated project under, one subfolder per job id - see resolveGenerationRoot in server.ts. */

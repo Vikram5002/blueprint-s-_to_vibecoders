@@ -29,6 +29,7 @@
 import { requestProvider } from './request-provider.js';
 import { chooseProvider, createProvider, isLocalProvider, type ProviderName } from './select-provider.js';
 import {
+  createLocalProvider,
   DEFAULT_LOCAL_BASE_URL,
   LOCAL_BASE_URL_ENV,
   LOCAL_CODE_BASE_URL_ENV,
@@ -427,10 +428,16 @@ async function serviceStatus(
 export function createSwitchableProvider(
   registry: ProviderRegistry,
   fallbackModel: string,
-  role: 'plan' | 'code' = 'plan',
+  role: 'plan' | 'code' | 'repair' = 'plan',
+  fetchImpl: typeof fetch = fetch,
 ): CompletionProvider {
   let lastKnown: CompletionProvider | null = null;
-  const currentName = (): ProviderName => (role === 'code' ? registry.currentCode() : registry.current());
+  const currentName = (): ProviderName => (role === 'plan' ? registry.current() : registry.currentCode());
+  const resolveTarget = async (): Promise<CompletionProvider | null> => {
+    if (role === 'plan') return registry.resolve();
+    const code = await registry.resolveCode();
+    return role === 'repair' && code !== null ? ((await localRepairProvider(registry, fetchImpl)) ?? code) : code;
+  };
 
   return {
     get name(): string {
@@ -443,7 +450,7 @@ export function createSwitchableProvider(
       // The person's own key, when their request brought one (request-provider.ts).
       const own = requestProvider();
       if (own !== undefined) return own.complete(request);
-      const target = role === 'code' ? await registry.resolveCode() : await registry.resolve();
+      const target = await resolveTarget();
       if (target === null) {
         return {
           ok: false,
@@ -460,4 +467,22 @@ export function createSwitchableProvider(
       return target.complete(request);
     },
   };
+}
+
+/** The served model name a local server uses for a coder trained to repair: measured best after repair, not at first writing. */
+export const LOCAL_REPAIR_MODEL = 'local-fix';
+
+/**
+ * When the code model is the local server and that server also serves
+ * `local-fix`, build repairs go to it: on the 46-component benchmark the
+ * round-4 coder passed 95.7% after repair against round 1's 87.0%, while
+ * round 1 stays ahead at the first attempt. Any other setup repairs with
+ * the code model itself, as before.
+ */
+async function localRepairProvider(registry: ProviderRegistry, fetchImpl: typeof fetch): Promise<CompletionProvider | null> {
+  if (registry.currentCode() !== 'local-code') return null;
+  const baseUrl = registry.localCodeBaseUrl();
+  const served = await probeModels(baseUrl, fetchImpl);
+  if (served?.models.some((entry) => entry.name === LOCAL_REPAIR_MODEL) !== true) return null;
+  return createLocalProvider({ baseUrl, model: LOCAL_REPAIR_MODEL, fetchImpl });
 }

@@ -375,7 +375,11 @@ export async function startServer(context: AnalysisContext, options: StartOption
   };
   // Same shared cache, but a proxy that follows the code-generation choice
   // rather than the plan one - see CODE_PROVIDER_SETTING_KEY.
-  const codeLlm = { provider: createSwitchableProvider(registry, llm.provider.model, 'code'), cache: llm.cache };
+  const codeLlm = {
+    provider: createSwitchableProvider(registry, llm.provider.model, 'code'),
+    repairProvider: createSwitchableProvider(registry, llm.provider.model, 'repair'),
+    cache: llm.cache,
+  };
   const applicationDeps: ApplicationRouteDeps = {
     llm: codeLlm,
     available: async () => (await registry.resolveCode()) !== null,

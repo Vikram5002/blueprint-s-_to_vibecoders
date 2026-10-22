@@ -6,7 +6,7 @@ function validRequest(body) {
   return body && typeof body.system === 'string' && typeof body.user === 'string'
     && Number.isInteger(body.maxOutputTokens) && body.maxOutputTokens > 0 && body.maxOutputTokens <= 8192
     && (body.temperature === undefined || (Number.isFinite(body.temperature) && body.temperature >= 0 && body.temperature <= 2))
-    && (body.model === undefined || ['local', 'local-code'].includes(body.model))
+    && (body.model === undefined || ['local', 'local-code', 'local-fix'].includes(body.model))
     && (body.schema === undefined || (body.schema !== null && typeof body.schema === 'object' && !Array.isArray(body.schema)));
 }
 

@@ -484,3 +484,32 @@ describe('local code base URL - the coder may share the planner\'s server or hav
     expect(LOCAL_CODE_BASE_URL_SETTING_KEY).toBe('llm.localCodeBaseUrl');
   });
 });
+
+describe('repair provider - a local server can serve a separate repair coder', () => {
+  // One fake local server: /models lists `names`, /complete answers with the model asked for.
+  const server = (names: string[]) =>
+    (async (url: unknown, init?: RequestInit) => {
+      if (String(url).endsWith('/models')) {
+        const models = names.map((name) => ({ name, base: 'b', adapter: 'a' }));
+        return new Response(JSON.stringify({ models, default: 'local' }), { status: 200 });
+      }
+      const asked = JSON.parse(String(init?.body)).model as string;
+      return new Response(JSON.stringify({ ok: true, value: { text: asked, model: asked, usage: { promptTokens: 1, completionTokens: 1, cachedPromptTokens: 0 } } }), { status: 200 });
+    }) as typeof fetch;
+  const request = { system: 's', user: 'u', maxOutputTokens: 8 };
+  // Which model a repair went to; `model` reports the target of the last call.
+  const repairModel = async (fetchImpl: typeof fetch): Promise<string> => {
+    const registry = createProviderRegistry({ env: {}, initial: 'local', initialCode: 'local-code', fetchImpl });
+    const provider = createSwitchableProvider(registry, 'm', 'repair', fetchImpl);
+    await provider.complete(request);
+    return provider.model;
+  };
+
+  it('repairs with local-fix when the local code server serves it', async () => {
+    expect(await repairModel(server(['local', 'local-code', 'local-fix']))).toBe('local-fix');
+  });
+
+  it('repairs with the code model itself when the server has no local-fix', async () => {
+    expect(await repairModel(server(['local', 'local-code']))).toMatch(/^local-code/);
+  });
+});
