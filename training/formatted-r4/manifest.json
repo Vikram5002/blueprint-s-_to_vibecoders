@@ -1,0 +1,7 @@
+{
+  "source": "training/formatted-r3/dataset.jsonl",
+  "rule": "keep a plan with 3+ pages, an API and tables; keep a thinner plan only when its prompt is 10 words or fewer",
+  "why": "round-3 planner (563 rows, 234 of them 1-2 page plans) wrote complete plans for 20 of 86 held-out prompts",
+  "rows": 331,
+  "dropped": 232
+}
