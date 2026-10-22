@@ -92,7 +92,7 @@ if (!buildReference && (!candidateArg || !outPath)) {
   console.error(
     'Usage:\n' +
       '  node scripts/eval-code-model.mjs --build-reference [--reference-provider=gemini] [--reference=dir] [--limit=N]\n' +
-      '  node scripts/eval-code-model.mjs --candidate=<url>[,model=<name>]|gemini|anthropic|bluesminds --out=<file.json> [--domains=backend,security] [--limit=N] [--skip-c]',
+      '  node scripts/eval-code-model.mjs --candidate=<url>[,model=<name>]|gemini|anthropic|bluesminds --out=<file.json> [--repair=<url>,model=<name>] [--domains=backend,security] [--limit=N] [--skip-c]',
   );
   process.exit(1);
 }
@@ -268,6 +268,8 @@ async function regenerateWith(provider, schema, entry, contextFiles) {
 
 async function evaluate() {
   const candidate = await providerFor(candidateArg);
+  // --repair=<spec>: a second model does B's repair rounds (the app's local-fix); default the candidate itself.
+  const repairer = argValue('repair') === undefined ? candidate : await providerFor(argValue('repair'));
   const evalName = basename(outPath, '.json');
   const workRoot = argValue('work') ?? join('capture/code/work', `eval-${evalName}`);
   const projects = loadReferenceProjects();
@@ -328,7 +330,7 @@ async function evaluate() {
         row.D_B = true;
         row.reasonsB = [];
       } else {
-        const repaired = await installBuildAndRepair({ schema, llm: { provider: candidate, cache: nullCache }, root: scratch, files });
+        const repaired = await installBuildAndRepair({ schema, llm: { provider: candidate, repairProvider: repairer, cache: nullCache }, root: scratch, files });
         if (!repaired.ok) {
           stopOnProviderError(repaired.error, `${schema.sessionId} ${entry.targetPath} (repair)`);
           row.reasonsB = ['repair-failed'];
@@ -391,6 +393,7 @@ async function evaluate() {
   const report = {
     candidate: candidate.name,
     candidateModel: candidate.model,
+    repairModel: repairer.model,
     reference: referenceDir,
     referenceProjects: projects.length,
     nodeModulesSharing: linkMode,
