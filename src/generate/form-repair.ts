@@ -2,7 +2,7 @@
  * The form check's fix loop (form-check.ts): every page with a problem is
  * regenerated once per round by the repair coder, told exactly which call
  * failed and what the API really offers; the project is rebuilt and checked
- * again, for at most MAX_FORM_FIX_ROUNDS. A regenerated page that breaks the
+ * again, for at most MAX_FORM_FIX_ROUNDS (3). A regenerated page that breaks the
  * build is put back as it was - a working build is never traded for a form.
  */
 import type { ValidatedProjectSchema } from '../types/project-schema.js';
@@ -15,7 +15,8 @@ import { runFormCheck, type FormCheckOptions, type FormCheckResult, type FormPro
 import { findComponentByTargetPath, generateComponentFile, type GenerateProjectFailure } from './generate-project.js';
 import { writeProjectFiles, type RegenerationAttempt } from './verify-and-regenerate.js';
 
-export const MAX_FORM_FIX_ROUNDS = 2;
+// Three: on the library app the second round left one call a single field name away from working.
+export const MAX_FORM_FIX_ROUNDS = 3;
 
 export type FormPhase = 'form-checking' | 'form-fixing';
 
