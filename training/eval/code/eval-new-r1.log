@@ -1,0 +1,82 @@
+candidate: local:code1; reference projects: 27; scratch: capture/code/work/eval-qwen-coder-7b-new-r1
+A  session-new-003 backend/src/routes/donation-api.ts
+C  session-new-003 whole project
+!! session-new-004 backend/src/routes/homework-api.ts  A:build-failed  B:build-failed
+A  session-new-004 backend/src/middleware/two-factor-authentication.ts
+!! session-new-004 whole project  build-failed
+A  session-new-007 backend/src/routes/mandi-price-api.ts
+C  session-new-007 whole project
+ B session-new-008 backend/src/routes/score-management-api.ts  A:build-failed
+!! session-new-008 whole project  build-failed
+ B session-new-011 backend/src/routes/placement-api.ts  A:build-failed
+A  session-new-011 backend/src/middleware/role-based-access-control.ts
+!! session-new-011 whole project  build-failed
+A  session-new-012 backend/src/routes/pass-management-api.ts
+A  session-new-012 backend/src/middleware/user-authentication.ts
+C  session-new-012 whole project
+A  session-new-013 backend/src/routes/deliveries-api.ts
+!! session-new-013 backend/src/routes/billing-service.ts  A:build-failed  B:build-failed
+A  session-new-013 backend/src/middleware/payment-guard.ts
+!! session-new-013 whole project  build-failed
+A  session-new-014 backend/src/routes/inventory-api.ts
+C  session-new-014 whole project
+A  session-new-017 backend/src/routes/queue-api.ts
+C  session-new-017 whole project
+A  session-new-018 backend/src/routes/job-api.ts
+A  session-new-018 backend/src/routes/customer-api.ts
+A  session-new-018 backend/src/middleware/role-based-access-control.ts
+C  session-new-018 whole project
+!! session-new-019 backend/src/routes/pickup-requests-api.ts: generation failed (unparseable-json)
+!! session-new-019 whole project  generation-failed
+A  session-new-020 backend/src/routes/voting-api.ts
+C  session-new-020 whole project
+A  session-new-024 backend/src/routes/ticketing-api.ts
+C  session-new-024 whole project
+A  session-new-025 backend/src/routes/complaint-api.ts
+A  session-new-025 backend/src/middleware/ward-scoped-access.ts
+C  session-new-025 whole project
+A  session-new-026 backend/src/routes/rides-api.ts
+C  session-new-026 whole project
+A  session-new-032 backend/src/routes/invoicing-api.ts
+C  session-new-032 whole project
+A  session-new-039 backend/src/routes/complaint-api.ts
+A  session-new-039 backend/src/middleware/anonymous-only-posting-guard.ts
+C  session-new-039 whole project
+A  session-new-040 backend/src/routes/orders-api.ts
+C  session-new-040 whole project
+A  session-new-042 backend/src/routes/book-service.ts
+C  session-new-042 whole project
+A  session-new-044 backend/src/routes/weather-log-api.ts
+C  session-new-044 whole project
+A  session-new-045 backend/src/routes/savings-api.ts
+C  session-new-045 whole project
+A  session-new-046 backend/src/routes/project-api.ts
+A  session-new-046 backend/src/routes/material-api.ts
+A  session-new-046 backend/src/middleware/user-authentication.ts
+C  session-new-046 whole project
+A  session-new-047 backend/src/routes/study-group-api.ts
+A  session-new-047 backend/src/routes/chat-api.ts
+A  session-new-047 backend/src/routes/authentication-service.ts
+A  session-new-047 backend/src/middleware/role-based-access-control.ts
+A  session-new-047 backend/src/middleware/real-time-message-encryption.ts
+C  session-new-047 whole project
+ B session-new-048 backend/src/routes/market-api.ts  A:build-failed
+!! session-new-048 whole project  build-failed
+!! session-new-049 backend/src/routes/booking-api.ts  A:build-failed  B:build-failed
+!! session-new-049 backend/src/routes/package-management.ts  A:build-failed  B:build-failed
+ B session-new-049 backend/src/middleware/role-based-access.ts  A:build-failed
+!! session-new-049 whole project  build-failed
+A  session-new-051 backend/src/routes/artworks-api.ts
+C  session-new-051 whole project
+A  session-new-053 backend/src/routes/room-booking-api.ts
+C  session-new-053 whole project
+
+--- results ---
+candidate: local:code1
+scope           n        A       B    D(A)    D(B)
+all            44   79.5%  88.6%  79.5%  88.6%
+backend        33   75.8%  84.8%  75.8%  84.8%
+security       11   90.9% 100.0%  90.9% 100.0%
+C (projects)   27   74.1%
+
+written to training/eval/code/qwen-coder-7b-new-r1.json
