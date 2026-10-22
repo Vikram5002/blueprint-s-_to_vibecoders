@@ -102,6 +102,36 @@ export async function runRuntimeCheck(
     return { started: false, routes: paths.map((path) => ({ path, status: null, error: 'server not started' })), ok: false, serverOutput: `entry point not found: ${entryPoint}` };
   }
 
+  const server = await startBuiltServer(root, entryPoint, timeoutMs);
+  try {
+    if (!server.started) {
+      return { started: false, routes: paths.map((path) => ({ path, status: null, error: 'server not started' })), ok: false, serverOutput: server.output() };
+    }
+
+    const routes: RouteResult[] = [];
+    for (const path of paths) {
+      routes.push(await requestRoute(doFetch, `http://127.0.0.1:${server.port}${path}`, path, timeoutMs));
+    }
+    // A server that died mid-check (an unhandled rejection on the last
+    // request, say) is not "up"; the routes it answered before dying still
+    // stand as recorded, the verdict does not.
+    return { started: true, routes, ok: server.stayedUp() && routes.every(routePasses), serverOutput: server.output() };
+  } finally {
+    await server.stop();
+  }
+}
+
+/** A built backend started on a free loopback port; `stop()` always kills it (see killTree). */
+export interface RunningBuiltServer {
+  readonly started: boolean;
+  readonly port: number;
+  output(): string;
+  stayedUp(): boolean;
+  stop(): Promise<void>;
+}
+
+/** Starts `entryPoint` with node on a free port and waits until it accepts connections or `timeoutMs` passes. */
+export async function startBuiltServer(root: string, entryPoint: string, timeoutMs: number): Promise<RunningBuiltServer> {
   const port = await freePort();
   let output = '';
   const child = spawn(process.execPath, [entryPoint], {
@@ -115,29 +145,19 @@ export async function runRuntimeCheck(
   const exited = new Promise<void>((resolve) => {
     child.on('exit', () => resolve());
     child.on('error', (cause) => {
-      output = (output + `\nspawn error: ${String(cause)}`).slice(-MAX_SERVER_OUTPUT_CHARS);
+      output = (output + `
+spawn error: ${String(cause)}`).slice(-MAX_SERVER_OUTPUT_CHARS);
       resolve();
     });
   });
-
-  try {
-    const started = await waitForPort(port, timeoutMs, child);
-    if (!started) {
-      return { started: false, routes: paths.map((path) => ({ path, status: null, error: 'server not started' })), ok: false, serverOutput: output };
-    }
-
-    const routes: RouteResult[] = [];
-    for (const path of paths) {
-      routes.push(await requestRoute(doFetch, `http://127.0.0.1:${port}${path}`, path, timeoutMs));
-    }
-    // A server that died mid-check (an unhandled rejection on the last
-    // request, say) is not "up"; the routes it answered before dying still
-    // stand as recorded, the verdict does not.
-    const stayedUp = child.exitCode === null && child.signalCode === null;
-    return { started: true, routes, ok: stayedUp && routes.every(routePasses), serverOutput: output };
-  } finally {
-    await killTree(child, exited);
-  }
+  const started = await waitForPort(port, timeoutMs, child);
+  return {
+    started,
+    port,
+    output: () => output,
+    stayedUp: () => child.exitCode === null && child.signalCode === null,
+    stop: () => killTree(child, exited),
+  };
 }
 
 /**
