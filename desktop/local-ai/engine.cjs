@@ -24,8 +24,8 @@ function resultFromChat(body, model) {
 // All requests, including model changes, run through one queue in bridge.cjs.
 // This process owns at most one model and one KV cache at a time.
 class Engine {
-  constructor({ executable, assets, folder, mode, device, models, onStatus = () => {}, spawnImpl = spawn }) {
-    Object.assign(this, { executable, assets, folder, mode, device, models, onStatus, spawnImpl });
+  constructor({ executable, assets, folder, mode, device, layers, models, onStatus = () => {}, spawnImpl = spawn }) {
+    Object.assign(this, { executable, assets, folder, mode, device, layers, models, onStatus, spawnImpl });
     this.child = null;
     this.active = null;
     this.closed = false;
@@ -53,10 +53,12 @@ class Engine {
     const port = await unusedPort();
     this.apiKey = crypto.randomUUID();
     this.origin = `http://127.0.0.1:${port}`;
-    const layers = this.mode === 'gpu' ? 99 : this.mode === 'hybrid' ? 12 : 0;
+    const layers = this.mode === 'gpu' ? 99 : this.mode === 'hybrid' ? (this.layers ?? 12) : 0;
     const args = ['--model', path.join(this.folder, model.files[0].name), '--lora', path.join(this.assets, model.adapterFile),
       '--host', '127.0.0.1', '--port', String(port), '--api-key', this.apiKey,
       '--ctx-size', '16384', '--parallel', '1', '--n-gpu-layers', String(layers), '--device', layers ? this.device : 'none',
+      // On a GPU: flash attention and an 8-bit KV cache free memory for more layers (see hardware.cjs).
+      ...(layers ? ['-fa', 'on', '-ctk', 'q8_0', '-ctv', 'q8_0'] : []),
       '--no-webui', '--no-warmup'];
     this.onStatus(`Loading ${model.label} (${this.mode})`);
     const child = this.spawnImpl(this.executable, args, { windowsHide: true, cwd: path.dirname(this.executable), stdio: ['ignore', 'pipe', 'pipe'] });
@@ -79,7 +81,16 @@ class Engine {
         await delay(300, undefined, { signal });
       }
       throw new Error('Local model loading timed out. Close memory-heavy apps, or select CPU mode.');
-    } catch (error) { await this.unload(); throw error; }
+    } catch (error) {
+      await this.unload();
+      // A hybrid load that ran out of graphics memory gets another try with fewer layers on the GPU.
+      if (this.mode === 'hybrid' && layers > 8 && !signal.aborted && !this.closed) {
+        this.layers = layers - 4;
+        this.onStatus(`Retrying with ${this.layers} GPU layers`);
+        return this.load(model, signal);
+      }
+      throw error;
+    }
   }
 
   async complete(request, signal) {

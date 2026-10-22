@@ -94,7 +94,7 @@ class LocalAI {
         }
       }
       this.update({ progress: null });
-      this.engine = this.createEngine({ executable: this.executable, assets: this.assets, folder: this.folder, mode: selected, device: recommended.device, models: this.manifest.models, onStatus: (message) => this.update({ message }) });
+      this.engine = this.createEngine({ executable: this.executable, assets: this.assets, folder: this.folder, mode: selected, device: recommended.device, layers: selected === recommended.mode ? recommended.layers : undefined, models: this.manifest.models, onStatus: (message) => this.update({ message }) });
       for (const model of testModels ? this.manifest.models : []) {
         const result = await this.engine.complete({ model: model.id, system: 'You are a helpful assistant.', user: 'Reply with the word ready.', maxOutputTokens: 8 }, AbortSignal.any([signal, AbortSignal.timeout(180_000)]));
         if (!result.ok && result.error.kind !== 'incomplete') throw new Error(`Model check failed: ${result.error.message}`);

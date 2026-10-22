@@ -5,13 +5,20 @@ const { promisify } = require('node:util');
 const execute = promisify(execFile);
 const GiB = 1024 ** 3;
 
+// Measured on a 4,152 MiB GTX 1650 (7B Q4_K_M coder, 16K context, 8-bit KV cache, flash attention):
+// 20 layers loaded and wrote 12.0 tok/s against 7.8 at the old fixed 12; 22 or more did not fit.
+// About 160 MiB per layer after ~900 MiB for the cache and compute buffers.
+function hybridLayers(memoryMB) {
+  return Math.max(4, Math.min(27, Math.floor((memoryMB - 900) / 160)));
+}
+
 function recommendation({ platform, arch, ramGB, devices, runtimeOK }) {
   if (platform !== 'win32' || arch !== 'x64') return { supported: false, mode: 'cpu', reason: 'This installer supports 64-bit Windows on Intel/AMD processors.' };
   if (!runtimeOK) return { supported: false, mode: 'cpu', reason: 'The local runtime could not run. Update Windows and graphics drivers, then recheck.' };
   if (ramGB < 15) return { supported: false, mode: 'cpu', reason: 'These 7B models require at least 16 GB installed RAM. You can continue using an online provider.' };
   const best = devices.filter((d) => d.shared === false).sort((a, b) => b.memoryMB - a.memoryMB)[0];
   if (best?.memoryMB >= 7500) return { supported: true, mode: 'gpu', device: best.id, layers: 99, reason: 'GPU acceleration recommended. Model loading will verify available memory.' };
-  if (best?.memoryMB >= 3500) return { supported: true, mode: 'hybrid', device: best.id, layers: 12, reason: 'Use the GPU for part of the model, with the rest in system RAM.' };
+  if (best?.memoryMB >= 3500) return { supported: true, mode: 'hybrid', device: best.id, layers: hybridLayers(best.memoryMB), reason: 'Use the GPU for part of the model, with the rest in system RAM.' };
   return { supported: true, mode: 'cpu', layers: 0, reason: 'CPU mode is available. Planning and code generation may take several minutes.' };
 }
 
@@ -37,4 +44,4 @@ async function detect(executable, folder) {
   return { ...facts, recommendation: recommendation(facts) };
 }
 
-module.exports = { detect, recommendation, parseDevices, GiB };
+module.exports = { detect, recommendation, parseDevices, hybridLayers, GiB };

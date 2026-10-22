@@ -8,7 +8,7 @@ const http = require('node:http');
 const { spawn } = require('node:child_process');
 const { setTimeout: delay } = require('node:timers/promises');
 const { download } = require('../local-ai/files.cjs');
-const { recommendation, parseDevices } = require('../local-ai/hardware.cjs');
+const { recommendation, parseDevices, hybridLayers } = require('../local-ai/hardware.cjs');
 const { Engine, resultFromChat } = require('../local-ai/engine.cjs');
 const { startBridge } = require('../local-ai/bridge.cjs');
 const { connection, restoration } = require('../local-ai/workspace.cjs');
@@ -150,4 +150,26 @@ test('engine reuses one process, kills it before switching models, and maps sche
   assert.equal(engine.active, null);
   assert.equal(resultFromChat({ choices: [{ finish_reason: 'length' }] }, 'm').error.kind, 'incomplete');
   assert.equal(resultFromChat({ choices: [{ message: { content: '' } }] }, 'm').error.kind, 'refused');
+});
+
+test('hybrid mode sizes GPU layers from graphics memory, as measured on a 4 GB GTX 1650', () => {
+  assert.equal(hybridLayers(4152), 20);
+  assert.equal(hybridLayers(3500), 16);
+  assert.equal(hybridLayers(7000), 27);
+  assert.equal(recommendation({ platform: 'win32', arch: 'x64', ramGB: 16, runtimeOK: true, devices: [{ id: 'Vulkan1', shared: false, memoryMB: 4152 }] }).layers, 20);
+});
+
+test('a GPU engine starts llama-server with flash attention and an 8-bit KV cache; a CPU engine does not', async (t) => {
+  const seen = [];
+  const make = (mode) => new Engine({ executable: process.execPath, assets: os.tmpdir(), folder: os.tmpdir(), mode, device: 'Vulkan1', layers: 20, models,
+    spawnImpl: (_exe, args, options) => { seen.push(args); return spawn(process.execPath, [path.join(__dirname, 'fixtures', 'fake-llama.cjs'), ...args], options); } });
+  const signal = AbortSignal.timeout(15_000);
+  for (const mode of ['hybrid', 'cpu']) {
+    const engine = make(mode);
+    t.after(() => engine.stop());
+    await engine.complete({ system: 's', user: 'u', maxOutputTokens: 8, model: 'local' }, signal);
+  }
+  assert.equal(seen[0][seen[0].indexOf('--n-gpu-layers') + 1], '20');
+  assert.ok(seen[0].includes('-fa') && seen[0].includes('q8_0'));
+  assert.ok(!seen[1].includes('-fa'));
 });
