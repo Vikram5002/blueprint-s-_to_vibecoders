@@ -1,0 +1,2026 @@
+[
+ {
+  "prompt": "An app for a college canteen where students pre-order lunch and pick it up at a set time.",
+  "seconds": 44,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Delivery Option",
+    "why": "Some students may need their food delivered to their dorm or study area.",
+    "change": "Add a delivery option where students can select a delivery time and location, with a table_delivery_options table storing delivery preferences."
+   },
+   {
+    "title": "Payment Processing",
+    "why": "Students need to be able to pay for their meals through the app.",
+    "change": "Integrate payment processing with a secure payment gateway, storing payment details in a table_payments table."
+   },
+   {
+    "title": "Notification System",
+    "why": "Students should get reminders about their upcoming orders and delivery times.",
+    "change": "Implement a notification system that sends push notifications or emails based on order status changes."
+   },
+   {
+    "title": "Review and Rating",
+    "why": "Students can provide feedback on meals, helping improve food quality and variety.",
+    "change": "Add a reviews and ratings feature with a table_reviews table that stores student feedback and ratings."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Students should be able to search for specific meals or view their order history easily.",
+    "change": "Add search functionality to the student dashboard and order management API endpoints."
+   },
+   {
+    "title": "Admin Reporting",
+    "why": "Staff need tools to track order volume, popular meals, and system performance.",
+    "change": "Create admin reporting dashboards and reports that provide insights into order trends and system metrics."
+   },
+   {
+    "title": "Multi-Location Support",
+    "why": "The college may have multiple canteens, so the app should support different locations.",
+    "change": "Extend the app to support multiple locations with location-specific ordering and staff management features."
+   }
+  ]
+ },
+ {
+  "prompt": "An app for a college canteen where students pre-order lunch and pick it up at a set time.",
+  "seconds": 29,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Delivery Scheduling",
+    "why": "Allows students to schedule delivery to their dorm or home address",
+    "change": "Add a delivery scheduling page where students can enter their address and preferred delivery time, with a table_delivery_schedules table to store this information."
+   },
+   {
+    "title": "Payment Processing",
+    "why": "Enables students to link payment methods for automatic billing",
+    "change": "Implement payment processing with a Payments API and a Payments Table to store student payment methods and transaction history."
+   },
+   {
+    "title": "Notification System",
+    "why": "Sends reminders about upcoming orders and delivery times",
+    "change": "Develop a notification service that sends email/SMS alerts to students about their orders and delivery schedules."
+   },
+   {
+    "title": "Admin Reporting Dashboard",
+    "why": "Provides detailed reports on order trends and student preferences for management insights",
+    "change": "Create an Admin Dashboard with reporting features that display order statistics, popular meals, and student preferences, stored in a Reports Table."
+   },
+   {
+    "title": "Review & Rating System",
+    "why": "Encourages students to rate their meals and experiences",
+    "change": "Add a Reviews Page where students can rate meals and leave comments, with a Reviews Table to store this feedback."
+   },
+   {
+    "title": "Search & Filter Functionality",
+    "why": "Helps students quickly find and modify their orders",
+    "change": "Implement search and filter features on the Student Dashboard to allow students to easily find and modify their pre-orders."
+   }
+  ]
+ },
+ {
+  "prompt": "A hostel complaint tracker where residents report broken fans or taps and the warden assigns a fix.",
+  "seconds": 25,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Complaint Status Tracking",
+    "why": "Users need to know the status of their complaint.",
+    "change": "Add a complaint status field to the complaints table and update the complaint list page to show status changes."
+   },
+   {
+    "title": "Notification System",
+    "why": "Users need to be notified when their complaint is assigned or resolved.",
+    "change": "Add notification functionality that sends email/SMS alerts when a complaint is assigned or closed, and add a notifications page for users to check their alerts."
+   },
+   {
+    "title": "Warden Assignment History",
+    "why": "The warden needs to track which complaints they've worked on.",
+    "change": "Add an assignments table linking complaints to warden ids with timestamps, and update the warden dashboard to show their assignment history."
+   },
+   {
+    "title": "Complaint Priority System",
+    "why": "The warden needs to prioritize urgent complaints over minor ones.",
+    "change": "Add a priority field to the complaints table and update the complaint list to sort by priority, with a color-coded indicator on the warden dashboard."
+   },
+   {
+    "title": "Complaint Photo Upload",
+    "why": "Users can attach photos of the broken fixture for better understanding.",
+    "change": "Add a file upload field to the complaint form and store uploaded images in a cloud storage service, linking them to the complaints table."
+   }
+  ]
+ },
+ {
+  "prompt": "A blood donor finder for a city: donors register their blood group and hospitals search when they need someone.",
+  "seconds": 26,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Donation History",
+    "why": "Track which donors have already donated to avoid double-dipping.",
+    "change": "Add a Donations Table linking donors to their donation records, with timestamps and quantities."
+   },
+   {
+    "title": "Hospitals Register",
+    "why": "Allow hospitals to register and manage their blood needs.",
+    "change": "Add a Hospitals Table with fields for hospital name, location, and contact person, plus a Hospitals API for CRUD operations."
+   },
+   {
+    "title": "Notification System",
+    "why": "Send alerts to donors when their blood is urgently needed.",
+    "change": "Implement a Notifications API that sends SMS or email alerts to donors based on their preferences."
+   },
+   {
+    "title": "Donor Search Dashboard",
+    "why": "Provide donors with a dashboard showing their recent activity and upcoming appointments.",
+    "change": "Create a Donor Dashboard Page that shows a donor's donation history and upcoming scheduled donations."
+   },
+   {
+    "title": "User Authentication",
+    "why": "Protect sensitive donor information and ensure only authorized users can access the system.",
+    "change": "Add User Authentication with login/logout functionality and role-based access control."
+   }
+  ]
+ },
+ {
+  "prompt": "A tuition centre app where teachers post homework and parents see marks for each test.",
+  "seconds": 32,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Class Scheduling",
+    "why": "Parents need to know when their children have classes",
+    "change": "Add a class schedule page where teachers can add and edit class times, and a parent dashboard that shows their child's schedule."
+   },
+   {
+    "title": "Payment Tracking",
+    "why": "Parents need to track payments and balance with the tuition centre",
+    "change": "Add a payments table and API endpoints for tracking payments, balances, and payment history."
+   },
+   {
+    "title": "Notification System",
+    "why": "Parents need to be notified about important updates and deadlines",
+    "change": "Implement a notification system that sends email/SMS alerts for important events like homework deadlines or test results."
+   },
+   {
+    "title": "Student Profile",
+    "why": "Parents need to see detailed information about their children's performance",
+    "change": "Add a student profile page that shows a comprehensive view of a student's academic performance, including grades, attendance, and test results."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "The owner needs a dashboard to monitor overall centre performance and manage staff",
+    "change": "Create an admin dashboard that provides an overview of centre operations, including student performance metrics, teacher activity, and financial summaries."
+   },
+   {
+    "title": "Review System",
+    "why": "Parents need to provide feedback on teachers and services",
+    "change": "Add a review system where parents can rate teachers and leave comments about their experience."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Parents need to easily find information about their children's classes and performance",
+    "change": "Implement a search function that allows parents to find specific classes, homework assignments, and test results by date, subject, or student name."
+   }
+  ]
+ },
+ {
+  "prompt": "A temple donation register that records offerings and prints a receipt for each donor.",
+  "seconds": 27,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Donation Receipt Email",
+    "why": "Send donors an email receipt for their donation record",
+    "change": "Add an email receipt feature that sends a confirmation email with donor details and amount after a donation is made."
+   },
+   {
+    "title": "Monthly Donation Scheduling",
+    "why": "Allow donors to set up recurring monthly donations",
+    "change": "Add a recurring donations page where donors can set up monthly donations, stored in a recurring_donations table with fields for donor id, amount, frequency, and next_scheduled_date."
+   },
+   {
+    "title": "Donation Search and Filter",
+    "why": "Enable staff to search and filter donations by date range, amount, or donor name",
+    "change": "Add a staff dashboard with search and filter capabilities for donations, with a donations_search table for storing search parameters and results."
+   },
+   {
+    "title": "Donation Report Generation",
+    "why": "Generate monthly or yearly donation reports for financial tracking",
+    "change": "Add a report generation feature that creates downloadable CSV or PDF reports of donations, with a reports table for storing report metadata and generated files."
+   },
+   {
+    "title": "Donation Acknowledgment Letters",
+    "why": "Send formal acknowledgment letters to major donors",
+    "change": "Add a letter generation feature that creates personalized acknowledgment letters for high-value donors, with a letters table for storing letter content and send status."
+   }
+  ]
+ },
+ {
+  "prompt": "A kirana shop credit book: the owner records what each regular customer owes and when they pay.",
+  "seconds": 31,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Regular Billing",
+    "why": "Regular billing keeps the owner informed about ongoing balances and encourages timely payments from customers.",
+    "change": "Add a billing page where the owner can generate monthly bills for customers with their current balances, and a table_bills table to store billing records."
+   },
+   {
+    "title": "Customer Search",
+    "why": "A search function allows the owner to quickly find customers by name or ID.",
+    "change": "Add a search bar to the customer list page that filters customers by name or ID."
+   },
+   {
+    "title": "Payment Reminders",
+    "why": "Reminders help the owner keep track of overdue payments and maintain good customer relationships.",
+    "change": "Add a payment reminders page that shows customers with unpaid balances, and a table_reminders table to store reminder records."
+   },
+   {
+    "title": "Customer Groups",
+    "why": "Grouping customers can help the owner manage large numbers of customers more efficiently.",
+    "change": "Add a customer groups page where the owner can create and manage groups of customers, and a customers_groups table to store group assignments."
+   }
+  ]
+ },
+ {
+  "prompt": "An app to split rent and electricity bills among flatmates.",
+  "seconds": 39,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Budget Tracker",
+    "why": "Helps track monthly spending limits per flatmate",
+    "change": "Add a budgets table with flatmate_id, month, and budget_amount fields, and a budget tracker page that shows remaining budget per month."
+   },
+   {
+    "title": "Notification System",
+    "why": "Sends reminders when bills are due or payments are overdue",
+    "change": "Implement email and in-app notification features triggered by bill due dates or payment deadlines."
+   },
+   {
+    "title": "Payment Processing",
+    "why": "Handles secure payment processing for flatmates",
+    "change": "Integrate with a payment gateway API to process payments securely and update balances accordingly."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "Provides an overview for flatmates to manage their finances",
+    "change": "Create an admin dashboard page that shows overall financial health, recent transactions, and allows managing flatmate accounts."
+   },
+   {
+    "title": "Review System",
+    "why": "Encourages flatmates to rate and review each other",
+    "change": "Add a reviews table with flatmate_id, reviewer_id, rating, and comment fields, and a reviews page where flatmates can rate and comment on each other."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Allows searching through bills and payments",
+    "change": "Implement full-text search capabilities on the dashboard and payment log pages to quickly find specific bills or payments."
+   }
+  ]
+ },
+ {
+  "prompt": "A crop price board where farmers see today's mandi prices for their district.",
+  "seconds": 20,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Price History",
+    "why": "Farmers need past prices to make informed decisions about selling crops.",
+    "change": "Add a Price History page that shows a chart of price trends over the last 30 days, stored in a mandi_prices_history table."
+   },
+   {
+    "title": "Price Alerts",
+    "why": "Farmers should be notified when prices rise above their threshold.",
+    "change": "Add a Price Alerts feature where farmers set a minimum price threshold, and receive email/SMS alerts when prices exceed it, using a price_alerts table."
+   },
+   {
+    "title": "Commodity Selection",
+    "why": "Farmers may have multiple crops and need to switch between them.",
+    "change": "Add a Commodity Selection page where farmers can choose which crop's prices to view, stored in a user_commodities table."
+   },
+   {
+    "title": "Price Comparison",
+    "why": "Farmers need to compare prices from different mandis to find the best deal.",
+    "change": "Add a Price Comparison page that shows side-by-side comparisons of prices from multiple mandis, stored in a mandi_price_comparisons table."
+   }
+  ]
+ },
+ {
+  "prompt": "A cricket club scorebook that keeps match scores and player averages for a season.",
+  "seconds": 37,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Live Score Updates",
+    "why": "Umpires and coaches need real-time score updates during matches",
+    "change": "Add a live_score_updates table with match_id, over, balls, runs, wickets, and timestamps, and a websocket API for live updates."
+   },
+   {
+    "title": "Team Performance Reports",
+    "why": "Coaches need detailed reports on team performance across matches",
+    "change": "Add a team_performance_reports table with match_id, team, runs_scored, runs_conceded, wickets_taken, and timestamps, and a reports API endpoint."
+   },
+   {
+    "title": "Player Match Details",
+    "why": "Parents and players want to see individual match performances",
+    "change": "Add a player_match_details table with player_id, match_id, innings, runs_scored, wickets_taken, and timestamps, and a match_details API endpoint."
+   },
+   {
+    "title": "Season Summary Dashboard",
+    "why": "Club members need quick access to season summary statistics",
+    "change": "Add a season_summary_dashboard page with charts and summaries of key metrics like total runs, wickets, and average scores, and a dashboard API endpoint."
+   },
+   {
+    "title": "Player Injury Tracking",
+    "why": "Medical staff need to track player injuries and recovery progress",
+    "change": "Add a player_injury_tracking table with player_id, injury_details, treatment_plan, recovery_progress, and timestamps, and a medical_api endpoint."
+   },
+   {
+    "title": "Match Scheduling",
+    "why": "Admins need to schedule matches in advance",
+    "change": "Add a match_scheduling page with date, time, venue, and team selection forms, and a matches table with scheduled_date and scheduled_time fields."
+   },
+   {
+    "title": "Player Availability Calendar",
+    "why": "Managers need to track player availability for scheduling",
+    "change": "Add a player_availability_calendar page with calendar view showing player availability, and a player_availability table with player_id, date, availability_status, and timestamps."
+   }
+  ]
+ },
+ {
+  "prompt": "A society parking app where residents register vehicles and guards check them at the gate.",
+  "seconds": 18,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Vehicle Search",
+    "why": "Residents need to quickly find their vehicle by make, model, or colour.",
+    "change": "Add a search function to the resident dashboard that filters vehicles by make, model, or colour."
+   },
+   {
+    "title": "Guard Login",
+    "why": "Only authorized guards need access to the gate check panel.",
+    "change": "Implement a guard login system with role-based access control for the gate guard check panel."
+   },
+   {
+    "title": "Parking Slot Management",
+    "why": "The app should track which parking slots are occupied.",
+    "change": "Add a parking_slots table with slot number, current_vehicle_id, and last_updated timestamp, and update the gate check logic to handle slot availability."
+   },
+   {
+    "title": "Notification System",
+    "why": "Residents should be notified when their vehicle is checked at the gate.",
+    "change": "Implement a notification service that sends email/SMS alerts to residents when their vehicle is checked at the gate."
+   }
+  ]
+ },
+ {
+  "prompt": "A library seat booking system for a reading room with fixed time slots.",
+  "seconds": 23,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Seat Availability Widget",
+    "why": "Users need real-time visibility into available seats to avoid double-booking",
+    "change": "Add a widget to the seat booking page that shows available seats in color-coding, updated in real-time to prevent overbooking"
+   },
+   {
+    "title": "Notification System",
+    "why": "Users need to be notified when their booking is confirmed or when a seat is available for immediate use",
+    "change": "Implement email/SMS notifications for booking confirmations, cancellations, and seat availability alerts"
+   },
+   {
+    "title": "Payment Integration",
+    "why": "The system should support payment processing for premium seating or extended booking periods",
+    "change": "Add payment processing functionality with integration to payment gateways like Stripe or PayPal, storing payment details securely in the database"
+   },
+   {
+    "title": "Admin Reporting Dashboard",
+    "why": "Staff need comprehensive reporting tools to track usage patterns and identify seating trends",
+    "change": "Develop a reporting dashboard for admins to view booking statistics, seat usage trends, and generate reports on popular times and locations"
+   },
+   {
+    "title": "Review System",
+    "why": "Users should be able to rate their experience and provide feedback on specific seating areas",
+    "change": "Add a review system where users can rate their experience and leave comments about specific seats or time slots, stored in a reviews table"
+   }
+  ]
+ },
+ {
+  "prompt": "A placement cell portal where companies post drives and students apply.",
+  "seconds": 25,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Job Role Management",
+    "why": "Allow companies to specify job roles for each drive to help students filter applications",
+    "change": "Add a job_roles table linking to drives and a form to add roles per drive on the company dashboard."
+   },
+   {
+    "title": "Application Status Tracking",
+    "why": "Enable companies to track application status and communicate with students",
+    "change": "Add application_status and communication fields to the applications table and update the student dashboard to show status."
+   },
+   {
+    "title": "Student Profile Management",
+    "why": "Allow students to maintain their profiles including resume upload and preferences",
+    "change": "Add a students table with fields for student id, name, email, resume file, and preferences, and a student profile form on the student dashboard."
+   },
+   {
+    "title": "Notification System",
+    "why": "Send automated notifications to students about their application status and company updates",
+    "change": "Implement email and SMS notification services tied to application status changes and company communications."
+   },
+   {
+    "title": "Company Authentication",
+    "why": "Add multi-factor authentication for company accounts to enhance security",
+    "change": "Implement MFA for company login and update the company dashboard to require MFA."
+   },
+   {
+    "title": "Search and Filter",
+    "why": "Provide advanced search and filtering capabilities for both companies and students",
+    "change": "Add search functionality to the company dashboard and student dashboard with filters for date, job roles, and status."
+   }
+  ]
+ },
+ {
+  "prompt": "A bus pass renewal app for a city transport office.",
+  "seconds": 24,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Multi-Mode Renewal",
+    "why": "Allows passengers to renew multiple passes in one session",
+    "change": "Add a renewal form that can handle multiple pass types and collect all renewal details in one session."
+   },
+   {
+    "title": "Pass Delivery",
+    "why": "Simplifies pass distribution and tracking",
+    "change": "Add a pass delivery page where staff can mark passes as shipped and track delivery status, with a table_pass_deliveries table."
+   },
+   {
+    "title": "Payment History",
+    "why": "Helps passengers track their payment transactions",
+    "change": "Add a payment history page that shows transaction details, with a table_payment_history table."
+   },
+   {
+    "title": "Admin Reporting",
+    "why": "Provides staff with insights into renewal trends and issues",
+    "change": "Add a reporting dashboard that shows renewal statistics, payment trends, and problem areas, with a table_reports table."
+   },
+   {
+    "title": "Customer Reviews",
+    "why": "Improves service quality through feedback",
+    "change": "Add a review system where passengers can rate their renewal experience and leave comments, with a table_reviews table."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Enhances user experience by allowing quick access to specific passes",
+    "change": "Add a search bar to the pass list page that allows passengers to find their passes by name, email, or pass type."
+   }
+  ]
+ },
+ {
+  "prompt": "A plant nursery inventory with plants, pots and seasonal stock.",
+  "seconds": 41,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Order Management",
+    "why": "Allow customers to place orders for plants, pots, and seasonal items with delivery options",
+    "change": "Add an Orders page with form fields for customer name, address, phone, items selected, quantity, delivery date, and payment status. Store order details in an orders table with foreign key relationships to inventory tables."
+   },
+   {
+    "title": "Payment Processing",
+    "why": "Process payments securely for online orders and in-store purchases",
+    "change": "Integrate with a payment processor API to handle credit card transactions, store payment information securely, and update order status accordingly."
+   },
+   {
+    "title": "Delivery Tracking",
+    "why": "Track shipping status and provide customers with delivery updates",
+    "change": "Create a Delivery Tracking page to log shipping information, tracking numbers, and delivery statuses. Add columns to orders table for shipping date, carrier, and tracking number."
+   },
+   {
+    "title": "Customer Accounts",
+    "why": "Allow customers to create accounts, save preferences, and view order history",
+    "change": "Implement a Customers table with fields for customer ID, name, email, password hash, phone, address, and account creation date. Add login functionality and customer profile management."
+   },
+   {
+    "title": "Inventory Reports",
+    "why": "Generate reports on stock levels, sales trends, and inventory turnover",
+    "change": "Develop Reporting pages with dashboards showing inventory levels, sales data, and trends over time. Create reports table to store generated report data and metadata."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "Provide administrators with a comprehensive view of all inventory and sales data",
+    "change": "Create an Admin Dashboard page with widgets showing key metrics, recent activity, and quick access to inventory management tools. Enhance staff page to include admin-specific features."
+   },
+   {
+    "title": "Product Reviews",
+    "why": "Collect customer feedback and improve product offerings through reviews",
+    "change": "Add a Reviews page where customers can rate and comment on plants, pots, and seasonal items. Store review data in a reviews table with foreign key relationships to inventory tables."
+   },
+   {
+    "title": "Search Enhancements",
+    "why": "Improve search functionality with fuzzy matching and autocomplete features",
+    "change": "Enhance search functionality by implementing fuzzy matching algorithms and autocomplete suggestions for plant names, pot types, and seasonal items. Update search functionality in inventory dashboard and individual management pages."
+   }
+  ]
+ },
+ {
+  "prompt": "An app for a dance academy to manage batches, fees and attendance.",
+  "seconds": 27,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Payment Processing",
+    "why": "Allow parents to easily make payments online for their children's classes",
+    "change": "Add a payment processing page with forms for parents to enter payment details, and update the Fees table with transaction information."
+   },
+   {
+    "title": "Notification System",
+    "why": "Keep parents informed about class changes, attendance records, and upcoming events",
+    "change": "Implement email and SMS notification features that can be triggered from the backend based on specific events or conditions."
+   },
+   {
+    "title": "Class Scheduling",
+    "why": "Enable staff to schedule classes and manage time slots for different batches",
+    "change": "Add a scheduling page where instructors can create and manage class schedules, which will be stored in a separate Schedules table linked to Batches."
+   },
+   {
+    "title": "Parent-Teacher Communication",
+    "why": "Provide a platform for parents to send messages to instructors and vice versa",
+    "change": "Develop a messaging system that allows parents to send text messages to instructors, with messages stored in a Messages table."
+   },
+   {
+    "title": "Report Generation",
+    "why": "Generate reports for financial tracking, attendance statistics, and student performance",
+    "change": "Create reporting pages that generate PDF or CSV files containing detailed financial and attendance data, and store report generation logs in a Reports table."
+   },
+   {
+    "title": "Student Progress Tracking",
+    "why": "Track students' progress through different skill levels and performance metrics",
+    "change": "Add a progress tracking page where instructors can log student achievements, and store progress data in a Progress table linked to Students."
+   }
+  ]
+ },
+ {
+  "prompt": "A cycle rental service at a railway station.",
+  "seconds": 24,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Cycle Availability Widget",
+    "why": "Users need to see real-time cycle availability when browsing the rental dashboard",
+    "change": "Add a widget to the Rental Dashboard that shows available cycles by location and time slot, updated in real-time from the Cycles Table"
+   },
+   {
+    "title": "Payment Processing",
+    "why": "Owners need secure payment processing for rental transactions",
+    "change": "Implement a payment processing system integrated with the Rental Service, handling secure transactions and storing payment details in the Rentals Table"
+   },
+   {
+    "title": "Notification System",
+    "why": "Both users and owners need real-time notifications for important events like cycle availability changes and rental confirmations",
+    "change": "Develop a notification system that sends email/SMS alerts based on user preferences and system events, using a Notifications Table to track sent messages"
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "Owners need an administrative dashboard to manage all aspects of the rental service",
+    "change": "Create an Admin Dashboard page that provides overview statistics, allows managing all services (cycles, users, rentals), and handles system settings"
+   },
+   {
+    "title": "Customer Reviews",
+    "why": "Owners need customer feedback to improve service quality",
+    "change": "Add a Reviews Table that allows customers to rate and review their rental experience, with features to manage reviews and display them on the Rental Dashboard"
+   }
+  ]
+ },
+ {
+  "prompt": "A recipe sharing app where home cooks post regional dishes and others rate them.",
+  "seconds": 23,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Search Function",
+    "why": "Users should be able to search recipes by keywords or ingredients",
+    "change": "Add a search bar to the recipe list page that queries the recipes table by title, ingredients, or steps."
+   },
+   {
+    "title": "Category Management",
+    "why": "Users need to organize recipes into categories like 'Main Dishes', 'Desserts', etc.",
+    "change": "Add category creation and assignment forms, and update the recipe form to include category selection. Add a categories table and update the recipes table to link recipes to categories."
+   },
+   {
+    "title": "User Profile",
+    "why": "Users should be able to see their own recipes and ratings",
+    "change": "Add a user profile page that lists a user's recipes and their ratings. Update the authentication system to handle user profiles."
+   },
+   {
+    "title": "Recipe Comments",
+    "why": "Users should be able to discuss recipes in detail",
+    "change": "Add a comments section to recipe detail pages where users can post text comments. Create a comments table that links comments to recipes and users."
+   },
+   {
+    "title": "Recipe Images",
+    "why": "Recipes should have visual representation",
+    "change": "Add image upload functionality to the recipe form and detail page. Update the recipes table to store image URLs."
+   }
+  ]
+ },
+ {
+  "prompt": "A clinic queue system where patients take a token and see how many are ahead.",
+  "seconds": 21,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Patient Registration",
+    "why": "Allows new patients to register and be assigned a token.",
+    "change": "Add a registration page where patients enter their details and receive a token, with a queue table entry tracking their position."
+   },
+   {
+    "title": "Staff Dashboard",
+    "why": "Enables staff to view queue status and manage patients.",
+    "change": "Create a staff dashboard page showing the current queue and allowing staff to mark patients as seen or handle emergencies."
+   },
+   {
+    "title": "Notification System",
+    "why": "Sends alerts to patients when it's their turn or when their position changes.",
+    "change": "Implement a notification service that sends messages to patients via SMS or app notifications based on their queue position."
+   },
+   {
+    "title": "Queue History",
+    "why": "Lets patients and staff view past queue positions for reference.",
+    "change": "Add a queue history page that shows the patient's past positions and timestamps, stored in a queue_history table."
+   },
+   {
+    "title": "Admin Panel",
+    "why": "Provides administrators with system oversight and management capabilities.",
+    "change": "Develop an admin panel with pages for viewing all tokens, managing patients, and adjusting queue settings, secured with role-based access control."
+   }
+  ]
+ },
+ {
+  "prompt": "A laptop repair shop job card system.",
+  "seconds": 28,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Payment Processing",
+    "why": "Allows customers to make payments for repairs through the system",
+    "change": "Add a payment processing page where customers can enter payment details and a payments table to track transactions."
+   },
+   {
+    "title": "Notification System",
+    "why": "Sends reminders to customers about upcoming appointments and staff about job progress",
+    "change": "Implement a notification system with message queues and a notifications table for tracking sent messages."
+   },
+   {
+    "title": "Review Management",
+    "why": "Enables customers to rate and review their experience for service improvement",
+    "change": "Add a reviews page where customers can submit ratings and comments, and a reviews table to store feedback."
+   },
+   {
+    "title": "Inventory Tracking",
+    "why": "Helps manage spare parts and tools used during repairs",
+    "change": "Introduce an inventory tracking page and a parts inventory table to monitor stock levels."
+   },
+   {
+    "title": "Customer Portal",
+    "why": "Provides customers with access to their job status and history from their own device",
+    "change": "Develop a customer portal with authentication and a customer jobs page showing their active and completed repairs."
+   },
+   {
+    "title": "Report Generation",
+    "why": "Generates financial reports and job statistics for business analysis",
+    "change": "Create a reporting dashboard with financial and operational metrics, and a reports table to store generated data."
+   },
+   {
+    "title": "Staff Scheduling",
+    "why": "Helps manage staff availability and schedule appointments efficiently",
+    "change": "Add a scheduling page where staff can view their availability and a schedule table to track appointments and time blocks."
+   }
+  ]
+ },
+ {
+  "prompt": "A courier pickup request app for a small town.",
+  "seconds": 31,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Courier Assignment Dashboard",
+    "why": "Allows couriers to see and accept new pickup requests in their area.",
+    "change": "Add a dashboard page for couriers to view available pickups, accept them, and track their progress. Store assignments in a 'pickup_assignments' table with fields for pickup_id, courier_id, and assignment_timestamp."
+   },
+   {
+    "title": "Payment Processing",
+    "why": "Enables users to make payments for premium pickup services or delivery fees.",
+    "change": "Add payment processing functionality with pages for users to select payment methods and process transactions. Store payment details in a 'payments' table with fields for user_id, amount, payment_method, and transaction_id."
+   },
+   {
+    "title": "Delivery Tracking",
+    "why": "Lets customers track the status of their deliveries in real-time.",
+    "change": "Add a delivery tracking feature with pages for customers to see the current status of their deliveries. Update the 'deliveries' table with real-time status updates and add a 'delivery_status_history' table to log changes over time."
+   },
+   {
+    "title": "Review System",
+    "why": "Encourages customers to rate and review their experiences with couriers.",
+    "change": "Implement a review system with pages for customers to rate couriers and leave comments. Store reviews in a 'courier_reviews' table with fields for user_id, courier_id, rating, comment, and review_date."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Enables users to search for pickup requests by location or time.",
+    "change": "Add search functionality to the pickup request form and dashboard. Implement search queries that filter pickups by location, date, and time. Store search results in a temporary session variable or cache for quick retrieval."
+   }
+  ]
+ },
+ {
+  "prompt": "A mess menu voting app where hostel students vote for next week's dishes.",
+  "seconds": 19,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Weekly Voting Reset",
+    "why": "Prevent students from carrying over their votes to the next week",
+    "change": "Add a cron job to reset the votes table at the start of each week."
+   },
+   {
+    "title": "Admin Vote Override",
+    "why": "Allow admins to manually set vote counts in case of system errors",
+    "change": "Add an admin panel to manually update vote counts for specific dishes."
+   },
+   {
+    "title": "Student Vote History",
+    "why": "Enable students to view their past votes and track their preferences",
+    "change": "Add a student dashboard page showing their voting history with timestamps."
+   },
+   {
+    "title": "Notification System",
+    "why": "Keep students informed about new menus and voting deadlines",
+    "change": "Implement email/SMS notifications for new voting periods and dish updates."
+   },
+   {
+    "title": "Dish Rating System",
+    "why": "Gather more detailed feedback on each dish beyond just votes",
+    "change": "Add a rating scale (1-5 stars) for each dish in the voting interface."
+   }
+  ]
+ },
+ {
+  "prompt": "A volunteer roster for a food bank.",
+  "seconds": 33,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Donation Tracking",
+    "why": "Track what food and supplies volunteers collect and distribute to improve inventory management and reporting.",
+    "change": "Add donation tracking pages with forms to log food items, quantities, and collection/distribution details, and store this data in a donations table."
+   },
+   {
+    "title": "Volunteer Reports",
+    "why": "Generate reports on volunteer activity, skills, and availability to help with planning and staffing decisions.",
+    "change": "Implement reporting features on the admin dashboard that allow viewing and exporting volunteer statistics and shift attendance reports."
+   },
+   {
+    "title": "Notification System",
+    "why": "Send automated alerts to volunteers about upcoming shifts, changes to schedules, and important updates.",
+    "change": "Develop a notification system that sends emails or SMS messages based on trigger events like upcoming shifts or schedule changes."
+   },
+   {
+    "title": "Volunteer Feedback",
+    "why": "Collect feedback from volunteers to improve the volunteer experience and identify areas for improvement.",
+    "change": "Add a feedback form page where volunteers can submit comments and ratings, and store this feedback in a volunteer_feedback table."
+   },
+   {
+    "title": "Shift Scheduling Calendar",
+    "why": "Provide a visual calendar view of shifts to help with scheduling and conflict detection.",
+    "change": "Implement a shift scheduling calendar page that displays all shifts in a calendar format with drag-and-drop functionality for reassignment."
+   },
+   {
+    "title": "Volunteer Check-In",
+    "why": "Allow volunteers to check in when they arrive for their shift to track attendance and ensure proper staffing.",
+    "change": "Add a check-in page where volunteers can confirm their presence and mark themselves as checked in, with timestamps stored in the shifts table."
+   },
+   {
+    "title": "Admin Dashboard Widgets",
+    "why": "Provide quick access to key metrics and status updates on the admin dashboard to streamline workflow.",
+    "change": "Enhance the admin dashboard with widgets showing current shift status, volunteer availability, and upcoming events."
+   }
+  ]
+ },
+ {
+  "prompt": "A gym membership tracker with plans, renewals and trainer assignment.",
+  "seconds": 18,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Payment Processing",
+    "why": "Allows members to renew their memberships online with credit card payments",
+    "change": "Add a payment processing page where members can renew their plans and a payments table to track transaction details"
+   },
+   {
+    "title": "Notification System",
+    "why": "Sends automated renewal reminders and payment confirmations to members",
+    "change": "Implement a notification service that sends emails or SMS based on renewal status and payment events"
+   },
+   {
+    "title": "Trainer Assignment Dashboard",
+    "why": "Enables trainers to view and manage their assigned members",
+    "change": "Create a trainer dashboard page that shows assigned members and allows trainers to update assignments"
+   },
+   {
+    "title": "Member Activity Logs",
+    "why": "Tracks important events like membership renewals, plan changes, and trainer assignments",
+    "change": "Add an activity logs table that records timestamp, event type, and relevant member information for audit purposes"
+   }
+  ]
+ },
+ {
+  "prompt": "A pet vaccination reminder app.",
+  "seconds": 38,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Vaccine Schedule",
+    "why": "Users need to see a structured schedule of upcoming vaccinations for their pets",
+    "change": "Add a vaccine schedule page where users can view their pet's vaccination history and see upcoming reminders in a calendar format, with options to edit or delete entries."
+   },
+   {
+    "title": "Owner Dashboard",
+    "why": "Owners need a personalized dashboard to manage their pets and view all related information in one place",
+    "change": "Create an owner dashboard page that displays all pet information, upcoming vaccination reminders, and allows users to manage their account settings and preferences."
+   },
+   {
+    "title": "Pet Search",
+    "why": "Users need to be able to easily find and manage their pets within the app",
+    "change": "Implement a search functionality on the pet list page that allows users to search for pets by name, species, or other criteria, with results displayed in a filtered list."
+   },
+   {
+    "title": "Notification Preferences",
+    "why": "Users need to be able to customize how and when they receive vaccination reminders",
+    "change": "Add a notification preferences page where users can set their notification preferences, choose notification methods (email, SMS, push), and customize reminder intervals."
+   },
+   {
+    "title": "Staff Management",
+    "why": "The owner needs a way to manage staff access to the system and their permissions",
+    "change": "Develop a staff management page where the owner can add, edit, and delete staff members, set their roles and permissions, and manage access levels to different parts of the system."
+   },
+   {
+    "title": "Pet Care Tips",
+    "why": "Users need access to educational resources about pet care and vaccination best practices",
+    "change": "Add a pet care tips section that provides users with articles, videos, and resources on pet health, vaccination schedules, and general care tips."
+   },
+   {
+    "title": "Payment Processing",
+    "why": "The owner needs a way to process payments for premium features or services offered through the app",
+    "change": "Implement a payment processing system that allows users to purchase premium features, subscription plans, or additional services, with secure payment handling and billing management."
+   }
+  ]
+ },
+ {
+  "prompt": "A event ticketing app for a college fest with passes for each event.",
+  "seconds": 28,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Event Scheduling",
+    "why": "Allow organizers to schedule events with specific dates and times",
+    "change": "Add an event scheduling page where staff can set event dates, times, and durations, with validation to prevent overlap with other events."
+   },
+   {
+    "title": "Notification System",
+    "why": "Send reminders to users about upcoming events and their own ticket purchases",
+    "change": "Implement a notification service that sends email/SMS reminders to users about upcoming events and ticket purchases, with configurable intervals."
+   },
+   {
+    "title": "Payment Processing",
+    "why": "Process secure online payments for ticket purchases",
+    "change": "Integrate with a payment gateway provider (e.g., Stripe, PayPal) to handle secure credit card transactions and process payments for event tickets."
+   },
+   {
+    "title": "Admin Reporting",
+    "why": "Generate reports on event attendance and ticket sales for organizers",
+    "change": "Develop an admin dashboard with reporting features that show event attendance statistics, ticket sales trends, and user activity logs."
+   },
+   {
+    "title": "User Reviews",
+    "why": "Allow attendees to rate and review events after attending",
+    "change": "Add a review system where users can rate events and leave comments, with a table_reviews table to store review data and a relationship to the events table."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Enable users to search for events by name, date, or location",
+    "change": "Implement a search function on the event list page that allows users to filter events by name, date range, and location, with search results displayed in a paginated list."
+   }
+  ]
+ },
+ {
+  "prompt": "A garbage collection complaint app for a municipal ward.",
+  "seconds": 29,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Complaint Status Tracking",
+    "why": "Residents need to know the status of their complaints",
+    "change": "Add a 'status' field to the complaints table and a 'Complaint Status' page that shows the current status of each complaint."
+   },
+   {
+    "title": "Complaint Search",
+    "why": "Residents should be able to search their own complaints",
+    "change": "Add a search functionality to the resident complaint list page that allows searching by date, location, or keyword."
+   },
+   {
+    "title": "Complaint Priority",
+    "why": "Admins need to prioritize complaints based on urgency",
+    "change": "Add a 'priority' field to the complaints table and a 'Priority Queue' page that shows complaints in order of priority."
+   },
+   {
+    "title": "Complaint Notifications",
+    "why": "Residents should be notified when their complaint is resolved",
+    "change": "Implement email/SMS notifications for residents when their complaint is marked as resolved."
+   },
+   {
+    "title": "Admin Complaint Management",
+    "why": "Admins need tools to manage and assign complaints",
+    "change": "Add an 'Admin Complaints' page that allows admins to view, assign, and track complaints, with staff assignment and timeline tracking."
+   },
+   {
+    "title": "Complaint Reporting",
+    "why": "Municipal staff need reports on complaint trends and hotspots",
+    "change": "Add reporting features that generate charts and summaries of complaint patterns, locations, and frequency over time."
+   },
+   {
+    "title": "Complaint Photo Upload",
+    "why": "Residents should be able to attach photos to their complaints",
+    "change": "Add a file upload field to the complaint form that allows residents to attach photos of the problem area."
+   }
+  ]
+ },
+ {
+  "prompt": "A car pooling app for employees of one office.",
+  "seconds": 25,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Ride Search",
+    "why": "Employees need to easily find rides based on their location and time preferences.",
+    "change": "Add a search functionality to the Ride List page that allows employees to filter rides by pickup location, dropoff location, and date/time range."
+   },
+   {
+    "title": "Driver Rating System",
+    "why": "The owner needs to ensure high-quality drivers and improve ride experience through feedback mechanisms.",
+    "change": "Implement a rating system where passengers can rate drivers after each ride, storing ratings in a Drivers table with ratings field."
+   },
+   {
+    "title": "Payment Integration",
+    "why": "The owner needs to handle fare calculations and payment processing for rides.",
+    "change": "Add payment processing functionality to the backend, including fare calculation based on distance and time, and integrate with payment gateways like Stripe."
+   },
+   {
+    "title": "Notification Preferences",
+    "why": "Employees need to customize how and when they receive notifications about rides.",
+    "change": "Allow employees to set notification preferences in their account settings, including email, SMS, or in-app notifications, and store preferences in the Users table."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "The owner needs to monitor ride activity and manage system operations from a centralized admin interface.",
+    "change": "Create an admin dashboard with real-time ride statistics, ride history, and user management features, accessible only to authorized administrators."
+   }
+  ]
+ },
+ {
+  "prompt": "A vaccination camp registration app for a village.",
+  "seconds": 23,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Vaccination Status Tracking",
+    "why": "Users need to track their vaccination status and next steps.",
+    "change": "Add a user dashboard showing vaccination history, next scheduled dose, and camp availability."
+   },
+   {
+    "title": "Notification System",
+    "why": "Users need timely reminders about registration, vaccination, and rescheduling.",
+    "change": "Implement email/SMS notifications for key events like registration confirmation, vaccination appointment, and rescheduling."
+   },
+   {
+    "title": "Vaccine Inventory Management",
+    "why": "Camp staff need to manage vaccine supplies and track inventory levels.",
+    "change": "Add inventory tracking pages and API endpoints for managing vaccine stock and expiration dates."
+   },
+   {
+    "title": "Camp Capacity Management",
+    "why": "Camp staff need to manage patient flow and ensure proper social distancing.",
+    "change": "Implement real-time capacity tracking and queue management features for camp operations."
+   },
+   {
+    "title": "Review and Feedback System",
+    "why": "Camp organizers need feedback to improve services and address concerns.",
+    "change": "Add a review and feedback feature where users can rate their experience and provide comments."
+   },
+   {
+    "title": "Search and Filter Capabilities",
+    "why": "Users and staff need quick access to specific records and search functionality.",
+    "change": "Add search and filter features for registrations, vaccination records, and camp schedules."
+   }
+  ]
+ },
+ {
+  "prompt": "A warehouse stock movement log for a small distributor.",
+  "seconds": 28,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Inventory Reports",
+    "why": "Owners need regular reports to track inventory levels and identify low stock items",
+    "change": "Add report generation pages for inventory levels, low stock alerts, and stock movement trends, stored in a reports table with timestamps and user roles."
+   },
+   {
+    "title": "User Authentication",
+    "why": "Users need accounts to access the system and maintain role-based permissions",
+    "change": "Implement user authentication with login/logout functionality, role assignment, and password reset, stored in users table with hashed passwords and roles."
+   },
+   {
+    "title": "Item Tracking",
+    "why": "Users need to track item locations and movements for better inventory management",
+    "change": "Add item tracking pages with location history and movement details, stored in item_locations table with timestamps and user actions."
+   },
+   {
+    "title": "Stock Alerts",
+    "why": "Owners need notifications when stock levels fall below minimum thresholds",
+    "change": "Implement stock alert notifications via email or SMS when items reach low stock thresholds, stored in alerts table with item ids, thresholds, and timestamps."
+   },
+   {
+    "title": "Staff Management",
+    "why": "Owners need to manage staff permissions and roles for system access",
+    "change": "Add staff management pages for adding, editing, and deleting staff members with roles and permissions, stored in staff table with user roles and access levels."
+   },
+   {
+    "title": "Search Enhancements",
+    "why": "Users need advanced search capabilities to quickly find specific stock movements or items",
+    "change": "Enhance search functionality with full-text search, filtering by multiple criteria, and auto-complete features for item names and SKUs."
+   }
+  ]
+ },
+ {
+  "prompt": "A coaching institute test series with online answer submission and results.",
+  "seconds": 23,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Payment Integration",
+    "why": "Allow students to pay for test series to ensure only paying students can access premium content.",
+    "change": "Add a payment processing page that handles credit card payments and updates the test series enrollment table with payment status."
+   },
+   {
+    "title": "Notification System",
+    "why": "Send reminders to students about upcoming test sessions and notify them of their results.",
+    "change": "Implement an email/SMS notification service that triggers based on test session start times and result availability."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "Provide administrative access to view student progress, manage test series, and monitor system performance.",
+    "change": "Develop an admin dashboard page with role-based access control that shows student progress, test series metrics, and system logs."
+   },
+   {
+    "title": "Review and Rating System",
+    "why": "Enable students to rate and review test series, helping other students make informed decisions.",
+    "change": "Add a review and rating form that stores feedback in a reviews table linked to the test series and student tables."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Allow students to search for specific test series by name or description for easier navigation.",
+    "change": "Implement a search bar on the test series page that queries the test series table and returns matching results."
+   }
+  ]
+ },
+ {
+  "prompt": "A medicine stock tracker for a small pharmacy with expiry alerts.",
+  "seconds": 17,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Stock Reorder Alerts",
+    "why": "Notify staff when medicine quantities fall below reorder thresholds",
+    "change": "Add a reorder alerts page that lists medicines below minimum stock levels, and update the medicines table with reorder thresholds and alert timestamps."
+   },
+   {
+    "title": "Medicine History",
+    "why": "Track usage and inventory changes over time for better stock management",
+    "change": "Add a medicine history table that logs quantity changes, timestamps, and staff members responsible for each adjustment."
+   },
+   {
+    "title": "Supplier Management",
+    "why": "Manage supplier relationships and automate ordering processes",
+    "change": "Implement supplier tables and ordering APIs to track supplier details, order statuses, and automate reordering based on supplier contracts."
+   },
+   {
+    "title": "Patient Medication Records",
+    "why": "Store patient-specific medication usage for pharmacy dispensing",
+    "change": "Add patient medication records with fields for patient ID, medicine ID, dosage, frequency, and dispensing timestamps."
+   }
+  ]
+ },
+ {
+  "prompt": "A school transport app where parents see which bus their child is on.",
+  "seconds": 25,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Real-Time Bus Tracking",
+    "why": "Parents need to know where their child's bus is in real time for peace of mind.",
+    "change": "Add a Real-Time Bus Location Page with a map showing current bus positions, requiring a buses_location table to store GPS coordinates and timestamps."
+   },
+   {
+    "title": "Parent Account Management",
+    "why": "Parents need an account to manage their children's information and preferences.",
+    "change": "Add a Parents Accounts Page with sign-up, login, and profile management, requiring a parents_accounts table to store parent contact info and preferences."
+   },
+   {
+    "title": "Bus Capacity Alerts",
+    "why": "Parents need to know when a bus is full to avoid last-minute cancellations.",
+    "change": "Add a Bus Capacity Alert Page that sends notifications when a bus reaches 90% capacity, requiring a bus_capacity_alerts table to track alerts and send notifications."
+   },
+   {
+    "title": "Bus Driver Scheduling",
+    "why": "School administrators need to manage bus driver schedules and routes.",
+    "change": "Add a Bus Driver Scheduling Page with staff management and route assignment, requiring a bus_drivers table to store driver information and a scheduling table to track assignments."
+   },
+   {
+    "title": "Parent-Teacher Communication",
+    "why": "Parents need a way to communicate with teachers about their child's transport needs.",
+    "change": "Add a Parent-Teacher Communication Page with message boards or direct messaging, requiring a parent_teacher_messages table to store communication history."
+   }
+  ]
+ },
+ {
+  "prompt": "A freelance invoice generator for designers.",
+  "seconds": 31,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Invoice Recurring",
+    "why": "Allow designers to create recurring invoices for regular clients",
+    "change": "Add a recurring invoices page where designers can set up automatic invoice generation for existing clients, stored in a recurring_invoices table with fields for frequency, next due date, and status."
+   },
+   {
+    "title": "Client Management",
+    "why": "Enable designers to maintain client contact information and payment terms",
+    "change": "Implement a clients page where designers can add, edit, and view client information including contact details, payment preferences, and payment history, stored in a clients table with fields for name, email, phone, payment terms, and notes."
+   },
+   {
+    "title": "Payment Tracking",
+    "why": "Track payment status and amounts received from clients",
+    "change": "Add a payments table to track payment information including payment date, amount, method, and status, with foreign key relationships to invoices and clients tables."
+   },
+   {
+    "title": "Invoice Templates",
+    "why": "Allow designers to customize invoice templates for different project types",
+    "change": "Create an invoice templates page where designers can design and save custom invoice layouts, with a templates table storing template name, content, and designer id."
+   },
+   {
+    "title": "Invoice Export",
+    "why": "Enable designers to export invoices as CSV or PDF for record keeping",
+    "change": "Add export functionality to the invoice list page, allowing designers to download invoices as CSV or PDF files, with export logs stored in an exports table."
+   }
+  ]
+ },
+ {
+  "prompt": "A community notice board for a residential colony.",
+  "seconds": 30,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Notification System",
+    "why": "Users need to be alerted about important updates or changes to notices",
+    "change": "Add a notification system where users can receive email or in-app alerts for important updates or changes to notices, requiring a notifications table with user_id, notice_id, and timestamp fields."
+   },
+   {
+    "title": "Category System",
+    "why": "Users need to organize notices into categories for better navigation and search",
+    "change": "Implement a category system where notices can be grouped into categories like 'Important', 'Events', 'Announcements', requiring a categories table with id, name, and description fields, and a notice_categories join table to link notices to categories."
+   },
+   {
+    "title": "File Upload Support",
+    "why": "Users need to be able to attach files to notices for sharing documents or media",
+    "change": "Add file upload support to notices, storing file metadata in a files table with fields for id, notice_id, filename, file_size, file_type, and upload_date, and storing actual files in a designated directory with secure access controls."
+   },
+   {
+    "title": "Search Filters",
+    "why": "Users need more advanced search capabilities to find specific notices quickly",
+    "change": "Enhance the search functionality with filters for categories, authors, and dates, requiring modifications to the notice list page and backend search logic to handle these additional parameters."
+   },
+   {
+    "title": "Moderation Tools",
+    "why": "Admin users need tools to manage and moderate content on the notice board",
+    "change": "Add moderation tools for admin users to review, approve, or delete notices, requiring a moderation queue interface and backend logic to handle these actions, and updating the user roles and permissions system accordingly."
+   }
+  ]
+ },
+ {
+  "prompt": "A tiffin service app with weekly menus and subscriptions.",
+  "seconds": 32,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Delivery Scheduling",
+    "why": "Users need flexible delivery options to ensure their tiffin arrives at the right time each day.",
+    "change": "Add a delivery scheduling page where users can select their preferred delivery time slot, stored in a table_delivery_schedules table, and update their delivery preferences through the user profile page."
+   },
+   {
+    "title": "Notification System",
+    "why": "Users should receive timely notifications about their orders, subscription changes, and delivery updates.",
+    "change": "Develop a notification system that sends email/SMS alerts based on user preferences, stored in a table_notifications table, and integrated with the user and subscription management APIs."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "The owner needs an admin dashboard to manage menus, subscriptions, and track business metrics.",
+    "change": "Create an admin dashboard with pages for managing menus, subscriptions, and viewing business reports, stored in a table_admin_dashboard_pages table, with role-based access control."
+   },
+   {
+    "title": "Customer Reviews",
+    "why": "Users should be able to rate and review their tiffin experiences to improve service quality.",
+    "change": "Add a review system with pages for customers to submit ratings and comments, stored in a table_reviews table, and display average ratings on the menu list page."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Users need to easily find specific menus or subscription plans based on their preferences.",
+    "change": "Implement a search functionality with pages for searching menus and subscriptions, stored in a table_search_results table, and integrate with the existing API routes."
+   }
+  ]
+ },
+ {
+  "prompt": "An internship diary where interns log daily work and mentors approve it.",
+  "seconds": 32,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Daily Time Tracking",
+    "why": "Helps interns track time spent on tasks and maintain accurate logs.",
+    "change": "Add a timer start/stop button on the work log form and log duration along with description."
+   },
+   {
+    "title": "Approval History",
+    "why": "Lets an intern see which logs have been approved and by whom.",
+    "change": "Add an 'Approval History' section to the mentor approval queue that shows log entries with approval status and approver name."
+   },
+   {
+    "title": "Mentor Dashboard",
+    "why": "Provides a quick overview of all pending approvals for a mentor.",
+    "change": "Add a 'Mentor Dashboard' page that lists all pending work logs with search/filter capabilities by intern or date range."
+   },
+   {
+    "title": "Work Log Search",
+    "why": "Enables both interns and mentors to search through past work logs.",
+    "change": "Add a search bar to the work log entry form and mentor approval queue that filters logs by date, description, or intern name."
+   },
+   {
+    "title": "Work Log Templates",
+    "why": "Simplifies logging by providing structured templates for common work activities.",
+    "change": "Add a 'Work Log Templates' feature that lets an intern select from predefined templates (e.g., 'Client Meeting', 'Code Review') which populate the form fields."
+   },
+   {
+    "title": "Work Log Export",
+    "why": "Allows interns and mentors to export work logs for reporting or record-keeping purposes.",
+    "change": "Add an 'Export Work Logs' button that generates a CSV or PDF file containing all work logs with filtering options."
+   }
+  ]
+ },
+ {
+  "prompt": "A sports equipment issue register for a school.",
+  "seconds": 37,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Equipment Maintenance Log",
+    "why": "Track maintenance activities and parts used on equipment to maintain asset value and prevent breakdowns.",
+    "change": "Add a maintenance log page where staff can log maintenance activities including date, parts used, labor costs, and equipment id. Store maintenance records in a maintenance_log table with fields for id, equipment_id, date, parts_used, labor_costs, and notes."
+   },
+   {
+    "title": "Equipment Low Stock Alert",
+    "why": "Notify staff when equipment inventory falls below a threshold to prevent shortages and ensure proper resource allocation.",
+    "change": "Implement a low stock alert system that sends email notifications to staff when equipment counts fall below a configured threshold. Store alert thresholds and timestamps in an alerts table with fields for id, equipment_id, threshold, last_checked, and next_alert."
+   },
+   {
+    "title": "Student Borrower Search",
+    "why": "Enable quick searching of equipment issued to students by name or class to streamline return processes and track usage patterns.",
+    "change": "Add a student borrower search page that allows staff to search equipment issued to students by name or class. Update the issue form to include a student class field and add a student_borrowers table with fields for id, name, class, and contact_info."
+   },
+   {
+    "title": "Equipment Condition Tracking",
+    "why": "Maintain detailed condition records over time to identify trends, predict maintenance needs, and ensure equipment remains safe for use.",
+    "change": "Add a condition tracking feature that allows staff to update equipment condition ratings (new, good, fair, poor) and add notes. Store condition history in a condition_history table with fields for id, equipment_id, rating, date, and notes."
+   },
+   {
+    "title": "Equipment Check-In Queue",
+    "why": "Create a queue system for returned equipment to manage processing flow and ensure timely re-issuance of items.",
+    "change": "Implement a check-in queue that prioritizes returned equipment based on return date and condition. Add a check_in_queue table with fields for id, equipment_id, return_date, priority, and status. Update the return form to mark equipment as checked in and move it to the queue."
+   }
+  ]
+ },
+ {
+  "prompt": "A furniture shop catalogue with custom order requests.",
+  "seconds": 23,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Payment Processing",
+    "why": "Allows customers to securely complete their orders with various payment methods",
+    "change": "Add a payment processing system that integrates with popular payment gateways like Stripe or PayPal, requiring a payments API and updated order status tracking."
+   },
+   {
+    "title": "Delivery Address",
+    "why": "Enables customers to specify shipping addresses separate from billing addresses",
+    "change": "Add a delivery address field to the custom order form and update the orders table to store both billing and delivery addresses."
+   },
+   {
+    "title": "Customer Account System",
+    "why": "Provides customers with accounts to manage their orders, preferences, and history",
+    "change": "Implement user authentication and account management features, including login, registration, and profile management, requiring user accounts and authentication API."
+   },
+   {
+    "title": "Product Reviews",
+    "why": "Encourages customers to share their experiences and helps build trust in the brand",
+    "change": "Add a review system where customers can rate and comment on furniture items, storing reviews in a reviews table linked to the catalogue table."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Enables customers to quickly find specific furniture items by name, category, or other criteria",
+    "change": "Implement a search functionality that allows users to filter and sort furniture items by various attributes, requiring search functionality and database indexing."
+   }
+  ]
+ },
+ {
+  "prompt": "A yoga class app with sessions, instructors and attendance.",
+  "seconds": 31,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Class Search",
+    "why": "Users need to find classes by date, time, and location easily.",
+    "change": "Add a search page with input fields for date, time, and location, returning matching classes with instructor and capacity information."
+   },
+   {
+    "title": "Payment Processing",
+    "why": "Owners need to collect payment for class reservations and memberships.",
+    "change": "Implement payment processing with a payment API integration, storing payment records and class reservations in the database."
+   },
+   {
+    "title": "Notification System",
+    "why": "Users need to be notified of class changes, instructor updates, and upcoming sessions.",
+    "change": "Add a notifications page with options to enable/disable email alerts for class changes and instructor updates."
+   },
+   {
+    "title": "Student Accounts",
+    "why": "Owners need to manage student accounts, track payments, and handle account suspensions.",
+    "change": "Create a students table with fields for student id, email, password hash, payment status, and account status, and update authentication and payment APIs to support student accounts."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "Owners need a dashboard to view class attendance, instructor schedules, and financial reports.",
+    "change": "Develop an admin dashboard with widgets showing class attendance rates, instructor availability, and financial summaries."
+   },
+   {
+    "title": "Class Capacity Management",
+    "why": "Owners need to manage class sizes and prevent over-enrollment.",
+    "change": "Add a capacity field to the classes table and implement logic to prevent students from booking full classes."
+   },
+   {
+    "title": "Class Reviews",
+    "why": "Owners need to gather feedback from students to improve teaching quality.",
+    "change": "Add a reviews table with fields for review id, student id, class id, rating, and comment, and update the frontend to allow students to submit reviews after attending classes."
+   }
+  ]
+ },
+ {
+  "prompt": "A complaint box for an office where employees can post anonymously.",
+  "seconds": 28,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Employee-Only Complaints",
+    "why": "Only employees should be able to post complaints; non-staff should see a generic 'no access' message.",
+    "change": "Add a check to the complaint form to verify the employee's ID before allowing a post; reject non-employees with a 'no access' message."
+   },
+   {
+    "title": "Complaint Status Tracking",
+    "why": "Managers need to track which complaints are resolved and which are still open.",
+    "change": "Add a status field to the complaints table ('open', 'resolved', 'ignored') and a staff page to view and update complaint statuses."
+   },
+   {
+    "title": "Complaint Search",
+    "why": "Employees and managers need to be able to search through complaints by keyword.",
+    "change": "Add a search box to the complaint list page that filters results by complaint text."
+   },
+   {
+    "title": "Complaint Notifications",
+    "why": "Managers should get notified when new complaints are posted or when complaints are marked as resolved.",
+    "change": "Add a notification system that sends email alerts to managers when complaints are created or updated."
+   },
+   {
+    "title": "Complaint History",
+    "why": "Employees should be able to see their own complaint history, even after they've been deleted.",
+    "change": "Add a personal history page that shows an employee's past complaints and their current status."
+   },
+   {
+    "title": "Complaint Moderation",
+    "why": "Admins need to be able to moderate complaints, marking them as spam or removing them entirely.",
+    "change": "Add an admin panel with a complaints management page that allows marking complaints as spam or deleting them."
+   }
+  ]
+ },
+ {
+  "prompt": "A seed and fertiliser order app for a farmer cooperative.",
+  "seconds": 25,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Payment Processing",
+    "why": "Allows farmers to securely submit payments for their orders",
+    "change": "Add payment processing integration with payment gateway API endpoints and update order status upon successful payment."
+   },
+   {
+    "title": "Delivery Tracking",
+    "why": "Enables farmers to track the delivery status of their orders",
+    "change": "Implement delivery tracking system with API endpoints for tracking updates and a delivery status page for farmers."
+   },
+   {
+    "title": "Review System",
+    "why": "Encourages farmers to provide feedback on their experiences with products and services",
+    "change": "Add product review functionality with rating and comment fields, stored in a reviews table linked to products."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Helps farmers quickly find specific products by name or category",
+    "change": "Add search functionality to the product catalog page with search input and results displayed in a list format."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "Provides staff with a comprehensive view of all orders, products, and system metrics",
+    "change": "Create an admin dashboard page with real-time order tracking, product inventory, and system statistics for staff management."
+   },
+   {
+    "title": "Notification System",
+    "why": "Keeps farmers informed about order status changes and important updates",
+    "change": "Implement notification system with email and SMS alerts for order confirmations, delivery updates, and system messages."
+   }
+  ]
+ },
+ {
+  "prompt": "A chess tournament manager with pairings and results.",
+  "seconds": 22,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Tournament Search",
+    "why": "Users need to quickly find specific tournaments by name, date, or other criteria.",
+    "change": "Add a search bar to the Tournament List Page that filters tournaments by name, date range, and status."
+   },
+   {
+    "title": "Player Pairing History",
+    "why": "Players need to track their past pairings and results for reference and improvement.",
+    "change": "Add a Pairing History section to the Player Profile Page that lists past round pairings and results."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "Tournament administrators need an overview of current tournaments, upcoming rounds, and system status.",
+    "change": "Create an Admin Dashboard Page that shows active tournaments, upcoming rounds, and system statistics."
+   },
+   {
+    "title": "Notification System",
+    "why": "Users need to be notified of important events like new rounds, pairings, and results.",
+    "change": "Implement a notification system that sends email/SMS alerts to players and administrators about key events."
+   },
+   {
+    "title": "Tournament Import/Export",
+    "why": "Owners need to easily transfer tournament data between systems or backup/restore data.",
+    "change": "Add Import/Export functionality to the Tournament Edit Page that supports CSV or JSON file formats."
+   }
+  ]
+ },
+ {
+  "prompt": "A book club app with monthly picks and discussion threads.",
+  "seconds": 33,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Monthly Pick Scheduling",
+    "why": "Users need a way to automatically receive the next month's book pick and discussion prompt.",
+    "change": "Add a scheduler service that sends out monthly pick announcements and discussion prompts to members via email or app notification."
+   },
+   {
+    "title": "Book Availability Tracking",
+    "why": "Owners need to track which books are available for selection and which are borrowed or reserved.",
+    "change": "Extend the Books Table to include fields for availability status, current borrower, and reservation information."
+   },
+   {
+    "title": "User Role Management",
+    "why": "Owners need to manage different user roles (member, moderator, admin) with varying permissions.",
+    "change": "Add a Roles Table and update the Members Table to link users to roles with permissions for managing content and users."
+   },
+   {
+    "title": "User Activity Tracking",
+    "why": "Owners need to monitor user engagement and activity patterns to improve the community experience.",
+    "change": "Add an Activity Table to track user actions like posting, replying, and reading threads with timestamps and user IDs."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "Owners need a dashboard to view overall community health, member activity, and system metrics.",
+    "change": "Create an Admin Dashboard Page with real-time metrics and user activity summaries, accessible only to admin roles."
+   },
+   {
+    "title": "Book Recommendations",
+    "why": "Users need a way to suggest new books for consideration as monthly picks.",
+    "change": "Add a Book Recommendations Page where members can submit new book ideas with title, author, and a brief description, stored in a Recommendations Table."
+   },
+   {
+    "title": "Notification System",
+    "why": "Users need to be notified of new monthly picks, discussion threads, and important updates.",
+    "change": "Implement a Notification Service that sends out email and in-app notifications for new picks, discussion starts, and important messages."
+   }
+  ]
+ },
+ {
+  "prompt": "A sweet shop festival order booking system.",
+  "seconds": 25,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Delivery Tracking",
+    "why": "Allows customers to track their order status from preparation to delivery",
+    "change": "Add a Delivery Status page where customers can see their order's current stage, and update the orders table with delivery timestamps and statuses."
+   },
+   {
+    "title": "Payment Processing",
+    "why": "Securely handles payment transactions for orders",
+    "change": "Integrate with a payment gateway provider and add a Payments table to track transaction IDs, amounts, and statuses."
+   },
+   {
+    "title": "Notification System",
+    "why": "Sends automated alerts to customers about order updates and delivery",
+    "change": "Implement a notification service that sends email/SMS messages based on order status changes, using a Notifications table to log sent messages."
+   },
+   {
+    "title": "Review Management",
+    "why": "Collects customer feedback to improve service and products",
+    "change": "Add a Reviews table to store customer ratings and comments, and a Reviews Form page for customers to submit feedback."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Enables quick searching of orders and customers by various criteria",
+    "change": "Develop a Search functionality that allows staff to filter orders and customers by name, date, status, or other fields, using appropriate indexes on the database tables."
+   },
+   {
+    "title": "Staff Management",
+    "why": "Manages staff roles and permissions for system access",
+    "change": "Add Staff Management pages and tables to handle user roles, permissions, and shift scheduling for staff members."
+   }
+  ]
+ },
+ {
+  "prompt": "A jewellery shop gold savings scheme tracker.",
+  "seconds": 33,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Gold Price Tracking",
+    "why": "Users need real-time gold price updates to track their savings value accurately",
+    "change": "Add a page for gold price tracking with API integration for current gold prices, and update transaction values accordingly."
+   },
+   {
+    "title": "Notification System",
+    "why": "Users should be notified of important events like low balances or new transactions",
+    "change": "Implement a notification system with email and SMS options for key events and alerts."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "Admins need a dashboard to oversee all accounts and transactions from a central location",
+    "change": "Create an admin dashboard with summary views, search functionality, and quick access to management tools."
+   },
+   {
+    "title": "User Profiles",
+    "why": "Users should have personalized profiles with settings and preferences for their experience",
+    "change": "Develop user profile pages with settings for notification preferences, security preferences, and account customization."
+   },
+   {
+    "title": "Multi-Currency Support",
+    "why": "Users might want to track savings in different currencies for international transactions",
+    "change": "Add support for multiple currencies in transactions and account balances with exchange rate integration."
+   },
+   {
+    "title": "Customer Support",
+    "why": "Users need a way to contact support for assistance with their accounts or transactions",
+    "change": "Implement a customer support system with contact forms, live chat, and ticketing functionality."
+   },
+   {
+    "title": "Import/Export Data",
+    "why": "Users may want to import/export their data for backup or transfer purposes",
+    "change": "Add import/export features for savings accounts, transactions, and account balances with file format support."
+   }
+  ]
+ },
+ {
+  "prompt": "A carpentry workshop project and material tracker.",
+  "seconds": 33,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Material Inventory",
+    "why": "Track inventory levels and prevent stockouts for materials used in projects.",
+    "change": "Add inventory tracking functionality to the Material Form with fields for current stock, minimum stock, and last updated date. Implement low stock alerts and update inventory levels when materials are used in tasks."
+   },
+   {
+    "title": "Project Scheduling",
+    "why": "Plan and schedule projects with timelines and deadlines to ensure timely completion.",
+    "change": "Add scheduling features to the Project Form with fields for estimated start date, end date, and duration. Implement calendar views and Gantt chart visualization for project timelines."
+   },
+   {
+    "title": "Material Usage Tracking",
+    "why": "Record how much material is used for each task to track consumption and improve cost tracking.",
+    "change": "Add a Material Usage Log page where users can log how much material is used for specific tasks. Store this information in a material_usage table with fields for task_id, material_id, quantity_used, and date."
+   },
+   {
+    "title": "Customer Management",
+    "why": "Track customer information and project relationships for better service and billing.",
+    "change": "Add a Customers page with fields for customer name, contact info, project references, and billing details. Link customers to projects and tasks through foreign key relationships."
+   },
+   {
+    "title": "Payment Tracking",
+    "why": "Manage payment records and track financial transactions related to projects and materials.",
+    "change": "Add a Payments page with fields for payment amount, payment date, payment method, and reference number. Link payments to projects and materials through foreign key relationships."
+   },
+   {
+    "title": "Notification System",
+    "why": "Send alerts and reminders for upcoming tasks, project deadlines, and low stock conditions.",
+    "change": "Implement a notification system that sends email or SMS alerts based on user preferences and predefined triggers. Store notification logs in a notifications table with fields for user_id, message, sent_date, and status."
+   }
+  ]
+ },
+ {
+  "prompt": "A language exchange app pairing learners of Hindi and Tamil.",
+  "seconds": 28,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "User Interests Form",
+    "why": "Allow users to specify their language learning goals and topics of interest for better matching",
+    "change": "Add a form on the user profile page where users can enter their interests (e.g., travel, business, literature) and topics they want to practice (e.g., food, technology, history). Store this information in the users table."
+   },
+   {
+    "title": "Notification System",
+    "why": "Keep users informed about new matches, messages, and activity from their language partners",
+    "change": "Implement a notification service that sends email or in-app notifications to users when they receive a match request or a new message. Update the frontend to display unread notifications."
+   },
+   {
+    "title": "Progress Tracking",
+    "why": "Help users monitor their language improvement and keep them motivated through practice sessions",
+    "change": "Add a progress tracking feature where users can log practice sessions, set goals, and track their improvement over time. Store this data in a progress table linked to the users table."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "Provide administrators with tools to manage users, monitor activity, and handle disputes",
+    "change": "Develop an admin dashboard with features like user management, activity monitoring, and dispute resolution tools. Secure access to this dashboard with role-based authentication."
+   },
+   {
+    "title": "Payment Processing",
+    "why": "Enable users to pay for premium features like advanced matching algorithms, priority support, or unlimited practice time",
+    "change": "Integrate a payment processing system that handles subscriptions, billing, and transaction logging. Add payment processing endpoints and update the frontend to display premium features."
+   }
+  ]
+ },
+ {
+  "prompt": "A study group finder for engineering students.",
+  "seconds": 35,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Group Search Filters",
+    "why": "Students need to easily find study groups that match their specific needs.",
+    "change": "Add search filters to the study group listing page allowing students to filter by major, year level, study topics, and availability times."
+   },
+   {
+    "title": "Group Scheduling",
+    "why": "Students need a way to schedule regular study sessions that fit their calendars.",
+    "change": "Implement a scheduling feature where study groups can set recurring meeting times and locations, with a calendar view for students to see their upcoming sessions."
+   },
+   {
+    "title": "Payment System for Premium Features",
+    "why": "The owner needs to generate revenue from premium features like advanced search filters and priority access to study groups.",
+    "change": "Add a payment processing system for premium accounts that unlock additional features like unlimited group requests, priority access to popular groups, and advanced search filters."
+   },
+   {
+    "title": "Admin Dashboard for Moderation",
+    "why": "The owner needs tools to manage the platform, including moderating group requests and managing user accounts.",
+    "change": "Create an admin dashboard with moderation tools, user management features, and reporting capabilities to help the owner maintain the quality of the study group listings."
+   },
+   {
+    "title": "User Reviews and Ratings",
+    "why": "Students need a way to rate and review study groups to help others make better choices.",
+    "change": "Add a review system where students can rate study groups and leave comments, which can be used to improve group matching algorithms and provide transparency about group quality."
+   },
+   {
+    "title": "Mobile App Integration",
+    "why": "Students need access to the platform on mobile devices to stay connected while on the go.",
+    "change": "Develop a mobile app version of the study group finder with all core features, including push notifications for important messages and group updates."
+   },
+   {
+    "title": "Video Call Integration",
+    "why": "Students need a way to conduct virtual study sessions in real-time, especially for remote learning.",
+    "change": "Integrate video conferencing capabilities into the study group platform, allowing students to join virtual study sessions directly from the app or website."
+   }
+  ]
+ },
+ {
+  "prompt": "A fish market price and stock board.",
+  "seconds": 33,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Real-Time Stock Updates",
+    "why": "Users need to see accurate stock levels that update automatically as items are sold.",
+    "change": "Add a trigger that updates the stock quantity in the database when a sale is made through the frontend interface."
+   },
+   {
+    "title": "Customer Order Form",
+    "why": "Customers need a way to place orders for specific fish quantities.",
+    "change": "Add an order form page with fields for customer name, email, phone, fish type, quantity, and delivery address, stored in an orders table."
+   },
+   {
+    "title": "Payment Processing",
+    "why": "Customers need a secure way to pay for their orders.",
+    "change": "Integrate with a payment processor API to handle credit card transactions and store payment details in a payments table."
+   },
+   {
+    "title": "Delivery Scheduling",
+    "why": "Customers need to schedule delivery times for their orders.",
+    "change": "Add a delivery scheduling page where customers select a delivery date and time, and store this information in a deliveries table."
+   },
+   {
+    "title": "Customer Account Management",
+    "why": "Customers need accounts to track their orders and preferences.",
+    "change": "Create customer accounts with login functionality, and store customer information in a customers table."
+   },
+   {
+    "title": "Admin Reporting Dashboard",
+    "why": "Staff need to view sales reports and inventory levels.",
+    "change": "Add a reporting dashboard page that shows sales trends, inventory levels, and profit margins, with data visualization charts."
+   },
+   {
+    "title": "Customer Reviews",
+    "why": "Customers need to leave feedback about their experience.",
+    "change": "Add a review form page where customers can rate their experience and leave comments, stored in a reviews table."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Both customers and staff need to quickly find fish items by name or species.",
+    "change": "Implement a search function on the price and stock board that allows users to filter by fish name or species."
+   }
+  ]
+ },
+ {
+  "prompt": "A driving school app with lesson slots and test dates.",
+  "seconds": 22,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Payment Processing",
+    "why": "Allows students to pay for lessons and tests directly through the app.",
+    "change": "Add payment processing endpoints and a payments table to track transactions."
+   },
+   {
+    "title": "Notification System",
+    "why": "Sends reminders about upcoming lessons and test dates to students.",
+    "change": "Implement notification service with message queues and scheduled jobs."
+   },
+   {
+    "title": "Student Progress Tracking",
+    "why": "Helps instructors monitor student progress and identify areas needing more attention.",
+    "change": "Add progress tracking features to the instructor dashboard and update student records accordingly."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "Provides an overview of all activities, including lesson and test scheduling, and allows administrators to manage users and settings.",
+    "change": "Develop an admin dashboard with role-based access control for managing the system."
+   },
+   {
+    "title": "Review System",
+    "why": "Encourages students to provide feedback on their experiences, improving service quality.",
+    "change": "Implement a review system where students can rate instructors and leave comments."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Enables students and instructors to quickly find available lesson slots and test dates.",
+    "change": "Add search functionality to the student and instructor dashboards."
+   }
+  ]
+ },
+ {
+  "prompt": "A beauty parlour appointment and package booking app.",
+  "seconds": 31,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Payment Processing",
+    "why": "Allow customers to securely pay for services and packages at the time of booking",
+    "change": "Add payment processing endpoints and integrate with payment gateways like Stripe or PayPal. Update the database to track payment status and amounts."
+   },
+   {
+    "title": "Notification System",
+    "why": "Send reminders and confirmations to customers about their upcoming appointments",
+    "change": "Implement a notification service that sends email/SMS alerts to customers about upcoming appointments. Add columns to the Appointments table for notification status and timestamps."
+   },
+   {
+    "title": "Package Management",
+    "why": "Enable customers to book entire packages of services at a discounted rate",
+    "change": "Add a Packages table with fields for package name, description, total cost, included services, and validity period. Update the Service Service to handle package booking and discount calculation."
+   },
+   {
+    "title": "Customer Reviews",
+    "why": "Allow customers to rate and review their experiences with services and staff",
+    "change": "Add a Reviews table with fields for customer ID, service ID, rating, review text, and timestamp. Update the Customer Dashboard to display customer reviews and ratings."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Provide customers with easy search capabilities to find specific services or staff members",
+    "change": "Implement a search functionality that allows customers to search by service name, staff name, or category. Update the Service List Page and Staff Dashboard to include search input fields and results."
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "Give administrators access to manage the entire system, including service updates and staff management",
+    "change": "Create an Admin Dashboard page with role-based access control. Add admin-specific endpoints for managing services, staff, and customer data."
+   }
+  ]
+ },
+ {
+  "prompt": "A spare parts inventory for a two-wheeler workshop.",
+  "seconds": 21,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Part Tracking",
+    "why": "Track part usage and inventory levels over time",
+    "change": "Add a Part Usage Log Page where staff record when parts are used, linking to parts table, and a Reports Page showing inventory trends."
+   },
+   {
+    "title": "Supplier Management",
+    "why": "Manage supplier relationships and track part availability",
+    "change": "Add Supplier Pages: Supplier List Page, Supplier Form Page, and Supplier API endpoints for managing suppliers and their parts."
+   },
+   {
+    "title": "Low Stock Alerts",
+    "why": "Automatically alert staff when part quantities fall below minimum thresholds",
+    "change": "Implement a Low Stock Alert System that triggers notifications when part quantities drop below set thresholds, stored in a Alerts Table."
+   },
+   {
+    "title": "Work Order Tracking",
+    "why": "Track work orders and parts assigned to each order",
+    "change": "Add Work Order Pages: Work Order List Page, Work Order Form Page, and Work Order API endpoints for managing work orders and their parts."
+   },
+   {
+    "title": "Customer Billing",
+    "why": "Generate invoices and handle customer payments",
+    "change": "Add Billing Pages: Invoice List Page, Invoice Form Page, and Payment Processing API endpoints for managing customer invoices and payments."
+   }
+  ]
+ },
+ {
+  "prompt": "A art exhibition entry and voting app.",
+  "seconds": 18,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Exhibition Search",
+    "why": "Allow users to search through art pieces by title or description for easier navigation",
+    "change": "Add a search bar to the Exhibition List Page that filters art pieces based on title or description fields"
+   },
+   {
+    "title": "Entry Voting History",
+    "why": "Show users their past votes to maintain transparency and prevent accidental duplicate voting",
+    "change": "Add a section to the User Profile Page displaying a user's voting history with art piece references"
+   },
+   {
+    "title": "Admin Dashboard",
+    "why": "Provide curators and administrators with a dashboard to manage exhibitions, view analytics, and handle submissions",
+    "change": "Create an Admin Dashboard Page with CRUD capabilities for exhibitions, art pieces, and user management features"
+   },
+   {
+    "title": "Art Piece Details Page",
+    "why": "Display comprehensive information about each art piece including creator bio, materials used, and exhibition context",
+    "change": "Add a Details Page for each art piece that shows additional metadata like creator biography, materials, and exhibition context fields"
+   }
+  ]
+ },
+ {
+  "prompt": "A rickshaw stand queue and fare log.",
+  "seconds": 36,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Customer Check-In",
+    "why": "Allows customers to join the queue and track their position.",
+    "change": "Add a check-in page where customers enter their name or phone number, and a queue position is assigned. Store check-ins in a 'customer_checkins' table with foreign key to 'rides'."
+   },
+   {
+    "title": "Fare Calculation",
+    "why": "Automates fare calculation based on distance, time, and zone rates.",
+    "change": "Add fare calculation logic that determines base fare, distance charge, and time wait, storing results in the 'rides' table."
+   },
+   {
+    "title": "Payment Processing",
+    "why": "Handles payment collection and confirmation for completed rides.",
+    "change": "Integrate a payment processing API call on fare entry, storing transaction IDs and status in the 'rides' table."
+   },
+   {
+    "title": "Staff Dashboard",
+    "why": "Provides staff with a comprehensive view of current queue, completed rides, and financial summaries.",
+    "change": "Create a dashboard page for staff to view real-time queue status, completed ride summaries, and financial reports. Update existing staff login to include dashboard access."
+   },
+   {
+    "title": "Notification System",
+    "why": "Sends alerts to customers about their queue position and fare confirmation.",
+    "change": "Implement a notification service that sends SMS or email alerts when a customer's ride is confirmed or completed. Store notification logs in a 'notifications' table."
+   },
+   {
+    "title": "Review Management",
+    "why": "Collects customer feedback on rides and drivers for quality improvement.",
+    "change": "Add a review page where customers can rate their ride experience and leave comments. Store reviews in a 'customer_reviews' table with foreign key to 'rides'."
+   },
+   {
+    "title": "Search Functionality",
+    "why": "Enables searching through past rides and queue history for both customers and staff.",
+    "change": "Implement search functionality on the queue board and staff dashboard, allowing filtering by date range, customer name, or ride status. Update 'rides' table with search-friendly fields."
+   },
+   {
+    "title": "Admin Reports",
+    "why": "Generates detailed reports for financial analysis and operational tracking.",
+    "change": "Develop a reporting page for administrators to generate financial summaries, daily/weekly/monthly ride counts, and revenue reports. Store report data in a 'admin_reports' table."
+   }
+  ]
+ },
+ {
+  "prompt": "A conference room booking app for a startup.",
+  "seconds": 27,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Room Scheduling Calendar",
+    "why": "Users need a visual calendar to see room availability and schedule bookings easily.",
+    "change": "Add a room scheduling calendar page that displays available time slots for each room, allowing users to select and book time slots directly."
+   },
+   {
+    "title": "Payment Processing",
+    "why": "The owner needs a way to collect booking fees to cover costs and generate revenue.",
+    "change": "Implement payment processing integration with a payment gateway to handle booking fees and generate invoices."
+   },
+   {
+    "title": "User Reviews",
+    "why": "The owner needs feedback from users to improve the service and attract more bookings.",
+    "change": "Add a review system where users can rate and comment on their booking experiences, visible to other users."
+   },
+   {
+    "title": "Notification System",
+    "why": "Users need real-time updates about their bookings and room changes.",
+    "change": "Enhance the notification service to send push notifications, email, and SMS alerts for booking confirmations, changes, and cancellations."
+   },
+   {
+    "title": "Admin Room Reporting",
+    "why": "The owner needs reports to track room usage, identify peak times, and optimize resource allocation.",
+    "change": "Add admin reporting features that generate room usage statistics, booking trends, and capacity utilization reports."
+   },
+   {
+    "title": "Mobile App",
+    "why": "Users need access to the booking system from mobile devices for convenience.",
+    "change": "Develop a mobile app version of the booking system with native app integration for both iOS and Android."
+   }
+  ]
+ },
+ {
+  "prompt": "A old-age home visitor and care schedule app.",
+  "seconds": 19,
+  "ok": true,
+  "suggestions": [
+   {
+    "title": "Notification System",
+    "why": "Caregivers need to be reminded of upcoming visits and tasks",
+    "change": "Add a notifications page where caregivers can see upcoming visits and tasks, and a table_notifications table to store notification records."
+   },
+   {
+    "title": "Mobile App",
+    "why": "Caregivers need mobile access to the app for on-the-go use",
+    "change": "Develop a mobile app version of the app with the same core functionality as the web version."
+   },
+   {
+    "title": "Resident Family Access",
+    "why": "Family members need to be able to see their loved one's care schedule",
+    "change": "Add a family access page where family members can view their loved one's care plan and upcoming visits, and a table_family_access to store family member permissions."
+   },
+   {
+    "title": "Caregiver Schedule Management",
+    "why": "Caregivers need to manage their own schedules and availability",
+    "change": "Add a caregiver schedule page where caregivers can view and update their availability, and a table_caregiver_schedules to store schedule information."
+   }
+  ]
+ }
+]
