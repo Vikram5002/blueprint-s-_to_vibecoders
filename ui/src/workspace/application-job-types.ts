@@ -42,7 +42,7 @@ export interface RegenerationAttempt {
   readonly targetPath: string;
   readonly firstAttemptViolation: PriorViolationContext;
   /** Which check triggered this retry - a real Blueprint violation, or Item 3's narrower service-locator-evasion check. */
-  readonly origin: 'blueprint-violation' | 'service-locator-evasion' | 'build-failure';
+  readonly origin: 'blueprint-violation' | 'service-locator-evasion' | 'build-failure' | 'form-check';
   readonly outcome: 'fixed' | 'still-violating';
 }
 
@@ -74,6 +74,12 @@ export interface ApplicationJobResult {
   readonly unresolvedViolations: readonly Violation[];
   readonly unresolvedServiceLocatorFindings: readonly SuspectedServiceLocatorEvasion[];
   readonly build: BuildOutcome;
+  /** The form check (src/generate/form-check.ts); absent when the build failed and it never ran. */
+  readonly forms?: {
+    readonly calls: number;
+    readonly passed: number;
+    readonly problems: readonly { readonly page: string; readonly call: string; readonly message: string }[];
+  };
 }
 
 /**
@@ -122,7 +128,7 @@ export interface ApplicationJob {
   readonly parentId?: string;
   readonly status: ApplicationJobStatus;
   readonly phase?:
-    GenerationPhase | 'installing' | 'building' | 'build-regenerating' | 'build-reverifying';
+    GenerationPhase | 'installing' | 'building' | 'build-regenerating' | 'build-reverifying' | 'form-checking' | 'form-fixing';
   readonly result?: ApplicationJobResult;
   readonly error?: ApplicationJobError;
   /** Component files written before the run stopped - what "Continue generation" reuses. Mirrors generation-api.ts. */

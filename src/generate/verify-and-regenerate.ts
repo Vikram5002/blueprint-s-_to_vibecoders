@@ -57,7 +57,7 @@ export interface RegenerationAttempt {
    * confidence, and the audit log this project has never simplified for the
    * UI (docs/GENERATION.md, Task 1.4) should say honestly which one fired.
    */
-  readonly origin: 'blueprint-violation' | 'service-locator-evasion' | 'build-failure';
+  readonly origin: 'blueprint-violation' | 'service-locator-evasion' | 'build-failure' | 'form-check';
   /** 'fixed': the same file/constraint pair no longer appears in the re-run. 'still-violating': hard-failed, kept as the last attempt's content. */
   readonly outcome: 'fixed' | 'still-violating';
 }

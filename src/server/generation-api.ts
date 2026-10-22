@@ -50,10 +50,11 @@ import {
   type GenerationPhase,
   type RegenerationAttempt,
 } from '../generate/verify-and-regenerate.js';
-import { installBuildAndRepair, summarise, type BuildOutcome, type BuildPhase, type FileSummary } from '../generate/build-and-repair.js';
+import { installBuildAndRepair, summarise, type BuildOutcome, type BuildPhase, type FileSummary, type InstallBuildAndRepairOptions } from '../generate/build-and-repair.js';
+import { checkFormsAndRepair, type FormCheckSummary, type FormPhase } from '../generate/form-repair.js';
 import { detectServiceLocatorEvasion } from '../generate/detect-service-locator-evasion.js';
 import { planConstraints } from '../generate/plan-rules.js';
-import { findComponentByTargetPath } from '../generate/generate-project.js';
+import { findComponentByTargetPath, type GenerateProjectFailure } from '../generate/generate-project.js';
 import { extractLayoutFromComponent } from '../generate/extract-layout.js';
 import { layoutToComponentFile, pageLayoutTargetPath, validatePageLayout, type PageLayout } from '../generate/canvas-layout.js';
 import { parsePageLayout } from './page-builder-api.js';
@@ -105,6 +106,8 @@ export interface ApplicationJobResult {
    */
   readonly unresolvedServiceLocatorFindings: readonly SuspectedServiceLocatorEvasion[];
   readonly build: BuildOutcome;
+  /** The form check (src/generate/form-check.ts); absent when the build failed and it never ran. */
+  readonly forms?: FormCheckSummary;
 }
 
 export type ApplicationJobError =
@@ -120,7 +123,7 @@ export interface ApplicationJob {
   /** For a repair: the job whose files it started from. */
   readonly parentId?: string;
   readonly status: ApplicationJobStatus;
-  readonly phase?: GenerationPhase | BuildPhase;
+  readonly phase?: GenerationPhase | BuildPhase | FormPhase;
   readonly result?: ApplicationJobResult;
   readonly error?: ApplicationJobError;
   /**
@@ -816,7 +819,7 @@ async function runApplicationJob(
     return;
   }
 
-  const built = await installBuildAndRepair({
+  const built = await buildCheckAndRepair({
     schema,
     llm,
     root,
@@ -834,6 +837,7 @@ async function runApplicationJob(
     unresolvedViolations: generated.value.unresolvedViolations,
     unresolvedServiceLocatorFindings: generated.value.unresolvedServiceLocatorFindings,
     build: built.value.build,
+    ...(built.value.forms === undefined ? {} : { forms: built.value.forms }),
   });
 }
 
@@ -865,7 +869,7 @@ async function runRepairJob(
   );
   await writeProjectFiles(source.root, files, true);
 
-  const built = await installBuildAndRepair({
+  const built = await buildCheckAndRepair({
     schema,
     llm,
     root: source.root,
@@ -892,6 +896,7 @@ async function runRepairJob(
     unresolvedViolations: verified.value,
     unresolvedServiceLocatorFindings: detectServiceLocatorEvasion(built.value.files, planConstraints(schema)),
     build: built.value.build,
+    ...(built.value.forms === undefined ? {} : { forms: built.value.forms }),
   });
 }
 
@@ -922,7 +927,7 @@ async function runPageSyncJob(
   }
   await writeProjectFiles(source.root, synced.value, true);
 
-  const built = await installBuildAndRepair({
+  const built = await buildCheckAndRepair({
     schema: plan.schema,
     llm,
     root: source.root,
@@ -947,6 +952,7 @@ async function runPageSyncJob(
     unresolvedViolations: verified.value,
     unresolvedServiceLocatorFindings: detectServiceLocatorEvasion(built.value.files, planConstraints(plan.schema)),
     build: built.value.build,
+    ...(built.value.forms === undefined ? {} : { forms: built.value.forms }),
   });
 }
 
@@ -1109,4 +1115,29 @@ function editSchemaComponents(schema: ValidatedProjectSchema, edit: ComponentEdi
   }
   const validated = validateProjectSchema({ ...schema, domains });
   return validated.ok ? validated.value : `the edited plan is not valid: ${JSON.stringify(validated.error.slice(0, 3))}`;
+}
+
+/**
+ * The build and its repair rounds, then - only once the project builds - the
+ * form check and its fix rounds (form-repair.ts). One result for the job.
+ */
+async function buildCheckAndRepair(
+  options: Omit<InstallBuildAndRepairOptions, 'onPhase'> & { readonly onPhase: (phase: BuildPhase | FormPhase) => void },
+): Promise<
+  | { readonly ok: true; readonly value: { files: readonly GeneratedFile[]; regenerationLog: readonly RegenerationAttempt[]; build: BuildOutcome; forms?: FormCheckSummary } }
+  | { readonly ok: false; readonly error: GenerateProjectFailure }
+> {
+  const built = await installBuildAndRepair(options);
+  if (!built.ok || !built.value.build.buildOk) return built;
+  const checked = await checkFormsAndRepair({ schema: options.schema, llm: options.llm, root: options.root, files: built.value.files, onPhase: options.onPhase });
+  if (!checked.ok) return checked;
+  return {
+    ok: true,
+    value: {
+      files: checked.value.files,
+      regenerationLog: [...built.value.regenerationLog, ...checked.value.regenerationLog],
+      build: built.value.build,
+      forms: checked.value.forms,
+    },
+  };
 }

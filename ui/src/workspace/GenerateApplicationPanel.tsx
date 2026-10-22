@@ -52,7 +52,7 @@ import { Icon } from '../design/Icon';
  */
 
 type Phase =
-  GenerationPhase | 'installing' | 'building' | 'build-regenerating' | 'build-reverifying';
+  GenerationPhase | 'installing' | 'building' | 'build-regenerating' | 'build-reverifying' | 'form-checking' | 'form-fixing';
 
 type PanelState =
   | { readonly kind: 'idle' }
@@ -83,6 +83,8 @@ const PHASE_LABEL: Readonly<Record<Phase, string>> = {
   building: 'Running npm run build…',
   'build-regenerating': 'Correcting a build failure…',
   'build-reverifying': 'Re-running npm run build…',
+  'form-checking': 'Checking every form against the running API…',
+  'form-fixing': 'Fixing a page whose form does not work…',
 };
 
 const REPAIR_PHASE_LABEL: Partial<Record<Phase, string>> = {
@@ -486,6 +488,13 @@ function ApplicationJobReport({
           okLabel="No suspected auth-bypass patterns"
           failLabel={`${result.unresolvedServiceLocatorFindings.length} suspected auth-bypass finding(s)`}
         />
+        {result.forms !== undefined && result.forms.calls > 0 && (
+          <Badge
+            ok={result.forms.problems.length === 0}
+            okLabel={`Forms: all ${result.forms.calls} work against the API`}
+            failLabel={`Forms: ${result.forms.problems.length} of ${result.forms.calls} do not work`}
+          />
+        )}
         <a
           href={applicationJobDownloadUrl(job.id)}
           data-testid="download-zip"
@@ -542,7 +551,9 @@ function ApplicationJobReport({
                       ? 'Blueprint violation'
                       : attempt.origin === 'service-locator-evasion'
                         ? 'suspected auth-bypass pattern'
-                        : 'npm run build failure'}
+                        : attempt.origin === 'form-check'
+                          ? 'form did not work against the API'
+                          : 'npm run build failure'}
                   </span>
                   <span className="font-medium text-slate-200">
                     {attempt.component.name} ({attempt.domain})
@@ -592,6 +603,25 @@ function ApplicationJobReport({
                       {e.file}:{e.line}: {e.snippet}
                     </div>
                   ))}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {result.forms !== undefined && result.forms.problems.length > 0 && (
+        <div data-testid="form-problems" className="rounded-lg border border-amber-700/50 bg-amber-950/20 p-2">
+          <div className="mb-2 text-xs font-semibold text-amber-300">
+            Forms that still do not work - {result.forms.problems.length} review item(s)
+          </div>
+          <p className="mb-2 text-xs text-amber-400">
+            The built app was started and each page&apos;s calls were sent to the real API with test values. These
+            still failed after the automatic fixes.
+          </p>
+          <ul className="space-y-1">
+            {result.forms.problems.map((problem, index) => (
+              <li key={`${problem.page}-${index}`} className="rounded bg-black/30 px-2 py-1 font-mono text-[11px] text-amber-200">
+                {problem.page}: {problem.message}
               </li>
             ))}
           </ul>
