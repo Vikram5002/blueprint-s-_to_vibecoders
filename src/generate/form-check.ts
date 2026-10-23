@@ -144,21 +144,22 @@ function bodyFields(options: string, source: string): string[] | null {
   return /^[A-Za-z_$][\w$]*$/.test(expression) ? stateObjectKeys(expression, source) : null;
 }
 
-/** Every data-sending `fetch` in a page. */
+/** Every `fetch` of the app's own API in a page: data-sending calls with their fields, and reads (GET, no fields). */
 export function pageCalls(page: string, source: string): PageCall[] {
   const calls: PageCall[] = [];
   for (const match of source.matchAll(/\bfetch\s*\(/g)) {
     const args = balanced(source, (match.index ?? 0) + match[0].length - 1);
     if (args === null) continue;
     const url = /^\s*(["'`])([^"'`]*)\1/.exec(args);
-    // After the address: a `${id}` inside it is not the options object.
-    const optionsAt = url === null ? -1 : args.indexOf('{', url[0].length);
-    if (url === null || optionsAt === -1) continue;
-    const options = balanced(args, optionsAt) ?? '';
-    const method = /method\s*:\s*["'`](\w+)["'`]/.exec(options)?.[1]?.toUpperCase();
-    if (method === undefined || !['POST', 'PUT', 'PATCH'].includes(method)) continue;
+    if (url === null) continue;
     const path = (url[2] ?? '').replace(/\$\{[^}]*\}/g, '1').split('?')[0] ?? '';
-    calls.push({ page, method, path, fields: bodyFields(options, source) });
+    if (!path.startsWith('/api/')) continue;
+    // After the address: a `${id}` inside it is not the options object.
+    const optionsAt = args.indexOf('{', url[0].length);
+    const options = optionsAt === -1 ? '' : (balanced(args, optionsAt) ?? '');
+    const method = /method\s*:\s*["'`](\w+)["'`]/.exec(options)?.[1]?.toUpperCase() ?? 'GET';
+    if (method === 'GET') calls.push({ page, method, path, fields: [] });
+    else if (['POST', 'PUT', 'PATCH'].includes(method)) calls.push({ page, method, path, fields: bodyFields(options, source) });
   }
   return calls;
 }
@@ -208,10 +209,7 @@ export function matchRoute(call: PageCall, routes: readonly ApiRoute[]): ApiRout
 }
 
 const describeRoutes = (routes: readonly ApiRoute[]): string =>
-  routes
-    .filter((r) => r.method !== 'GET' && r.method !== 'DELETE')
-    .map((r) => `${r.method} ${r.path}${r.fields.length > 0 ? ` (reads ${r.fields.join(', ')})` : ''}`)
-    .join('; ') || 'no routes that take data';
+  routes.map((r) => `${r.method} ${r.path}${r.fields.length > 0 ? ` (reads ${r.fields.join(', ')})` : ''}`).join('; ') || 'no routes';
 
 /**
  * A page that calls no API at all in an app that has API routes. Plans often omit
@@ -304,7 +302,10 @@ export async function runFormCheck(
 ): Promise<FormCheckResult> {
   const { calls, routes } = readContracts(schema, files);
   const problems = [...unusedPages(schema, files, routes), ...staticProblems(calls, routes)];
-  const live = calls.filter((call) => !problems.some((p) => p.page === call.page && p.call === `${call.method} ${call.path}`) && call.fields !== null);
+  // Each distinct call once: a page often loads the same list in several places.
+  const live = [...new Map(calls
+    .filter((call) => !problems.some((p) => p.page === call.page && p.call === `${call.method} ${call.path}`) && call.fields !== null)
+    .map((call) => [`${call.page} ${call.method} ${call.path}`, call] as const)).values()];
   if (live.length === 0) return { calls, routes, problems, passed: 0 };
 
   const timeoutMs = options.timeoutMs ?? 20_000;
@@ -318,7 +319,7 @@ export async function runFormCheck(
       return { calls, routes, problems: [...problems, ...live.map((c) => ({ page: c.page, call: `${c.method} ${c.path}`, message: 'the server did not start, so the call could not be tried' }))], passed };
     }
     for (const call of live) {
-      const problem = await tryCall(doFetch, `http://127.0.0.1:${server.port}`, call, routes, timeoutMs);
+      const problem = await tryCall(doFetch, `http://127.0.0.1:${server.port}`, call, routes, timeoutMs, server.output);
       if (problem === null) passed += 1;
       else problems.push(problem);
     }
@@ -328,12 +329,37 @@ export async function runFormCheck(
   return { calls, routes, problems, passed };
 }
 
-async function tryCall(doFetch: typeof fetch, origin: string, call: PageCall, routes: readonly ApiRoute[], timeoutMs: number): Promise<FormProblem | null> {
+async function tryCall(
+  doFetch: typeof fetch,
+  origin: string,
+  call: PageCall,
+  routes: readonly ApiRoute[],
+  timeoutMs: number,
+  serverOutput: () => string,
+): Promise<FormProblem | null> {
   const label = `${call.method} ${call.path}`;
   const body = Object.fromEntries((call.fields ?? []).map((field) => [field, sampleValue(field)]));
   try {
-    const response = await doFetch(`${origin}${call.path}`, { method: call.method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) });
+    const before = serverOutput().length;
+    const response = await doFetch(
+      `${origin}${call.path}`,
+      call.method === 'GET'
+        ? { signal: AbortSignal.timeout(timeoutMs) }
+        : { method: call.method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) },
+    );
     const text = (await response.text()).slice(0, 300);
+    // A 5xx is the API crashing on a request the page really makes: the route file is at fault, not the page.
+    const route = matchRoute(call, routes);
+    if (response.status >= 500 && route !== undefined) {
+      const logged = serverOutput().slice(before).trim().slice(-600);
+      return {
+        page: route.file,
+        call: label,
+        message: `${label}${call.method === 'GET' ? '' : ` with ${JSON.stringify(body)}`} crashed the API: HTTP ${response.status}. Server output: ${logged || text}`,
+      };
+    }
+    // A read only has to answer: a 404 for /items/1 is a normal "no such item".
+    if (call.method === 'GET') return null;
     if (response.status >= 400) {
       return { page: call.page, call: label, message: `${label} with ${JSON.stringify(body)} was refused: HTTP ${response.status} ${text}` };
     }

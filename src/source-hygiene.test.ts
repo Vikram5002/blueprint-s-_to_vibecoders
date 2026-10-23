@@ -67,7 +67,7 @@ describe('source hygiene', () => {
     }
 
     expect(offenders).toEqual([]);
-  });
+  }, 30_000); // reads every source file; past 5 s when the laptop is busy (a 5,041 ms timeout, not a finding)
 
   /**
    * The same argument one level up. A zero-width space or a BOM in the middle of

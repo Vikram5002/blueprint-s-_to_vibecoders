@@ -46,6 +46,16 @@ const summary = (result: FormCheckResult): FormCheckSummary => ({ calls: result.
 
 /** The correction the repair coder is given for a page; exported so training data uses the exact same words. */
 export function formContext(page: string, problems: readonly FormProblem[]): PriorViolationContext {
+  if (page.startsWith('backend/')) {
+    return {
+      ruleText: 'Every route a page calls must answer a valid request without crashing.',
+      explanation: `The built app was started and the pages' real requests were sent to this route file - ${problems.length} crashed it (HTTP 5xx).`,
+      fixInstruction:
+        'Write the complete corrected route file: each request below must succeed - read the fields it sends, store or ' +
+        'return the data through the table functions you may import, and answer with JSON. Keep every route path and export.',
+      evidence: problems.map((p) => ({ file: page, line: 1, snippet: p.message })),
+    };
+  }
   return {
     ruleText: "Every call a page makes must match a route the API offers and send exactly the fields that route reads.",
     explanation: `The built app was started and this page's calls were tried against the real API - ${problems.length} did not work.`,

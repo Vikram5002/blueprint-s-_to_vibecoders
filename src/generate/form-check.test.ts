@@ -32,8 +32,15 @@ router.post('/reservations', (req, res) => { const { book_id, user_id = 1 } = re
 export default router;`;
 
 describe('reading pages and routers', () => {
-  it('finds data-sending calls with literal bodies and skips plain reads', () => {
-    expect(pageCalls('p.tsx', PAGE_LITERAL)).toEqual([{ page: 'p.tsx', method: 'POST', path: '/api/catalog-api/reserve', fields: ['bookId'] }]);
+  it('finds data-sending calls with their fields, and reads as GET with none', () => {
+    expect(pageCalls('p.tsx', PAGE_LITERAL)).toEqual([
+      { page: 'p.tsx', method: 'POST', path: '/api/catalog-api/reserve', fields: ['bookId'] },
+      { page: 'p.tsx', method: 'GET', path: '/api/catalog-api/books', fields: [] },
+    ]);
+  });
+
+  it('ignores addresses outside the app API', () => {
+    expect(pageCalls('p.tsx', "fetch('https://example.com/x'); fetch('/static/logo.svg');")).toEqual([]);
   });
 
   it('reads a state object body, spreads included, and fills ${} parts of the address', () => {
@@ -203,4 +210,42 @@ describe('unusedPages - the live finance-app placeholders', () => {
     expect(unusedPages(plan(['backend']), page("useEffect(() => { fetch('/api/reporting-service/reports'); }, []);"), routes)).toEqual([]);
     expect(unusedPages(plan([]), page('<h1>Reports</h1>'), [])).toEqual([]);
   });
+});
+
+describe('runFormCheck - a crashing API is the route file\'s problem', () => {
+  let root: string;
+  beforeEach(async () => {
+    root = await mkdtemp(join(tmpdir(), 'vibe-form-crash-'));
+  });
+  afterEach(async () => {
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it('blames the route file, with the server output, when a page read gets a 5xx', async () => {
+    await mkdir(join(root, 'dist', 'backend', 'src'), { recursive: true });
+    await writeFile(
+      join(root, 'dist', 'backend', 'src', 'index.js'),
+      "require('node:http').createServer((req, res) => { console.error('TypeError: cannot read rows of undefined'); res.statusCode = 500; res.end('{}'); }).listen(Number(process.env.PORT), '127.0.0.1');",
+    );
+    const v = validateProjectSchema({
+      sessionId: 'crash-test', title: 'Library', originalPrompt: 'x',
+      domains: {
+        frontend: { components: [{ id: componentId('frontend', 'Book List', 'book-list'), name: 'Book List', purpose: 'Books.' }], dependsOn: ['backend'] },
+        backend: { components: [{ id: componentId('backend', 'Catalog API', 'catalog-api'), name: 'Catalog API', purpose: 'Books.' }], dependsOn: [] },
+        database: { components: [], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [], provenance: 'STATED',
+    });
+    if (!v.ok) throw new Error(JSON.stringify(v.error));
+    const files = [
+      { path: 'frontend/src/pages/book-list.tsx', contents: "useEffect(() => { fetch('/api/catalog-api/books'); }, []);" },
+      { path: 'backend/src/routes/catalog-api.ts', contents: "router.get('/books', h);" },
+    ];
+    const result = await runFormCheck(root, v.value, files, { timeoutMs: 10_000 });
+    expect(result.problems).toHaveLength(1);
+    expect(result.problems[0]?.page).toBe('backend/src/routes/catalog-api.ts');
+    expect(result.problems[0]?.message).toContain('crashed the API: HTTP 500');
+    expect(result.problems[0]?.message).toContain('cannot read rows of undefined');
+  }, 30_000);
 });
