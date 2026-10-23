@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { apiRoutes, matchRoute, pageCalls, runFormCheck, sampleValue, staticProblems } from './form-check.js';
+import { apiRoutes, matchRoute, pageCalls, runFormCheck, sampleValue, staticProblems, unusedPages } from './form-check.js';
 import { componentId, type ValidatedProjectSchema } from '../types/project-schema.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 
@@ -160,4 +160,39 @@ describe('runFormCheck - live, against a real running server', () => {
     expect(result.problems[0]?.message).toContain('missing title');
     expect(result.passed).toBe(0);
   }, 30_000);
+});
+
+describe('unusedPages - the live finance-app placeholders', () => {
+  const plan = (dependsOn: string[]): ValidatedProjectSchema => {
+    const v = validateProjectSchema({
+      sessionId: 'unused-pages-test',
+      title: 'Finance',
+      originalPrompt: 'x',
+      domains: {
+        frontend: { components: [{ id: componentId('frontend', 'Reporting Dashboard', 'reporting-dashboard'), name: 'Reporting Dashboard', purpose: 'Reports.' }], dependsOn },
+        backend: { components: [{ id: componentId('backend', 'Reporting Service', 'reporting-service'), name: 'Reporting Service', purpose: 'Reports.' }], dependsOn: [] },
+        database: { components: [], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [],
+      provenance: 'STATED',
+    });
+    if (!v.ok) throw new Error(JSON.stringify(v.error));
+    return v.value;
+  };
+  const routerSource = ["router.get('/reports', h);", "router.post('/reports', (req, res) => { const { title, period } = req.body; });"].join('\n');
+  const routes = apiRoutes('backend/src/routes/reporting-service.ts', 'reporting-service', routerSource);
+  const page = (contents: string) => [{ path: 'frontend/src/pages/reporting-dashboard.tsx', contents }];
+
+  it('flags a page that calls no API, listing every route and the fields to send', () => {
+    const [problem] = unusedPages(plan(['backend']), page('export function ReportingDashboard() { return <h1>Reports</h1>; }'), routes);
+    expect(problem?.message).toContain('calls no API route');
+    expect(problem?.message).toContain('GET /api/reporting-service/reports');
+    expect(problem?.message).toContain('POST /api/reporting-service/reports (reads title, period)');
+  });
+
+  it('passes a page that uses the API, and a plan whose pages do not depend on the backend', () => {
+    expect(unusedPages(plan(['backend']), page("useEffect(() => { fetch('/api/reporting-service/reports'); }, []);"), routes)).toEqual([]);
+    expect(unusedPages(plan([]), page('<h1>Reports</h1>'), routes)).toEqual([]);
+  });
 });

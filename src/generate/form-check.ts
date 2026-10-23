@@ -213,6 +213,30 @@ const describeRoutes = (routes: readonly ApiRoute[]): string =>
     .map((r) => `${r.method} ${r.path}${r.fields.length > 0 ? ` (reads ${r.fields.join(', ')})` : ''}`)
     .join('; ') || 'no routes that take data';
 
+/**
+ * A page that calls no API at all while the plan says pages use the backend.
+ * Found live (2026-10-23, finance app): five 10-line pages with a title and a
+ * sentence built cleanly, passed every check, and the form check reported 0
+ * calls - so 0 problems - while no one could enter or see any data.
+ */
+export function unusedPages(schema: ValidatedProjectSchema, files: readonly GeneratedFile[], routes: readonly ApiRoute[]): FormProblem[] {
+  if (!schema.domains.frontend.dependsOn.includes('backend') || routes.length === 0) return [];
+  const offered = routes.map((r) => `${r.method} ${r.path}${r.fields.length > 0 ? ` (reads ${r.fields.join(', ')})` : ''}`).join('; ');
+  return schema.domains.frontend.components.flatMap((component) => {
+    const page = componentTargetPath('frontend', component);
+    const source = files.find((f) => f.path === page)?.contents;
+    if (source === undefined || /\bfetch\s*\(/.test(source)) return [];
+    return [{
+      page,
+      call: 'none',
+      message:
+        `the page calls no API route, so nothing can be entered or shown. The API offers: ${offered}. ` +
+        `Load and show the records this page is for (GET), and give a form with a labelled input for every field ` +
+        `the matching POST route reads, sending them to that route with the same field names.`,
+    }];
+  });
+}
+
 /** What can be decided without running anything: a route to call, and every field it reads. */
 export function staticProblems(calls: readonly PageCall[], routes: readonly ApiRoute[]): FormProblem[] {
   const problems: FormProblem[] = [];
@@ -262,7 +286,7 @@ export async function runFormCheck(
   options: FormCheckOptions = {},
 ): Promise<FormCheckResult> {
   const { calls, routes } = readContracts(schema, files);
-  const problems = staticProblems(calls, routes);
+  const problems = [...unusedPages(schema, files, routes), ...staticProblems(calls, routes)];
   const live = calls.filter((call) => !problems.some((p) => p.page === call.page && p.call === `${call.method} ${call.path}`) && call.fields !== null);
   if (live.length === 0) return { calls, routes, problems, passed: 0 };
 
