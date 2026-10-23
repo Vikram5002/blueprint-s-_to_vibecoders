@@ -44,7 +44,8 @@ export interface FormRepairResult {
 
 const summary = (result: FormCheckResult): FormCheckSummary => ({ calls: result.calls.length, passed: result.passed, problems: result.problems });
 
-function formContext(page: string, problems: readonly FormProblem[]): PriorViolationContext {
+/** The correction the repair coder is given for a page; exported so training data uses the exact same words. */
+export function formContext(page: string, problems: readonly FormProblem[]): PriorViolationContext {
   return {
     ruleText: "Every call a page makes must match a route the API offers and send exactly the fields that route reads.",
     explanation: `The built app was started and this page's calls were tried against the real API - ${problems.length} did not work.`,

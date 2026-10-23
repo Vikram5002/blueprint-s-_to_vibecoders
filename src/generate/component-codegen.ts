@@ -97,9 +97,9 @@ markdown, not a fenced code block, and no text outside that one field.`;
  * (gemini.ts), so this is room for the file itself. The local server clamps
  * to its own `--max-new-tokens-cap`, so a local model is unaffected.
  */
-const MAX_OUTPUT_TOKENS = 8_192;
+export const MAX_OUTPUT_TOKENS = 8_192;
 
-const COMPONENT_CODE_JSON_SCHEMA = {
+export const COMPONENT_CODE_JSON_SCHEMA = {
   type: 'object',
   properties: {
     code: { type: 'string' },
