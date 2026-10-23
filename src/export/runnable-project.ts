@@ -45,7 +45,7 @@ export function withRunScaffold(entries: readonly ZipEntry[], title = 'Generated
     add({ path: 'vite.config.mjs', contents: VITE_CONFIG });
   }
   add({ path: 'dev.mjs', contents: DEV_SCRIPT });
-  add({ path: 'README.md', contents: readme(title, hasBackend, hasFrontend) });
+  add({ path: 'README.md', contents: readme(title, hasBackend, hasFrontend, paths.has('generated.blueprint')) });
   add({ path: '.gitignore', contents: 'node_modules/\ndist/\n*.db\n' });
   return [...patched, ...added];
 }
@@ -135,7 +135,7 @@ const VITE_CONFIG = [
   '',
 ].join('\n');
 
-function readme(title: string, hasBackend: boolean, hasFrontend: boolean): string {
+function readme(title: string, hasBackend: boolean, hasFrontend: boolean, hasRules = false): string {
   const lines = [
     `# ${title}`,
     '',
@@ -167,6 +167,19 @@ function readme(title: string, hasBackend: boolean, hasFrontend: boolean): strin
       '',
       'Builds the website into `dist/web` and serves it together with the API on http://localhost:3000 - the',
       'form to deploy to any Node host.',
+      '',
+    );
+  }
+  if (hasRules) {
+    lines.push(
+      '## Check the architecture',
+      '',
+      '`generated.blueprint` holds this app\'s architecture rules, compiled from its plan (which part may import',
+      'which). After you change the code, check that it still keeps them:',
+      '',
+      '```bash',
+      'npx vibe-blueprint . --blueprint=generated.blueprint',
+      '```',
       '',
     );
   }

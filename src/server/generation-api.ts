@@ -500,7 +500,11 @@ export function createGenerationRoutes(deps: ApplicationRouteDeps): Hono {
     const entries = await Promise.all(
       result.files.map(async (file) => ({ path: file.path, contents: await readGeneratedFile(root, file.path) })),
     );
-    return withRunScaffold(entries, runs?.get(id)?.job.schema.title);
+    // The plan's architecture rules travel with the app, so a downloaded copy can be checked again
+    // (found 2026-10-24: the zip left them out, so a student could not re-verify their app).
+    const rules = await readGeneratedFile(root, 'generated.blueprint').catch(() => null);
+    const withRules = rules === null || entries.some((e) => e.path === 'generated.blueprint') ? entries : [...entries, { path: 'generated.blueprint', contents: rules }];
+    return withRunScaffold(withRules, runs?.get(id)?.job.schema.title);
   }
 
   // ---- Running a run's app inside the workspace (app-preview.ts) ----------

@@ -68,3 +68,13 @@ describe('withRunScaffold', () => {
     expect(byPath(withRunScaffold(own)).get('frontend/index.html')).toBe('mine');
   });
 });
+
+describe('the architecture rules travel with the app', () => {
+  it('tells the reader how to re-check them when generated.blueprint is in the project, and not otherwise', () => {
+    const base = [{ path: 'backend/src/index.ts', contents: '' }, { path: 'package.json', contents: '{"name":"x","scripts":{}}' }];
+    const withRules = new Map(withRunScaffold([...base, { path: 'generated.blueprint', contents: 'a must not import b' }]).map((e) => [e.path, e.contents]));
+    expect(withRules.get('README.md')).toContain('npx vibe-blueprint . --blueprint=generated.blueprint');
+    const without = new Map(withRunScaffold(base).map((e) => [e.path, e.contents]));
+    expect(without.get('README.md')).not.toContain('Check the architecture');
+  });
+});
