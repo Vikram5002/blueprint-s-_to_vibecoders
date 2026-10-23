@@ -191,8 +191,12 @@ describe('unusedPages - the live finance-app placeholders', () => {
     expect(problem?.message).toContain('POST /api/reporting-service/reports (reads title, period)');
   });
 
-  it('passes a page that uses the API, and a plan whose pages do not depend on the backend', () => {
+  it('flags it even when the plan leaves out the page -> API link, as the finance plan did', () => {
+    expect(unusedPages(plan([]), page('<h1>Reports</h1>'), routes)).toHaveLength(1);
+  });
+
+  it('passes a page that uses the API, and any page of an app with no API routes', () => {
     expect(unusedPages(plan(['backend']), page("useEffect(() => { fetch('/api/reporting-service/reports'); }, []);"), routes)).toEqual([]);
-    expect(unusedPages(plan([]), page('<h1>Reports</h1>'), routes)).toEqual([]);
+    expect(unusedPages(plan([]), page('<h1>Reports</h1>'), [])).toEqual([]);
   });
 });

@@ -73,6 +73,7 @@ async function finishedRun(
   runs: GenerationRunsStore,
   generationRoot: string,
   build: { readonly installOk: boolean; readonly buildOk: boolean },
+  forms?: { readonly calls: number; readonly passed: number; readonly problems: readonly never[] },
 ): Promise<ApplicationJob> {
   const schema = schemaWithOnePage();
   const created = jobs.create({ sessionId: schema.sessionId, kind: 'generate' });
@@ -85,6 +86,7 @@ async function finishedRun(
       unresolvedViolations: [],
       unresolvedServiceLocatorFindings: [],
       build: { ...build, ...(build.buildOk ? {} : { failureOutput: `${PAGE_PATH}(2,3): error TS1005: ',' expected.` }) },
+      ...(forms === undefined ? {} : { forms }),
     },
   };
   jobs.set(job);
@@ -144,11 +146,23 @@ describe('saved application runs', () => {
   });
 
   describe('repair', () => {
-    it('refuses to repair a run that already builds - a full regeneration is a different, costlier action', async () => {
-      const job = await finishedRun(jobs, runs, join(root, 'generated'), { installOk: true, buildOk: true });
+    it('refuses to repair a run that builds and whose forms all work - a full regeneration is a different, costlier action', async () => {
+      const job = await finishedRun(jobs, runs, join(root, 'generated'), { installOk: true, buildOk: true }, { calls: 1, passed: 1, problems: [] });
       const response = await app.request(`/application-jobs/${job.id}/repair`, { method: 'POST', body: '{}' });
       expect(response.status).toBe(409);
     });
+
+    it('accepts a run that builds but whose forms were never checked (made before the form check)', async () => {
+      const job = await finishedRun(jobs, runs, join(root, 'generated'), { installOk: true, buildOk: true });
+      const response = await app.request(`/application-jobs/${job.id}/repair`, { method: 'POST', body: '{}' });
+      expect(response.status).toBe(202);
+      // Let the repair finish before the folder is removed.
+      const { id } = (await response.json()) as { id: string };
+      const deadline = Date.now() + 60_000;
+      while (!['succeeded', 'failed'].includes(jobs.get(id)?.status ?? 'failed') && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+    }, 70_000);
 
     it('404s for a job that was never finished', async () => {
       const response = await app.request('/application-jobs/nope/repair', { method: 'POST', body: '{}' });

@@ -214,13 +214,14 @@ const describeRoutes = (routes: readonly ApiRoute[]): string =>
     .join('; ') || 'no routes that take data';
 
 /**
- * A page that calls no API at all while the plan says pages use the backend.
+ * A page that calls no API at all in an app that has API routes. Plans often omit
+ * the frontend -> backend link (the finance plan did), so the routes decide, not dependsOn.
  * Found live (2026-10-23, finance app): five 10-line pages with a title and a
  * sentence built cleanly, passed every check, and the form check reported 0
  * calls - so 0 problems - while no one could enter or see any data.
  */
 export function unusedPages(schema: ValidatedProjectSchema, files: readonly GeneratedFile[], routes: readonly ApiRoute[]): FormProblem[] {
-  if (!schema.domains.frontend.dependsOn.includes('backend') || routes.length === 0) return [];
+  if (routes.length === 0) return [];
   const offered = routes.map((r) => `${r.method} ${r.path}${r.fields.length > 0 ? ` (reads ${r.fields.join(', ')})` : ''}`).join('; ');
   return schema.domains.frontend.components.flatMap((component) => {
     const page = componentTargetPath('frontend', component);
