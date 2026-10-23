@@ -261,15 +261,24 @@ export function staticProblems(calls: readonly PageCall[], routes: readonly ApiR
   return problems;
 }
 
-/** A plain test value from a field's name alone. */
+const NUMBER_WORDS = new Set(['id', 'count', 'quantity', 'qty', 'size', 'copies', 'number', 'amount', 'price', 'total', 'age', 'rating', 'seats', 'capacity', 'year', 'balance', 'score']);
+const BOOLEAN_WORDS = new Set(['is', 'has', 'active', 'enabled', 'done', 'completed', 'available', 'paid']);
+const DATE_WORDS = new Set(['date', 'at', 'day', 'dob', 'deadline']);
+
+/**
+ * A plain test value from a field's name alone, by whole words: `party_size`
+ * and `bookId` are numbers, `createdAt` a date. Whole words, because a
+ * substring match sent 1 for `message` (it contains "age") and was refused.
+ */
 export function sampleValue(field: string): string | number | boolean {
-  const name = field.toLowerCase();
-  if (/(^id$|_id$|id$|count|quantity|qty|size|copies|number|amount|price|total|age|rating|seats|capacity|year)/.test(name)) return 1;
-  if (/^(is|has)[_A-Z]|active|enabled|done|completed|available$/.test(field)) return true;
-  if (/date|_at$|at$|day/.test(name)) return new Date().toISOString().slice(0, 10);
-  if (/time/.test(name)) return '12:30';
-  if (/email/.test(name)) return 'test@example.com';
-  if (/phone|mobile/.test(name)) return '9876543210';
+  const words = field.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z]+/).filter((w) => w !== '');
+  const has = (set: Set<string>): boolean => words.some((w) => set.has(w));
+  if (has(NUMBER_WORDS)) return 1;
+  if (has(BOOLEAN_WORDS)) return true;
+  if (has(DATE_WORDS)) return new Date().toISOString().slice(0, 10);
+  if (words.includes('time')) return '12:30';
+  if (words.includes('email')) return 'test@example.com';
+  if (words.includes('phone') || words.includes('mobile')) return '9876543210';
   return `Check ${field}`;
 }
 

@@ -80,6 +80,10 @@ describe('sampleValue', () => {
     expect(sampleValue('email')).toBe('test@example.com');
     expect(sampleValue('booking_date')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(sampleValue('title')).toBe('Check title');
+    expect(sampleValue('message')).toBe('Check message');
+    expect(sampleValue('format')).toBe('Check format');
+    expect(sampleValue('createdAt')).toMatch(/^\d{4}-/);
+    expect(sampleValue('bookId')).toBe(1);
   });
 });
 
