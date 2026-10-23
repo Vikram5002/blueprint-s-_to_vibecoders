@@ -26,6 +26,7 @@ import { err, ok, type Result } from '../types/result.js';
 import { runPipeline, type RunOptions } from '../pipeline/run.js';
 import {
   createComponentCodeGenerator,
+  extractNamedExports,
   type PriorViolationContext,
   type CreateComponentCodeGeneratorOptions,
 } from './component-codegen.js';
@@ -413,6 +414,42 @@ export function importedComponentFiles(
 }
 
 /**
+ * The names other project files import from `target` - what a regenerated
+ * `target` must still export. Found live (2026-10-24, cafe app): the wider
+ * repair regenerated three table files for one failing route, the new tables
+ * dropped `OrderRow` and `updateOrderStatus`, and two other routes that
+ * compiled before broke - 1 failing file became 15 errors.
+ */
+export function namesImportedFrom(target: string, files: readonly GeneratedFile[]): Set<string> {
+  const needed = new Set<string>();
+  const base = target.replace(/\.(ts|tsx)$/, '');
+  for (const file of files) {
+    if (file.path === target) continue;
+    const dir = posix.dirname(file.path);
+    for (const match of file.contents.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s*from\s+['"](\.{1,2}\/[^'"]+)['"]/g)) {
+      const resolved = posix.normalize(posix.join(dir, match[2] ?? '')).replace(/\.(js|ts|tsx)$/, '');
+      if (resolved !== base) continue;
+      for (const part of (match[1] ?? '').split(',')) {
+        const name = part.trim().replace(/^type\s+/, '').split(/\s+as\s+/)[0]?.trim();
+        if (name !== undefined && name !== '') needed.add(name);
+      }
+    }
+  }
+  return needed;
+}
+
+/**
+ * True when `source` still exports every name importers use that `previous`
+ * exported - a name the old file never exported is not demanded (adding it
+ * may be the very fix).
+ */
+export function keepsExports(source: string, previous: string | undefined, needed: ReadonlySet<string>): boolean {
+  const had = new Set(extractNamedExports(previous ?? ''));
+  const exported = new Set(extractNamedExports(source));
+  return [...needed].every((name) => !had.has(name) || exported.has(name));
+}
+
+/**
  * Context for regenerating a dependency because its CONSUMER still fails to
  * compile after its own retry: the consumer cannot fix an error whose cause
  * is this file's exported types (a field the API must set that the table's
@@ -488,6 +525,8 @@ export async function regenerateForBuildFailure(
         const depContext = toConsumerFailurePriorContext(failure.targetPath, failure.diagnostics, previous.contents);
         const dep = await generateComponentFile(generator, schema, owner.component, owner.domain, depContext, current);
         if (!dep.ok) return err(dep.error);
+        // A dependency that stops exporting what other files import is not kept: it would break them.
+        if (!keepsExports(dep.value.contents, current.find((f) => f.path === depPath)?.contents, namesImportedFrom(depPath, current))) continue;
         current = current.map((f) => (f.path === depPath ? dep.value : f));
         failingPaths.add(depPath);
         attempted.push({ component: owner.component, domain: owner.domain, targetPath: depPath, firstAttemptViolation: depContext });
@@ -496,7 +535,10 @@ export async function regenerateForBuildFailure(
     const priorContext = toBuildFailurePriorContext(failure.diagnostics, previous?.contents, options.repairInstruction);
     const regenerated = await generateComponentFile(generator, schema, failure.component, failure.domain, priorContext, current);
     if (!regenerated.ok) return err(regenerated.error);
-    current = current.map((f) => (f.path === failure.targetPath ? regenerated.value : f));
+    // Same rule for the failing file itself: fixing its own errors must not break its importers.
+    if (keepsExports(regenerated.value.contents, previous?.contents, namesImportedFrom(failure.targetPath, current))) {
+      current = current.map((f) => (f.path === failure.targetPath ? regenerated.value : f));
+    }
     attempted.push({ component: failure.component, domain: failure.domain, targetPath: failure.targetPath, firstAttemptViolation: priorContext });
   }
 

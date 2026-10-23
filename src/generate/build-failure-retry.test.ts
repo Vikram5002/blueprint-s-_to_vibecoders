@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   attributeBuildFailure,
   importedComponentFiles,
+  keepsExports,
+  namesImportedFrom,
   parseTscDiagnostics,
   regenerateForBuildFailure,
 } from './verify-and-regenerate.js';
@@ -372,5 +374,26 @@ describe('importedComponentFiles', () => {
     expect(importedComponentFiles(schema, source, 'backend/src/routes/recipe-api-service.ts', paths)).toEqual([
       'backend/src/routes/user-api-service.ts',
     ]);
+  });
+});
+
+describe('keepsExports / namesImportedFrom - a repair must not break the files that import it', () => {
+  const files = [
+    { path: 'backend/src/db/orders-table.ts', contents: 'export interface OrderRow { id: number }\nexport function updateOrderStatus() {}\n' },
+    { path: 'backend/src/routes/orders-api.ts', contents: "import { OrderRow, updateOrderStatus as setStatus, missingName } from '../db/orders-table.js';\n" },
+    { path: 'backend/src/routes/other.ts', contents: "import { type OrderRow } from '../db/orders-table';\n" },
+  ];
+  const needed = namesImportedFrom('backend/src/db/orders-table.ts', files);
+
+  it('collects the names other files import, aliases and type imports included', () => {
+    expect([...needed].sort()).toEqual(['OrderRow', 'missingName', 'updateOrderStatus']);
+  });
+
+  it('rejects a new version that drops an export someone imports (the live cafe cascade)', () => {
+    expect(keepsExports('export function getOrders() {}', files[0]?.contents, needed)).toBe(false);
+  });
+
+  it('accepts a version that keeps them, and never demands a name the old file did not export', () => {
+    expect(keepsExports('export interface OrderRow { id: number }\nexport function updateOrderStatus() {}', files[0]?.contents, needed)).toBe(true);
   });
 });
