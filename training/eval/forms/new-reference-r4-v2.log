@@ -1,0 +1,32 @@
+session-new-003 calls 1 problems 1 -> 1 (273s)
+session-new-004 calls 1 problems 1 -> ? (301s)
+session-new-007 calls 0 problems 0 -> 0 (0s)
+session-new-008 calls 1 problems 1 -> 1 (225s)
+session-new-011 calls 2 problems 2 -> 1 (529s)
+session-new-012 calls 1 problems 1 -> 0 (163s)
+session-new-013 calls 1 problems 1 -> 0 (119s)
+session-new-014 calls 0 problems 0 -> 0 (0s)
+session-new-017 calls 2 problems 0 -> 0 (0s)
+session-new-018 calls 0 problems 3 -> 1 (479s)
+session-new-019 calls 1 problems 0 -> 0 (0s)
+session-new-020 calls 1 problems 1 -> 0 (125s)
+session-new-024 calls 0 problems 0 -> 0 (0s)
+session-new-025 calls 0 problems 2 -> 0 (219s)
+session-new-026 calls 1 problems 1 -> 1 (306s)
+session-new-032 calls 1 problems 1 -> 0 (217s)
+session-new-039 calls 1 problems 1 -> 1 (287s)
+session-new-040 calls 1 problems 1 -> 0 (122s)
+session-new-042 calls 0 problems 2 -> 2 (970s)
+session-new-044 calls 1 problems 1 -> 0 (111s)
+session-new-045 calls 0 problems 0 -> 0 (0s)
+session-new-046 calls 0 problems 3 -> 3 (1399s)
+session-new-047 calls 0 problems 3 -> 2 (615s)
+session-new-048 calls 0 problems 0 -> 0 (0s)
+session-new-049 calls 0 problems 2 -> 2 (1100s)
+session-new-051 calls 2 problems 0 -> 0 (0s)
+session-new-053 calls 1 problems 1 -> 1 (458s)
+
+--- results ---
+projects 27; page calls 19
+projects with a broken call: before 19, after 12
+broken calls: before 29, after 16

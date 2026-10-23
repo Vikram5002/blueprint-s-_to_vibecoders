@@ -1,0 +1,817 @@
+{
+ "reference": "capture/code/new-reference",
+ "repairModel": "code4",
+ "rows": [
+  {
+   "sessionId": "session-new-003",
+   "title": "Blood Donor Finder",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/donor-registration-form.tsx",
+     "call": "POST /api/donation-api/donors",
+     "message": "POST /api/donation-api/donors reads name, contact, blood_group, but the page sends name, email, phone, bloodGroup - missing contact, blood_group. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/donor-registration-form.tsx",
+     "call": "POST /api/donation-api/donors",
+     "message": "POST /api/donation-api/donors reads name, contact, blood_group, but the page sends name, email, phone, blood_group - missing contact. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/donor-registration-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/donor-registration-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/donor-registration-form.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 273
+  },
+  {
+   "sessionId": "session-new-004",
+   "title": "Tuition Centre App",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/teacher-dashboard.tsx",
+     "call": "POST /api/homework-api/homework",
+     "message": "POST /api/homework-api/homework reads studentId, topic, dueDate, but the page sends title, description, dueDate - missing studentId, topic. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "error": {
+    "reason": "provider-error",
+    "message": "network error: TypeError: fetch failed"
+   },
+   "seconds": 301
+  },
+  {
+   "sessionId": "session-new-007",
+   "title": "Crop Price Board",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-008",
+   "title": "Cricket Club Scorebook",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/player-stats-dashboard.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: POST /api/score-management-api/matches (reads date, team1, team2, runs1, runs2, wickets1, wickets2); GET /api/score-management-api/matches; GET /api/score-management-api/matches/:id; PUT /api/score-management-api/matches/:id (reads date, team1, team2, runs1, runs2, wickets1, wickets2); DELETE /api/score-management-api/matches/:id. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/player-stats-dashboard.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: POST /api/score-management-api/matches (reads date, team1, team2, runs1, runs2, wickets1, wickets2); GET /api/score-management-api/matches; GET /api/score-management-api/matches/:id; PUT /api/score-management-api/matches/:id (reads date, team1, team2, runs1, runs2, wickets1, wickets2); DELETE /api/score-management-api/matches/:id. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/player-stats-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/player-stats-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/player-stats-dashboard.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 225
+  },
+  {
+   "sessionId": "session-new-011",
+   "title": "Placement Cell Portal",
+   "calls": 2,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/company-drive-posting-form.tsx",
+     "call": "POST /api/placement-api/drives",
+     "message": "POST /api/placement-api/drives reads companyName, role, location, applicationDeadline, but the page sends role, location, applicationDeadline - missing companyName. Send exactly the fields the route reads, with the same names."
+    },
+    {
+     "page": "frontend/src/pages/student-application-dashboard.tsx",
+     "call": "POST /api/placement-api/applications",
+     "message": "POST /api/placement-api/applications reads studentId, driveId, status, but the page sends driveId, studentId - missing status. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/student-application-dashboard.tsx",
+     "call": "POST /api/placement-api/applications",
+     "message": "POST /api/placement-api/applications with {\"studentId\":1,\"driveId\":1,\"status\":\"Check status\"} was refused: HTTP 500 <!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Error: no such table: main.drives<br> &nbsp; &nbsp;at insertApplication (/home/ubuntu/ev/capture/code/work/eval-form-check/session-new-011/dist/backend/src/db/applications-table.js:25:29)<br> &nbs"
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/company-drive-posting-form.tsx",
+     "outcome": "fixed"
+    },
+    {
+     "page": "frontend/src/pages/student-application-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/student-application-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/student-application-dashboard.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 529
+  },
+  {
+   "sessionId": "session-new-012",
+   "title": "Bus Pass Renewal App",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/pass-renewal-form.tsx",
+     "call": "PUT /api/pass-management-api/1/renewal-status",
+     "message": "the page sends PUT /api/pass-management-api/1/renewal-status, but the API has no such route. The API offers: POST /api/pass-management-api/pass (reads userId, passType, validityDate, renewalStatus); PUT /api/pass-management-api/pass/:id/renewal-status (reads renewalStatus)."
+    }
+   ],
+   "passedAfter": 1,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/pass-renewal-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/pass-renewal-form.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 163
+  },
+  {
+   "sessionId": "session-new-013",
+   "title": "Milk Delivery Tracker",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/delivery-marking-form.tsx",
+     "call": "PUT /api/deliveries-api/deliveries/1",
+     "message": "the page sends PUT /api/deliveries-api/deliveries/1, but the API has no such route. The API offers: POST /api/deliveries-api/deliveries (reads milkmanId, customerId, date); PUT /api/billing-service/customer/:customerId/payment-status (reads paymentStatus)."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/delivery-marking-form.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 119
+  },
+  {
+   "sessionId": "session-new-014",
+   "title": "Plant Nursery Inventory",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-017",
+   "title": "Clinic Queue System",
+   "calls": 2,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-018",
+   "title": "Laptop Repair Shop Job Card System",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/job-card-form.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/job-api/jobs; GET /api/job-api/jobs/:id; POST /api/job-api/jobs (reads customer_name, device_type, issue_description, estimated_time, status); PUT /api/job-api/jobs/:id (reads customer_name, device_type, issue_description, estimated_time, status); DELETE /api/job-api/jobs/:id; GET /api/customer-api/customers; GET /api/customer-api/customers/:id; POST /api/customer-api/customers (reads name, contact_info); PUT /api/customer-api/customers/:id (reads name, contact_info); DELETE /api/customer-api/customers/:id. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    },
+    {
+     "page": "frontend/src/pages/job-list-view.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/job-api/jobs; GET /api/job-api/jobs/:id; POST /api/job-api/jobs (reads customer_name, device_type, issue_description, estimated_time, status); PUT /api/job-api/jobs/:id (reads customer_name, device_type, issue_description, estimated_time, status); DELETE /api/job-api/jobs/:id; GET /api/customer-api/customers; GET /api/customer-api/customers/:id; POST /api/customer-api/customers (reads name, contact_info); PUT /api/customer-api/customers/:id (reads name, contact_info); DELETE /api/customer-api/customers/:id. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    },
+    {
+     "page": "frontend/src/pages/customer-lookup.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/job-api/jobs; GET /api/job-api/jobs/:id; POST /api/job-api/jobs (reads customer_name, device_type, issue_description, estimated_time, status); PUT /api/job-api/jobs/:id (reads customer_name, device_type, issue_description, estimated_time, status); DELETE /api/job-api/jobs/:id; GET /api/customer-api/customers; GET /api/customer-api/customers/:id; POST /api/customer-api/customers (reads name, contact_info); PUT /api/customer-api/customers/:id (reads name, contact_info); DELETE /api/customer-api/customers/:id. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/job-card-form.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/job-api/jobs; GET /api/job-api/jobs/:id; POST /api/job-api/jobs (reads customer_name, device_type, issue_description, estimated_time, status); PUT /api/job-api/jobs/:id (reads customer_name, device_type, issue_description, estimated_time, status); DELETE /api/job-api/jobs/:id; GET /api/customer-api/customers; GET /api/customer-api/customers/:id; POST /api/customer-api/customers (reads name, contact_info); PUT /api/customer-api/customers/:id (reads name, contact_info); DELETE /api/customer-api/customers/:id. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/job-card-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/job-list-view.tsx",
+     "outcome": "fixed"
+    },
+    {
+     "page": "frontend/src/pages/customer-lookup.tsx",
+     "outcome": "fixed"
+    },
+    {
+     "page": "frontend/src/pages/job-card-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/job-card-form.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 479
+  },
+  {
+   "sessionId": "session-new-019",
+   "title": "Courier Pickup Request App",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-020",
+   "title": "Hostel Mess Menu Voting",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/voting-interface.tsx",
+     "call": "POST /api/voting-api/vote",
+     "message": "POST /api/voting-api/vote reads studentId, hostelId, menuItemId, but the page sends menuItemId - missing studentId, hostelId. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 1,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/voting-interface.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 125
+  },
+  {
+   "sessionId": "session-new-024",
+   "title": "College Fest Event Ticketing",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-025",
+   "title": "Garbage Collection Complaint App",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/complaint-form.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/complaint-api/complaints; GET /api/complaint-api/complaints/:id; POST /api/complaint-api/complaints (reads resident_id, ward_id, complaint_text, timestamp); DELETE /api/complaint-api/complaints/:id. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    },
+    {
+     "page": "frontend/src/pages/complaint-list.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/complaint-api/complaints; GET /api/complaint-api/complaints/:id; POST /api/complaint-api/complaints (reads resident_id, ward_id, complaint_text, timestamp); DELETE /api/complaint-api/complaints/:id. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/complaint-form.tsx",
+     "outcome": "fixed"
+    },
+    {
+     "page": "frontend/src/pages/complaint-list.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 219
+  },
+  {
+   "sessionId": "session-new-026",
+   "title": "Car Pooling App for Office Employees",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/pool-request-form.tsx",
+     "call": "POST /api/rides-api/rides",
+     "message": "POST /api/rides-api/rides reads employee_id, pickup_location, destination, ride_date, but the page sends employeeId, pickupLocation, destination, preferredTime, numberOfPassengers - missing employee_id, pickup_location, ride_date. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/pool-request-form.tsx",
+     "call": "POST /api/rides-api/rides",
+     "message": "POST /api/rides-api/rides reads employee_id, pickup_location, destination, ride_date, but the page sends employeeId, pickupLocation, destination, rideDate, preferredTime, numberOfPassengers - missing employee_id, pickup_location, ride_date. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/pool-request-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/pool-request-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/pool-request-form.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 306
+  },
+  {
+   "sessionId": "session-new-032",
+   "title": "Freelance Invoice Generator for Designers",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/invoice-form.tsx",
+     "call": "POST /api/invoicing-api/",
+     "message": "POST /api/invoicing-api/ reads designerId, clientName, serviceDescription, amount, invoiceNumber, but the page sends client, service, amount - missing designerId, clientName, serviceDescription, invoiceNumber. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 1,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/invoice-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/invoice-form.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 217
+  },
+  {
+   "sessionId": "session-new-039",
+   "title": "Office Complaint Box",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/complaint-form.tsx",
+     "call": "POST /api/complaint-api/",
+     "message": "POST /api/complaint-api/ reads text, authorId, but the page sends title, description - missing text, authorId. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/complaint-form.tsx",
+     "call": "POST /api/complaint-api/",
+     "message": "POST /api/complaint-api/ reads text, authorId, but the page sends title, description - missing text, authorId. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/complaint-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/complaint-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/complaint-form.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 287
+  },
+  {
+   "sessionId": "session-new-040",
+   "title": "Seed and Fertiliser Order App",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/order-form.tsx",
+     "call": "POST /api/orders-api/orders",
+     "message": "POST /api/orders-api/orders reads product_id, quantity, status, but the page sends items, status - missing product_id, quantity. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/order-form.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 122
+  },
+  {
+   "sessionId": "session-new-042",
+   "title": "Book Club App",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/book-list-page.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/book-service/books; GET /api/book-service/books/:id; GET /api/book-service/books/month/:month; POST /api/book-service/books (reads title, author, month, description); GET /api/book-service/books/:id/threads; POST /api/book-service/books/:id/threads (reads title, createdAt); GET /api/book-service/threads/:id; GET /api/book-service/threads/:id/posts; POST /api/book-service/threads/:id/posts (reads author, content, createdAt). Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    },
+    {
+     "page": "frontend/src/pages/discussion-thread.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/book-service/books; GET /api/book-service/books/:id; GET /api/book-service/books/month/:month; POST /api/book-service/books (reads title, author, month, description); GET /api/book-service/books/:id/threads; POST /api/book-service/books/:id/threads (reads title, createdAt); GET /api/book-service/threads/:id; GET /api/book-service/threads/:id/posts; POST /api/book-service/threads/:id/posts (reads author, content, createdAt). Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/book-list-page.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/book-service/books; GET /api/book-service/books/:id; GET /api/book-service/books/month/:month; POST /api/book-service/books (reads title, author, month, description); GET /api/book-service/books/:id/threads; POST /api/book-service/books/:id/threads (reads title, createdAt); GET /api/book-service/threads/:id; GET /api/book-service/threads/:id/posts; POST /api/book-service/threads/:id/posts (reads author, content, createdAt). Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    },
+    {
+     "page": "frontend/src/pages/discussion-thread.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/book-service/books; GET /api/book-service/books/:id; GET /api/book-service/books/month/:month; POST /api/book-service/books (reads title, author, month, description); GET /api/book-service/books/:id/threads; POST /api/book-service/books/:id/threads (reads title, createdAt); GET /api/book-service/threads/:id; GET /api/book-service/threads/:id/posts; POST /api/book-service/threads/:id/posts (reads author, content, createdAt). Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/book-list-page.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/discussion-thread.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/book-list-page.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/discussion-thread.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/book-list-page.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/discussion-thread.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 970
+  },
+  {
+   "sessionId": "session-new-044",
+   "title": "Rainfall and Weather Log for a Farm",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/weather-log-form.tsx",
+     "call": "POST /api/weather-log-api/",
+     "message": "POST /api/weather-log-api/ reads date, rainfall_amount, weather_condition, notes, but the page sends date, rainfall, condition, notes - missing rainfall_amount, weather_condition. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/weather-log-form.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 111
+  },
+  {
+   "sessionId": "session-new-045",
+   "title": "Jewellery Shop Gold Savings Scheme Tracker",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-046",
+   "title": "Carpentry Workshop Project and Material Tracker",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/project-dashboard.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/project-api/projects; GET /api/project-api/projects/:id; POST /api/project-api/projects (reads name, length, width, height, status, materials); PUT /api/project-api/projects/:id (reads name, length, width, height, status, materials); DELETE /api/project-api/projects/:id; GET /api/project-api/materials; GET /api/project-api/materials/:id; POST /api/project-api/materials (reads type, quantity, storage_location, status); PUT /api/project-api/materials/:id (reads type, quantity, storage_location, status); DELETE /api/project-api/materials/:id; GET /api/material-api/materials; GET /api/material-api/materials/:id; POST /api/material-api/materials (reads type, quantity, storage_location, status); PUT /api/material-api/materials/:id (reads type, quantity, storage_location, status); DELETE /api/material-api/materials/:id. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    },
+    {
+     "page": "frontend/src/pages/project-management.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/project-api/projects; GET /api/project-api/projects/:id; POST /api/project-api/projects (reads name, length, width, height, status, materials); PUT /api/project-api/projects/:id (reads name, length, width, height, status, materials); DELETE /api/project-api/projects/:id; GET /api/project-api/materials; GET /api/project-api/materials/:id; POST /api/project-api/materials (reads type, quantity, storage_location, status); PUT /api/project-api/materials/:id (reads type, quantity, storage_location, status); DELETE /api/project-api/materials/:id; GET /api/material-api/materials; GET /api/material-api/materials/:id; POST /api/material-api/materials (reads type, quantity, storage_location, status); PUT /api/material-api/materials/:id (reads type, quantity, storage_location, status); DELETE /api/material-api/materials/:id. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    },
+    {
+     "page": "frontend/src/pages/material-inventory.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/project-api/projects; GET /api/project-api/projects/:id; POST /api/project-api/projects (reads name, length, width, height, status, materials); PUT /api/project-api/projects/:id (reads name, length, width, height, status, materials); DELETE /api/project-api/projects/:id; GET /api/project-api/materials; GET /api/project-api/materials/:id; POST /api/project-api/materials (reads type, quantity, storage_location, status); PUT /api/project-api/materials/:id (reads type, quantity, storage_location, status); DELETE /api/project-api/materials/:id; GET /api/material-api/materials; GET /api/material-api/materials/:id; POST /api/material-api/materials (reads type, quantity, storage_location, status); PUT /api/material-api/materials/:id (reads type, quantity, storage_location, status); DELETE /api/material-api/materials/:id. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    }
+   ],
+   "passedAfter": 1,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/project-management.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/project-api/projects; GET /api/project-api/projects/:id; POST /api/project-api/projects (reads name, length, width, height, status, materials); PUT /api/project-api/projects/:id (reads name, length, width, height, status, materials); DELETE /api/project-api/projects/:id; GET /api/project-api/materials; GET /api/project-api/materials/:id; POST /api/project-api/materials (reads type, quantity, storage_location, status); PUT /api/project-api/materials/:id (reads type, quantity, storage_location, status); DELETE /api/project-api/materials/:id; GET /api/material-api/materials; GET /api/material-api/materials/:id; POST /api/material-api/materials (reads type, quantity, storage_location, status); PUT /api/material-api/materials/:id (reads type, quantity, storage_location, status); DELETE /api/material-api/materials/:id. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    },
+    {
+     "page": "frontend/src/pages/project-dashboard.tsx",
+     "call": "POST /api/material-api/materials",
+     "message": "POST /api/material-api/materials reads type, quantity, storage_location, status, but the page sends type, quantity, storageLocation, status - missing storage_location. Send exactly the fields the route reads, with the same names."
+    },
+    {
+     "page": "frontend/src/pages/material-inventory.tsx",
+     "call": "POST /api/project-api/materials",
+     "message": "POST /api/project-api/materials reads type, quantity, storage_location, status, but the page sends type, quantity, storageLocation, status - missing storage_location. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/project-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/project-management.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/material-inventory.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/project-management.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/project-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/material-inventory.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/project-management.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/project-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/material-inventory.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 1399
+  },
+  {
+   "sessionId": "session-new-047",
+   "title": "Study Group Finder for Engineering Students",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/study-group-search-page.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/study-group-api; GET /api/study-group-api/:id; POST /api/study-group-api (reads title, subject, description, creatorId); PUT /api/study-group-api/:id (reads title, subject, description, creatorId); DELETE /api/study-group-api/:id; GET /api/study-group-api/:id/members; POST /api/study-group-api/:groupId/members/:studentId; DELETE /api/study-group-api/:groupId/members/:studentId; GET /api/chat-api/messages/:userId; POST /api/chat-api/messages (reads senderEmail, recipientEmail, content); GET /api/chat-api/group/:groupId/messages; POST /api/authentication-service/register (reads email, password, role); POST /api/authentication-service/login (reads email, password); GET /api/authentication-service/study-groups. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    },
+    {
+     "page": "frontend/src/pages/create-study-group-form.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/study-group-api; GET /api/study-group-api/:id; POST /api/study-group-api (reads title, subject, description, creatorId); PUT /api/study-group-api/:id (reads title, subject, description, creatorId); DELETE /api/study-group-api/:id; GET /api/study-group-api/:id/members; POST /api/study-group-api/:groupId/members/:studentId; DELETE /api/study-group-api/:groupId/members/:studentId; GET /api/chat-api/messages/:userId; POST /api/chat-api/messages (reads senderEmail, recipientEmail, content); GET /api/chat-api/group/:groupId/messages; POST /api/authentication-service/register (reads email, password, role); POST /api/authentication-service/login (reads email, password); GET /api/authentication-service/study-groups. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    },
+    {
+     "page": "frontend/src/pages/group-chat-interface.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: GET /api/study-group-api; GET /api/study-group-api/:id; POST /api/study-group-api (reads title, subject, description, creatorId); PUT /api/study-group-api/:id (reads title, subject, description, creatorId); DELETE /api/study-group-api/:id; GET /api/study-group-api/:id/members; POST /api/study-group-api/:groupId/members/:studentId; DELETE /api/study-group-api/:groupId/members/:studentId; GET /api/chat-api/messages/:userId; POST /api/chat-api/messages (reads senderEmail, recipientEmail, content); GET /api/chat-api/group/:groupId/messages; POST /api/authentication-service/register (reads email, password, role); POST /api/authentication-service/login (reads email, password); GET /api/authentication-service/study-groups. Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/create-study-group-form.tsx",
+     "call": "POST /api/study-group-api",
+     "message": "POST /api/study-group-api reads title, subject, description, creatorId, but the page sends title, subject, description - missing creatorId. Send exactly the fields the route reads, with the same names."
+    },
+    {
+     "page": "frontend/src/pages/group-chat-interface.tsx",
+     "call": "POST /api/chat-api/messages",
+     "message": "POST /api/chat-api/messages with {\"senderEmail\":\"test@example.com\",\"recipientEmail\":\"test@example.com\",\"content\":\"Check content\"} was refused: HTTP 404 {\"error\":\"User not found\"}"
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/study-group-search-page.tsx",
+     "outcome": "fixed"
+    },
+    {
+     "page": "frontend/src/pages/create-study-group-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/group-chat-interface.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/create-study-group-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/group-chat-interface.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/create-study-group-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/group-chat-interface.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 615
+  },
+  {
+   "sessionId": "session-new-048",
+   "title": "Fish Market Price and Stock Board",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-049",
+   "title": "Beauty Parlour Booking App",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/customer-dashboard.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: POST /api/booking-api/bookings (reads customerId, service, date, time); PUT /api/booking-api/bookings/:id (reads date, time); DELETE /api/booking-api/bookings/:id; GET /api/package-management; GET /api/package-management/:id; POST /api/package-management (reads name, description, price, duration); PUT /api/package-management/:id (reads name, description, price, duration); DELETE /api/package-management/:id; POST /api/package-management/purchase (reads customerId, packageName, quantity, purchaseDate). Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    },
+    {
+     "page": "frontend/src/pages/staff-scheduling.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: POST /api/booking-api/bookings (reads customerId, service, date, time); PUT /api/booking-api/bookings/:id (reads date, time); DELETE /api/booking-api/bookings/:id; GET /api/package-management; GET /api/package-management/:id; POST /api/package-management (reads name, description, price, duration); PUT /api/package-management/:id (reads name, description, price, duration); DELETE /api/package-management/:id; POST /api/package-management/purchase (reads customerId, packageName, quantity, purchaseDate). Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/customer-dashboard.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: POST /api/booking-api/bookings (reads customerId, service, date, time); PUT /api/booking-api/bookings/:id (reads date, time); DELETE /api/booking-api/bookings/:id; GET /api/package-management; GET /api/package-management/:id; POST /api/package-management (reads name, description, price, duration); PUT /api/package-management/:id (reads name, description, price, duration); DELETE /api/package-management/:id; POST /api/package-management/purchase (reads customerId, packageName, quantity, purchaseDate). Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    },
+    {
+     "page": "frontend/src/pages/staff-scheduling.tsx",
+     "call": "none",
+     "message": "the page calls no API route, so nothing can be entered or shown. The API offers: POST /api/booking-api/bookings (reads customerId, service, date, time); PUT /api/booking-api/bookings/:id (reads date, time); DELETE /api/booking-api/bookings/:id; GET /api/package-management; GET /api/package-management/:id; POST /api/package-management (reads name, description, price, duration); PUT /api/package-management/:id (reads name, description, price, duration); DELETE /api/package-management/:id; POST /api/package-management/purchase (reads customerId, packageName, quantity, purchaseDate). Load and show the records this page is for (GET), and give a form with a labelled input for every field the matching POST route reads, sending them to that route with the same field names."
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/customer-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/staff-scheduling.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/customer-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/staff-scheduling.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/customer-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/staff-scheduling.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 1100
+  },
+  {
+   "sessionId": "session-new-051",
+   "title": "Art Exhibition Entry and Voting App",
+   "calls": 2,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-053",
+   "title": "Conference Room Booking App",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/room-booking-calendar.tsx",
+     "call": "POST /api/room-booking-api/bookings",
+     "message": "POST /api/room-booking-api/bookings reads roomId, startDate, endDate, bookerId, but the page sends roomId, startTime, endTime - missing startDate, endDate, bookerId. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/room-booking-calendar.tsx",
+     "call": "POST /api/room-booking-api/bookings",
+     "message": "POST /api/room-booking-api/bookings with {\"roomId\":1,\"startDate\":\"2026-10-23\",\"endDate\":\"2026-10-23\",\"bookerId\":1} was refused: HTTP 404 {\"message\":\"Room not found\"}"
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/room-booking-calendar.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/room-booking-calendar.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/room-booking-calendar.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 458
+  }
+ ]
+}

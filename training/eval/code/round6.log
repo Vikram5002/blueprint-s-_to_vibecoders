@@ -1,0 +1,11 @@
+== teacher-start 13:59:50
+== teacher-ready 14:03:36
+== fixes-exit 0 done: kept 102, rejected 66, failed 0 of 168 -> capture/code/teacher-form-fixes.jsonl 14:10:00
+== train-env-ready 14:11:14
+== dataset-ready "rows": 2323 14:11:36
+== coder-start 14:11:36
+== coder-exit 0 18:04:24
+== coders-ready 18:04:55
+== forms-exit 0 broken calls: before 13, after 8 18:29:33
+== eval-fix-exit 0 19:15:40
+== done 19:15:40

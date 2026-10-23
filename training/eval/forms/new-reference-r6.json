@@ -1,0 +1,514 @@
+{
+ "reference": "capture/code/new-reference",
+ "repairModel": "code6",
+ "rows": [
+  {
+   "sessionId": "session-new-003",
+   "title": "Blood Donor Finder",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/donor-registration-form.tsx",
+     "call": "POST /api/donation-api/donors",
+     "message": "POST /api/donation-api/donors reads name, contact, blood_group, but the page sends name, email, phone, bloodGroup - missing contact, blood_group. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 1,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/donor-registration-form.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 55
+  },
+  {
+   "sessionId": "session-new-004",
+   "title": "Tuition Centre App",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/teacher-dashboard.tsx",
+     "call": "POST /api/homework-api/homework",
+     "message": "POST /api/homework-api/homework reads studentId, topic, dueDate, but the page sends title, description, dueDate - missing studentId, topic. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/teacher-dashboard.tsx",
+     "call": "POST /api/homework-api/homework",
+     "message": "POST /api/homework-api/homework with {\"studentId\":1,\"topic\":\"Check topic\",\"description\":\"Check description\",\"dueDate\":\"2026-10-23\"} was refused: HTTP 404 {\"error\":\"Student not found\"}"
+    },
+    {
+     "page": "frontend/src/pages/teacher-dashboard.tsx",
+     "call": "PUT /api/homework-api/mark/1",
+     "message": "PUT /api/homework-api/mark/1 with {\"studentId\":1,\"homeworkId\":1,\"testName\":\"Check testName\",\"score\":\"Check score\"} was refused: HTTP 404 {\"error\":\"Mark not found\"}"
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/teacher-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/teacher-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/teacher-dashboard.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 268
+  },
+  {
+   "sessionId": "session-new-007",
+   "title": "Crop Price Board",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-008",
+   "title": "Cricket Club Scorebook",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-011",
+   "title": "Placement Cell Portal",
+   "calls": 2,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/company-drive-posting-form.tsx",
+     "call": "POST /api/placement-api/drives",
+     "message": "POST /api/placement-api/drives reads companyName, role, location, applicationDeadline, but the page sends role, location, applicationDeadline - missing companyName. Send exactly the fields the route reads, with the same names."
+    },
+    {
+     "page": "frontend/src/pages/student-application-dashboard.tsx",
+     "call": "POST /api/placement-api/applications",
+     "message": "POST /api/placement-api/applications reads studentId, driveId, status, but the page sends driveId, studentId - missing status. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/company-drive-posting-form.tsx",
+     "call": "POST /api/placement-api/drives",
+     "message": "POST /api/placement-api/drives with {\"companyName\":\"Check companyName\",\"role\":\"Check role\",\"location\":\"Check location\",\"applicationDeadline\":\"Check applicationDeadline\"} was refused: HTTP 401 {\"error\":\"Unauthorized: Missing or invalid token\"}"
+    },
+    {
+     "page": "frontend/src/pages/student-application-dashboard.tsx",
+     "call": "POST /api/placement-api/applications",
+     "message": "POST /api/placement-api/applications with {\"studentId\":1,\"driveId\":1,\"status\":\"Check status\"} was refused: HTTP 500 <!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Error: no such table: main.drives<br> &nbsp; &nbsp;at insertApplication (/home/ubuntu/ev/capture/code/work/eval-form-check/session-new-011/dist/backend/src/db/applications-table.js:25:29)<br> &nbs"
+    },
+    {
+     "page": "frontend/src/pages/student-application-dashboard.tsx",
+     "call": "POST /api/placement-api/drives",
+     "message": "POST /api/placement-api/drives with {\"companyName\":\"Check companyName\",\"role\":\"Check role\",\"location\":\"Check location\",\"applicationDeadline\":\"Check applicationDeadline\"} was refused: HTTP 401 {\"error\":\"Unauthorized: Missing or invalid token\"}"
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/company-drive-posting-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/student-application-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/student-application-dashboard.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/company-drive-posting-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/company-drive-posting-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/student-application-dashboard.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 387
+  },
+  {
+   "sessionId": "session-new-012",
+   "title": "Bus Pass Renewal App",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/pass-renewal-form.tsx",
+     "call": "PUT /api/pass-management-api/1/renewal-status",
+     "message": "the page sends PUT /api/pass-management-api/1/renewal-status, but the API has no such route. The API offers: POST /api/pass-management-api/pass (reads userId, passType, validityDate, renewalStatus); PUT /api/pass-management-api/pass/:id/renewal-status (reads renewalStatus)."
+    }
+   ],
+   "passedAfter": 1,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/pass-renewal-form.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 43
+  },
+  {
+   "sessionId": "session-new-013",
+   "title": "Milk Delivery Tracker",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/delivery-marking-form.tsx",
+     "call": "PUT /api/deliveries-api/deliveries/1",
+     "message": "the page sends PUT /api/deliveries-api/deliveries/1, but the API has no such route. The API offers: POST /api/deliveries-api/deliveries (reads milkmanId, customerId, date); PUT /api/billing-service/customer/:customerId/payment-status (reads paymentStatus)."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/delivery-marking-form.tsx",
+     "call": "POST /api/deliveries-api/deliveries",
+     "message": "POST /api/deliveries-api/deliveries with {\"milkmanId\":1,\"customerId\":1,\"date\":\"2026-10-23\"} was refused: HTTP 404 {\"error\":\"Customer not found\"}"
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/delivery-marking-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/delivery-marking-form.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/delivery-marking-form.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 180
+  },
+  {
+   "sessionId": "session-new-014",
+   "title": "Plant Nursery Inventory",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-017",
+   "title": "Clinic Queue System",
+   "calls": 2,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-018",
+   "title": "Laptop Repair Shop Job Card System",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-019",
+   "title": "Courier Pickup Request App",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-020",
+   "title": "Hostel Mess Menu Voting",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/voting-interface.tsx",
+     "call": "POST /api/voting-api/vote",
+     "message": "POST /api/voting-api/vote reads studentId, hostelId, menuItemId, but the page sends menuItemId - missing studentId, hostelId. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/voting-interface.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 64
+  },
+  {
+   "sessionId": "session-new-024",
+   "title": "College Fest Event Ticketing",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-025",
+   "title": "Garbage Collection Complaint App",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-026",
+   "title": "Car Pooling App for Office Employees",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/pool-request-form.tsx",
+     "call": "POST /api/rides-api/rides",
+     "message": "POST /api/rides-api/rides reads employee_id, pickup_location, destination, ride_date, but the page sends employeeId, pickupLocation, destination, preferredTime, numberOfPassengers - missing employee_id, pickup_location, ride_date. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 1,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/pool-request-form.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 57
+  },
+  {
+   "sessionId": "session-new-032",
+   "title": "Freelance Invoice Generator for Designers",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/invoice-form.tsx",
+     "call": "POST /api/invoicing-api/",
+     "message": "POST /api/invoicing-api/ reads designerId, clientName, serviceDescription, amount, invoiceNumber, but the page sends client, service, amount - missing designerId, clientName, serviceDescription, invoiceNumber. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 1,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/invoice-form.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 61
+  },
+  {
+   "sessionId": "session-new-039",
+   "title": "Office Complaint Box",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/complaint-form.tsx",
+     "call": "POST /api/complaint-api/",
+     "message": "POST /api/complaint-api/ reads text, authorId, but the page sends title, description - missing text, authorId. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 1,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/complaint-form.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 40
+  },
+  {
+   "sessionId": "session-new-040",
+   "title": "Seed and Fertiliser Order App",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/order-form.tsx",
+     "call": "POST /api/orders-api/orders",
+     "message": "POST /api/orders-api/orders reads product_id, quantity, status, but the page sends items, status - missing product_id, quantity. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/order-form.tsx",
+     "call": "POST /api/orders-api/orders",
+     "message": "POST /api/orders-api/orders reads product_id, quantity, status, but the page sends items, status - missing product_id, quantity. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/order-form.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 73
+  },
+  {
+   "sessionId": "session-new-042",
+   "title": "Book Club App",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-044",
+   "title": "Rainfall and Weather Log for a Farm",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/weather-log-form.tsx",
+     "call": "POST /api/weather-log-api/",
+     "message": "POST /api/weather-log-api/ reads date, rainfall_amount, weather_condition, notes, but the page sends date, rainfall, condition, notes - missing rainfall_amount, weather_condition. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 1,
+   "problemsAfter": [],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/weather-log-form.tsx",
+     "outcome": "fixed"
+    }
+   ],
+   "seconds": 50
+  },
+  {
+   "sessionId": "session-new-045",
+   "title": "Jewellery Shop Gold Savings Scheme Tracker",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-046",
+   "title": "Carpentry Workshop Project and Material Tracker",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-047",
+   "title": "Study Group Finder for Engineering Students",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-048",
+   "title": "Fish Market Price and Stock Board",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-049",
+   "title": "Beauty Parlour Booking App",
+   "calls": 0,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-051",
+   "title": "Art Exhibition Entry and Voting App",
+   "calls": 2,
+   "passedBefore": 0,
+   "problemsBefore": [],
+   "passedAfter": 0,
+   "problemsAfter": [],
+   "seconds": 0
+  },
+  {
+   "sessionId": "session-new-053",
+   "title": "Conference Room Booking App",
+   "calls": 1,
+   "passedBefore": 0,
+   "problemsBefore": [
+    {
+     "page": "frontend/src/pages/room-booking-calendar.tsx",
+     "call": "POST /api/room-booking-api/bookings",
+     "message": "POST /api/room-booking-api/bookings reads roomId, startDate, endDate, bookerId, but the page sends roomId, startTime, endTime - missing startDate, endDate, bookerId. Send exactly the fields the route reads, with the same names."
+    }
+   ],
+   "passedAfter": 0,
+   "problemsAfter": [
+    {
+     "page": "frontend/src/pages/room-booking-calendar.tsx",
+     "call": "POST /api/room-booking-api/bookings",
+     "message": "POST /api/room-booking-api/bookings with {\"roomId\":1,\"startDate\":\"2026-10-23\",\"endDate\":\"2026-10-23\",\"bookerId\":1} was refused: HTTP 404 {\"message\":\"Room not found\"}"
+    }
+   ],
+   "fixes": [
+    {
+     "page": "frontend/src/pages/room-booking-calendar.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/room-booking-calendar.tsx",
+     "outcome": "still-violating"
+    },
+    {
+     "page": "frontend/src/pages/room-booking-calendar.tsx",
+     "outcome": "still-violating"
+    }
+   ],
+   "seconds": 198
+  }
+ ]
+}
