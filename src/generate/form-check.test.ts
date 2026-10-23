@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { apiRoutes, matchRoute, pageCalls, runFormCheck, sampleValue, staticProblems, unusedPages } from './form-check.js';
+import { apiRoutes, matchRoute, pageCalls, runFormCheck, sampleValue, shownItemFields, staticProblems, unusedPages } from './form-check.js';
 import { componentId, type ValidatedProjectSchema } from '../types/project-schema.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 
@@ -166,6 +166,12 @@ describe('runFormCheck - live, against a real running server', () => {
     expect(result.problems[0]?.message).toContain('does not show author');
   }, 30_000);
 
+  it('catches a list that shows a field the records do not have (the 20 Oct "Invalid Date" page)', async () => {
+    const page = goodPage + "\nconst [books, setBooks] = useState([]);\nuseEffect(() => { fetch('/api/catalog-api/books'); }, []);\n{books.map((b) => <li>{b.name} by {b.author}</li>)}";
+    const result = await check(true, page);
+    expect(result.problems.map((x) => x.message).join(' ')).toContain('the page shows name for each item of GET /api/catalog-api/books, but its records have title, author');
+  }, 30_000);
+
   it('catches a page that renamed a field the route reads, without starting anything', async () => {
     const result = await check(true, "fetch('/api/catalog-api/books', { method: 'POST', body: JSON.stringify({ name: 'x', author: 'y' }) });");
     expect(result.problems[0]?.message).toContain('missing title');
@@ -264,5 +270,12 @@ describe('pageCalls - fields the page sends as a list (live cafe app: the API cr
   it('leaves plain values alone', () => {
     const [call] = pageCalls('p.tsx', "fetch('/api/a/b', { method: 'POST', body: JSON.stringify({ title, count: Number(count) }) });");
     expect(call?.arrays).toBeUndefined();
+  });
+});
+
+describe('shownItemFields - what a page shows for each list item', () => {
+  it('reads item fields of loops over a plain variable, not nested lists or methods', () => {
+    const source = `{reservations.map((r) => (<li key={r.id}>{r.bookTitle} {new Date(r.reservedDate).toLocaleDateString()} {r.items.map((i) => i.name)} {r.note?.trim()}</li>))}`;
+    expect(shownItemFields(source).sort()).toEqual(['bookTitle', 'id', 'items', 'note', 'reservedDate']);
   });
 });

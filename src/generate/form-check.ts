@@ -287,6 +287,27 @@ export function staticProblems(calls: readonly PageCall[], routes: readonly ApiR
   return problems;
 }
 
+/**
+ * Fields a page reads from list items: `x.prop` where `x` is the item of a
+ * `.map(x => ...)`. Found live (2026-10-20, library app): a queue page showed
+ * empty fields and "Invalid Date" because it read names the API never
+ * returned - nothing compared what a page shows with what the API sends.
+ */
+export function shownItemFields(source: string): string[] {
+  // Only loops over a plain variable (`orders.map(o => ...)`), never a nested list (`o.items.map(...)`).
+  const items = new Set([...source.matchAll(/(?<![\w$.])[A-Za-z_$][\w$]*\??\.map\(\s*\(?\s*([A-Za-z_$][\w$]*)/g)].map((m) => m[1] ?? ''));
+  const NOT_FIELDS = new Set(['length', 'map', 'filter', 'toFixed', 'toString', 'toLocaleString', 'toLocaleDateString', 'trim', 'join', 'slice', 'includes', 'toUpperCase', 'toLowerCase']);
+  const fields = new Set<string>();
+  for (const item of items) {
+    if (item === '') continue;
+    for (const m of source.matchAll(new RegExp(String.raw`\b${item.replace(/\$/g, '\$')}\??\.([A-Za-z_$][\w$]*)`, 'g'))) {
+      const field = m[1] ?? '';
+      if (!NOT_FIELDS.has(field)) fields.add(field);
+    }
+  }
+  return [...fields];
+}
+
 const NUMBER_WORDS = new Set(['id', 'count', 'quantity', 'qty', 'size', 'copies', 'number', 'amount', 'price', 'total', 'age', 'rating', 'seats', 'capacity', 'year', 'balance', 'score']);
 const BOOLEAN_WORDS = new Set(['is', 'has', 'active', 'enabled', 'done', 'completed', 'available', 'paid']);
 const DATE_WORDS = new Set(['date', 'at', 'day', 'dob', 'deadline']);
@@ -339,8 +360,13 @@ export async function runFormCheck(
     if (!server.started) {
       return { calls, routes, problems: [...problems, ...live.map((c) => ({ page: c.page, call: `${c.method} ${c.path}`, message: 'the server did not start, so the call could not be tried' }))], passed };
     }
+    // Writes first, so a list read afterwards has a record to compare.
+    live.sort((a, b) => Number(a.method === 'GET') - Number(b.method === 'GET'));
     for (const call of live) {
-      const problem = await tryCall(doFetch, `http://127.0.0.1:${server.port}`, call, routes, timeoutMs, server.output);
+      // Shown fields are compared only for a page that loads one list - with two, which record a field belongs to is unknown.
+      const reads = new Set(calls.filter((c) => c.page === call.page && c.method === 'GET').map((c) => c.path.replace(/\/1(?=\/|$)/g, '')));
+      const source = reads.size === 1 ? files.find((f) => f.path === call.page)?.contents : undefined;
+      const problem = await tryCall(doFetch, `http://127.0.0.1:${server.port}`, call, routes, timeoutMs, server.output, source);
       if (problem === null) passed += 1;
       else problems.push(problem);
     }
@@ -357,6 +383,7 @@ async function tryCall(
   routes: readonly ApiRoute[],
   timeoutMs: number,
   serverOutput: () => string,
+  pageSource?: string,
 ): Promise<FormProblem | null> {
   const label = `${call.method} ${call.path}`;
   const body = Object.fromEntries(
@@ -370,7 +397,8 @@ async function tryCall(
         ? { signal: AbortSignal.timeout(timeoutMs) }
         : { method: call.method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) },
     );
-    const text = (await response.text()).slice(0, 300);
+    const full = await response.text();
+    const text = full.slice(0, 300);
     // A 5xx is the API crashing on a request the page really makes: the route file is at fault, not the page.
     const route = matchRoute(call, routes);
     if (response.status >= 500 && route !== undefined) {
@@ -381,8 +409,20 @@ async function tryCall(
         message: `${label}${call.method === 'GET' ? '' : ` with ${JSON.stringify(body)}`} crashed the API: HTTP ${response.status}. Server output: ${logged || text}`,
       };
     }
-    // A read only has to answer: a 404 for /items/1 is a normal "no such item".
-    if (call.method === 'GET') return null;
+    // A read only has to answer: a 404 for /items/1 is a normal "no such item". When it returns records,
+    // the fields the page shows for each item must be fields the records have.
+    if (call.method === 'GET') {
+      if (response.status >= 400 || pageSource === undefined) return null;
+      let records: unknown;
+      try { records = JSON.parse(full); } catch { return null; }
+      const first = Array.isArray(records) ? records.find((r) => typeof r === 'object' && r !== null) : undefined;
+      if (first === undefined) return null;
+      const keys = new Set(Object.keys(first as object));
+      const missing = shownItemFields(pageSource).filter((field) => !keys.has(field));
+      return missing.length === 0
+        ? null
+        : { page: call.page, call: label, message: `the page shows ${missing.join(', ')} for each item of ${label}, but its records have ${[...keys].join(', ')} - those fields show as empty. Use the API's field names.` };
+    }
     if (response.status >= 400) {
       return { page: call.page, call: label, message: `${label} with ${JSON.stringify(body)} was refused: HTTP ${response.status} ${text}` };
     }
