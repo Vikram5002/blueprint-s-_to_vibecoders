@@ -300,7 +300,8 @@ export function shownItemFields(source: string): string[] {
   const fields = new Set<string>();
   for (const item of items) {
     if (item === '') continue;
-    for (const m of source.matchAll(new RegExp(String.raw`\b${item.replace(/\$/g, '\$')}\??\.([A-Za-z_$][\w$]*)`, 'g'))) {
+    const name = item.replace(/\$/g, '\\$');
+    for (const m of source.matchAll(new RegExp(String.raw`(?<![\w$])${name}\??\.([A-Za-z_$][\w$]*)`, 'g'))) {
       const field = m[1] ?? '';
       if (!NOT_FIELDS.has(field)) fields.add(field);
     }
