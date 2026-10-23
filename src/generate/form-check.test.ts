@@ -249,3 +249,20 @@ describe('runFormCheck - a crashing API is the route file\'s problem', () => {
     expect(result.problems[0]?.message).toContain('cannot read rows of undefined');
   }, 30_000);
 });
+
+describe('pageCalls - fields the page sends as a list (live cafe app: the API crashed on an array)', () => {
+  it('marks split/map/array-literal values and array state as lists', () => {
+    const source = `
+      const [tags, setTags] = useState<string[]>([]);
+      await fetch("/api/orders-api/orders", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerName, orderItems: orderItems.split(",").map(item => item.trim()), tags, extras: [] }) });`;
+    const [call] = pageCalls('p.tsx', source);
+    expect(call?.fields).toEqual(['customerName', 'orderItems', 'tags', 'extras']);
+    expect(call?.arrays).toEqual(['orderItems', 'tags', 'extras']);
+  });
+
+  it('leaves plain values alone', () => {
+    const [call] = pageCalls('p.tsx', "fetch('/api/a/b', { method: 'POST', body: JSON.stringify({ title, count: Number(count) }) });");
+    expect(call?.arrays).toBeUndefined();
+  });
+});

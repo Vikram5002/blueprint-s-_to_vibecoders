@@ -34,6 +34,23 @@ export interface PageCall {
   readonly path: string;
   /** Field names the body sends; null when the body could not be read statically. */
   readonly fields: readonly string[] | null;
+  /** Fields the page sends as a list (`.split(...)`, `.map(...)`, `[...]` or an array state) - tried as a list. */
+  readonly arrays?: readonly string[];
+}
+
+/**
+ * Which of `fields` the page builds as a list. Found live (2026-10-24, cafe
+ * app in a browser): the page sent `orderItems: items.split(',')`, the table
+ * could not bind an array and the API crashed, while the check had sent text.
+ */
+function arrayFields(fields: readonly string[], options: string, source: string): string[] {
+  const esc = (f: string): string => f.replace(/\$/g, '\\$');
+  return fields.filter((field) => {
+    const f = esc(field);
+    if (new RegExp(String.raw`\b${f}\s*:\s*(?:\[|[^,}\n]*\.(?:split|map|filter)\s*\()`).test(options)) return true;
+    if (new RegExp(String.raw`\[\s*${f}\s*,\s*\w+\s*\]\s*=\s*useState\s*(?:<[^>]*\[\]\s*>)?\s*\(\s*\[`).test(source)) return true;
+    return new RegExp(String.raw`useState\s*(?:<[^>]*>)?\s*\(\s*\{[^}]*\b${f}\s*:\s*\[`).test(source);
+  });
 }
 
 export interface ApiRoute {
@@ -159,7 +176,11 @@ export function pageCalls(page: string, source: string): PageCall[] {
     const options = optionsAt === -1 ? '' : (balanced(args, optionsAt) ?? '');
     const method = /method\s*:\s*["'`](\w+)["'`]/.exec(options)?.[1]?.toUpperCase() ?? 'GET';
     if (method === 'GET') calls.push({ page, method, path, fields: [] });
-    else if (['POST', 'PUT', 'PATCH'].includes(method)) calls.push({ page, method, path, fields: bodyFields(options, source) });
+    else if (['POST', 'PUT', 'PATCH'].includes(method)) {
+      const fields = bodyFields(options, source);
+      const arrays = fields === null ? [] : arrayFields(fields, options, source);
+      calls.push({ page, method, path, fields, ...(arrays.length > 0 ? { arrays } : {}) });
+    }
   }
   return calls;
 }
@@ -338,7 +359,9 @@ async function tryCall(
   serverOutput: () => string,
 ): Promise<FormProblem | null> {
   const label = `${call.method} ${call.path}`;
-  const body = Object.fromEntries((call.fields ?? []).map((field) => [field, sampleValue(field)]));
+  const body = Object.fromEntries(
+    (call.fields ?? []).map((field) => [field, call.arrays?.includes(field) === true ? [`Check ${field}`] : sampleValue(field)]),
+  );
   try {
     const before = serverOutput().length;
     const response = await doFetch(
