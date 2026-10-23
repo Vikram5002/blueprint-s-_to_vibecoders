@@ -120,7 +120,10 @@ export async function suggestFeatures(
   prompt: string,
   schema: ValidatedProjectSchema,
 ): Promise<Result<FeatureSuggestion[], { readonly message: string }>> {
-  const result = await provider.complete(suggestionRequest(prompt, schema));
+  const request = suggestionRequest(prompt, schema);
+  let result = await provider.complete(request);
+  // A model that loops hits the output limit; one more try usually does not (generate-project-schema.ts).
+  if (!result.ok && result.error.kind === 'incomplete') result = await provider.complete({ ...request, temperature: 0.7 });
   if (!result.ok) return err({ message: result.error.message });
   const suggestions = parseSuggestions(result.value.text, schema);
   return suggestions.length === 0 ? err({ message: 'the model returned no usable suggestions' }) : ok(suggestions);

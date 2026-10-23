@@ -457,7 +457,7 @@ export function createProjectSchemaGenerator(options: CreateProjectSchemaGenerat
         return finalize(cached.description ?? '', null, options.onViaFallback, options.onJsonRepaired);
       }
 
-      const completion = await options.provider.complete({
+      const request = {
         system: PROJECT_SCHEMA_SYSTEM_PROMPT,
         user: prompt,
         maxOutputTokens: MAX_OUTPUT_TOKENS,
@@ -470,8 +470,16 @@ export function createProjectSchemaGenerator(options: CreateProjectSchemaGenerat
         // Deciding what an application needs across four domains from one
         // paragraph is a judgement call, not a lookup — same tier
         // extract-intent.ts uses for reading obligations out of prose.
-        effort: 'medium',
-      });
+        effort: 'medium' as const,
+      };
+      let completion = await options.provider.complete(request);
+      // A real plan is at most ~1,400 tokens; hitting the 4,096 limit means the
+      // model looped. Found live (2026-10-23): 5 of 86 held-out prompts and a
+      // plan revised with two suggestions failed this way, and each succeeded
+      // when asked again. One retry with a little randomness breaks the loop.
+      if (!completion.ok && completion.error.kind === 'incomplete') {
+        completion = await options.provider.complete({ ...request, temperature: 0.3 });
+      }
 
       if (!completion.ok) {
         return err({

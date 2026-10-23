@@ -1169,3 +1169,23 @@ describe('malformed-JSON repair', () => {
     }
   });
 });
+
+describe('a plan that hits the output limit is asked for once more', () => {
+  const limit: CompletionResult = { ok: false, error: { kind: 'incomplete', message: 'The local model reached its output limit.' } };
+
+  it('retries once with a little randomness and returns the second answer', async () => {
+    const provider = stubProvider((request) => (request.temperature === 0 ? limit : okResult(JSON.stringify(VALID_SCHEMA_NO_CONSTRAINTS))));
+    const result = await createProjectSchemaGenerator({ provider, cache: memoryCache() }).generate('a cafe website');
+    expect(result.ok).toBe(true);
+    expect(provider.calls.map((c) => c.temperature)).toEqual([0, 0.3]);
+  });
+
+  it('retries only once, and never for other failures', async () => {
+    const twice = stubProvider(() => limit);
+    expect((await createProjectSchemaGenerator({ provider: twice, cache: memoryCache() }).generate('x')).ok).toBe(false);
+    expect(twice.calls).toHaveLength(2);
+    const down = stubProvider(() => ({ ok: false, error: { kind: 'unavailable', message: 'down' } }));
+    await createProjectSchemaGenerator({ provider: down, cache: memoryCache() }).generate('x');
+    expect(down.calls).toHaveLength(1);
+  });
+});
