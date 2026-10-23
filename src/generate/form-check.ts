@@ -222,7 +222,7 @@ const describeRoutes = (routes: readonly ApiRoute[]): string =>
  */
 export function unusedPages(schema: ValidatedProjectSchema, files: readonly GeneratedFile[], routes: readonly ApiRoute[]): FormProblem[] {
   if (routes.length === 0) return [];
-  const offered = routes.map((r) => `${r.method} ${r.path}${r.fields.length > 0 ? ` (reads ${r.fields.join(', ')})` : ''}`).join('; ');
+  const message = unusedPageMessage(routes);
   return schema.domains.frontend.components.flatMap((component) => {
     const page = componentTargetPath('frontend', component);
     const source = files.find((f) => f.path === page)?.contents;
@@ -230,12 +230,19 @@ export function unusedPages(schema: ValidatedProjectSchema, files: readonly Gene
     return [{
       page,
       call: 'none',
-      message:
-        `the page calls no API route, so nothing can be entered or shown. The API offers: ${offered}. ` +
-        `Load and show the records this page is for (GET), and give a form with a labelled input for every field ` +
-        `the matching POST route reads, sending them to that route with the same field names.`,
+      message,
     }];
   });
+}
+
+/** The unused-page problem in words; exported so training data uses exactly the checker's text. */
+export function unusedPageMessage(routes: readonly ApiRoute[]): string {
+  const offered = routes.map((r) => `${r.method} ${r.path}${r.fields.length > 0 ? ` (reads ${r.fields.join(', ')})` : ''}`).join('; ');
+  return (
+    `the page calls no API route, so nothing can be entered or shown. The API offers: ${offered}. ` +
+    `Load and show the records this page is for (GET), and give a form with a labelled input for every field ` +
+    `the matching POST route reads, sending them to that route with the same field names.`
+  );
 }
 
 /** What can be decided without running anything: a route to call, and every field it reads. */
