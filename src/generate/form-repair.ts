@@ -13,7 +13,7 @@ import { runCommand } from './build-and-repair.js';
 import { createComponentCodeGenerator, type PriorViolationContext } from './component-codegen.js';
 import { runFormCheck, type FormCheckOptions, type FormCheckResult, type FormProblem } from './form-check.js';
 import { findComponentByTargetPath, generateComponentFile, type GenerateProjectFailure } from './generate-project.js';
-import { writeProjectFiles, type RegenerationAttempt } from './verify-and-regenerate.js';
+import { filesFailingBuild, writeProjectFiles, type RegenerationAttempt } from './verify-and-regenerate.js';
 
 // Three: on the library app the second round left one call a single field name away from working.
 export const MAX_FORM_FIX_ROUNDS = 3;
@@ -82,14 +82,25 @@ export async function checkFormsAndRepair(options: FormRepairOptions): Promise<
     }
     if (attempted.length === 0) break;
     await writeProjectFiles(root, files, false);
-    const build = await runCommand('npm', ['run', 'build'], root);
+    let build = await runCommand('npm', ['run', 'build'], root);
+    const reverted = new Set<string>();
     if (!build.ok) {
-      // The fix broke the build: put the working pages back and stop.
-      files = before;
+      // Put back only the rewritten pages the compiler names - one broken page
+      // must not throw away the others (found live: 5 pages rewritten, one
+      // failed to compile, and all 5 went back to placeholders).
+      const failing = filesFailingBuild(build.output);
+      for (const a of attempted) if (failing.has(a.page) || failing.size === 0) reverted.add(a.page);
+      files = files.map((f) => (reverted.has(f.path) ? (before.find((b) => b.path === f.path) ?? f) : f));
       await writeProjectFiles(root, files, false);
-      await runCommand('npm', ['run', 'build'], root);
-      log.push(...attempted.map((a) => ({ component: a.owner.component, domain: a.owner.domain, targetPath: a.page, firstAttemptViolation: a.context, origin: 'form-check' as const, outcome: 'still-violating' as const })));
-      break;
+      build = await runCommand('npm', ['run', 'build'], root);
+      if (!build.ok) {
+        // Still broken: put everything back and stop - a working build is never traded for a form.
+        files = before;
+        await writeProjectFiles(root, files, false);
+        await runCommand('npm', ['run', 'build'], root);
+        log.push(...attempted.map((a) => ({ component: a.owner.component, domain: a.owner.domain, targetPath: a.page, firstAttemptViolation: a.context, origin: 'form-check' as const, outcome: 'still-violating' as const })));
+        break;
+      }
     }
     onPhase('form-checking');
     result = await runFormCheck(root, schema, files, options.check);
@@ -100,7 +111,7 @@ export async function checkFormsAndRepair(options: FormRepairOptions): Promise<
       targetPath: a.page,
       firstAttemptViolation: a.context,
       origin: 'form-check' as const,
-      outcome: failing.has(a.page) ? ('still-violating' as const) : ('fixed' as const),
+      outcome: failing.has(a.page) || reverted.has(a.page) ? ('still-violating' as const) : ('fixed' as const),
     })));
   }
   return { ok: true, value: { files, regenerationLog: log, forms: summary(result) } };
