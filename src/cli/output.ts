@@ -54,7 +54,7 @@ export function formatHelp(binaryName: string): string {
     '                   VIBE_DAILY_RUNS, VIBE_MONTHLY_RUNS, VIBE_TRUST_PROXY=1',
     '      --host=ADDR  Listen on ADDR (hosted only, e.g. 0.0.0.0 in a container)',
     '',
-    'Phase 1: ingest and parse. This tool measures. It never generates code.',
+    'Analysis never changes your code. Generating a new app happens in the browser workspace, from a plan you review.',
   ].join('\n');
 }
 
