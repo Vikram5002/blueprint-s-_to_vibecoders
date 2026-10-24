@@ -424,6 +424,9 @@ async function tryCall(
         ? null
         : { page: call.page, call: label, message: `the page shows ${missing.join(', ')} for each item of ${label}, but its records have ${[...keys].join(', ')} - those fields show as empty. Use the API's field names.` };
     }
+    // 401/403 is the API deciding about who is asking - a login refusing test credentials (found live on the
+    // finance app's client portal) or a route that needs a session. Correct behaviour, not a broken form.
+    if (response.status === 401 || response.status === 403) return null;
     if (response.status >= 400) {
       return { page: call.page, call: label, message: `${label} with ${JSON.stringify(body)} was refused: HTTP ${response.status} ${text}` };
     }

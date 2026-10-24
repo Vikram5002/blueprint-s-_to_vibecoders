@@ -279,3 +279,37 @@ describe('shownItemFields - what a page shows for each list item', () => {
     expect(shownItemFields(source).sort()).toEqual(['bookTitle', 'id', 'items', 'note', 'reservedDate']);
   });
 });
+
+describe('runFormCheck - a login refusing test credentials is not a broken form', () => {
+  let root: string;
+  beforeEach(async () => {
+    root = await mkdtemp(join(tmpdir(), 'vibe-form-401-'));
+  });
+  afterEach(async () => {
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it('passes a 401 from a login route', async () => {
+    await mkdir(join(root, 'dist', 'backend', 'src'), { recursive: true });
+    await writeFile(join(root, 'dist', 'backend', 'src', 'index.js'),
+      "require('node:http').createServer((req, res) => { req.resume(); req.on('end', () => { res.statusCode = 401; res.end('{\"error\":\"Invalid credentials\"}'); }); }).listen(Number(process.env.PORT), '127.0.0.1');");
+    const v = validateProjectSchema({
+      sessionId: 'login-test', title: 'Portal', originalPrompt: 'x',
+      domains: {
+        frontend: { components: [{ id: componentId('frontend', 'Client Portal', 'client-portal'), name: 'Client Portal', purpose: 'Log in.' }], dependsOn: ['backend'] },
+        backend: { components: [{ id: componentId('backend', 'Auth API', 'auth-api'), name: 'Auth API', purpose: 'Login.' }], dependsOn: [] },
+        database: { components: [], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [], provenance: 'STATED',
+    });
+    if (!v.ok) throw new Error(JSON.stringify(v.error));
+    const files = [
+      { path: 'frontend/src/pages/client-portal.tsx', contents: "fetch('/api/auth-api/login', { method: 'POST', body: JSON.stringify({ username, password }) });" },
+      { path: 'backend/src/routes/auth-api.ts', contents: "router.post('/login', (req, res) => { const { username, password } = req.body; });" },
+    ];
+    const result = await runFormCheck(root, v.value, files, { timeoutMs: 10_000 });
+    expect(result.problems).toEqual([]);
+    expect(result.passed).toBe(1);
+  }, 30_000);
+});
