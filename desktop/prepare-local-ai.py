@@ -60,9 +60,10 @@ def main():
          "sourceSha256": "42855369d8b1a647c5fc47f40ec513695a915adfa8180dc104c71f7bee9c9846",
          "base": "Qwen/Qwen2.5-Coder-7B-Instruct", "baseRevision": "c03e6d358207e414f1eca0bb1891e29f1db0e242", "revision": "13fb94bfda8c8cf22497dc57b78f391a9acb426a",
          "files": [["qwen2.5-coder-7b-instruct-q4_k_m.gguf", 4683073536, "509287f78cb4d4cf6b3843734733b914b2c158e43e22a7f4bf5e963800894d3c"]]},
-        # Repairs only (src/llm/provider-registry.ts LOCAL_REPAIR_MODEL): round 1 writes, round 4 fixes - 95.7% after repair against 87.0%.
-        {"id": "local-fix", "label": "Repair coder · round 4", "adapter": "code_rich_r4", "archive": "code_adapter_r4.zip",
-         "sourceSha256": "21806c5294b223046f39d6b6373de4603c6b7b36ab52a240234b859d64282b66",
+        # Repairs only (src/llm/provider-registry.ts LOCAL_REPAIR_MODEL): round 1 writes, round 7 fixes - form problems on
+        # 27 new apps 29 -> 12 (round 4: 29 -> 16); round 7 = round 4's data + form fixes + placeholder-page corrections.
+        {"id": "local-fix", "label": "Repair coder · round 7", "adapter": "code_rich_r7", "archive": "code_adapter_r7.zip",
+         "sourceSha256": "185b85066767f4dbd1fa5deff82fcddeac5a12f3797771bc24c27c9c76c7cf4d",
          "base": "Qwen/Qwen2.5-Coder-7B-Instruct", "baseRevision": "c03e6d358207e414f1eca0bb1891e29f1db0e242", "revision": "13fb94bfda8c8cf22497dc57b78f391a9acb426a",
          "files": [["qwen2.5-coder-7b-instruct-q4_k_m.gguf", 4683073536, "509287f78cb4d4cf6b3843734733b914b2c158e43e22a7f4bf5e963800894d3c"]]},
     ]

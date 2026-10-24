@@ -1,0 +1,12 @@
+== teacher-start 18:16:16
+== teacher-ready 18:20:17
+== suggestions-exit 0 kept 331, rejected 0, failed 0 -> training/formatted-suggestions/dataset.jsonl 18:26:56
+== thinpage 4977 records -> 268 placeholder-page corrections in capture/code/synthetic-thinpage-corrections.jsonl 18:27:28
+== train-env-ready 18:30:58
+== coder-dataset "rows": 2494 18:31:22
+== planner-dataset 662 rows 18:31:22
+== planner-start 18:31:22
+== planner-exit 0 19:03:58
+== coder-start 19:03:58
+== coder-exit 0 23:15:11
+== done 23:15:11
