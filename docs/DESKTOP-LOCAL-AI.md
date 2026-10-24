@@ -1,4 +1,4 @@
-# Desktop local AI (0.2.3)
+# Desktop local AI (0.2.4)
 
 The Windows installer offers local planning and code generation on first launch.
 Return to **File > Local AI Setup** to recheck hardware, choose a model folder,
@@ -15,7 +15,7 @@ Three adapters on two base models; each choice is the best measured one:
 | --- | --- | --- | --- | --- |
 | Plan (`local`) | Qwen2.5-7B-Instruct | `planner_r4` from `pdsf/plan_r4.zip` | 331 complete plans | complete plans for 75 of 86 held-out prompts (round 3: 20; 91-row: 2) - `training/eval/planner` |
 | Code (`local-code`) | Qwen2.5-Coder-7B-Instruct | `code_modal_20260927_212455` from `pdsf/code_adapter.zip` | 403 | best first attempt and whole-project rate of rounds 1-5 |
-| Repair (`local-fix`) | Qwen2.5-Coder-7B-Instruct (same files) | `code_rich_r4` from `pdsf/code_adapter_r4.zip` | 2,221 | round 1 writing + round 4 repairing: 95.7% after repair against 87.0% |
+| Repair (`local-fix`) | Qwen2.5-Coder-7B-Instruct (same files) | `code_rich_r7` from `pdsf/code_adapter_r7.zip` | 2,494 | form-check problems on 27 new apps 29 -> 12 (round 4: 29 -> 16) |
 
 The planner also answers **Suggest more features** with its own instruction (no
 separate model). Changing any entry in `desktop/prepare-local-ai.py` means its

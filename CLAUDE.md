@@ -36,8 +36,8 @@ a supported language after both reference corpora were collected.
 
 **Generation and local models (to 2026-10-23): development complete.** Plan -> closed-world
 rules -> code -> build and repair -> Blueprint check -> form check, from the browser, the
-desktop app (`desktop/`, installer 0.2.3) or hosted mode. Shipped local models: planner
-round 4 (331 complete plans), coder round 1, repair coder round 4 (`local-fix`), all on
+desktop app (`desktop/`, installer 0.2.4) or hosted mode. Shipped local models: planner
+round 4 (331 complete plans), coder round 1, repair coder round 7 (`local-fix`), all on
 4-bit Qwen bases via llama.cpp. Feature suggestions at the plan stage; the form check sends
 each page's real calls to the running API (`docs/GENERATION.md`). Every number behind these
 choices is in `training/eval/` and the paper (`presentations/paper/`, not in git). From
