@@ -152,6 +152,17 @@ describe('saved application runs', () => {
       expect(response.status).toBe(409);
     });
 
+    it('accepts a run whose form check found no calls at all - a placeholder app scored clean before empty pages were flagged', async () => {
+      const job = await finishedRun(jobs, runs, join(root, 'generated'), { installOk: true, buildOk: true }, { calls: 0, passed: 0, problems: [] });
+      const response = await app.request(`/application-jobs/${job.id}/repair`, { method: 'POST', body: '{}' });
+      expect(response.status).toBe(202);
+      const { id } = (await response.json()) as { id: string };
+      const deadline = Date.now() + 60_000;
+      while (!['succeeded', 'failed'].includes(jobs.get(id)?.status ?? 'failed') && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+    }, 70_000);
+
     it('accepts a run that builds but whose forms were never checked (made before the form check)', async () => {
       const job = await finishedRun(jobs, runs, join(root, 'generated'), { installOk: true, buildOk: true });
       const response = await app.request(`/application-jobs/${job.id}/repair`, { method: 'POST', body: '{}' });
