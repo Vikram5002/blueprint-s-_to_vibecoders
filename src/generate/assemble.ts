@@ -193,6 +193,19 @@ export function backendEntryPointFile(
     lines.push(`app.use('/api/${slug}', ${importIdentifier(slug)});`);
   }
 
+  // A database refusal is the request's fault, not a crash. Found live (2026-10-28, hotel app):
+  // a booking for a customer that did not exist answered HTTP 500 with an HTML stack trace.
+  lines.push(
+    '',
+    'app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {',
+    "  const message = err instanceof Error ? err.message : String(err);",
+    "  if (message.includes('FOREIGN KEY constraint failed')) return res.status(400).json({ error: 'a linked record does not exist' });",
+    "  if (message.includes('UNIQUE constraint failed')) return res.status(409).json({ error: 'that record already exists' });",
+    "  if (message.includes('NOT NULL constraint failed') || message.includes('CHECK constraint failed')) return res.status(400).json({ error: 'a required field is missing or invalid' });",
+    '  return next(err);',
+    '});',
+  );
+
   lines.push(
     '',
     // `npm run serve` builds the site into dist/web; this file runs from dist/backend/src.

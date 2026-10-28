@@ -133,6 +133,12 @@ describe('frontendEntryPointFile', () => {
 });
 
 describe('backendEntryPointFile', () => {
+  it('answers a database refusal (missing linked record) with 400, after every router - the hotel app crash of 2026-10-28', () => {
+    const file = backendEntryPointFile([USER_ROUTER], [AUTH_MIDDLEWARE]);
+    expect(file.contents).toContain("if (message.includes('FOREIGN KEY constraint failed')) return res.status(400)");
+    expect(file.contents.indexOf('FOREIGN KEY')).toBeGreaterThan(file.contents.indexOf("app.use('/api/user-router'"));
+  });
+
   it('mounts security middleware globally before backend routers, each at /api/<slug>', () => {
     const file = backendEntryPointFile([USER_ROUTER], [AUTH_MIDDLEWARE]);
 
