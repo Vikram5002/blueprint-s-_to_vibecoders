@@ -488,11 +488,13 @@ function ApplicationJobReport({
           okLabel="No suspected auth-bypass patterns"
           failLabel={`${result.unresolvedServiceLocatorFindings.length} suspected auth-bypass finding(s)`}
         />
-        {result.forms !== undefined && result.forms.calls > 0 && (
+        {result.forms !== undefined && (result.forms.calls > 0 || result.forms.problems.length > 0) && (
           <Badge
             ok={result.forms.problems.length === 0}
             okLabel={`Forms: all ${result.forms.calls} work against the API`}
-            failLabel={`Forms: ${result.forms.problems.length} of ${result.forms.calls} do not work`}
+            // Problems and calls are different counts (a page with no call is a problem with no call) -
+            // "5 of 3 do not work" was shown live on 2026-10-28.
+            failLabel={`Forms: ${result.forms.problems.length} problem(s) in ${new Set(result.forms.problems.map((p) => p.page)).size} file(s)`}
           />
         )}
         <a
