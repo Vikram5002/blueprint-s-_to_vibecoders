@@ -18,6 +18,7 @@
  */
 import {
   backendEntryPointFile,
+  sqliteBooleansFile,
   frontendEntryPointFile,
   packageJsonFile,
   tsconfigFile,
@@ -143,7 +144,9 @@ export async function generatePageSyncFiles(
   const hasFrontend = schema.domains.frontend.components.length > 0;
   current = replace(current, packageJsonFile({ database: schemaImpliesDatabase(schema), frontend: hasFrontend }));
   current = replace(current, tsconfigFile({ frontend: hasFrontend }));
-  current = replace(current, backendEntryPointFile([...schema.domains.backend.components], [...schema.domains.security.components], publicRoutesFor(schema)));
+  const sqlite = schemaImpliesDatabase(schema);
+  if (sqlite) current = replace(current, sqliteBooleansFile());
+  current = replace(current, backendEntryPointFile([...schema.domains.backend.components], [...schema.domains.security.components], publicRoutesFor(schema), { sqlite }));
   if (hasFrontend) current = replace(current, frontendEntryPointFile([...schema.domains.frontend.components], schema.title));
   return { ok: true, value: current };
 }

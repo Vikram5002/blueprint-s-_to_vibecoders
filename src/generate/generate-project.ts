@@ -35,6 +35,7 @@ import {
 } from './component-codegen.js';
 import {
   backendEntryPointFile,
+  sqliteBooleansFile,
   componentSlug,
   componentTargetPath,
   frontendEntryPointFile,
@@ -592,7 +593,8 @@ export async function generateProject(
     }
   }
 
-  files.push(backendEntryPointFile([...schema.domains.backend.components], [...schema.domains.security.components], publicRoutesFor(schema)));
+  if (includeDatabase) files.push(sqliteBooleansFile());
+  files.push(backendEntryPointFile([...schema.domains.backend.components], [...schema.domains.security.components], publicRoutesFor(schema), { sqlite: includeDatabase }));
   if (hasFrontend) {
     files.push(frontendEntryPointFile([...schema.domains.frontend.components], schema.title));
   }

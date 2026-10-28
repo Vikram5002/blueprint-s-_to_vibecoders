@@ -1,6 +1,9 @@
+import { createRequire } from 'node:module';
+import type * as NodeSqlite from 'node:sqlite';
 import { describe, expect, it } from 'vitest';
 import {
   backendEntryPointFile,
+  sqliteBooleansFile,
   componentSlug,
   componentTargetPath,
   frontendEntryPointFile,
@@ -129,6 +132,34 @@ describe('frontendEntryPointFile', () => {
     expect(file.contents).not.toContain('import { Recipe Dashboard');
     // The display title keeps the planned name; only the identifier is sanitized.
     expect(file.contents).toContain('title: "Recipe Dashboard", purpose: "v", Page: RecipeDashboard }');
+  });
+});
+
+describe('sqliteBooleansFile - the hotel app build failure of 2026-10-28', () => {
+  it('is imported first by the server only when the project has a database', () => {
+    expect(backendEntryPointFile([USER_ROUTER], [], [], { sqlite: true }).contents.startsWith("import './sqlite-booleans';")).toBe(true);
+    expect(backendEntryPointFile([USER_ROUTER], []).contents).not.toContain('sqlite-booleans');
+  });
+
+  it('widens every statement to take a boolean and stores it as 1/0 at run time', async () => {
+    const file = sqliteBooleansFile();
+    expect(file.path).toBe('backend/src/sqlite-booleans.ts');
+    expect(file.contents).toContain('run(...anonymousParameters: Value[]): StatementResultingChanges;');
+    // The runtime half, exactly as written, against Node's own SQLite.
+    const { StatementSync, DatabaseSync } = createRequire(import.meta.url)('node:sqlite') as typeof NodeSqlite;
+    const { transpileModule, ModuleKind } = await import('typescript');
+    const js = transpileModule(file.contents, { compilerOptions: { module: ModuleKind.CommonJS } }).outputText;
+    const originals = Object.fromEntries((['run', 'get', 'all', 'iterate'] as const).map((m) => [m, StatementSync.prototype[m]]));
+    try {
+      new Function('require', 'exports', js)(() => ({ StatementSync }), {});
+      const db = new DatabaseSync(':memory:');
+      db.exec('CREATE TABLE rooms (id INTEGER PRIMARY KEY, free INTEGER)');
+      (db.prepare('INSERT INTO rooms (free) VALUES (?)').run as (...a: unknown[]) => unknown)(true);
+      (db.prepare('INSERT INTO rooms (free) VALUES (:free)').run as (...a: unknown[]) => unknown)({ free: false });
+      expect(db.prepare('SELECT free FROM rooms ORDER BY id').all()).toEqual([{ free: 1 }, { free: 0 }]);
+    } finally {
+      for (const [m, f] of Object.entries(originals)) Object.defineProperty(StatementSync.prototype, m, { value: f, configurable: true, writable: true });
+    }
   });
 });
 

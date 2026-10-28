@@ -146,12 +146,67 @@ export function isAuthenticationComponent(component: Component): boolean {
   return /\b(auth\w*|jwt|tokens?|login|session|guard)\b/i.test(`${component.name} ${component.purpose}`);
 }
 
+/**
+ * A fixed file, never model-written: SQLite has no boolean type and node:sqlite refuses
+ * `true`/`false` both at compile time and at run time. Found live (2026-10-28, hotel app):
+ * `insertRoom(..., isAvailable: boolean)` failed the build three repair rounds in a row.
+ * Imported first by the server, it lets every statement take a boolean and stores it as 1/0 -
+ * for any table a model writes, not only the ones it was trained on.
+ */
+export function sqliteBooleansFile(): GeneratedFile {
+  const lines = [
+    '// Written by VibeCoder, not by a model. SQLite stores no booleans: true/false are sent as 1/0.',
+    "import { StatementSync, type SQLInputValue, type SQLOutputValue, type StatementResultingChanges } from 'node:sqlite';",
+    '',
+    'type Value = SQLInputValue | boolean;',
+    '',
+    "declare module 'node:sqlite' {",
+    '  interface StatementSync {',
+    '    run(...anonymousParameters: Value[]): StatementResultingChanges;',
+    '    run(namedParameters: Record<string, Value>, ...anonymousParameters: Value[]): StatementResultingChanges;',
+    '    get(...anonymousParameters: Value[]): Record<string, SQLOutputValue> | undefined;',
+    '    get(namedParameters: Record<string, Value>, ...anonymousParameters: Value[]): Record<string, SQLOutputValue> | undefined;',
+    '    all(...anonymousParameters: Value[]): Record<string, SQLOutputValue>[];',
+    '    all(namedParameters: Record<string, Value>, ...anonymousParameters: Value[]): Record<string, SQLOutputValue>[];',
+    '  }',
+    '}',
+    '',
+    'const plain = (value: unknown): unknown => {',
+    "  if (typeof value === 'boolean') return value ? 1 : 0;",
+    "  if (value !== null && typeof value === 'object' && !ArrayBuffer.isView(value)) {",
+    '    return Object.fromEntries(Object.entries(value).map(([key, v]) => [key, plain(v)]));',
+    '  }',
+    '  return value;',
+    '};',
+    '',
+    "for (const method of ['run', 'get', 'all', 'iterate'] as const) {",
+    '  const original = StatementSync.prototype[method] as (...args: unknown[]) => unknown;',
+    '  Object.defineProperty(StatementSync.prototype, method, {',
+    '    configurable: true,',
+    '    writable: true,',
+    '    value(this: StatementSync, ...args: unknown[]): unknown {',
+    '      return original.apply(this, args.map(plain));',
+    '    },',
+    '  });',
+    '}',
+    '',
+  ];
+  return { path: 'backend/src/sqlite-booleans.ts', contents: lines.join('\n') };
+}
+
+export interface BackendEntryOptions {
+  /** The project has a database: import sqlite-booleans before any table file runs. */
+  readonly sqlite?: boolean;
+}
+
 export function backendEntryPointFile(
   backendComponents: readonly Component[],
   securityComponents: readonly Component[],
   publicRoutes: readonly PublicRoute[] = [],
+  options: BackendEntryOptions = {},
 ): GeneratedFile {
   const lines: string[] = [
+    ...(options.sqlite === true ? ["import './sqlite-booleans';"] : []),
     "import express from 'express';",
     "import { existsSync } from 'fs';",
     "import { join } from 'path';",
