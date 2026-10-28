@@ -151,6 +151,24 @@ and for any app, not only planned ones:
 The generated server also answers SQLite constraint refusals with 400/409 instead of a
 500 crash (`backendEntryPointFile`), and the Forms badge counts problems and files.
 
+Three more from rerunning the same prompt here with the shipped models:
+
+- **Booleans in tables.** A model-written table passed `isAvailable: boolean` to node:sqlite
+  and the build failed through every repair round. A fixed `backend/src/sqlite-booleans.ts`,
+  imported first by the server when there is a database, widens the statement types and
+  stores true/false as 1/0 - for any table, whatever model wrote it.
+- **Code only, and no guessing the service.** The repair coder commented out
+  `fetch('/api/rooms')` and showed hardcoded rooms; the check now ignores comments, so such a
+  page counts as calling nothing. An address missing only its service name
+  (`/api/rooms` for `/api/api-server/rooms`) is corrected without a model (`fixMissingMounts`).
+- **A standard page when the model gives up.** A frontend page still failing after the rounds
+  is replaced by a fixed page (`fallback-page.ts`) that lists the records of the route named
+  for it and has a labelled input per field its POST reads, kept only if the build passes.
+
+Hotel prompt, round-4 planner and round-7 repair coder, same laptop: run 1 did not build
+(the boolean); run 2 built with 2 problems; run 3 left 1 (the faked Rooms page); with the
+standard page, 3 of 3 calls worked and 0 problems remained.
+
 **What it does not check:** how a page looks or behaves in a browser (no
 clicking, by design - option (a) of the 2026-10-22 plan), GET-only pages, and
 bodies it cannot read statically (a body built by a helper function is skipped,
