@@ -11,7 +11,7 @@ import type { LabelCache } from '../llm/cache.js';
 import type { GeneratedFile } from './assemble.js';
 import { runCommand } from './build-and-repair.js';
 import { createComponentCodeGenerator, type PriorViolationContext } from './component-codegen.js';
-import { runFormCheck, type FormCheckOptions, type FormCheckResult, type FormProblem } from './form-check.js';
+import { fixMissingMounts, readContracts, runFormCheck, type FormCheckOptions, type FormCheckResult, type FormProblem } from './form-check.js';
 import { findComponentByTargetPath, generateComponentFile, type GenerateProjectFailure } from './generate-project.js';
 import { filesFailingBuild, writeProjectFiles, type RegenerationAttempt } from './verify-and-regenerate.js';
 
@@ -61,7 +61,8 @@ export function formContext(page: string, problems: readonly FormProblem[]): Pri
     explanation: `The built app was started and this page's calls were tried against the real API - ${problems.length} did not work.`,
     fixInstruction:
       'Write the complete corrected page: change each failing call to use a route the API offers, with exactly the field ' +
-      'names that route reads, and keep a labelled input for every field a person must type. Keep the page’s purpose and exports.',
+      'names that route reads, and keep a labelled input for every field a person must type. Keep the page’s purpose and exports. ' +
+      'Never comment out a call or show hardcoded sample data in place of the API.',
     evidence: problems.map((p) => ({ file: page, line: 1, snippet: p.message })),
   };
 }
@@ -74,6 +75,17 @@ export async function checkFormsAndRepair(options: FormRepairOptions): Promise<
   const generator = createComponentCodeGenerator({ provider: options.llm.repairProvider ?? options.llm.provider, cache: options.llm.cache, skipCache: true });
   let files = options.files;
   const log: RegenerationAttempt[] = [];
+
+  // Addresses missing only their service name are fixed without a model, before anything is checked.
+  const mounts = fixMissingMounts(files, readContracts(schema, files).routes);
+  if (mounts.fixed.length > 0) {
+    await writeProjectFiles(root, mounts.files, false);
+    if ((await runCommand('npm', ['run', 'build'], root)).ok) files = mounts.files;
+    else {
+      await writeProjectFiles(root, files, false);
+      await runCommand('npm', ['run', 'build'], root);
+    }
+  }
 
   onPhase('form-checking');
   let result = await runFormCheck(root, schema, files, options.check);
@@ -91,6 +103,7 @@ export async function checkFormsAndRepair(options: FormRepairOptions): Promise<
       attempted.push({ page, context, owner });
     }
     if (attempted.length === 0) break;
+    files = fixMissingMounts(files, readContracts(schema, files).routes).files;
     await writeProjectFiles(root, files, false);
     let build = await runCommand('npm', ['run', 'build'], root);
     const reverted = new Set<string>();

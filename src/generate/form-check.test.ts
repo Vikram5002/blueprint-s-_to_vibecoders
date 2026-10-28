@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { apiRoutes, closestRoute, isInformationPage, linkedRecord, matchRoute, pageCalls, runFormCheck, sampleValue, shownItemFields, staticProblems, unusedPages } from './form-check.js';
+import { apiRoutes, closestRoute, fixMissingMounts, isInformationPage, linkedRecord, matchRoute, pageCalls, runFormCheck, sampleValue, shownItemFields, staticProblems, unusedPages } from './form-check.js';
 import { componentId, type ValidatedProjectSchema } from '../types/project-schema.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 
@@ -408,5 +408,26 @@ http.createServer((req, res) => {
     const result = await runFormCheck(root, v.value, files, { timeoutMs: 10_000 });
     expect(result.problems).toEqual([]);
     expect(result.passed).toBe(1);
+  });
+});
+
+describe('a repair that fakes data, and an address missing its service (hotel app rerun, 2026-10-28)', () => {
+  const routes = apiRoutes('backend/src/routes/api-server.ts', 'api-server', "router.get('/rooms', h);\nrouter.get('/rooms/:id', h);\nrouter.post('/bookings', (req, res) => { const { roomId } = req.body; });");
+
+  it('does not read a commented-out call', () => {
+    const faked = "useEffect(() => {\n  // const response = await fetch('/api/rooms');\n  /* fetch('/api/api-server/rooms') */\n  setRooms(mockData);\n}, []);";
+    expect(pageCalls('p.tsx', faked)).toEqual([]);
+  });
+
+  it('puts back the one service an address can mean, for literal and template addresses', () => {
+    const page = { path: 'frontend/src/pages/rooms-page.tsx', contents: "fetch('/api/rooms');\nfetch(`/api/rooms/${id}`);\nfetch('/api/api-server/rooms');" };
+    const { files, fixed } = fixMissingMounts([page], routes);
+    expect(files[0]?.contents).toBe("fetch('/api/api-server/rooms');\nfetch(`/api/api-server/rooms/${id}`);\nfetch('/api/api-server/rooms');");
+    expect(fixed).toHaveLength(1);
+  });
+
+  it('leaves an address alone when no single service fits', () => {
+    const page = { path: 'frontend/src/pages/p.tsx', contents: "fetch('/api/contact', { method: 'POST', body: JSON.stringify({ message }) });" };
+    expect(fixMissingMounts([page], routes).fixed).toEqual([]);
   });
 });

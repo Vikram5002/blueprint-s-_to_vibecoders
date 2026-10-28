@@ -162,8 +162,18 @@ function bodyFields(options: string, source: string): string[] | null {
 }
 
 /** Every `fetch` of the app's own API in a page: data-sending calls with their fields, and reads (GET, no fields). */
-export function pageCalls(page: string, source: string): PageCall[] {
+/**
+ * The code a page runs: block comments and whole-line comments removed. Found live (2026-10-28,
+ * hotel app): a repair commented out `fetch('/api/rooms')` and showed hardcoded rooms, and the
+ * check still read the commented call - so a page faking its data was never caught.
+ */
+export function withoutComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+}
+
+export function pageCalls(page: string, code: string): PageCall[] {
   const calls: PageCall[] = [];
+  const source = withoutComments(code);
   for (const match of source.matchAll(/\bfetch\s*\(/g)) {
     const args = balanced(source, (match.index ?? 0) + match[0].length - 1);
     if (args === null) continue;
@@ -246,7 +256,7 @@ export function unusedPages(schema: ValidatedProjectSchema, files: readonly Gene
     if (isInformationPage(component.name) || !apiHasDataFor(component.name, routes)) return [];
     const page = componentTargetPath('frontend', component);
     const source = files.find((f) => f.path === page)?.contents;
-    if (source === undefined || /\bfetch\s*\(/.test(source)) return [];
+    if (source === undefined || /\bfetch\s*\(/.test(withoutComments(source))) return [];
     return [{
       page,
       call: 'none',
@@ -559,4 +569,33 @@ async function tryCall(
   } catch (cause) {
     return { page: call.page, call: label, message: `${label} got no answer: ${String(cause)}` };
   }
+}
+
+/**
+ * Puts back a missing service name in a page's API address, with no model: `/api/rooms` when the
+ * only route it can mean is `/api/api-server/rooms`. Found live (2026-10-28, hotel app): the repair
+ * coder was told the exact route three rounds in a row and never wrote it. Only rewrites a call that
+ * matches no route and becomes a route of the same method under exactly one service.
+ */
+export function fixMissingMounts(files: readonly GeneratedFile[], routes: readonly ApiRoute[]): { files: GeneratedFile[]; fixed: string[] } {
+  const slugs = [...new Set(routes.map((r) => r.path.split('/')[2] ?? ''))].filter((s) => s !== '');
+  const fixed: string[] = [];
+  const out = files.map((file) => {
+    if (!file.path.startsWith('frontend/')) return file;
+    let contents = file.contents;
+    for (const call of pageCalls(file.path, file.contents)) {
+      const segment = call.path.split('/')[2] ?? '';
+      if (segment === '' || slugs.includes(segment) || matchRoute(call, routes) !== undefined) continue;
+      const owners = slugs.filter((slug) => matchRoute({ ...call, path: `/api/${slug}${call.path.slice(4)}` }, routes) !== undefined);
+      if (owners.length !== 1) continue;
+      const escaped = segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const next = contents.replace(new RegExp(`(["'\`])/api/${escaped}(?=[/"'\`?])`, 'g'), `$1/api/${owners[0]}/${segment}`);
+      if (next !== contents) {
+        contents = next;
+        fixed.push(`${file.path}: /api/${segment} -> /api/${owners[0]}/${segment}`);
+      }
+    }
+    return contents === file.contents ? file : { ...file, contents };
+  });
+  return { files: out, fixed };
 }
