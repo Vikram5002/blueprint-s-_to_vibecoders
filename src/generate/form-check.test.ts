@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { apiRoutes, matchRoute, pageCalls, runFormCheck, sampleValue, shownItemFields, staticProblems, unusedPages } from './form-check.js';
+import { apiRoutes, closestRoute, isInformationPage, linkedRecord, matchRoute, pageCalls, runFormCheck, sampleValue, shownItemFields, staticProblems, unusedPages } from './form-check.js';
 import { componentId, type ValidatedProjectSchema } from '../types/project-schema.js';
 import { validateProjectSchema } from '../workflow/validate-project-schema.js';
 
@@ -312,4 +312,101 @@ describe('runFormCheck - a login refusing test credentials is not a broken form'
     expect(result.problems).toEqual([]);
     expect(result.passed).toBe(1);
   }, 30_000);
+});
+
+describe('pages with nothing to call - the live hotel app (2026-10-28)', () => {
+  const plan = (pages: string[]): ValidatedProjectSchema => {
+    const v = validateProjectSchema({
+      sessionId: 'info-pages-test',
+      title: 'Hotel',
+      originalPrompt: 'x',
+      domains: {
+        frontend: { components: pages.map((name) => ({ id: componentId('frontend', name, name.toLowerCase().replace(/ /g, '-')), name, purpose: 'x' })), dependsOn: ['backend'] },
+        backend: { components: [{ id: componentId('backend', 'Api Server', 'api-server'), name: 'Api Server', purpose: 'x' }], dependsOn: [] },
+        database: { components: [], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [],
+      provenance: 'STATED',
+    });
+    if (!v.ok) throw new Error(JSON.stringify(v.error));
+    return v.value;
+  };
+  const routes = apiRoutes('backend/src/routes/api-server.ts', 'api-server', "router.get('/room-details', h);\nrouter.post('/booking-records', (req, res) => { const { customerId, roomId } = req.body; });");
+  const staticFile = (slug: string) => ({ path: `frontend/src/pages/${slug}.tsx`, contents: '<h1>Text only</h1>' });
+
+  it('names information pages by their words, for any app', () => {
+    for (const name of ['About Us Page', 'Homepage', 'FAQ', 'Privacy Policy', 'OurStory']) expect(isInformationPage(name)).toBe(true);
+    for (const name of ['Rooms Page', 'Booking Form', 'Reporting Dashboard']) expect(isInformationPage(name)).toBe(false);
+  });
+
+  it('does not flag information pages, or a page the API has no data for, but still flags a data page', () => {
+    const files = ['about-us-page', 'homepage', 'contact-page', 'rooms-page', 'booking-form'].map(staticFile);
+    const flagged = unusedPages(plan(['About Us Page', 'Homepage', 'Contact Page', 'Rooms Page', 'Booking Form']), files, routes).map((p) => p.page);
+    expect(flagged).toEqual(['frontend/src/pages/rooms-page.tsx', 'frontend/src/pages/booking-form.tsx']);
+  });
+
+  it('points a call to a missing route at the closest route, or says to drop it', () => {
+    expect(closestRoute('GET', '/api/room-types', routes)?.path).toBe('/api/api-server/room-details');
+    const [near] = staticProblems([{ page: 'p.tsx', method: 'GET', path: '/api/room-types', fields: null }], routes);
+    expect(near?.message).toContain('The closest is GET /api/api-server/room-details');
+    const [none] = staticProblems([{ page: 'p.tsx', method: 'POST', path: '/api/contact', fields: ['message'] }], routes);
+    expect(none?.message).toContain('No route fits, so remove this call');
+  });
+
+  it('reads which record a field links to', () => {
+    expect(linkedRecord('customerId')).toBe('customer');
+    expect(linkedRecord('room_id')).toBe('room');
+    expect(linkedRecord('guestAccountId')).toBe('account');
+    expect(linkedRecord('id')).toBeNull();
+    expect(linkedRecord('paid')).toBeNull();
+  });
+});
+
+describe('runFormCheck - linked records are created first (hotel app foreign key, 2026-10-28)', () => {
+  let root: string;
+  beforeEach(async () => { root = await mkdtemp(join(tmpdir(), 'vibe-form-fk-')); });
+  afterEach(async () => { await rm(root, { recursive: true, force: true }); });
+
+  // Refuses a booking whose customer does not exist, as a foreign key does.
+  const server = `
+const http = require('node:http');
+const customers = []; const bookings = [];
+http.createServer((req, res) => {
+  let body = ''; req.on('data', (c) => (body += c));
+  req.on('end', () => {
+    res.setHeader('content-type', 'application/json');
+    const b = JSON.parse(body || '{}');
+    if (req.url === '/api/hotel-api/customers' && req.method === 'POST') { const c = { id: customers.length + 7, name: b.name }; customers.push(c); res.statusCode = 201; return res.end(JSON.stringify(c)); }
+    if (req.url === '/api/hotel-api/bookings' && req.method === 'GET') return res.end(JSON.stringify(bookings));
+    if (req.url === '/api/hotel-api/bookings' && req.method === 'POST') {
+      if (!customers.some((c) => c.id === b.customerId)) { res.statusCode = 500; return res.end('FOREIGN KEY constraint failed'); }
+      bookings.push(b); res.statusCode = 201; return res.end('{}');
+    }
+    res.statusCode = 404; res.end('{}');
+  });
+}).listen(Number(process.env.PORT), '127.0.0.1');`;
+
+  it('posts a customer, then sends the booking with that customer\'s real id', async () => {
+    await mkdir(join(root, 'dist', 'backend', 'src'), { recursive: true });
+    await writeFile(join(root, 'dist', 'backend', 'src', 'index.js'), server);
+    const v = validateProjectSchema({
+      sessionId: 'fk-test', title: 'Hotel', originalPrompt: 'x',
+      domains: {
+        frontend: { components: [{ id: componentId('frontend', 'Booking Form', 'booking-form'), name: 'Booking Form', purpose: 'x' }], dependsOn: ['backend'] },
+        backend: { components: [{ id: componentId('backend', 'Hotel API', 'hotel-api'), name: 'Hotel API', purpose: 'x' }], dependsOn: [] },
+        database: { components: [], dependsOn: [] },
+        security: { components: [], dependsOn: [] },
+      },
+      constraints: [], provenance: 'STATED',
+    });
+    if (!v.ok) throw new Error(JSON.stringify(v.error));
+    const files = [
+      { path: 'frontend/src/pages/booking-form.tsx', contents: "fetch('/api/hotel-api/bookings', { method: 'POST', body: JSON.stringify({ customerId, note }) });" },
+      { path: 'backend/src/routes/hotel-api.ts', contents: "router.get('/bookings', h);\nrouter.post('/bookings', (req, res) => { const { customerId, note } = req.body; });\nrouter.post('/customers', (req, res) => { const { name } = req.body; });" },
+    ];
+    const result = await runFormCheck(root, v.value, files, { timeoutMs: 10_000 });
+    expect(result.problems).toEqual([]);
+    expect(result.passed).toBe(1);
+  });
 });

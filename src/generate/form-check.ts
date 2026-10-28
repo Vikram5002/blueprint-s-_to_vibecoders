@@ -243,6 +243,7 @@ export function unusedPages(schema: ValidatedProjectSchema, files: readonly Gene
   if (routes.length === 0) return [];
   const message = unusedPageMessage(routes);
   return schema.domains.frontend.components.flatMap((component) => {
+    if (isInformationPage(component.name) || !apiHasDataFor(component.name, routes)) return [];
     const page = componentTargetPath('frontend', component);
     const source = files.find((f) => f.path === page)?.contents;
     if (source === undefined || /\bfetch\s*\(/.test(source)) return [];
@@ -252,6 +253,44 @@ export function unusedPages(schema: ValidatedProjectSchema, files: readonly Gene
       message,
     }];
   });
+}
+
+// Pages whose name says they only inform. Found live (2026-10-28, hotel app): "About Us"
+// and "Homepage" showed text, which is all they are for, and were reported as broken forms.
+const INFORMATION_WORDS = new Set(['about', 'home', 'homepage', 'landing', 'welcome', 'faq', 'faqs', 'terms', 'privacy', 'policy', 'help', 'story', 'mission', 'team', 'info', 'information', 'gallery']);
+
+/** A page named only to inform (About Us, Homepage, FAQ) - it need not call the API. */
+export function isInformationPage(name: string): boolean {
+  return name.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z]+/).some((w) => INFORMATION_WORDS.has(w));
+}
+
+const pathWords = (path: string): Set<string> =>
+  new Set(path.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z]+/).filter((w) => w !== '' && w !== 'api').map((w) => w.replace(/s$/, '')));
+
+const GENERIC_PAGE_WORDS = new Set(['page', 'form', 'list', 'view', 'screen', 'panel', 'dashboard', 'manager', 'management']);
+
+/**
+ * Whether any route's path names what the page is about, or the page's name is all generic words.
+ * A Contact page in an app with no contact route has nothing to call (hotel app, 2026-10-28);
+ * a "Reporting Dashboard" beside /reporting-service/reports does (finance app, 2026-10-23).
+ */
+function apiHasDataFor(name: string, routes: readonly ApiRoute[]): boolean {
+  const words = [...pathWords(name)].filter((w) => !GENERIC_PAGE_WORDS.has(w));
+  if (words.length === 0) return true;
+  const offered = new Set(routes.flatMap((r) => [...pathWords(r.path)]));
+  return words.some((w) => offered.has(w));
+}
+
+/** The offered route with the same method sharing the most words with `path` - a hint, never a match. */
+export function closestRoute(method: string, path: string, routes: readonly ApiRoute[]): ApiRoute | undefined {
+  const wanted = pathWords(path);
+  let best: { route: ApiRoute; score: number } | undefined;
+  for (const route of routes) {
+    if (route.method !== method) continue;
+    const score = [...pathWords(route.path.split('/').slice(3).join('/'))].filter((w) => wanted.has(w)).length;
+    if (score > 0 && (best === undefined || score > best.score)) best = { route, score };
+  }
+  return best?.route;
 }
 
 /** The unused-page problem in words; exported so training data uses exactly the checker's text. */
@@ -271,7 +310,13 @@ export function staticProblems(calls: readonly PageCall[], routes: readonly ApiR
     const label = `${call.method} ${call.path}`;
     const route = matchRoute(call, routes);
     if (route === undefined) {
-      problems.push({ page: call.page, call: label, message: `the page sends ${label}, but the API has no such route. The API offers: ${describeRoutes(routes)}.` });
+      // Found live (2026-10-28, hotel app): GET /api/room-types where /room-details existed, and
+      // POST /api/contact with no contact route at all - the fix needs a nearest route or permission to drop the call.
+      const near = closestRoute(call.method, call.path, routes);
+      const hint = near === undefined
+        ? ` No route fits, so remove this call and keep what the page shows as plain content.`
+        : ` The closest is ${near.method} ${near.path}${near.fields.length > 0 ? ` (reads ${near.fields.join(', ')})` : ''}; use it if it is for this page's data, otherwise remove the call.`;
+      problems.push({ page: call.page, call: label, message: `the page sends ${label}, but the API has no such route.${hint} The API offers: ${describeRoutes(routes)}.` });
       continue;
     }
     if (call.fields === null) continue;
@@ -361,13 +406,14 @@ export async function runFormCheck(
     if (!server.started) {
       return { calls, routes, problems: [...problems, ...live.map((c) => ({ page: c.page, call: `${c.method} ${c.path}`, message: 'the server did not start, so the call could not be tried' }))], passed };
     }
+    const ids = await createLinkedRecords(doFetch, `http://127.0.0.1:${server.port}`, live, routes, timeoutMs);
     // Writes first, so a list read afterwards has a record to compare.
     live.sort((a, b) => Number(a.method === 'GET') - Number(b.method === 'GET'));
     for (const call of live) {
       // Shown fields are compared only for a page that loads one list - with two, which record a field belongs to is unknown.
       const reads = new Set(calls.filter((c) => c.page === call.page && c.method === 'GET').map((c) => c.path.replace(/\/1(?=\/|$)/g, '')));
       const source = reads.size === 1 ? files.find((f) => f.path === call.page)?.contents : undefined;
-      const problem = await tryCall(doFetch, `http://127.0.0.1:${server.port}`, call, routes, timeoutMs, server.output, source);
+      const problem = await tryCall(doFetch, `http://127.0.0.1:${server.port}`, call, routes, timeoutMs, server.output, source, ids);
       if (problem === null) passed += 1;
       else problems.push(problem);
     }
@@ -375,6 +421,78 @@ export async function runFormCheck(
     await server.stop();
   }
   return { calls, routes, problems, passed };
+}
+
+/** `customerId` / `room_id` -> `customer` / `room`; null for anything else. */
+export function linkedRecord(field: string): string | null {
+  const m = /^([A-Za-z][A-Za-z0-9]*?)(?:Id|ID|_id|_ID)$/.exec(field);
+  return m?.[1] !== undefined && m[1] !== '' ? m[1].replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(' ').pop() ?? null : null;
+}
+
+function idFrom(record: unknown, name: string): string | number | undefined {
+  if (typeof record !== 'object' || record === null) return undefined;
+  const r = record as Record<string, unknown>;
+  for (const key of ['id', `${name}Id`, `${name}_id`]) {
+    const v = r[key];
+    if (typeof v === 'number' || typeof v === 'string') return v;
+  }
+  for (const v of Object.values(r)) {
+    const nested = typeof v === 'object' && v !== null && !Array.isArray(v) ? idFrom(v, name) : undefined;
+    if (nested !== undefined) return nested;
+  }
+  return undefined;
+}
+
+const bodyFor = (fields: readonly string[], ids: ReadonlyMap<string, string | number>, arrays?: readonly string[]): Record<string, unknown> =>
+  Object.fromEntries(fields.map((field) => {
+    if (arrays?.includes(field) === true) return [field, [`Check ${field}`]];
+    const linked = linkedRecord(field);
+    return [field, (linked !== null ? ids.get(linked) : undefined) ?? sampleValue(field)];
+  }));
+
+/**
+ * Creates one record for every record a call links to (`customerId` -> a POST to a customer route) and
+ * returns their real ids. Found live (2026-10-28, hotel app): a booking was sent `customerId: 1` into an
+ * empty database, the foreign key refused it, and the generated route was blamed for the check's test data.
+ */
+async function createLinkedRecords(
+  doFetch: typeof fetch,
+  origin: string,
+  calls: readonly PageCall[],
+  routes: readonly ApiRoute[],
+  timeoutMs: number,
+): Promise<Map<string, string | number>> {
+  const ids = new Map<string, string | number>();
+  const tried = new Set<string>();
+  const create = async (name: string, depth: number): Promise<void> => {
+    if (tried.has(name) || depth > 3) return;
+    tried.add(name);
+    const route = routes.find((r) => r.method === 'POST' && !r.path.includes(':') && pathWords(r.path.split('/').pop() ?? '').has(name));
+    if (route === undefined) return;
+    for (const field of route.fields) {
+      const linked = linkedRecord(field);
+      if (linked !== null && linked !== name) await create(linked, depth + 1);
+    }
+    try {
+      const response = await doFetch(`${origin}${route.path}`, {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(bodyFor(route.fields, ids)), signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (!response.ok) return;
+      let id = idFrom(JSON.parse(await response.text()) as unknown, name);
+      if (id === undefined && routes.some((r) => r.method === 'GET' && r.path === route.path)) {
+        const list = JSON.parse(await (await doFetch(`${origin}${route.path}`, { signal: AbortSignal.timeout(timeoutMs) })).text()) as unknown;
+        id = Array.isArray(list) ? idFrom(list[list.length - 1], name) : undefined;
+      }
+      if (id !== undefined) ids.set(name, id);
+    } catch {
+      // No id to offer: the call is tried with the plain value, as before.
+    }
+  };
+  for (const call of calls) for (const field of call.fields ?? []) {
+    const linked = linkedRecord(field);
+    if (linked !== null) await create(linked, 0);
+  }
+  return ids;
 }
 
 async function tryCall(
@@ -385,11 +503,10 @@ async function tryCall(
   timeoutMs: number,
   serverOutput: () => string,
   pageSource?: string,
+  ids: ReadonlyMap<string, string | number> = new Map(),
 ): Promise<FormProblem | null> {
   const label = `${call.method} ${call.path}`;
-  const body = Object.fromEntries(
-    (call.fields ?? []).map((field) => [field, call.arrays?.includes(field) === true ? [`Check ${field}`] : sampleValue(field)]),
-  );
+  const body = bodyFor(call.fields ?? [], ids, call.arrays);
   try {
     const before = serverOutput().length;
     const response = await doFetch(
