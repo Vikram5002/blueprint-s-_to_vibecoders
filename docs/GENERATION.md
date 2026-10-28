@@ -136,6 +136,21 @@ own API (13 calls); after two fix rounds by the round-4 repair coder, 6 apps
 and 5 calls remained. A planted-fault test (`form-check.test.ts`) confirms it
 catches a renamed field and a value accepted but not stored.
 
+Three rules added after the hotel app on another laptop (2026-10-28), all deterministic
+and for any app, not only planned ones:
+
+- **Linked records first.** A call sending `customerId` or `room_id` first posts a
+  customer or room to the route named for it and sends that record's real id, so the
+  check's own test data no longer trips a foreign key.
+- **Pages with nothing to call pass.** An information page (About, Home, FAQ, Privacy...)
+  or a page whose name matches no route's data is not a broken form. A "Rooms" page
+  beside `/room-details` still is.
+- **A missing route gets a hint.** The problem names the closest offered route by shared
+  words (`/room-types` -> `/room-details`), or says to drop the call when none fits.
+
+The generated server also answers SQLite constraint refusals with 400/409 instead of a
+500 crash (`backendEntryPointFile`), and the Forms badge counts problems and files.
+
 **What it does not check:** how a page looks or behaves in a browser (no
 clicking, by design - option (a) of the 2026-10-22 plan), GET-only pages, and
 bodies it cannot read statically (a body built by a helper function is skipped,
