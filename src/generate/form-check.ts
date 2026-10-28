@@ -274,10 +274,10 @@ export function isInformationPage(name: string): boolean {
   return name.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z]+/).some((w) => INFORMATION_WORDS.has(w));
 }
 
-const pathWords = (path: string): Set<string> =>
+export const pathWords = (path: string): Set<string> =>
   new Set(path.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z]+/).filter((w) => w !== '' && w !== 'api').map((w) => w.replace(/s$/, '')));
 
-const GENERIC_PAGE_WORDS = new Set(['page', 'form', 'list', 'view', 'screen', 'panel', 'dashboard', 'manager', 'management']);
+export const GENERIC_PAGE_WORDS = new Set(['page', 'form', 'list', 'view', 'screen', 'panel', 'dashboard', 'manager', 'management']);
 
 /**
  * Whether any route's path names what the page is about, or the page's name is all generic words.

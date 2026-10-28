@@ -12,6 +12,7 @@ import type { GeneratedFile } from './assemble.js';
 import { runCommand } from './build-and-repair.js';
 import { createComponentCodeGenerator, type PriorViolationContext } from './component-codegen.js';
 import { fixMissingMounts, readContracts, runFormCheck, type FormCheckOptions, type FormCheckResult, type FormProblem } from './form-check.js';
+import { fallbackDataPage } from './fallback-page.js';
 import { findComponentByTargetPath, generateComponentFile, type GenerateProjectFailure } from './generate-project.js';
 import { filesFailingBuild, writeProjectFiles, type RegenerationAttempt } from './verify-and-regenerate.js';
 
@@ -137,5 +138,48 @@ export async function checkFormsAndRepair(options: FormRepairOptions): Promise<
       outcome: failing.has(a.page) || reverted.has(a.page) ? ('still-violating' as const) : ('fixed' as const),
     })));
   }
+  ({ files, result } = await useFallbackPages(options, files, result, log));
   return { ok: true, value: { files, regenerationLog: log, forms: summary(result) } };
+}
+
+/**
+ * Every frontend page still failing after the rounds is replaced by the standard data page for the
+ * route named after it (fallback-page.ts), kept only if the project still builds and the page now
+ * passes. A plain working page beats a styled one that cannot show or save anything.
+ */
+async function useFallbackPages(
+  options: FormRepairOptions,
+  files: readonly GeneratedFile[],
+  result: FormCheckResult,
+  log: RegenerationAttempt[],
+): Promise<{ files: readonly GeneratedFile[]; result: FormCheckResult }> {
+  const { schema, root } = options;
+  const replaced: { page: string; owner: NonNullable<ReturnType<typeof findComponentByTargetPath>> }[] = [];
+  let next = files;
+  for (const page of new Set(result.problems.map((p) => p.page))) {
+    const owner = findComponentByTargetPath(schema, page);
+    if (owner === null || owner.domain !== 'frontend') continue;
+    const fallback = fallbackDataPage(owner.component, result.routes);
+    if (fallback === null) continue;
+    next = next.map((f) => (f.path === page ? fallback : f));
+    replaced.push({ page, owner });
+  }
+  if (replaced.length === 0) return { files, result };
+  await writeProjectFiles(root, next, false);
+  if (!(await runCommand('npm', ['run', 'build'], root)).ok) {
+    await writeProjectFiles(root, files, false);
+    await runCommand('npm', ['run', 'build'], root);
+    return { files, result };
+  }
+  const checked = await runFormCheck(root, schema, next, options.check);
+  const failing = new Set(checked.problems.map((p) => p.page));
+  log.push(...replaced.map(({ page, owner }) => ({
+    component: owner.component,
+    domain: owner.domain,
+    targetPath: page,
+    firstAttemptViolation: formContext(page, result.problems.filter((p) => p.page === page)),
+    origin: 'form-check' as const,
+    outcome: failing.has(page) ? ('still-violating' as const) : ('fixed' as const),
+  })));
+  return { files: next, result: checked };
 }
