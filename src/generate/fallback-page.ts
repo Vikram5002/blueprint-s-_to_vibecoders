@@ -7,19 +7,36 @@
  */
 import type { Component } from '../types/project-schema.js';
 import { componentSlug, componentTargetPath, pascalIdentifier, type GeneratedFile } from './assemble.js';
-import { GENERIC_PAGE_WORDS, pathWords, sampleValue, type ApiRoute } from './form-check.js';
+import { GENERIC_PAGE_WORDS, linkedRecord, pathWords, sampleValue, type ApiRoute } from './form-check.js';
 
-/** The list route (GET, no `:param`) sharing the most words with the page name; ties go to the first. */
-export function routeForPage(name: string, routes: readonly ApiRoute[]): ApiRoute | undefined {
-  const words = [...pathWords(name)].filter((w) => !GENERIC_PAGE_WORDS.has(w));
+/**
+ * The list route (GET, no `:param`) sharing the most of `words`. A tie goes to the record that links
+ * the other things named - "records sapling distribution" names saplings and distributions, and a
+ * distribution's POST reads saplingId - then to the first.
+ */
+function bestRoute(words: readonly string[], routes: readonly ApiRoute[]): ApiRoute | undefined {
   let best: { route: ApiRoute; score: number } | undefined;
   for (const route of routes) {
     if (route.method !== 'GET' || route.path.includes(':')) continue;
     const offered = pathWords(route.path.split('/').slice(3).join('/'));
-    const score = words.filter((w) => offered.has(w)).length;
-    if (score > 0 && (best === undefined || score > best.score)) best = { route, score };
+    const named = words.filter((w) => offered.has(w)).length;
+    if (named === 0) continue;
+    const create = routes.find((r) => r.method === 'POST' && r.path === route.path);
+    const links = (create?.fields ?? []).filter((f) => { const record = linkedRecord(f); return record !== null && words.includes(record); }).length;
+    const score = named + links / 10;
+    if (best === undefined || score > best.score) best = { route, score };
   }
   return best?.route;
+}
+
+const subjectWords = (text: string): string[] => [...pathWords(text)].filter((w) => !GENERIC_PAGE_WORDS.has(w));
+
+/**
+ * The route a page is for: by its name, else by the purpose the plan gave it. Found live (2026-10-30,
+ * sapling app): "Check-In Page" names no route, but its purpose - "records sapling distribution" - does.
+ */
+export function routeForPage(component: Pick<Component, 'name' | 'purpose'>, routes: readonly ApiRoute[]): ApiRoute | undefined {
+  return bestRoute(subjectWords(component.name), routes) ?? bestRoute(subjectWords(component.purpose), routes);
 }
 
 const inputType = (field: string): string => {
@@ -31,9 +48,9 @@ const inputType = (field: string): string => {
   return 'text';
 };
 
-/** The standard page for `component`, or null when no list route is named for it. */
+/** The standard page for `component`, or null when neither its name nor its purpose names a list route. */
 export function fallbackDataPage(component: Component, routes: readonly ApiRoute[]): GeneratedFile | null {
-  const list = routeForPage(component.name, routes);
+  const list = routeForPage(component, routes);
   if (list === undefined) return null;
   const create = routes.find((r) => r.method === 'POST' && r.path === list.path);
   const fields = create?.fields ?? [];

@@ -253,7 +253,7 @@ export function unusedPages(schema: ValidatedProjectSchema, files: readonly Gene
   if (routes.length === 0) return [];
   const message = unusedPageMessage(routes);
   return schema.domains.frontend.components.flatMap((component) => {
-    if (isInformationPage(component.name) || !apiHasDataFor(component.name, routes)) return [];
+    if (isInformationPage(component.name)) return [];
     const page = componentTargetPath('frontend', component);
     const source = files.find((f) => f.path === page)?.contents;
     if (source === undefined || /\bfetch\s*\(/.test(withoutComments(source))) return [];
@@ -265,31 +265,29 @@ export function unusedPages(schema: ValidatedProjectSchema, files: readonly Gene
   });
 }
 
-// Pages whose name says they only inform. Found live (2026-10-28, hotel app): "About Us"
-// and "Homepage" showed text, which is all they are for, and were reported as broken forms.
-const INFORMATION_WORDS = new Set(['about', 'home', 'homepage', 'landing', 'welcome', 'faq', 'faqs', 'terms', 'privacy', 'policy', 'help', 'story', 'mission', 'team', 'info', 'information', 'gallery']);
+// Pages whose name says they only inform, and parts that only frame a page. Found live (2026-10-28,
+// hotel app): "About Us", "Homepage" and "Contact" showed text, which is all they are for, and were
+// reported as broken forms. Only the name exempts a page: an earlier rule also passed any page whose
+// name matched no route, and on the sapling app (2026-10-30) a 10-line "Check-In Page" meant to
+// record distributions passed with 0 problems.
+const INFORMATION_WORDS = new Set([
+  'about', 'home', 'homepage', 'landing', 'welcome', 'faq', 'faqs', 'terms', 'privacy', 'policy', 'help', 'story',
+  'mission', 'team', 'info', 'information', 'gallery', 'contact', 'pricing', 'testimonial', 'testimonials', 'thank',
+  'thanks', 'guidelines', 'directions', 'navigation', 'nav', 'navbar', 'header', 'footer', 'sidebar', 'layout',
+]);
 
-/** A page named only to inform (About Us, Homepage, FAQ) - it need not call the API. */
+/** A page named only to inform (About Us, Homepage, FAQ, Contact) or to frame others (Navigation Bar) - it need not call the API. */
 export function isInformationPage(name: string): boolean {
   return name.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z]+/).some((w) => INFORMATION_WORDS.has(w));
 }
 
+/** One word: `families` and `family` alike, `rooms` and `room` alike. */
+const singular = (word: string): string => word.replace(/ies$/, 'y').replace(/(?<!s)s$/, '');
+
 export const pathWords = (path: string): Set<string> =>
-  new Set(path.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z]+/).filter((w) => w !== '' && w !== 'api').map((w) => w.replace(/s$/, '')));
+  new Set(path.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z]+/).filter((w) => w !== '' && w !== 'api').map(singular));
 
 export const GENERIC_PAGE_WORDS = new Set(['page', 'form', 'list', 'view', 'screen', 'panel', 'dashboard', 'manager', 'management']);
-
-/**
- * Whether any route's path names what the page is about, or the page's name is all generic words.
- * A Contact page in an app with no contact route has nothing to call (hotel app, 2026-10-28);
- * a "Reporting Dashboard" beside /reporting-service/reports does (finance app, 2026-10-23).
- */
-function apiHasDataFor(name: string, routes: readonly ApiRoute[]): boolean {
-  const words = [...pathWords(name)].filter((w) => !GENERIC_PAGE_WORDS.has(w));
-  if (words.length === 0) return true;
-  const offered = new Set(routes.flatMap((r) => [...pathWords(r.path)]));
-  return words.some((w) => offered.has(w));
-}
 
 /** The offered route with the same method sharing the most words with `path` - a hint, never a match. */
 export function closestRoute(method: string, path: string, routes: readonly ApiRoute[]): ApiRoute | undefined {

@@ -336,14 +336,19 @@ describe('pages with nothing to call - the live hotel app (2026-10-28)', () => {
   const staticFile = (slug: string) => ({ path: `frontend/src/pages/${slug}.tsx`, contents: '<h1>Text only</h1>' });
 
   it('names information pages by their words, for any app', () => {
-    for (const name of ['About Us Page', 'Homepage', 'FAQ', 'Privacy Policy', 'OurStory']) expect(isInformationPage(name)).toBe(true);
-    for (const name of ['Rooms Page', 'Booking Form', 'Reporting Dashboard']) expect(isInformationPage(name)).toBe(false);
+    for (const name of ['About Us Page', 'Homepage', 'FAQ', 'Privacy Policy', 'OurStory', 'Contact Page', 'Navigation Bar']) expect(isInformationPage(name)).toBe(true);
+    for (const name of ['Rooms Page', 'Booking Form', 'Reporting Dashboard', 'Check-In Page', 'Staff Page']) expect(isInformationPage(name)).toBe(false);
   });
 
-  it('does not flag information pages, or a page the API has no data for, but still flags a data page', () => {
+  it('does not flag information pages, but flags every other page that calls nothing', () => {
     const files = ['about-us-page', 'homepage', 'contact-page', 'rooms-page', 'booking-form'].map(staticFile);
     const flagged = unusedPages(plan(['About Us Page', 'Homepage', 'Contact Page', 'Rooms Page', 'Booking Form']), files, routes).map((p) => p.page);
     expect(flagged).toEqual(['frontend/src/pages/rooms-page.tsx', 'frontend/src/pages/booking-form.tsx']);
+  });
+
+  it('flags a placeholder page even when its name matches no route - the sapling app Check-In Page (2026-10-30)', () => {
+    const flagged = unusedPages(plan(['Check-In Page', 'Staff Page']), ['check-in-page', 'staff-page'].map(staticFile), routes).map((p) => p.page);
+    expect(flagged).toEqual(['frontend/src/pages/check-in-page.tsx', 'frontend/src/pages/staff-page.tsx']);
   });
 
   it('points a call to a missing route at the closest route, or says to drop it', () => {
