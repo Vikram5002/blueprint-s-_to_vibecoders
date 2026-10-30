@@ -142,9 +142,10 @@ and for any app, not only planned ones:
 - **Linked records first.** A call sending `customerId` or `room_id` first posts a
   customer or room to the route named for it and sends that record's real id, so the
   check's own test data no longer trips a foreign key.
-- **Pages with nothing to call pass.** An information page (About, Home, FAQ, Privacy...)
-  or a page whose name matches no route's data is not a broken form. A "Rooms" page
-  beside `/room-details` still is.
+- **Information pages pass.** A page named to inform or frame (About, Home, FAQ, Contact,
+  Privacy, Navigation...) is not a broken form when it calls nothing. Every other page that
+  calls nothing still is. (0.2.5 also excused a page whose name matched no route; see the
+  sapling run below for why 0.2.6 does not.)
 - **A missing route gets a hint.** The problem names the closest offered route by shared
   words (`/room-types` -> `/room-details`), or says to drop the call when none fits.
 
@@ -168,6 +169,21 @@ Three more from rerunning the same prompt here with the shipped models:
 Hotel prompt, round-4 planner and round-7 repair coder, same laptop: run 1 did not build
 (the boolean); run 2 built with 2 problems; run 3 left 1 (the faked Rooms page); with the
 standard page, 3 of 3 calls worked and 0 problems remained.
+
+**An idea no model was trained on (2026-10-30).** The 0.2.5 installer's own server and model
+engine (hybrid GPU mode on the team laptop), prompt "an app for a sapling distribution drive
+where volunteers register families, list the saplings available, and record which sapling
+each family received" ("sapling" appears in no training or capture record): plan 4 min 10 s,
+7 feature suggestions, plan changed with two of them, code, build (one repair), Blueprint
+clean, 25 min in all. The form check said 0 problems - but the Check-In Page and Staff Page
+were 10-line placeholders, excused because their names matched no route. With that excuse
+removed (0.2.6) the same app's check flagged both, and the round-7 repair coder rewrote them
+in one round (174 and 95 lines, calling the distributions and saplings routes): 9 calls,
+7 tried live, 0 problems. When the standard page has to step in for such a page, it now
+picks the route from the page's purpose in the plan.
+
+The planner also dropped two pages ("Sapling List", "Distribution Log") when the plan was
+changed with two suggestions - a revision limit of planner round 4, not caught by any check.
 
 **What it does not check:** how a page looks or behaves in a browser (no
 clicking, by design - option (a) of the 2026-10-22 plan), GET-only pages, and
